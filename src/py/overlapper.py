@@ -6,7 +6,7 @@ import sys
 
 seqs = []
 q_seqs = {}
-f = FastaReader(sys.agrv[1]) # take one commnad line argument of the input fasta file name
+f = FastaReader(sys.argv[1]) # take one commnad line argument of the input fasta file name
 
 for r in f:
     if len(r.sequence) < 6000:

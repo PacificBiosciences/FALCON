@@ -2,6 +2,7 @@ from ctypes import *
 
 
 seq_coor_t = c_long
+base_t = c_uint8
 
 class KmerLookup(Structure):
     _fields_ = [("start", seq_coor_t),
@@ -23,19 +24,23 @@ kup = CDLL("./kmer_lookup.so")
 
 kup.allocate_kmer_lookup.argtypes =  [seq_coor_t] 
 kup.allocate_kmer_lookup.restype = POINTER(KmerLookup)
+kup.init_kmer_lookup.argtypes = [POINTER(KmerLookup), seq_coor_t]
 kup.free_kmer_lookup.argtypes = [POINTER(KmerLookup)]
 
 kup.allocate_seq.argtypes = [seq_coor_t]
-kup.allocate_seq.restype = POINTER(c_uint8)
-kup.free_seq_array.argtypes = [POINTER(c_uint8)]
+kup.allocate_seq.restype = POINTER(base_t)
+kup.init_seq_array.argtypes = [POINTER(base_t), seq_coor_t]
+kup.free_seq_array.argtypes = [POINTER(base_t)]
 
 kup.allocate_seq_addr.argtypes = [seq_coor_t]
 kup.allocate_seq_addr.restype = POINTER(seq_coor_t)
 kup.free_seq_addr_array.argtypes = [POINTER(seq_coor_t)]
 
-kup.add_sequence.argtypes = [ seq_coor_t, c_uint, POINTER(c_char), seq_coor_t, POINTER(seq_coor_t), POINTER(c_uint8), POINTER(KmerLookup) ]
+kup.add_sequence.argtypes = [ seq_coor_t, c_uint, POINTER(c_char), seq_coor_t, POINTER(seq_coor_t), 
+                              POINTER(c_uint8), POINTER(KmerLookup) ]
 kup.mask_k_mer.argtypes =[ c_long, POINTER(KmerLookup), c_long ]
-kup.find_kmer_pos_for_seq.argtypes = [ POINTER(c_char), seq_coor_t, c_uint, POINTER(seq_coor_t), POINTER(KmerLookup)]
+kup.find_kmer_pos_for_seq.argtypes = [ POINTER(c_char), seq_coor_t, c_uint, POINTER(seq_coor_t), 
+                                       POINTER(KmerLookup)]
 kup.find_kmer_pos_for_seq.restype = POINTER(KmerMatch)
 kup.free_kmer_match.argtypes = [ POINTER(KmerMatch) ]
 

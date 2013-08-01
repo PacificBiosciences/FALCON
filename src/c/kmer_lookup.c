@@ -26,11 +26,19 @@
 const unsigned int KMERMATCHINC = 10000;
 
 
-kmer_lookup * allocate_kmer_lookup (seq_coor_t size) {
+kmer_lookup * allocate_kmer_lookup ( seq_coor_t size ) {
     kmer_lookup * kl;
     seq_coor_t i;
+
     //printf("%lu is allocated for kmer lookup\n", size);
     kl = (kmer_lookup *)  malloc( size * sizeof(kmer_lookup) );
+    init_kmer_lookup( kl, size);
+    return kl;
+}
+
+void init_kmer_lookup ( kmer_lookup * kl,  seq_coor_t size ) {
+    seq_coor_t i;
+    //printf("%lu is allocated for kmer lookup\n", size);
     for (i=0; i<size; i++) {
         kl[i].start = LONG_MAX;
         kl[i].last = LONG_MAX;
@@ -39,18 +47,23 @@ kmer_lookup * allocate_kmer_lookup (seq_coor_t size) {
     return kl;
 }
 
+
 void free_kmer_lookup( kmer_lookup *  ptr) {
     free(ptr);
 }
 
 seq_array allocate_seq(seq_coor_t size) {
     seq_array sa;
-    seq_coor_t i;
     sa  = (seq_array) malloc( size * sizeof(base) ); 
+    init_seq_array( sa, size);
+    return sa;
+}
+
+void init_seq_array( seq_array sa, seq_coor_t size) {
+    seq_coor_t i;
     for (i=0; i++; i<size) {
         sa[i] = 0xff;
     }
-    return sa;
 }
 
 void free_seq_array( seq_array sa) {
@@ -263,7 +276,7 @@ aln_range find_best_aln_range(kmer_match * km_ptr,
     seq_coor_t * d_count;
     seq_coor_t * q_coor;
     seq_coor_t * t_coor;
-    aln_range arange;
+    static aln_range arange;
 
     long int d, d_min, d_max;
     long int cur_score;

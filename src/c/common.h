@@ -51,7 +51,7 @@ typedef struct {
     seq_coor_t count;
 } kmer_lookup;
 
-typedef unsigned short base;
+typedef unsigned char base;
 typedef base * seq_array;
 typedef seq_coor_t seq_addr;
 typedef seq_addr * seq_addr_array;
@@ -73,11 +73,11 @@ typedef struct {
 
 
 kmer_lookup * allocate_kmer_lookup (seq_coor_t);
-
+void init_kmer_lookup ( kmer_lookup *,  seq_coor_t );
 void free_kmer_lookup(kmer_lookup *);
 
 seq_array allocate_seq(seq_coor_t);
-
+void init_seq_array( seq_array, seq_coor_t);
 void free_seq_array(seq_array);
 
 seq_addr_array allocate_seq_addr(seq_coor_t size); 
