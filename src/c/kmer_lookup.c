@@ -22,7 +22,6 @@
 #include "common.h"
 
 
-//const unsigned int SEQLEN = 500;
 const unsigned int KMERMATCHINC = 10000;
 
 
@@ -44,7 +43,6 @@ void init_kmer_lookup ( kmer_lookup * kl,  seq_coor_t size ) {
         kl[i].last = LONG_MAX;
         kl[i].count = 0;
     }
-    return kl;
 }
 
 
@@ -163,12 +161,6 @@ void mask_k_mer(seq_coor_t size, kmer_lookup * kl, seq_coor_t threshold) {
     }
 }
 
-void print_seq_addr( seq_array sa, seq_addr_array sda, seq_coor_t size ) {
-    int i;
-    for (i = 0; i< size; i++){
-        printf("%u %lu\n", sa[i], sda[i]);
-    }
-}
 
 kmer_match * find_kmer_pos_for_seq( char * seq, seq_coor_t seq_len, unsigned int K,
                     seq_addr_array sda, 
@@ -181,13 +173,13 @@ kmer_match * find_kmer_pos_for_seq( char * seq, seq_coor_t seq_len, unsigned int
     unsigned int half_K;
     seq_coor_t kmer_match_rtn_allocation_size = KMERMATCHINC;
     kmer_match * kmer_match_rtn;
+    base * sa;
+
     kmer_match_rtn = (kmer_match *) malloc( sizeof(kmer_match) );
     kmer_match_rtn->count = 0;
     kmer_match_rtn->query_pos = (seq_coor_t *) calloc( kmer_match_rtn_allocation_size, sizeof( seq_coor_t ) );
     kmer_match_rtn->target_pos = (seq_coor_t *) calloc( kmer_match_rtn_allocation_size, sizeof( seq_coor_t ) );
 
-    
-    base * sa;
     sa = calloc( seq_len, sizeof(base) );
 
     kmer_mask = 0;
@@ -217,14 +209,7 @@ kmer_match * find_kmer_pos_for_seq( char * seq, seq_coor_t seq_len, unsigned int
     half_K = K >> 1;
     for (i = 0; i < seq_len - K;  i += half_K) {
         kmer_bv = get_kmer_bitvector(sa + i, K);
-        // filter out high repeative kmers
-        //if ( lk[kmer_bv].count > 100) {
-        //    continue;
-        //}
-        if (lk[kmer_bv].start == LONG_MAX) {
-            //kmer_bv <<= 2;
-            //kmer_bv |= sa[ i + K ];
-            //kmer_bv &= kmer_mask;
+        if (lk[kmer_bv].start == LONG_MAX) {  //for high count k-mers
             continue;
         }
         kmer_pos = lk[ kmer_bv ].start;
@@ -259,14 +244,12 @@ kmer_match * find_kmer_pos_for_seq( char * seq, seq_coor_t seq_len, unsigned int
 }
 
 void free_kmer_match( kmer_match * ptr) {
-    free(ptr->query_pos );
-    free(ptr->target_pos );
+    free(ptr->query_pos);
+    free(ptr->target_pos);
     free(ptr);
 }
 
-
-
-aln_range find_best_aln_range(kmer_match * km_ptr, 
+aln_range* find_best_aln_range(kmer_match * km_ptr, 
                               seq_coor_t K, 
                               seq_coor_t bin_size, 
                               seq_coor_t count_th) {
@@ -276,7 +259,7 @@ aln_range find_best_aln_range(kmer_match * km_ptr,
     seq_coor_t * d_count;
     seq_coor_t * q_coor;
     seq_coor_t * t_coor;
-    static aln_range arange;
+    aln_range * arange;
 
     long int d, d_min, d_max;
     long int cur_score;
@@ -288,6 +271,8 @@ aln_range find_best_aln_range(kmer_match * km_ptr,
     seq_coor_t max_start;
     seq_coor_t max_end;
     seq_coor_t kmer_dist;
+
+    arange = calloc(1 , sizeof(aln_range));
 
     q_min = LONG_MAX;
     q_max = 0;
@@ -321,8 +306,8 @@ aln_range find_best_aln_range(kmer_match * km_ptr,
 
     //printf("%lu %ld %ld\n" , km_ptr->count, d_min, d_max);
     d_count = calloc( (d_max - d_min)/bin_size + 1, sizeof(seq_coor_t) );
-    q_coor = calloc( km_ptr->count, sizeof(seq_coor_t));
-    t_coor = calloc( km_ptr->count, sizeof(seq_coor_t));
+    q_coor = calloc( km_ptr->count, sizeof(seq_coor_t) );
+    t_coor = calloc( km_ptr->count, sizeof(seq_coor_t) );
 
     for (i = 0; i <  km_ptr->count; i++ ) {
         d = (long int) (km_ptr->query_pos[i]) - (long int) (km_ptr->target_pos[i]);
@@ -360,10 +345,10 @@ aln_range find_best_aln_range(kmer_match * km_ptr,
     }
 
     if (j > 1) {
-        arange.s1 = q_coor[0];
-        arange.e1 = q_coor[0];
-        arange.s2 = t_coor[0];
-        arange.e2 = t_coor[0];
+        arange->s1 = q_coor[0];
+        arange->e1 = q_coor[0];
+        arange->s2 = t_coor[0];
+        arange->e2 = t_coor[0];
 
         max_score = 0;
         cur_score = 0;
@@ -376,20 +361,20 @@ aln_range find_best_aln_range(kmer_match * km_ptr,
                 cur_score = 0;
                 cur_start = i;
             } else if (cur_score > max_score) {
-                arange.s1 = q_coor[cur_start];
-                arange.s2 = t_coor[cur_start];
-                arange.e1 = q_coor[i];
-                arange.e2 = t_coor[i];
+                arange->s1 = q_coor[cur_start];
+                arange->s2 = t_coor[cur_start];
+                arange->e1 = q_coor[i];
+                arange->e2 = t_coor[i];
                 max_score = cur_score;
                 //printf("%lu %lu %lu %lu\n", arange.s1, arange.e1, arange.s2, arange.e2);
             }
         }
 
     } else {
-        arange.s1 = 0;
-        arange.e1 = 0;
-        arange.s2 = 0;
-        arange.e2 = 0;
+        arange->s1 = 0;
+        arange->e1 = 0;
+        arange->s2 = 0;
+        arange->e2 = 0;
     }
 
     // printf("free\n");
@@ -398,4 +383,8 @@ aln_range find_best_aln_range(kmer_match * km_ptr,
     free(q_coor);
     free(t_coor);
     return arange;
+}
+
+void free_aln_range( aln_range * arange) {
+    free(arange);
 }

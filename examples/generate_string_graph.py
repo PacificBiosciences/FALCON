@@ -278,151 +278,154 @@ def generate_contig(sg, seqs, out_fn=None):
 
 
 
-
-
-G=nx.Graph()
-edges =set()
-overlap_data = []
-contained_reads = set()
-with open("./out") as f:
-    for l in f:
-        l = l.strip().split()
-        f_id, g_id, score, identity = l[:4]
-        if f_id == g_id:
-            continue
-        score = int(score)
-        identity = float(identity)
-        contained = l[12]
-        if contained == "contained":
-            contained_reads.add(f_id)
-            continue
-        if contained == "contains":
-            contained_reads.add(g_id)
-            continue
-        if contained == "none":
-            continue
-        if identity < 96:
-            continue
-        if score > -500:
-            continue
-        f_strain, f_start, f_end, f_len = (int(c) for c in l[4:8])
-        g_strain, g_start, g_end, g_len = (int(c) for c in l[8:12])
-        
-        if f_start > 24 and f_len - f_end > 24:
-            continue
-        
-        if g_start > 24 and g_len - g_end > 24:
-            continue
-        #if g_strain != 0:
-        #    continue
-        overlap_data.append( (f_id, g_id, score, identity,
-                              f_strain, f_start, f_end, f_len,
-                              g_strain, g_start, g_end, g_len) )
-
-
-overlap_set = set()
-sg = StringGraph()
-#G=nx.Graph()
-for od in overlap_data:
-    f_id, g_id, score, identity = od[:4]
-    if f_id in contained_reads:
-        continue
-    if g_id in contained_reads:
-        continue
-    f_s, f_b, f_e, f_l = od[4:8]
-    g_s, g_b, g_e, g_l = od[8:12]
-    overlap_pair = [f_id, g_id]
-    overlap_pair.sort()
-    overlap_pair = tuple( overlap_pair )
-    if overlap_pair in overlap_set:
-        continue
-    else:
-        overlap_set.add(overlap_pair)
-    if g_s == 1:
-        g_b, g_e = g_e, g_b
-    if f_b > 10:
-        if g_b < g_e:
-            """
-                 f.B         f.E
-              f  ----------->
-              g         ------------->
-                        g.B           g.E
-            """
-            sg.add_edge( "%s:B" % g_id, "%s:B" % f_id, label = "%s:%d-%d" % (f_id, f_b, 0), 
-                                                       length = abs(f_b-0),
-                                                       score = -score)
-            sg.add_edge( "%s:E" % f_id, "%s:E" % g_id, label = "%s:%d-%d" % (g_id, g_e, g_l), 
-                                                       length = abs(g_e-g_l),
-                                                       score = -score)
-        else:
-            """
-                 f.B         f.E
-              f  ----------->
-              g         <-------------
-                        g.E           g.B           
-            """
-            sg.add_edge( "%s:E" % g_id, "%s:B" % f_id, label = "%s:%d-%d" % (f_id, f_b, 0), 
-                                                       length = abs(f_b -0),
-                                                       score = -score)
-            sg.add_edge( "%s:E" % f_id, "%s:B" % g_id, label = "%s:%d-%d" % (g_id, g_e, 0), 
-                                                       length = abs(g_e- 0),
-                                                       score = -score)
-    else:
-        if g_b < g_e:
-            """
-                                f.B         f.E
-              f                 ----------->
-              g         ------------->
-                        g.B           g.E
-            """
-            sg.add_edge( "%s:B" % f_id, "%s:B" % g_id, label = "%s:%d-%d" % (g_id, g_b, 0), 
-                                                       length = abs(g_b - 0),
-                                                       score = -score)
-            sg.add_edge( "%s:E" % g_id, "%s:E" % f_id, label = "%s:%d-%d" % (f_id, f_e, f_l), 
-                                                       length = abs(f_e-f_l),
-                                                       score = -score)
-        else:
-            """
-                                f.B         f.E
-              f                 ----------->
-              g         <-------------
-                        g.E           g.B           
-            """
-            sg.add_edge( "%s:B" % f_id, "%s:E" % g_id, label = "%s:%d-%d" % (g_id, g_b, g_l), 
-                                                       length = abs(g_b - g_l),
-                                                       score = -score)
-            sg.add_edge( "%s:B" % g_id, "%s:E" % f_id, label = "%s:%d-%d" % (f_id, f_e, f_l), 
-                                                       length = abs(f_e - f_l),
-                                                       score = -score)
+if __name__ == "__main__":
     
-sg.mark_tr_edges()
-print sum( [1 for c in sg.e_reduce.values() if c == True] )
-print sum( [1 for c in sg.e_reduce.values() if c == False] )
-sg.mark_repeat_overlap()
-print sum( [1 for c in sg.repeat_overlap.values() if c == True] )
-print sum( [1 for c in sg.repeat_overlap.values() if c == False] )
-print len(sg.e_reduce), len(sg.repeat_overlap)
+    overlap_file = sys.argv[1]
+    read_fasta = sys.argv[2]
 
-def SGToNXG(sg):
-    G=nx.DiGraph()
-    for v, w in sg.edges:
-        if sg.e_reduce[(v, w)] != True:
-        ##if 1:
-            G.add_node( v )
-            G.add_node( w )
-            label = sg.edges[ (v, w) ].attr["label"]
-            score = sg.edges[ (v, w) ].attr["score"]
-            G.add_edge( v, w, label = label, weight = 0.001*score )
-            #print in_node_name, out_node_name
-    return G
-nx.write_gml(SGToNXG(sg), "string_graph.gml")
+    G=nx.Graph()
+    edges =set()
+    overlap_data = []
+    contained_reads = set()
+    with open(overlap_file) as f:
+        for l in f:
+            l = l.strip().split()
+            f_id, g_id, score, identity = l[:4]
+            if f_id == g_id:
+                continue
+            score = int(score)
+            identity = float(identity)
+            contained = l[12]
+            if contained == "contained":
+                contained_reads.add(f_id)
+                continue
+            if contained == "contains":
+                contained_reads.add(g_id)
+                continue
+            if contained == "none":
+                continue
+            if identity < 96:
+                continue
+            if score > -500:
+                continue
+            f_strain, f_start, f_end, f_len = (int(c) for c in l[4:8])
+            g_strain, g_start, g_end, g_len = (int(c) for c in l[8:12])
+            
+            if f_start > 24 and f_len - f_end > 24:
+                continue
+            
+            if g_start > 24 and g_len - g_end > 24:
+                continue
+            #if g_strain != 0:
+            #    continue
+            overlap_data.append( (f_id, g_id, score, identity,
+                                  f_strain, f_start, f_end, f_len,
+                                  g_strain, g_start, g_end, g_len) )
 
 
-seqs = {}
-#f = FastaReader("pre_assembled_reads.fa")
-f = FastaReader("sim_read.fa")
-for r in f:
-    seqs[r.name] = r.sequence.upper()
+    overlap_set = set()
+    sg = StringGraph()
+    #G=nx.Graph()
+    for od in overlap_data:
+        f_id, g_id, score, identity = od[:4]
+        if f_id in contained_reads:
+            continue
+        if g_id in contained_reads:
+            continue
+        f_s, f_b, f_e, f_l = od[4:8]
+        g_s, g_b, g_e, g_l = od[8:12]
+        overlap_pair = [f_id, g_id]
+        overlap_pair.sort()
+        overlap_pair = tuple( overlap_pair )
+        if overlap_pair in overlap_set:
+            continue
+        else:
+            overlap_set.add(overlap_pair)
+        if g_s == 1:
+            g_b, g_e = g_e, g_b
+        if f_b > 10:
+            if g_b < g_e:
+                """
+                     f.B         f.E
+                  f  ----------->
+                  g         ------------->
+                            g.B           g.E
+                """
+                sg.add_edge( "%s:B" % g_id, "%s:B" % f_id, label = "%s:%d-%d" % (f_id, f_b, 0), 
+                                                           length = abs(f_b-0),
+                                                           score = -score)
+                sg.add_edge( "%s:E" % f_id, "%s:E" % g_id, label = "%s:%d-%d" % (g_id, g_e, g_l), 
+                                                           length = abs(g_e-g_l),
+                                                           score = -score)
+            else:
+                """
+                     f.B         f.E
+                  f  ----------->
+                  g         <-------------
+                            g.E           g.B           
+                """
+                sg.add_edge( "%s:E" % g_id, "%s:B" % f_id, label = "%s:%d-%d" % (f_id, f_b, 0), 
+                                                           length = abs(f_b -0),
+                                                           score = -score)
+                sg.add_edge( "%s:E" % f_id, "%s:B" % g_id, label = "%s:%d-%d" % (g_id, g_e, 0), 
+                                                           length = abs(g_e- 0),
+                                                           score = -score)
+        else:
+            if g_b < g_e:
+                """
+                                    f.B         f.E
+                  f                 ----------->
+                  g         ------------->
+                            g.B           g.E
+                """
+                sg.add_edge( "%s:B" % f_id, "%s:B" % g_id, label = "%s:%d-%d" % (g_id, g_b, 0), 
+                                                           length = abs(g_b - 0),
+                                                           score = -score)
+                sg.add_edge( "%s:E" % g_id, "%s:E" % f_id, label = "%s:%d-%d" % (f_id, f_e, f_l), 
+                                                           length = abs(f_e-f_l),
+                                                           score = -score)
+            else:
+                """
+                                    f.B         f.E
+                  f                 ----------->
+                  g         <-------------
+                            g.E           g.B           
+                """
+                sg.add_edge( "%s:B" % f_id, "%s:E" % g_id, label = "%s:%d-%d" % (g_id, g_b, g_l), 
+                                                           length = abs(g_b - g_l),
+                                                           score = -score)
+                sg.add_edge( "%s:B" % g_id, "%s:E" % f_id, label = "%s:%d-%d" % (f_id, f_e, f_l), 
+                                                           length = abs(f_e - f_l),
+                                                           score = -score)
+        
+    sg.mark_tr_edges()
+    print sum( [1 for c in sg.e_reduce.values() if c == True] )
+    print sum( [1 for c in sg.e_reduce.values() if c == False] )
+    sg.mark_repeat_overlap()
+    print sum( [1 for c in sg.repeat_overlap.values() if c == True] )
+    print sum( [1 for c in sg.repeat_overlap.values() if c == False] )
+    print len(sg.e_reduce), len(sg.repeat_overlap)
+
+    def SGToNXG(sg):
+        G=nx.DiGraph()
+        for v, w in sg.edges:
+            if sg.e_reduce[(v, w)] != True:
+            ##if 1:
+                G.add_node( v )
+                G.add_node( w )
+                label = sg.edges[ (v, w) ].attr["label"]
+                score = sg.edges[ (v, w) ].attr["score"]
+                G.add_edge( v, w, label = label, weight = 0.001*score )
+                #print in_node_name, out_node_name
+        return G
+    nx.write_gml(SGToNXG(sg), "string_graph.gml")
 
 
-generate_contig(sg, seqs, out_fn="contigs.fa")
+    seqs = {}
+    #f = FastaReader("pre_assembled_reads.fa")
+    f = FastaReader(read_fasta)
+    for r in f:
+        seqs[r.name] = r.sequence.upper()
+
+
+    generate_contig(sg, seqs, out_fn="contigs.fa")

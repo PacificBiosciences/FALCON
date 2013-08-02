@@ -46,7 +46,7 @@ typedef struct {
 align_tags_t * get_align_tags( char * aln_q_seq, 
                                char * aln_t_seq, 
                                seq_coor_t aln_seq_len,
-                               aln_range range,
+                               aln_range * range,
                                unsigned long q_id) {
     char q_base;
     char t_base;
@@ -57,8 +57,8 @@ align_tags_t * get_align_tags( char * aln_q_seq,
     tags->len = aln_seq_len; 
     tags->align_tags = calloc( aln_seq_len + 1, sizeof(align_tag_t) );
 
-    i = range.s1 - 1;
-    j = range.s2 - 1;
+    i = range->s1 - 1;
+    j = range->s2 - 1;
     for (k = 0; k < aln_seq_len; k++) {
         if (aln_q_seq[k] != '-') {
             i ++;
@@ -100,7 +100,7 @@ int compare_tags(const void * a, const void * b)
     }
 }
 
-char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_seqs, unsigned t_len ) {
+char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_seqs, unsigned t_len, unsigned min_cov ) {
 
     seq_coor_t i, j, t_pos, tmp_pos;
     unsigned int * coverage;
@@ -156,7 +156,7 @@ char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_se
     c_end = 0;
     for (i = 0; i < t_len; i++) {
         //printf("i,cov: %ld %d\n", i, coverage[i]);
-        if (coverage[i] < 8) {
+        if (coverage[i] < min_cov + 1) {
             if (cov_score > max_cov_score) {
                 max_cov_score = cov_score;
                 c_start = max_start + 1;
@@ -255,9 +255,9 @@ char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_se
     return consensus;
 }
 
-const unsigned int K = 8;
+//const unsigned int K = 8;
 
-char * generate_consensus( char ** input_seq, unsigned int n_seq ) {
+char * generate_consensus( char ** input_seq, unsigned int n_seq, unsigned min_cov, unsigned K ) {
 
     unsigned int i, j, k;
     unsigned int seq_count;
@@ -266,7 +266,7 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq ) {
     seq_array sa_ptr;
     seq_addr_array sda_ptr;
     kmer_match * kmer_match_ptr;
-    aln_range arange;
+    aln_range * arange;
     alignment * aln;
     align_tags_t * tags;
     align_tags_t ** tags_list;
@@ -292,18 +292,19 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq ) {
         kmer_match_ptr = find_kmer_pos_for_seq(input_seq[j], strlen(input_seq[j]), K, sda_ptr, lk_ptr);
         arange = find_best_aln_range(kmer_match_ptr, K, K * 8, 5);
 
-        //printf("%ld %ld %ld %ld\n", arange.s1, arange.e1, arange.s2, arange.e2);
+        //printf("%ld %ld %ld %ld\n", arange->s1, arange->e1, arange->s2, arange->e2);
 
-        if (arange.e1 - arange.s1 < 100 || arange.e2 - arange.s2 < 100 ||
-            abs( (arange.e1 - arange.s1 ) - (arange.e2 - arange.s2) ) > 1000) {
+        if (arange->e1 - arange->s1 < 100 || arange->e2 - arange->s2 < 100 ||
+            abs( (arange->e1 - arange->s1 ) - (arange->e2 - arange->s2) ) > 1000) {
             free_kmer_match( kmer_match_ptr);
+            free_aln_range(arange);
             continue;
         }
 
         //printf("%ld %s\n", strlen(input_seq[j]), input_seq[j]);
         //printf("%ld %s\n\n", strlen(input_seq[0]), input_seq[0]);
-        aln = align(input_seq[j]+arange.s1, arange.e1 - arange.s1 ,
-                    input_seq[0]+arange.s2, arange.e2 - arange.s2 , 
+        aln = align(input_seq[j]+arange->s1, arange->e1 - arange->s1 ,
+                    input_seq[0]+arange->s2, arange->e2 - arange->s2 , 
                     100, 1);
         if (aln->aln_str_size > 500) {
             tags_list[aligned_seq_count] = get_align_tags( aln->q_aln_str, aln->t_aln_str, aln->aln_str_size, arange, j); 
@@ -316,11 +317,12 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq ) {
                                    tags_list[j]->align_tags[k].q_base);
         }
         ***/
+        free_aln_range(arange);
         free_alignment(aln);
         free_kmer_match( kmer_match_ptr);
     }
 
-    consensus = get_cns_from_align_tags( tags_list, aligned_seq_count, strlen(input_seq[0]) );
+    consensus = get_cns_from_align_tags( tags_list, aligned_seq_count, strlen(input_seq[0]), min_cov );
     //free(consensus);
     free_seq_addr_array(sda_ptr);
     free_seq_array(sa_ptr);
@@ -336,7 +338,7 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq ) {
 void free_consensus( char * str ){
     free(str);
 }
-
+/*
 void main() {
     unsigned int j;
     char small_buffer[1024];
@@ -395,3 +397,4 @@ void main() {
     free(seq_id);
     free(input_seq);
 }
+*/

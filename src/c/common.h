@@ -85,10 +85,12 @@ seq_addr_array allocate_seq_addr(seq_coor_t size);
 void free_seq_addr_array(seq_addr_array);
 
 
-aln_range find_best_aln_range(kmer_match *, 
+aln_range *  find_best_aln_range(kmer_match *, 
                               seq_coor_t, 
                               seq_coor_t, 
                               seq_coor_t); 
+
+void free_aln_range( aln_range *);
 
 kmer_match * find_kmer_pos_for_seq( char *, 
                                     seq_coor_t, 

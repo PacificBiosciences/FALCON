@@ -45,8 +45,9 @@ kup.find_kmer_pos_for_seq.restype = POINTER(KmerMatch)
 kup.free_kmer_match.argtypes = [ POINTER(KmerMatch) ]
 
 
-kup.find_best_aln_range.argstypes = [POINTER(KmerMatch), seq_coor_t, seq_coor_t, seq_coor_t]
-kup.find_best_aln_range.restype = AlnRange
+kup.find_best_aln_range.argtypes = [POINTER(KmerMatch), seq_coor_t, seq_coor_t, seq_coor_t]
+kup.find_best_aln_range.restype = POINTER(AlnRange)
+kup.free_aln_range.argtypes = [POINTER(AlnRange)]
 
 
 class Alignment(Structure):
@@ -86,10 +87,11 @@ falcon.generate_consensus.restype = POINTER(c_char)
 falcon.free_consensus.argtypes = [ c_char_p ]
 
 def get_consensus( c_input ):
-    seqs, seed_id = c_input
+
+    seqs, seed_id = c_input, min_cov, K
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
-    consensus_ptr = falcon.generate_consensus( seqs_ptr, len(seqs) )
+    consensus_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K )
     consensus = string_at(consensus_ptr)[:]
     falcon.free_consensus( consensus_ptr )
     del seqs_ptr
@@ -106,10 +108,13 @@ def get_alignment(seq1, seq0):
 
     kmer_match_ptr = kup.find_kmer_pos_for_seq(seq1, len(seq1), K, sda_ptr, lk_ptr)
     kmer_match = kmer_match_ptr[0]
-    aln_range = kup.find_best_aln_range(kmer_match_ptr, K, K*10, 50)
+    aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K*10, 50)
     #x,y = zip( * [ (kmer_match.query_pos[i], kmer_match.target_pos[i]) for i in range(kmer_match.count )] )
     kup.free_kmer_match(kmer_match_ptr)
+    aln_range = aln_range_ptr[0]
     s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
+    kup.free_aln_range(aln_range_ptr)
+
     if e1 - s1 > 500:
         #s1 = 0 if s1 < 14 else s1 - 14
         #s2 = 0 if s2 < 14 else s2 - 14

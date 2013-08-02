@@ -9,10 +9,10 @@ falcon.generate_consensus.restype = POINTER(c_char)
 falcon.free_consensus.argtypes = [ c_char_p ]
 
 def get_consensus( c_input ):
-    seqs, seed_id = c_input
+    seqs, seed_id, min_cov, K = c_input
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
-    consensus_ptr = falcon.generate_consensus( seqs_ptr, len(seqs) )
+    consensus_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K )
     consensus = string_at(consensus_ptr)[:]
     falcon.free_consensus( consensus_ptr )
     del seqs_ptr
@@ -21,7 +21,7 @@ def get_consensus( c_input ):
 exe_pool = Pool(24)
 
 
-def get_seq_data():
+def get_seq_data(min_cov = 8, K = 8):
     seqs = []
     seed_id = None
     seqs_data = []
@@ -35,7 +35,7 @@ def get_seq_data():
                 seqs.append(l[1])
             elif l[0] == "+":
                 if len(seqs) > 10:
-                    yield (seqs, seed_id) 
+                    yield (seqs, seed_id, min_cov, K) 
                 #seqs_data.append( (seqs, seed_id) ) 
                 seqs = []
                 seed_id = None
@@ -43,6 +43,7 @@ def get_seq_data():
                 #yield (seqs, seed_id)
                 #seqs_data.append( (seqs, seed_id) )
                 break
+
 for res in exe_pool.imap(get_consensus, get_seq_data()):
     cns, seed_id = res
     if len(cns) > 500:
