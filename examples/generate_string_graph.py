@@ -208,7 +208,7 @@ def generate_contig_from_path(sg, seqs, path):
     return "".join(subseqs)
 
 
-def generate_contig(sg, seqs, out_fn=None):
+def generate_max_contig(sg, seqs, out_fn=None):
     G = SGToNXG(sg)
     #out_fasta = open(out_fn, "w")
     count = 0
@@ -222,14 +222,14 @@ def generate_contig(sg, seqs, out_fn=None):
         if len(root_nodes) == 0: break
         candidates = []
         for n in list(root_nodes):
-            sp =nx.single_source_shortest_path_length(G,n)
+            sp =nx.single_source_shortest_path_length(G, n)
             sp = sp.items()
             sp.sort(key=lambda x : x[1])
             longest = sp[-1]
             candidates.append ( (longest[1], n, longest[0]) )
         candidates.sort()
         candidate = candidates[-1]
-        path = nx.shortest_path(G, candidate[1], candidate[2])
+        path = nx.shortest_path(G, candidate[1], candidate[2], "n_weight")
         print >> out_f, ">%04d-%s-%s" % (count,path[0], path[-1])
         print >> out_f, generate_contig_from_path(sg, seqs, path)
         count += 1
@@ -275,6 +275,102 @@ def generate_contig(sg, seqs, out_fn=None):
     out_f.close()
     out_f2.close()
     nx.write_gml(G, "left_over.gml")
+
+
+
+def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
+    G = SGToNXG(sg)
+    if connected_nodes != None:
+        connected_nodes = set(sg.nodes)
+    out_fasta = open(out_fn, "w")
+    unique_edge_nodes = {}
+    nodes_for_tig = set()
+    for n in sg.nodes:
+        if connected_nodes != None and n not in connected_nodes:
+            continue
+        if len(sg.get_in_edges_for_node(n)) == 1 or\
+           len(sg.get_out_edges_for_node(n)) == 1:
+            unique_edge_nodes[n] = sg.nodes[n]
+            nodes_for_tig.add(n)
+    count = 0
+    edges_in_tigs = set()
+    while len(nodes_for_tig) > 0:
+        n = nodes_for_tig.pop()
+        #nodes_for_tig.remove(n)
+        upstream_nodes = []
+        
+        p_edges = sg.get_in_edges_for_node(n)
+        while len(p_edges) == 1:
+            p_node = p_edges[0].in_node
+            if len(sg.get_out_edges_for_node(p_node.name)) > 1:
+                upstream_nodes.append(p_node.name)
+                break
+            if p_node.name not in nodes_for_tig:
+                break
+            upstream_nodes.append(p_node.name)
+            nodes_for_tig.remove(p_node.name)
+            p_edges = sg.get_in_edges_for_node(p_node.name)
+        upstream_nodes.reverse()  
+            
+        downstream_nodes = []
+        
+        n_edges = sg.get_out_edges_for_node(n)
+        while len(n_edges) == 1:
+            n_node = n_edges[0].out_node
+            if len(sg.get_in_edges_for_node(n_node.name)) > 1:
+                downstream_nodes.append(n_node.name)
+                break
+            if n_node.name not in nodes_for_tig:
+                break
+            downstream_nodes.append(n_node.name)
+            nodes_for_tig.remove(n_node.name)
+            n_edges = sg.get_out_edges_for_node(n_node.name)
+        
+        whole_path = upstream_nodes + [n] + downstream_nodes
+        #print len(whole_path)
+        count += 1
+        subseqs = []
+        for i in range( len( whole_path ) - 1):
+            w_n, v_n = whole_path[i:i+2]
+            
+            edge = sg.edges[ (w_n, v_n ) ]
+            edges_in_tigs.add( (w_n, v_n ) )
+            #print n, next_node.name, e.attr["label"]
+            
+            read_id, coor = edge.attr["label"].split(":")
+            b,e = coor.split("-")
+            b = int(b)
+            e = int(e)
+            if b < e:
+                subseqs.append( seqs[read_id][b:e] )
+            else:
+                subseqs.append( "".join( [RCMAP[c] for c in seqs[read_id][b:e:-1]] ) )
+        print >>out_fasta, ">%05dc-%s-%s-%d" % (count, whole_path[0], whole_path[-1], len(whole_path))
+        print >>out_fasta,"".join(subseqs)
+    for e_n, edge in sg.edges.items():
+        if sg.e_reduce[ e_n ]:
+            continue
+        if connected_nodes != None and e_n[0] not in connected_nodes:
+            continue
+        if connected_nodes != None and e_n[1] not in connected_nodes:
+            continue
+        #print e_n in edges_in_tigs
+        if e_n not in edges_in_tigs:
+            read_id, coor = edge.attr["label"].split(":")
+            b,e = coor.split("-")
+            b = int(b)
+            e = int(e)
+            assert abs(b-e) < len(seqs[read_id])
+            if b < e:
+                out_seq = seqs[read_id][b:e] 
+            else:
+                out_seq = "".join( [RCMAP[c] for c in seqs[read_id][b:e:-1]] )
+            count += 1
+            print >>out_fasta, ">%05ds-%s-%s-%s" % (count, e_n[0], e_n[1], len(whole_path))
+            print >>out_fasta, out_seq
+            if len(out_seq) == 0:
+                print b,e,read_id, e_n[0], e_n[1]
+    out_fasta.close()
 
 
 
@@ -408,17 +504,20 @@ if __name__ == "__main__":
 
     def SGToNXG(sg):
         G=nx.DiGraph()
+
+        max_score = max([ sg.edges[ e ].attr["score"] for e in sg.edges if sg.e_reduce[e] != True ])
         for v, w in sg.edges:
             if sg.e_reduce[(v, w)] != True:
             ##if 1:
-                G.add_node( v )
-                G.add_node( w )
+                out_degree = len(sg.nodes[v].out_edges)
+                G.add_node( v, size = out_degree )
+                G.add_node( w, size = out_degree )
                 label = sg.edges[ (v, w) ].attr["label"]
                 score = sg.edges[ (v, w) ].attr["score"]
-                G.add_edge( v, w, label = label, weight = 0.001*score )
+                G.add_edge( v, w, label = label, weight = 0.001*score, n_weight = max_score - score )
                 #print in_node_name, out_node_name
         return G
-    nx.write_gml(SGToNXG(sg), "string_graph.gml")
+    nx.write_gexf(SGToNXG(sg), "string_graph.gexf")
 
 
     seqs = {}
@@ -428,4 +527,5 @@ if __name__ == "__main__":
         seqs[r.name] = r.sequence.upper()
 
 
-    generate_contig(sg, seqs, out_fn="contigs.fa")
+    generate_unitig(sg, seqs, out_fn = "unitgs.fa")
+    generate_max_contig(sg, seqs, out_fn="contigs.fa")
