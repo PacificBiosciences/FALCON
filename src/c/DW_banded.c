@@ -57,22 +57,22 @@ alignment * align(char * query_seq, seq_coor_t q_len,
     max_d = q_len + t_len;
 
     //band_size = max_d > 5000 ? 5000 : max_d;
-    band_size = (max_d >> 2) > 300 ? 300 : (max_d >> 2);
+    band_size = (max_d >> 2) > 600 ? 600 : (max_d >> 2);
 
     V = calloc( (band_size + 1) * 2 + 1, sizeof(seq_coor_t) );
     U = calloc( (band_size + 1) * 2 + 1, sizeof(seq_coor_t) );
     
-    k_offset = band_size + 1;
+    k_offset = (band_size >> 1) + 1;
     
     // We should probably use hashmap to store the backtracing information to save memory allocation time
     // This O(MN) block allocation scheme is convient for now but it is slower for very long sequences
     d_path = calloc( max_d * (band_size + 1 ) * 2 + 1, sizeof(d_path_data) );
     
-    aln_path = calloc( 2 * q_len + 2 * t_len, sizeof(path_point) );
+    aln_path = calloc( q_len + t_len + 1, sizeof(path_point) );
 
     align_rtn = calloc( 1, sizeof(alignment));
-    align_rtn->t_aln_str = calloc( q_len + t_len, sizeof(char));
-    align_rtn->q_aln_str = calloc( q_len + t_len, sizeof(char));
+    align_rtn->t_aln_str = calloc( q_len + t_len + 1, sizeof(char));
+    align_rtn->q_aln_str = calloc( q_len + t_len + 1, sizeof(char));
     align_rtn->aln_str_size = 0;
     align_rtn->aln_q_s = 0;
     align_rtn->aln_q_e = 0;
@@ -93,7 +93,7 @@ alignment * align(char * query_seq, seq_coor_t q_len,
             //fflush(stdout);
             break;
         }
-        if (abs(max_k) > band_size || abs(min_k) > band_size) break;
+        if (abs(max_k) > k_offset - 1  || abs(min_k) > k_offset - 1 ) break;
 
         //printf("d, min_k, max_k, x1, lim: %ld %ld %ld %ld %ld\n", d, min_k, max_k, band_size + max_k + k_offset, max_d * (band_size * 2 + 1) );
         //if (d * band_size + max_k + k_offset  >=  max_d * (band_size + 1) * 2 + 1 ) break;
@@ -176,7 +176,7 @@ alignment * align(char * query_seq, seq_coor_t q_len,
                 cd = d;
                 ck = k;
                 aln_path_idx = 0;
-                while (cd >= 0 && aln_path_idx < 2 * q_len + 2 * t_len) {    
+                while (cd >= 0 && aln_path_idx < q_len + t_len + 1) {    
                     aln_path[aln_path_idx].x = d_path[ cd * band_size + ck + k_offset ].x2;
                     aln_path[aln_path_idx].y = d_path[ cd * band_size + ck + k_offset ].y2;
                     aln_path_idx ++;
