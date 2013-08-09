@@ -54,10 +54,6 @@ def get_ovelap_alignment(seq1, seq0):
                     do_aln = False
                     contain_status = "contained"
 
-                #e0 = len_1 - s1 if len_1 - s1 < len_0 else len_0
-                #if e0 == len_0:
-                #    do_aln = False
-                #    contain_status = "contained"
                 
             elif s1 <= s0:
                 s0 -= s1 #assert s1 > 0
@@ -66,14 +62,10 @@ def get_ovelap_alignment(seq1, seq0):
                 if len_0 - s0 >= len_1:
                     do_aln = False
                     contain_status = "contained"
-                #e1 = len_0 - s0 if len_0 - s0 < len_1 else len_1
-                #if e1 == len_1:
-                #    do_aln = False
-                #    contain_status = "contains"
 
 
-        if abs( (e1 - s1) - (e0 - s0 ) ) > 200:  #avoid overlap alignment for big indels
-            do_aln = False
+        #if abs( (e1 - s1) - (e0 - s0 ) ) > 200:  #avoid overlap alignment for big indels
+        #    do_aln = False
 
         if do_aln:
             alignment = DWA.align(seq1[s1:e1], e1-s1,
@@ -197,7 +189,7 @@ def build_look_up(seqs, K):
         kup.add_sequence( start, K, suffix, 500, c_sda_ptr, c_sa_ptr, c_lk_ptr)
         start += 500
 
-    kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 64)
+    kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 256)
     
     #return sda_ptr, sa_ptr, lk_ptr
 
