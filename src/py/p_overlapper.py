@@ -26,8 +26,8 @@ def get_ovelap_alignment(seq1, seq0):
     aln_range = aln_range_ptr[0]
     kup.free_kmer_match(kmer_match_ptr)
     s1, e1, s0, e0 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2  
-    e1 += K
-    e0 += K
+    e1 += K + K/2
+    e0 += K + K/2
     kup.free_aln_range(aln_range)
     len_1 = len(seq1)
     len_0 = len(seq0)
@@ -37,33 +37,41 @@ def get_ovelap_alignment(seq1, seq0):
         e0 = len_0
     do_aln = False
     contain_status = "none" 
+    #print s0, e0, s1, e1 
     if e1 - s1 > 500:
-        if s1 < 100 and len_1 - e1 < 100:
+        if s0 < s1 and s0 > 24:
+            do_aln = False
+        elif s1 <= s0 and s1 > 24:
+            do_aln = False
+        elif s1 < 24 and len_1 - e1 < 24:
             do_aln = False
             contain_status = "contains"
-        elif s0 < 100 and len_0 - e0 < 100:
+            #print "X1"
+        elif s0 < 24 and len_0 - e0 < 24:
             do_aln = False
             contain_status = "contained"
+            #print "X2"
         else:
             do_aln = True
             if s0 < s1:
                 s1 -= s0 #assert s1 > 0
                 s0 = 0
                 e1 = len_1
-                if len_1 - s1 >= len_0:
-                    do_aln = False
-                    contain_status = "contained"
+                #if len_1 - s1 >= len_0:
+                #    do_aln = False
+                #    contain_status = "contains"
+                #    print "X3", s0, e0, len_0, s1, e1, len_1
 
                 
             elif s1 <= s0:
                 s0 -= s1 #assert s1 > 0
                 s1 = 0
                 e0 = len_0
-                if len_0 - s0 >= len_1:
-                    do_aln = False
-                    contain_status = "contained"
-
-
+                print s0, e0, s1, e1
+                #if len_0 - s0 >= len_1:
+                #    do_aln = False
+                #    contain_status = "contained"
+                #    print "X4"
         #if abs( (e1 - s1) - (e0 - s0 ) ) > 200:  #avoid overlap alignment for big indels
         #    do_aln = False
 
@@ -215,7 +223,7 @@ if __name__ == "__main__":
     total_index_base = len(seqs) * 1000
     K = 14
     build_look_up(seqs, K)
-    pool = mp.Pool(6)
+    pool = mp.Pool(8)
 
     for r in pool.imap(get_candidate_hits, lookup_data_iterator( q_seqs)):
         for h in r:
