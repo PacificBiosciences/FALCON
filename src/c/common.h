@@ -41,6 +41,16 @@ typedef struct {
 } d_path_data;
 
 typedef struct {
+    seq_coor_t d;
+    seq_coor_t k;
+    seq_coor_t pre_k;
+    seq_coor_t x1;
+    seq_coor_t y1;
+    seq_coor_t x2;
+    seq_coor_t y2;
+} d_path_data2;
+
+typedef struct {
     seq_coor_t x;
     seq_coor_t y;
 } path_point;
