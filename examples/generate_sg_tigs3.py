@@ -453,7 +453,7 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
         uni_edges.setdefault( (whole_path[0], whole_path[-1]), [] )
         uni_edges[(whole_path[0], whole_path[-1])].append(  ( whole_path, "".join(subseqs) ) )
 
-        print >>path_f, " ".join(whole_path)
+        print >>path_f, ">%05dc-%s-%s-%d %s" % (count, whole_path[0], whole_path[-1], len(whole_path), " ".join(whole_path))
 
         print >>out_fasta, ">%05dc-%s-%s-%d" % (count, whole_path[0], whole_path[-1], len(whole_path))
         print >>out_fasta,"".join(subseqs)
@@ -470,6 +470,8 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
 def generate_meta_unitig(sg, uni_edges, seqs, out_fn, connected_nodes = None):
     max_weight = 0
     out_f = open(out_fn, "w")
+    meta_tig_paths = open("meta_tig_paths","w")
+    path_read_ids = open("meta_tig_read_ids", "w")
     good_edges = set()
     for v,w in uni_edges.keys():
         x = max( [len(s[1]) for s in  uni_edges[ (v,w) ] ] )
@@ -549,11 +551,21 @@ def generate_meta_unitig(sg, uni_edges, seqs, out_fn, connected_nodes = None):
         if len(new_path) > 1:
             path = new_path
             subseqs = []
+        
+            print >> meta_tig_paths, ">%04d %s" % ( count, " ".join(path) )
+
+
             for i in range(len(path) - 1):
                 v, w = path[i:i+2]
                 uedges = uni_edges[ (v,w) ]
                 uedges.sort( key= lambda x: len(x[0]) )
                 subseqs.append( uedges[-1][1] )
+                ue_id = 0
+                for ue in uedges:
+                    for n in ue[0]:
+                        print >> path_read_ids, "%04d %d %s" % (count,ue_id, n)
+                    ue_id += 1
+
             print >> out_f, ">%04d %s-%s" % (count, path[0], path[-1])
             print >> out_f, "".join(subseqs)
             count += 1
@@ -588,6 +600,8 @@ def generate_meta_unitig(sg, uni_edges, seqs, out_fn, connected_nodes = None):
             #if G.in_degree(n) == 0 and G.out_degree(n) == 0:
             #    G.remove_node(n)
     out_f.close()
+    meta_tig_paths.close()
+    path_read_ids.close()
 
 def SGToNXG(sg):
     G=nx.DiGraph()
@@ -653,8 +667,8 @@ if __name__ == "__main__":
             #    continue
             f_strain, f_start, f_end, f_len = (int(c) for c in l[4:8])
             g_strain, g_start, g_end, g_len = (int(c) for c in l[8:12])
-            if f_len < 8000: continue
-            if g_len < 8000: continue
+            if f_len < 4000: continue
+            if g_len < 4000: continue
             
             # double check for proper overlap
             if f_start > 24 and f_len - f_end > 24:
