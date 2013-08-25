@@ -91,7 +91,9 @@ align_tags_t * get_align_tags( char * aln_q_seq,
             match_count = 0;
         }
 
+        
         //printf("X: %ld %c %c %ld\n", j, aln_q_seq[k], aln_t_seq[k], match_count);
+        //
         (tags->align_tags[k]).t_pos = j;
         (tags->align_tags[k]).delta = jj;
         if (jj == 0 && match_count < 8) {
@@ -319,7 +321,7 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq, unsigned min_c
     aligned_seq_count = 0;
     for (j=1; j < seq_count; j++) {
 
-        //printf("seq_len: %u %u\n", j, strlen(input_seq[j]));
+        //printf("seq_len: %ld %u\n", j, strlen(input_seq[j]));
 
         kmer_match_ptr = find_kmer_pos_for_seq(input_seq[j], strlen(input_seq[j]), K, sda_ptr, lk_ptr);
 #define INDEL_ALLOWENCE_0 3
@@ -381,7 +383,8 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq, unsigned min_c
 void free_consensus( char * str ){
     free(str);
 }
-/*
+
+/***
 void main() {
     unsigned int j;
     char small_buffer[1024];
@@ -412,7 +415,6 @@ void main() {
             if (strcmp(seq_id[seq_count], "-") == 0) {
                 break;
             }
-
             //printf("%s\n", seq_id[seq_count]);
             seq_count += 1;
             if (seq_count > 500) break;
@@ -421,7 +423,7 @@ void main() {
         if (seq_count < 10 && strcmp(seq_id[seq_count], "-") != 0 ) continue;
         if (seq_count < 10 && strcmp(seq_id[seq_count], "-") == 0 ) break;
 
-            consensus = generate_consensus(input_seq, seq_count);
+            consensus = generate_consensus(input_seq, seq_count, 8, 8);
         if (strlen(consensus) > 500) {
             printf(">%s\n%s\n", seq_id[0], consensus);
         }
@@ -440,4 +442,4 @@ void main() {
     free(seq_id);
     free(input_seq);
 }
-*/
+***/
