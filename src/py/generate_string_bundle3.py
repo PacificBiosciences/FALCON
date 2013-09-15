@@ -474,6 +474,7 @@ def get_bundle( path, u_graph, u_edges ):
             if path_len > longest_len:
                 last_node = n
                 longest_len = path_len
+                new_path = path_t
 
 
     #new_path = nx.shortest_path(sub_graph2, path[0], last_node, "n_weight")
