@@ -73,7 +73,7 @@ with open("primary_tigs_paths") as f:
 path_names = primary_tigs_path.keys()
 path_names.sort()
 primary_path_graph_r = primary_path_graph.reverse()
-path_f = open(" primary_tigs_paths_c","w")
+path_f = open("primary_tigs_paths_c","w")
 with open("primary_tigs_c.fa","w") as out_f:
     for name in path_names:
         sub_idx = 0
