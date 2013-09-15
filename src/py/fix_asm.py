@@ -106,4 +106,4 @@ with open("primary_tigs_c.fa","w") as out_f:
             print >>path_f, ">%s_%02d" % (name, sub_idx), " ".join(c_path)
 
             
- path_f.close()
+path_f.close()
