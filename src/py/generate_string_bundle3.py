@@ -779,14 +779,14 @@ if __name__ == "__main__":
                 continue
             if contained == "none":
                 continue
-            if identity < 99:
+            if identity < 96:
                 continue
             #if score > -2000:
             #    continue
             f_strain, f_start, f_end, f_len = (int(c) for c in l[4:8])
             g_strain, g_start, g_end, g_len = (int(c) for c in l[8:12])
-            if f_len < 10000: continue
-            if g_len < 10000: continue
+            if f_len < 4000: continue
+            if g_len < 4000: continue
             
             # double check for proper overlap
             if f_start > 24 and f_len - f_end > 24:
@@ -849,6 +849,8 @@ if __name__ == "__main__":
                   g         ------------->
                             g.B           g.E
                 """
+                if f_b == 0 or g_e - g_l == 0:
+                    continue
                 sg.add_edge( "%s:B" % g_id, "%s:B" % f_id, label = "%s:%d-%d" % (f_id, f_b, 0), 
                                                            length = abs(f_b-0),
                                                            score = -score)
@@ -862,6 +864,8 @@ if __name__ == "__main__":
                   g         <-------------
                             g.E           g.B           
                 """
+                if f_b == 0 or g_e == 0:
+                    continue
                 sg.add_edge( "%s:E" % g_id, "%s:B" % f_id, label = "%s:%d-%d" % (f_id, f_b, 0), 
                                                            length = abs(f_b -0),
                                                            score = -score)
@@ -876,6 +880,8 @@ if __name__ == "__main__":
                   g         ------------->
                             g.B           g.E
                 """
+                if g_b == 0 or f_e - f_l == 0:
+                    continue
                 sg.add_edge( "%s:B" % f_id, "%s:B" % g_id, label = "%s:%d-%d" % (g_id, g_b, 0), 
                                                            length = abs(g_b - 0),
                                                            score = -score)
@@ -889,6 +895,8 @@ if __name__ == "__main__":
                   g         <-------------
                             g.E           g.B           
                 """
+                if g_b - g_l == 0 or f_e - f_l ==0:
+                    continue
                 sg.add_edge( "%s:B" % f_id, "%s:E" % g_id, label = "%s:%d-%d" % (g_id, g_b, g_l), 
                                                            length = abs(g_b - g_l),
                                                            score = -score)
