@@ -22,6 +22,41 @@
 #include <stdbool.h>
 #include "common.h"
 
+int compare_d_path(const void * a, const void * b)
+{
+    const d_path_data2 * arg1 = a;
+    const d_path_data2 * arg2 = b;
+    if (arg1->d - arg2->d == 0) {
+        return  arg1->k - arg2->k;
+    } else {
+        return arg1->d - arg2->d;
+    }
+}
+
+
+void d_path_sort( d_path_data2 * base, unsigned long max_idx) {
+    qsort(base, max_idx, sizeof(d_path_data2), compare_d_path);
+}
+
+d_path_data2 * get_dpath_idx( seq_coor_t d, seq_coor_t k, unsigned long max_idx, d_path_data2 * base) {
+    d_path_data2 d_tmp;
+    d_path_data2 *rtn;
+    d_tmp.d = d;
+    d_tmp.k = k;
+    rtn = (d_path_data2 *)  bsearch( &d_tmp, base, max_idx, sizeof(d_path_data2), compare_d_path);
+    //printf("dp %ld %ld %ld %ld %ld %ld %ld\n", (rtn)->d, (rtn)->k, (rtn)->x1, (rtn)->y1, (rtn)->x2, (rtn)->y2, (rtn)->pre_k);
+    
+    return rtn;
+
+}
+
+void print_d_path(  d_path_data2 * base, unsigned long max_idx) {
+    unsigned long idx;
+    for (idx = 0; idx < max_idx; idx++){
+        printf("dp %ld %ld %ld %ld %ld %ld %ld %ld\n",idx, (base+idx)->d, (base+idx)->k, (base+idx)->x1, (base+idx)->y1, (base+idx)->x2, (base+idx)->y2, (base+idx)->pre_k);
+    }
+}
+
 
 alignment * align(char * query_seq, seq_coor_t q_len,
                   char * target_seq, seq_coor_t t_len,
@@ -42,8 +77,11 @@ alignment * align(char * query_seq, seq_coor_t q_len,
     seq_coor_t cx, cy, nx, ny;
     seq_coor_t max_d;
     seq_coor_t band_size;
+    unsigned long d_path_idx = 0;
+    unsigned long max_idx = 0;
 
-    d_path_data * d_path;
+    d_path_data2 * d_path;
+    d_path_data2 * d_path_aux;
     path_point * aln_path;
     seq_coor_t aln_path_idx;
     alignment * align_rtn;
@@ -54,19 +92,18 @@ alignment * align(char * query_seq, seq_coor_t q_len,
     //printf("debug: %ld %ld\n", q_len, t_len);
     //printf("%s\n", query_seq);
    
-    max_d = q_len + t_len;
+    max_d = (int) (0.3*(q_len + t_len));
 
-    //band_size = max_d > 5000 ? 5000 : max_d;
-    band_size = (max_d >> 2) > 600 ? 600 : (max_d >> 2);
+    band_size = band_tolerance * 2;
 
-    V = calloc( (band_size + 1) * 2 + 1, sizeof(seq_coor_t) );
-    U = calloc( (band_size + 1) * 2 + 1, sizeof(seq_coor_t) );
+    V = calloc( max_d * 2 + 1, sizeof(seq_coor_t) );
+    U = calloc( max_d * 2 + 1, sizeof(seq_coor_t) );
     
-    k_offset = (band_size >> 1) + 1;
+    k_offset = max_d;
     
     // We should probably use hashmap to store the backtracing information to save memory allocation time
     // This O(MN) block allocation scheme is convient for now but it is slower for very long sequences
-    d_path = calloc( max_d * (band_size + 1 ) * 2 + 1, sizeof(d_path_data) );
+    d_path = calloc( max_d * (band_size + 1 ) * 2 + 1, sizeof(d_path_data2) );
     
     aln_path = calloc( q_len + t_len + 1, sizeof(path_point) );
 
@@ -83,21 +120,12 @@ alignment * align(char * query_seq, seq_coor_t q_len,
     best_m = -1;
     min_k = 0;
     max_k = 0;
-    
+    d_path_idx = 0; 
+    max_idx = 0;
     for (d = 0; d < max_d; d ++ ) {
-        max_k = max_k > max_d ? max_d : max_k;
-        min_k = min_k < -max_d ? -max_d : min_k;
-
-        if (max_k - min_k > 500) {
-            //printf("band too wide\n");
-            //fflush(stdout);
+        if (max_k - min_k > band_size) {
             break;
         }
-        if (abs(max_k) > k_offset - 1  || abs(min_k) > k_offset - 1 ) break;
-
-        //printf("d, min_k, max_k, x1, lim: %ld %ld %ld %ld %ld\n", d, min_k, max_k, band_size + max_k + k_offset, max_d * (band_size * 2 + 1) );
-        //if (d * band_size + max_k + k_offset  >=  max_d * (band_size + 1) * 2 + 1 ) break;
-        //if (d * band_size + min_k + k_offset  <  0 ) break;
  
         for (k = min_k; k <= max_k;  k += 2) {
 
@@ -109,22 +137,20 @@ alignment * align(char * query_seq, seq_coor_t q_len,
                 x = V[ k - 1 + k_offset] + 1;
             }
             y = x - k;
-            d_path[ d * band_size + k + k_offset ].x1 = x;
-            d_path[ d * band_size + k + k_offset ].y1 = y;
-
-            //printf("1 x,y,d,k = %ld %ld %ld %ld\n", x, y, d, k);
-            //printf("%c %c\n", query_seq[x], target_seq[y]);
+            d_path[d_path_idx].d = d;
+            d_path[d_path_idx].k = k;
+            d_path[d_path_idx].x1 = x;
+            d_path[d_path_idx].y1 = y;
 
             while ( x < q_len && y < t_len && query_seq[x] == target_seq[y] ){
                 x++;
                 y++;
             }
 
-            //printf("2 x,y, q_len, t_len = %ld %ld %ld %ld\n\n", x, y, q_len, t_len);
-            
-            d_path[ d * band_size + k + k_offset ].x2 = x;
-            d_path[ d * band_size + k + k_offset ].y2 = y;
-            d_path[ d * band_size + k + k_offset ].pre_k = pre_k;
+            d_path[d_path_idx].x2 = x;
+            d_path[d_path_idx].y2 = y;
+            d_path[d_path_idx].pre_k = pre_k;
+            d_path_idx ++;
 
             V[ k + k_offset ] = x;
             U[ k + k_offset ] = x + y;
@@ -135,6 +161,7 @@ alignment * align(char * query_seq, seq_coor_t q_len,
 
             if ( x >= q_len || y >= t_len) {
                 aligned = true;
+                max_idx = d_path_idx;
                 break;
             }
         }
@@ -172,18 +199,22 @@ alignment * align(char * query_seq, seq_coor_t q_len,
             align_rtn->aln_q_s = 0;
             align_rtn->aln_t_s = 0;
 
+            d_path_sort(d_path, max_idx);
+            //print_d_path(d_path, max_idx);
+
             if (get_aln_str > 0) {
                 cd = d;
                 ck = k;
                 aln_path_idx = 0;
                 while (cd >= 0 && aln_path_idx < q_len + t_len + 1) {    
-                    aln_path[aln_path_idx].x = d_path[ cd * band_size + ck + k_offset ].x2;
-                    aln_path[aln_path_idx].y = d_path[ cd * band_size + ck + k_offset ].y2;
+                    d_path_aux = (d_path_data2 *) get_dpath_idx( cd, ck, max_idx, d_path);
+                    aln_path[aln_path_idx].x = d_path_aux -> x2;
+                    aln_path[aln_path_idx].y = d_path_aux -> y2;
                     aln_path_idx ++;
-                    aln_path[aln_path_idx].x = d_path[ cd * band_size + ck + k_offset ].x1;
-                    aln_path[aln_path_idx].y = d_path[ cd * band_size + ck + k_offset ].y1;
+                    aln_path[aln_path_idx].x = d_path_aux -> x1;
+                    aln_path[aln_path_idx].y = d_path_aux -> y1;
                     aln_path_idx ++;
-                    ck = d_path[ cd * band_size + ck + k_offset ].pre_k;
+                    ck = d_path_aux -> pre_k;
                     cd -= 1;
                 }
                 aln_path_idx --;
