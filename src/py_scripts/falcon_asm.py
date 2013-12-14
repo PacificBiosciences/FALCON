@@ -612,7 +612,8 @@ def get_bundles(u_edges):
                 G.remove_node(candidate[1]) 
                 continue 
          
-        path = nx.shortest_path(G, candidate[1], candidate[2], "n_weight") 
+            path = nx.shortest_path(G, candidate[1], candidate[2], "n_weight") 
+
         if DEBUG_LOG_LEVEL > 1:
             print "X", path[0], path[-1], len(path)
         
@@ -651,7 +652,7 @@ def get_bundles(u_edges):
             if DEBUG_LOG_LEVEL > 2:
                 print "Y", path[0], path[-1], len(path)
 
-            bundle_graph, bundle_paths, bundle_graph_edges = get_bundle( path,  G, G.edges() )
+            bundle_graph, bundle_paths, bundle_graph_edges = get_bundle( path, G, G.edges() )
 
             if DEBUG_LOG_LEVEL > 2:
                 print "Z", bundle_paths[0][0], bundle_paths[0][-1]
