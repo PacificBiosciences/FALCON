@@ -16,5 +16,5 @@ falcon.so: falcon.c common.h DW_banded_2.c kmer_lookup.c
 clean:
 	rm falcon *.so
 
-all: DW_align.so kmer_lookup.so falcon.so falcon2.so
+all: DW_align.so kmer_lookup.so falcon.so
 
