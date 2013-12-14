@@ -64,7 +64,7 @@ align_tags_t * get_align_tags( char * aln_q_seq,
     j = range->s2 - 1;
     match_count = 0;
     jj = 0;
-    for (k = 0; k< 10 && k < aln_seq_len; k++) {
+    for (k = 0; k< 12 && k < aln_seq_len; k++) {
         if (aln_q_seq[k]  == aln_t_seq[k] ) {
             match_count ++;
         }
@@ -79,11 +79,11 @@ align_tags_t * get_align_tags( char * aln_q_seq,
             jj = 0;
         }
         
-        if (k < aln_seq_len - 10 && aln_q_seq[k + 10]  == aln_t_seq[k + 10] ) {
+        if (k < aln_seq_len - 12 && aln_q_seq[k + 12]  == aln_t_seq[k + 12] ) {
             match_count ++;
         }
 
-        if (k > 10 && aln_q_seq[k-10] == aln_t_seq[k-10] ) {
+        if (k > 12 && aln_q_seq[k-12] == aln_t_seq[k-12] ) {
             match_count --;
         }
 
@@ -96,7 +96,7 @@ align_tags_t * get_align_tags( char * aln_q_seq,
         //
         (tags->align_tags[k]).t_pos = j;
         (tags->align_tags[k]).delta = jj;
-        if (jj == 0 && match_count < 8) {
+        if (jj == 0 && match_count < 6) {
             (tags->align_tags[k]).q_base = '*';
         } else {
             (tags->align_tags[k]).q_base = aln_q_seq[k];
@@ -324,14 +324,14 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq, unsigned min_c
         //printf("seq_len: %ld %u\n", j, strlen(input_seq[j]));
 
         kmer_match_ptr = find_kmer_pos_for_seq(input_seq[j], strlen(input_seq[j]), K, sda_ptr, lk_ptr);
-#define INDEL_ALLOWENCE_0 3
+#define INDEL_ALLOWENCE_0 6
         //arange = find_best_aln_range(kmer_match_ptr, K, K * 8, 5);
 
         arange = find_best_aln_range(kmer_match_ptr, K, K * INDEL_ALLOWENCE_0, 5);  // narrow band to avoid aligning through big indels
 
         //printf("%ld %ld %ld %ld\n", arange->s1, arange->e1, arange->s2, arange->e2);
         //
-#define INDEL_ALLOWENCE_1 200
+#define INDEL_ALLOWENCE_1 400
 
         if (arange->e1 - arange->s1 < 100 || arange->e2 - arange->s2 < 100 ||
             abs( (arange->e1 - arange->s1 ) - (arange->e2 - arange->s2) ) > INDEL_ALLOWENCE_1) {
@@ -346,7 +346,7 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq, unsigned min_c
         //            input_seq[0]+arange->s2, arange->e2 - arange->s2 , 
         //            100, 1);
         //
-#define INDEL_ALLOWENCE_2 64
+#define INDEL_ALLOWENCE_2 150
 
         aln = align(input_seq[j]+arange->s1, arange->e1 - arange->s1 ,
                     input_seq[0]+arange->s2, arange->e2 - arange->s2 , 
