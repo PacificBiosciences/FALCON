@@ -101,7 +101,7 @@ void add_sequence ( seq_coor_t start,
                     seq_coor_t seq_len,
                     seq_addr_array sda, 
                     seq_array sa, 
-                    kmer_lookup * lk) {
+                    kmer_lookup * lk ) {
 
     seq_coor_t i;
     seq_coor_t kmer_bv;
@@ -331,7 +331,7 @@ aln_range* find_best_aln_range(kmer_match * km_ptr,
     if ( max_k_mer_bin != LONG_MAX && max_k_mer_count > count_th ) {
         for (i = 0; i <  km_ptr->count; i++ ) {
             d = (long int) (km_ptr->query_pos[i]) - (long int) (km_ptr->target_pos[i]);
-            if ( abs( ( (d - d_min)/ (long int) bin_size ) - max_k_mer_bin ) > 5 ) {
+            if ( abs( ( (d - d_min)/ (long int) bin_size ) - max_k_mer_bin ) > 10 ) {
                 continue;
             }
             if (d_count[ (d - d_min)/ (long int) bin_size ] > count_th) {
