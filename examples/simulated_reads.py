@@ -36,13 +36,34 @@ seq = seq + seq[:40000]
 s = 0
 rc_map = dict(zip("ACGT","TGCA"))
 for i in range(12000):
-    s += 2000
+    s += 1000
     if s + 40000 < len(seq):
-        subs = seq[s:s+20000]
+        subs = seq[s:s+10000]
         if hash(subs) % 2 == 0:
             subs = "".join([rc_map[c] for c in subs[::-1]])
-            print ">%04d_r" % i
+            print ">%05d_r" % i
             print subs
         else:
-            print ">%04d" % i
+            print ">%05d" % i
+            print subs
+
+f = FastaReader("DH10B.fa")
+for r in f:
+    seq = r.sequence
+    break
+seq = seq + seq[:40000] 
+s = 0
+rc_map = dict(zip("ACGT","TGCA"))
+i_map = dict(zip("ACGT","ACGT"))
+for i in range(12000):
+    s += 1000
+    if s + 40000 < len(seq):
+        subs = seq[s:s+10000]
+        if hash(subs) % 2 == 0:
+            subs = "".join([rc_map.get(c,"A") for c in subs[::-1]])
+            print ">%05d_r" % (i + 12000)
+            print subs
+        else:
+            subs = "".join([i_map.get(c,"A") for c in subs])
+            print ">%05d" % (i + 12000)
             print subs
