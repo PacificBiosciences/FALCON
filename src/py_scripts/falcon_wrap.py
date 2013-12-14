@@ -1,8 +1,11 @@
 from ctypes import *
 import sys
 from multiprocessing import Pool
+import os
+import falcon_kit
+module_path = falcon_kit.__path__[0]
 
-falcon = CDLL("./falcon.so")
+falcon = CDLL(os.path.join(module_path, "falcon.so"))
 
 falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint ]
 falcon.generate_consensus.restype = POINTER(c_char)

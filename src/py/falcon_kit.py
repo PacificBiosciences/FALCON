@@ -1,4 +1,6 @@
 from ctypes import *
+import os
+module_path = os.path.split(__file__)[0]
 
 
 seq_coor_t = c_long
@@ -20,7 +22,7 @@ class AlnRange(Structure):
                  ("s2", seq_coor_t),
                  ("e2", seq_coor_t) ]
 
-kup = CDLL("./kmer_lookup.so")
+kup = CDLL(os.path.join(module_path, "kmer_lookup.so"))
 
 kup.allocate_kmer_lookup.argtypes =  [seq_coor_t] 
 kup.allocate_kmer_lookup.restype = POINTER(KmerLookup)
@@ -73,14 +75,14 @@ class Alignment(Structure):
                  ("t_aln_str", c_char_p)]
 
 
-DWA = CDLL("./DW_align.so")
+DWA = CDLL(os.path.join(module_path, "DW_align.so"))
 DWA.align.argtypes = [ POINTER(c_char), c_long, POINTER(c_char), c_long, c_long, c_int ] 
 DWA.align.restype = POINTER(Alignment)
 DWA.free_alignment.argtypes = [POINTER(Alignment)]
 
 
 
-falcon = CDLL("./falcon.so")
+falcon = CDLL(os.path.join(module_path,"falcon.so"))
 
 falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint ]
 falcon.generate_consensus.restype = POINTER(c_char)
