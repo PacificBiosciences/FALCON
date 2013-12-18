@@ -46,6 +46,9 @@ import subprocess
 DEBUG_LOG_LEVEL = 0
 
 class SGNode(object):
+    """
+    class representing a node in the string graph
+    """
     def __init__(self, node_name):
         self.name = node_name
         self.out_edges = []
@@ -56,6 +59,9 @@ class SGNode(object):
         self.in_edges.append(in_edge)
 
 class SGEdge(object):
+    """
+    class representing an edge in the string graph
+    """
     def __init__(self, in_node, out_node):
         self.in_node = in_node
         self.out_node = out_node
@@ -64,6 +70,9 @@ class SGEdge(object):
         self.attr[attr] = value
 
 class StringGraph(object):
+    """
+    class representing the string graph
+    """
     def __init__(self):
         self.nodes = {}
         self.edges = {}
@@ -72,10 +81,16 @@ class StringGraph(object):
         self.repeat_overlap = {}
         
     def add_node(self, node_name):
+        """ 
+        add a node into the graph by given a node name
+        """
         if node_name not in self.nodes:
             self.nodes[node_name] = SGNode(node_name)
     
     def add_edge(self, in_node_name, out_node_name, **attributes):
+        """ 
+        add an edge into the graph by given a pair of nodes
+        """
         if (in_node_name, out_node_name) not in self.edges:
         
             self.add_node(in_node_name)
@@ -92,6 +107,9 @@ class StringGraph(object):
             edge.attr[k] = v
             
     def mark_tr_edges(self):
+        """
+        transitive reduction
+        """
         n_mark = self.n_mark
         e_reduce = self.e_reduce
         FUZZ = 500
@@ -113,7 +131,6 @@ class StringGraph(object):
                 n_mark[ w.name ] = "inplay"
             
             max_len = out_edges[-1].attr["length"]
-            #longest_edge = out_edges[-1]
                 
             max_len += FUZZ
             
@@ -149,56 +166,11 @@ class StringGraph(object):
                     e_reduce[ (v.name, w.name) ] = True
                 n_mark[w.name] = "vacant"
                 
-    def mark_repeat_overlap(self):
-        repeat_overlap = self.repeat_overlap
-        in_degree = {}
-        for n in self.nodes:
-            c = 0
-            for e in self.nodes[n].in_edges:
-                v = e.in_node
-                w = e.out_node
-                if self.e_reduce[(v.name, w.name)] == False:
-                    c += 1
-            in_degree[n] = c
-         
-        for e_n, e in self.edges.items():
-            v = e.in_node
-            w = e.out_node
-            if self.e_reduce[(v.name, w.name)] == False:
-                repeat_overlap[ (v.name, w.name) ] = False
-            else:
-                repeat_overlap[ (v.name, w.name) ] = True
-            
-        for n in self.nodes:
-            if len(self.nodes[n].out_edges) < 2:
-                continue
-            min_in_deg = None
-            for e in self.nodes[n].out_edges:
-                v = e.in_node
-                w = e.out_node
-                if self.e_reduce[ (v.name, w.name) ] == True:
-                    continue
-                if min_in_deg == None:
-                    min_in_deg = in_degree[w.name]
-                    continue
-                if in_degree[w.name] < min_in_deg:
-                    min_in_deg = in_degree[w.name]
-            for e in self.nodes[n].out_edges:
-                v = e.in_node
-                w = e.out_node
-                assert (v.name, w.name) in self.edges
-                if in_degree[w.name] > min_in_deg:
-                    if self.e_reduce[(v.name, w.name)] == False:
-                        repeat_overlap[ (v.name, w.name) ] = True
-                        
-                    
-        for e_n, e in self.edges.items():
-            v = e.in_node
-            w = e.out_node
-            if repeat_overlap[ (v.name, w.name) ] == True:
-                self.e_reduce[(v.name, w.name)] == True
 
     def mark_best_overlap(self):
+        """
+        find the best overlapped edges
+        """
 
         best_edges = set()
 
@@ -218,21 +190,6 @@ class StringGraph(object):
 
         if DEBUG_LOG_LEVEL > 1:
             print "X", len(best_edges)
-
-        for e_n, e in self.edges.items():
-            v = e_n[0]
-            w = e_n[1]
-            if self.e_reduce[ (v, w) ] != True:
-                if (v, w) not in best_edges:
-                    self.e_reduce[(v, w)] = True
-
-    def mark_best_overlap_2(self):
-        best_edges = set()
-        for e in self.edges:
-            v, w = e
-            if w == self.get_best_out_edge_for_node(v).out_node.name and\
-               v == self.get_best_in_edge_for_node(w).in_node.name:
-                   best_edges.add( (v, w) )
 
         for e_n, e in self.edges.items():
             v = e_n[0]
@@ -308,6 +265,17 @@ def generate_contig_from_path(sg, seqs, path):
 
 
 def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
+
+    """
+    given a string graph:sg and the sequences: seqs, write the unitig fasta file into out_fn
+    the funtion return a reduct graph representing the reduce string graph where the edges are unitigs
+    
+    some extra files generated: 
+        unit_edges.dat : an easy to parse file for unitig data
+        unit_edge_paths : the file contains the information of the path of all unitigs
+        uni_graph.gexf: the unitig graph in gexf format for visulization
+    """
+
     G = SGToNXG(sg)
     if connected_nodes != None:
         connected_nodes = set(sg.nodes)
@@ -321,7 +289,7 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
     edges_in_tigs = set()
 
     uni_edges = {}
-    path_f = open("paths","w")
+    path_f = open("unit_edge_paths","w")
     uni_edge_f = open("unit_edges.dat", "w")
     while len(sg_edges) > 0:
         v, w = sg_edges.pop()
@@ -400,6 +368,9 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
     return uni_edges
 
 def neighbor_bound(G, v, w, radius):
+    """
+    test if the node v and the node w are connected within a radius in graph G
+    """
     g1 = nx.ego_graph(G, v, radius=radius, undirected=False)
     g2 = nx.ego_graph(G, w, radius=radius, undirected=False)
     if len(set(g1.edges()) & set(g2.edges())) > 0:
@@ -409,6 +380,10 @@ def neighbor_bound(G, v, w, radius):
 
 
 def is_branch_node(G, n):
+    """
+    test whether the node n is a "branch node" which the paths from any of two of 
+    its offsprings do not intersect within a given radius
+    """
     out_edges = G.out_edges([n])
     n2 = [ e[1] for e in out_edges ]
     is_branch = False
@@ -424,13 +399,23 @@ def is_branch_node(G, n):
     return is_branch
 
 
-def get_bundle( path, u_graph, u_edges ):
+def get_bundle( path, u_graph ):
+
+    """ 
+    find a sub-graph contain the nodes between the start and the end of the path
+    inputs: 
+        u_graph : a unitig graph
+    returns:
+        bundle_graph: the whole bundle graph 
+        bundle_paths: the paths in the bundle graph 
+        sub_graph2_edges: all edges of the bundle graph
     
-    # find a sub-graph contain the nodes between the start and the end of the path
-    
+    """
+
     p_start, p_end = path[0], path[-1]
     p_nodes = set(path)
     p_edges = set(zip(path[:-1], path[1:]))
+
     u_graph_r = u_graph.reverse()
     down_path = nx.ego_graph(u_graph, p_start, radius=len(p_nodes), undirected=False)
     up_path = nx.ego_graph(u_graph_r, p_end, radius=len(p_nodes), undirected=False)
@@ -521,7 +506,6 @@ def get_bundle( path, u_graph, u_edges ):
                 new_path = path_t
 
 
-    #new_path = nx.shortest_path(sub_graph2, path[0], last_node, "n_weight")
     path = new_path
     if DEBUG_LOG_LEVEL > 1:
         print "new_path", path[0], last_node, len(sub_graph2_nodes), path
@@ -583,6 +567,11 @@ def get_bundle( path, u_graph, u_edges ):
             
 def get_bundles(u_edges):
     
+    """
+    input: all unitig edges
+    output: the assembled primary_tigs.fa and all_tigs.fa
+    """
+
     ASM_graph = nx.DiGraph()
     out_f = open("primary_tigs.fa", "w")
     main_tig_paths = open("primary_tigs_paths","w")
@@ -663,6 +652,7 @@ def get_bundles(u_edges):
         for i in range( 0, len( path ) - 1 ):
             v_n, w_n = path[i:i+2]
             new_path.append(v_n)
+            # the comment out code below might be useful for filter out some high connectivity nodes
             #if (v_n, w_n) in cmp_edges or\
             #    len(u_graph.out_edges(w_n)) > 5 or\
             #    len(u_graph.in_edges(w_n)) > 5:
@@ -680,6 +670,7 @@ def get_bundles(u_edges):
 
             if (w_n2, v_n2) in g_edges:
                 cmp_edges.add( (w_n2, v_n2) )
+
         if tail:
             new_path.append(w_n)
                 
@@ -690,7 +681,7 @@ def get_bundles(u_edges):
             if DEBUG_LOG_LEVEL > 2:
                 print "Y", path[0], path[-1], len(path)
 
-            bundle_graph, bundle_paths, bundle_graph_edges = get_bundle( path, G, G.edges() )
+            bundle_graph, bundle_paths, bundle_graph_edges = get_bundle( path, G )
 
             if DEBUG_LOG_LEVEL > 2:
                 print "Z", bundle_paths[0][0], bundle_paths[0][-1]
@@ -830,6 +821,7 @@ if __name__ == "__main__":
     read_fasta = sys.argv[2]
 
     seqs = {}
+    # load all p-reads into memory
     f = FastaReader(read_fasta)
     for r in f:
         seqs[r.name] = r.sequence.upper()
@@ -839,18 +831,29 @@ if __name__ == "__main__":
     overlap_data = []
     contained_reads = set()
     overlap_count = {}
+
+
+    # loop through the overlapping data to load the data in the a python array
+    # contained reads are identified 
+
     with open(overlap_file) as f:
         for l in f:
             l = l.strip().split()
+
+            #work around for some ill formed data recored
             if len(l) != 13:
                 continue
+            
             f_id, g_id, score, identity = l[:4]
-            if f_id == g_id:
+            if f_id == g_id:  # don't need self-self overlapping
                 continue
-            if g_id not in seqs:
+
+            if g_id not in seqs: 
                 continue
+
             if f_id not in seqs:
                 continue
+
             score = int(score)
             identity = float(identity)
             contained = l[12]
@@ -862,17 +865,20 @@ if __name__ == "__main__":
                 continue
             if contained == "none":
                 continue
-            if identity < 96:
+
+            if identity < 96: # only take record with >96% identity as overlapped reads
                 continue
             #if score > -2000:
             #    continue
             f_strain, f_start, f_end, f_len = (int(c) for c in l[4:8])
             g_strain, g_start, g_end, g_len = (int(c) for c in l[8:12])
+
+            # only used reads longer than the 4kb for assembly
             if f_len < 4000: continue
             if g_len < 4000: continue
             
             # double check for proper overlap
-            if f_start > 24 and f_len - f_end > 24:
+            if f_start > 24 and f_len - f_end > 24:  # allow 24 base tolerance on both sides of the overlapping
                 continue
             
             if g_start > 24 and g_len - g_end > 24:
@@ -909,14 +915,16 @@ if __name__ == "__main__":
         overlap_pair = [f_id, g_id]
         overlap_pair.sort()
         overlap_pair = tuple( overlap_pair )
-        if overlap_pair in overlap_set:
+        if overlap_pair in overlap_set:  # don't allow duplicated records
             continue
         else:
             overlap_set.add(overlap_pair)
 
         
-        if g_s == 1:
+        if g_s == 1: # revered alignment, swapping the begin and end coordinates
             g_b, g_e = g_e, g_b
+        
+        # build the string graph edges for each overlap
         if f_b > 24:
             if g_b < g_e:
                 """
@@ -979,26 +987,26 @@ if __name__ == "__main__":
                 sg.add_edge( "%s:B" % g_id, "%s:E" % f_id, label = "%s:%d-%d" % (f_id, f_e, f_l), 
                                                            length = abs(f_e - f_l),
                                                            score = -score)
-        
-    sg.mark_tr_edges()
+    
+
+    sg.mark_tr_edges() # mark those edges that transitive redundant
 
     if DEBUG_LOG_LEVEL > 1:
         print sum( [1 for c in sg.e_reduce.values() if c == True] )
         print sum( [1 for c in sg.e_reduce.values() if c == False] )
 
     G = SGToNXG(sg)
-    nx.write_adjlist(G, "full_string_graph.adj")
-    sg.mark_best_overlap()
+    nx.write_adjlist(G, "full_string_graph.adj") # write out the whole adjacent list of the graph
+    sg.mark_best_overlap() # mark those edges that are best overlap edges
 
     if DEBUG_LOG_LEVEL > 1:
         print sum( [1 for c in sg.e_reduce.values() if c == False] )
 
 
     G = SGToNXG(sg)
-    nx.write_gexf(G, "string_graph.gexf")
-    nx.write_adjlist(G, "string_graph.adj")
+    nx.write_gexf(G, "string_graph.gexf") # output the raw string string graph for visuliation
+    nx.write_adjlist(G, "string_graph.adj") # write out the whole adjacent list of the string graph
 
-    #generate_max_contig(sg, seqs, out_fn="max_tigs.fa")
-    u_edges = generate_unitig(sg, seqs, out_fn = "unitgs.fa")
-    ASM_graph = get_bundles(u_edges )
+    u_edges = generate_unitig(sg, seqs, out_fn = "unitgs.fa") # reduct to string graph into unitig graph
+    ASM_graph = get_bundles(u_edges )  # get the assembly
     nx.write_gexf(ASM_graph, "asm_graph.gexf")
