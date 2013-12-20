@@ -24,6 +24,7 @@ setup(name='falcon_kit',
                  "src/py_scripts/falcon_overlap2.py",
                  "src/py_scripts/falcon_fixasm.py",
                  "src/py_scripts/falcon_wrap.py",
+                 "src/py_scripts/get_rdata.py",
                  "src/py_scripts/remove_dup_ctg.py"],
       zip_safe = False,
       install_requires=[ "pbcore >= 0.6.3", "networkx >= 1.7" ]
