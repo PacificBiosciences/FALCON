@@ -648,7 +648,10 @@ def get_bundles(u_edges):
 
         if len(candidates) == 0:
             print "no more candiate", len(G.edges()), len(G.nodes())
-            path = G.edges(n)[0] 
+            if len(G.edges()) > 0:
+                path = G.edges()[0] 
+            else:
+                break
         else:
             candidates.sort() 
             
