@@ -1,10 +1,10 @@
 Falcon
 ===========
 
-Falcon: a set of tools for fast aligning long read for consensus and assembly
+Falcon: a set of tools for fast aligning long reads for consensus and assembly
 
 The Falcon tool kit is a set of simple code collection which I use for studying
-efficient assembly algorithm for haploid and diploid genome. It has some back-end 
+efficient assembly algorithm for haploid and diploid genomes. It has some back-end 
 code implemented in C for speed and some simple front-end written in Python for
 convenience. 
 
@@ -99,6 +99,9 @@ meant to be used by novice people. If you like to try it out, you will very
 likely to know more detail about it and be able to tweak the code to adapt it
 to your computation cluster.  I will hope that I can provide more details and
 clean the code up a little in the future so it can be useful for more people. 
+
+The principle of the layout algorithm is also avaiable at 
+https://speakerdeck.com/jchin/string-graph-assembly-for-diploid-genomes-with-long-reads
 
 ABOUT THE LICENSE
 ------------------
