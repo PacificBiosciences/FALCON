@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 #################################################################################$$
 # Copyright (c) 2011-2014, Pacific Biosciences of California, Inc.
