@@ -60,7 +60,6 @@ def get_consensus( c_input ):
     del seqs_ptr
     return consensus, seed_id
 
-exe_pool = Pool(24)
 
 
 def get_seq_data(min_cov = 8, K = 8):
@@ -86,8 +85,14 @@ def get_seq_data(min_cov = 8, K = 8):
                 #seqs_data.append( (seqs, seed_id) )
                 break
 
-for res in exe_pool.imap(get_consensus, get_seq_data()):
-    cns, seed_id = res
-    if len(cns) > 500:
-        print ">"+seed_id
-        print cns
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description='a simple multi-processor consensus sequence generator')
+    parser.add_argument('--n_core', type=int, default=4,
+                        help='number of processes used for generating consensus')
+    exe_pool = Pool(args.n_core)
+    for res in exe_pool.imap(get_consensus, get_seq_data()):
+        cns, seed_id = res
+        if len(cns) > 500:
+            print ">"+seed_id
+            print cns
