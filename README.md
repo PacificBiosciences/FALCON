@@ -8,6 +8,10 @@ efficient assembly algorithm for haploid and diploid genomes. It has some back-e
 code implemented in C for speed and some simple front-end written in Python for
 convenience. 
 
+Please take a look at the `readme.md` file inside the `examples` directory to see 
+an  example getting an assembly using `HBAR-DTK` + `Falcon` on Amazon EC2 with 
+a `StarCluster` setup . If any one knows anything compatible to `StarCluster` for 
+Google Compute Engine, please let me know. I can build a VM there too.
 
 FILES
 -----
