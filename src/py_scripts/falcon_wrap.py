@@ -88,8 +88,9 @@ def get_seq_data(min_cov = 8, K = 8):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='a simple multi-processor consensus sequence generator')
-    parser.add_argument('--n_core', type=int, default=4,
+    parser.add_argument('--n_core', type=int, default=24,
                         help='number of processes used for generating consensus')
+    args = parser.parse_args()
     exe_pool = Pool(args.n_core)
     for res in exe_pool.imap(get_consensus, get_seq_data()):
         cns, seed_id = res
