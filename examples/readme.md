@@ -55,7 +55,7 @@ The consensus result is in `/mnt/consensus.fasta`. Since we did not do any
 consensus after the unitig step. One more run of quiver consensus may further
 improve the final assembly accuracy.
 
-8. A yeast (S. cerevisiae W303) data is also included in the AMI. One can try
+8. A yeast (S. cerevisiae W303) data set is also included in the AMI. One can try
 to assemble it with a larger cluster setting.
 
 --
