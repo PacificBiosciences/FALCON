@@ -1,7 +1,12 @@
+# This script does the assembly and generate the quiver consensus after one gets preassembled reads
+# Modification will be needed for larger genome and different computational cluster setup
+
+# It should be run within the assembly working directory
+
 mkdir 3-asm-falcon/
 cd 3-asm-falcon/
-cat ../2-preads-falcon/pread_00000.fa > preads.fa
-falcon_overlap.py  --min_len 10000 --n_core 10 --d_core 1 preads.fa > preads.ovlp
+cat ../2-preads-falcon/pread_*.fa > preads.fa
+falcon_overlap.py  --min_len 8000 --n_core 24 --d_core 1 preads.fa > preads.ovlp
 falcon_asm.py preads.ovlp preads.fa
 falcon_fixasm.py
 
