@@ -51,7 +51,6 @@ consensus.
     cp /home/Ecoli_ASM/run_asm.sh .
     bash run_asm.sh
 ```
-
 The consensus result is in `/mnt/consensus.fasta`. Since we did not do any
 consensus after the unitig step. One more run of quiver consensus may further
 improve the final assembly accuracy.
