@@ -31,7 +31,7 @@ setup a `falcon` cluster
     bash sge_setup.sh
 ```
 
-6. There is alreay an existing assembly results iVn `/home/Ecoli_ASM/`. Here I
+6. There is alreay an existing assembly results in `/home/Ecoli_ASM/`. Here I
 show how to reproduce it. First, create a new assembly working directory in
 `/mnt`, set it up and run HBAR_WF3.py to get preassembled reads
 ```
@@ -44,7 +44,7 @@ show how to reproduce it. First, create a new assembly working directory in
     HBAR_WF3.py HBAR.cfg
 ```
 
-7. The next part of the assembly is not started automatically yet. The detail
+7. The next part of the assembly does not start automatically yet. The detail
 steps are in the `run_asm.sh` script and one can use to get contigs and
 consensus. 
 ```
