@@ -7,7 +7,7 @@ Running an Amazon EC2 instance that has HBAR-DTK + Falcon pre-installed
     cd StarCluster
     python setup.py install #better in virtualenv
 ```
-The stable versio nof StarCluster does not support the `c3` instance.  For
+The stable version of StarCluster does not support the `c3` instance.  For
 assembly, using one node of `c3.8xlarge` instance is more convenient. In my
 test, I can finish single E. coli genome within almost one hour. Namely, one can
 assembly a bacteria genome in less then 5 bucks.
