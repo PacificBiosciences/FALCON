@@ -1,5 +1,5 @@
 Running an Amazon EC2 instance that has HBAR-DTK + Falcon pre-installed
-================================================================
+=======================================================================
 
 1. Install the latest verison of StarCluster
 ```
