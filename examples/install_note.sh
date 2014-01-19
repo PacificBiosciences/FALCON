@@ -1,5 +1,9 @@
-mkdir HBAR_ENV
-export HBAR_HOME=~/HBAR_ENV/
+
+# This is the script that will build everything needed to generate an assembly 
+# on top of the StarCluster Ubuntu AMI 
+
+mkdir -p $HOME/HBAR_ENV
+export HBAR_HOME=$HOME/HBAR_ENV/
 sudo apt-get install python-virtualenv
 virtualenv -p /usr/bin/python2.7 $HBAR_HOME
 cd $HBAR_HOME
