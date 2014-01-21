@@ -59,7 +59,7 @@ improve the final assembly accuracy.
 to assemble it with a larger cluster setting.
 
 
-9. Here is the results of a timing test:
+9. Here is the result of a timing test:
 ```
     (HBAR_ENV)root@master:/mnt/test_asm# time HBAR_WF3.py HBAR.cfg
     
