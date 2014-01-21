@@ -84,7 +84,7 @@ to assemble it with a larger cluster setting.
     user    244m44.322s
     sys     2m7.032s
 ```
-For a better results, one might run quiver twice. It is possible to do the whole assembly within one hour (~ 26 + 13 * 2 = 52 minutes). With the overhead on setting up, file transfer, etc., one can assembly a bacteria genome in EC2 less than 5 bucks in principle.
+For better results, one might run `quiver` twice. It is possible to get the whole assembly within one hour (~ 26 + 13 * 2 = 52 minutes). With the overhead on setting up, file transfer, etc., one can assembly a bacteria genome in EC2 less than 5 bucks in principle.
 
 
 --
