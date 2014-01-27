@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 
 #################################################################################$$
 # Copyright (c) 2011-2014, Pacific Biosciences of California, Inc.
@@ -47,7 +47,7 @@ from multiprocessing import sharedctypes
 from ctypes import *
 
 global sa_ptr, sda_ptr, lk_ptr
-global q_seqs, seqs
+global q_seqs,t_seqs, seqs
 RC_MAP = dict( zip("ACGTacgtNn-", "TGCAtgcaNn-") )
 
 def get_ovelap_alignment(seq1, seq0):
@@ -149,7 +149,7 @@ def get_ovelap_alignment(seq1, seq0):
 
 def get_candidate_aln(hit_input):
 
-    global q_seqs
+    global q_seqs, seqs, t_seqs
     q_name, hit_index_f, hit_index_r = hit_input
     q_seq = q_seqs[q_name]
 
@@ -165,12 +165,14 @@ def get_candidate_aln(hit_input):
         if hit_id in targets or hit_id == q_name:
             continue
         targets.add(hit_id)
-        seq1, seq0 = q_seq, q_seqs[hit_id]
+        seq1, seq0 = q_seq, t_seqs[hit_id]
         aln_data = get_ovelap_alignment(seq1, seq0)
         #rtn = get_alignment(seq1, seq0)
         if rtn != None:
-            
+             
             s1, e1, s2, e2, aln_size, aln_dist, c_status = aln_data
+            if c_status == "none":
+                continue
             #print >>f, name, 0, s1, e1, len(seq1), hit_id, 0, s2, e2, len(seq0),  aln_size, aln_dist
             rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
                           0, s2, e2, len(seq0), 
@@ -188,11 +190,13 @@ def get_candidate_aln(hit_input):
         if hit_id in targets or hit_id == q_name:
             continue
         targets.add(hit_id)
-        seq1, seq0 = r_q_seq, q_seqs[hit_id]
+        seq1, seq0 = r_q_seq, t_seqs[hit_id]
         aln_data = get_ovelap_alignment(seq1, seq0)
         #rtn = get_alignment(seq1, seq0)
         if rtn != None:
             s1, e1, s2, e2, aln_size, aln_dist, c_status = aln_data
+            if c_status == "none":
+                continue
             #print >>f, name, 1, s1, e1, len(seq1), hit_id, 0, s2, e2, len(seq0),  aln_size, aln_dist
             rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
                           0, s2, e2, len(seq0), 
@@ -285,6 +289,7 @@ if __name__ == "__main__":
 
     seqs = []
     q_seqs = {}
+    t_seqs = {}
     f = FastaReader(args.target_fa) # take one commnad line argument of the input fasta file name
 
     if  args.min_len < 1200:
@@ -295,8 +300,13 @@ if __name__ == "__main__":
             continue
         seq = r.sequence.upper()
         seqs.append( (r.name, seq[:500], seq[-500:] ) )
+        t_seqs[r.name] = seq
 
     f = FastaReader(args.query_fa) # take one commnad line argument of the input fasta file name
+    for r in f:
+        if len(r.sequence) < args.min_len:
+            continue
+        seq = r.sequence.upper()
         q_seqs[r.name] = seq
 
 
