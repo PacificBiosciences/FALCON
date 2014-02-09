@@ -116,6 +116,7 @@ typedef struct {
     seq_coor_t e1;
     seq_coor_t s2;
     seq_coor_t e2;
+    long int score;
 } aln_range;
 
 

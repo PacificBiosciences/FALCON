@@ -59,7 +59,8 @@ class AlnRange(Structure):
     _fields_ = [ ("s1", seq_coor_t),
                  ("e1", seq_coor_t),
                  ("s2", seq_coor_t),
-                 ("e2", seq_coor_t) ]
+                 ("e2", seq_coor_t),
+                 ("score", c_long) ]
 
 kup = CDLL(os.path.join(module_path, "kmer_lookup.so"))
 

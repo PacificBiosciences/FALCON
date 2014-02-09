@@ -386,6 +386,7 @@ aln_range* find_best_aln_range(kmer_match * km_ptr,
         arange->e1 = q_coor[0];
         arange->s2 = t_coor[0];
         arange->e2 = t_coor[0];
+        arange->score = 0;
 
         max_score = 0;
         cur_score = 0;
@@ -403,6 +404,7 @@ aln_range* find_best_aln_range(kmer_match * km_ptr,
                 arange->e1 = q_coor[i];
                 arange->e2 = t_coor[i];
                 max_score = cur_score;
+                arange->score = max_score;
                 //printf("%lu %lu %lu %lu\n", arange.s1, arange.e1, arange.s2, arange.e2);
             }
         }
@@ -412,6 +414,7 @@ aln_range* find_best_aln_range(kmer_match * km_ptr,
         arange->e1 = 0;
         arange->s2 = 0;
         arange->e2 = 0;
+        arange->score = 0;
     }
 
     // printf("free\n");
