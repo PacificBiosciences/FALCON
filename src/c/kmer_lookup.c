@@ -550,7 +550,7 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
 
     }
     arange->score = max_hit_count;
-    arange->e1 = km_ptr->query_pos[max_hit_idx];
+    arange->s1 = km_ptr->query_pos[max_hit_idx];
     arange->e2 = km_ptr->target_pos[max_hit_idx];
     i = max_hit_idx;
     while (last_hit[i] != -1) {
