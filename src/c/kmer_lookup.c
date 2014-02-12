@@ -457,7 +457,6 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
 
     qsort(d_coor, km_ptr->count, sizeof(seq_coor_t), compare_seq_coor);
 
-    printf("X1\n");
 
     s = 0;
     e = 0;
@@ -485,9 +484,6 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
             break;
         }
     }
-
-    printf("X2\n");
-    printf("%ld %ld %ld %ld %ld\n", s, e, max_s, max_e, max_span);
 
 
     if (d_s == -1 || d_e == -1 || max_e - max_s < 32) {
@@ -527,13 +523,10 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
             py = km_ptr->target_pos[j];
             cx = km_ptr->query_pos[i];
             cy = km_ptr->target_pos[i];
-            //printf("X3.0: %ld %ld %ld %ld %ld\n", px, py, cx, cy,  cx - px + cy - py);
             if (cx - px > 256) break;
             if (cy > py && cx - px + cy - py < max_d) {
-                //printf("X3.1: %ld %ld %ld %ld %ld\n", px, py, cx, cy,  cx - px + cy - py);
                 max_d = cx - px + cy - py;
                 candidate_idx = j;
-                //printf("X3.2: %ld %ld %ld\n", i, j, candidate_idx);
             }
             j--;
         }
@@ -550,14 +543,14 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
 
     }
     arange->score = max_hit_count;
-    arange->s1 = km_ptr->query_pos[max_hit_idx];
+    arange->e1 = km_ptr->query_pos[max_hit_idx];
     arange->e2 = km_ptr->target_pos[max_hit_idx];
     i = max_hit_idx;
     while (last_hit[i] != -1) {
         i = last_hit[i];
     }
     arange->s1 = km_ptr->query_pos[i];
-    arange->e1 = km_ptr->target_pos[i];
+    arange->s2 = km_ptr->target_pos[i];
 
     free(d_coor);
     free(last_hit);
