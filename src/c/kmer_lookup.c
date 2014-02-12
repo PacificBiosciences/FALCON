@@ -61,6 +61,12 @@
 
 const unsigned int KMERMATCHINC = 10000;
 
+int compare_seq_coor(const void * a, const void * b) {
+    const seq_coor_t * arg1 = a;
+    const seq_coor_t * arg2 = b;
+    return  (* arg1) - (* arg2);
+}
+
 
 kmer_lookup * allocate_kmer_lookup ( seq_coor_t size ) {
     kmer_lookup * kl;
@@ -422,6 +428,140 @@ aln_range* find_best_aln_range(kmer_match * km_ptr,
     free(d_count);
     free(q_coor);
     free(t_coor);
+    return arange;
+}
+
+aln_range* find_best_aln_range2(kmer_match * km_ptr, 
+                                seq_coor_t K, 
+                                seq_coor_t bin_width, 
+                                seq_coor_t count_th) {
+
+    seq_coor_t * d_coor;
+    seq_coor_t * hit_count;
+    seq_coor_t * last_hit;
+    seq_coor_t s, e, max_s, max_e, max_span, d_s, d_e, delta, d_len;
+    seq_coor_t px, py, cx, cy;
+    seq_coor_t max_hit_idx, max_hit_count;
+    seq_coor_t i, j;
+    seq_coor_t candidate_idx, max_d, d;
+
+    aln_range * arange;
+
+    arange = calloc(1 , sizeof(aln_range));
+
+    d_coor = calloc( km_ptr->count, sizeof(seq_coor_t) );
+
+    for (i = 0; i <  km_ptr->count; i++ ) {
+        d_coor[i] = km_ptr->query_pos[i] - km_ptr->target_pos[i];
+    }
+
+    qsort(d_coor, km_ptr->count, sizeof(seq_coor_t), compare_seq_coor);
+
+    printf("X1\n");
+
+    s = 0;
+    e = 0;
+    max_s = -1;
+    max_e = -1;
+    max_span = -1;
+    delta = 512;
+    d_len =  km_ptr->count;
+    d_s = -1;
+    d_e = -1;
+    while (1) {
+        d_s = d_coor[s];
+        d_e = d_coor[e];
+        while (d_e < d_s + delta && e < d_len-1) {
+            e += 1;
+            d_e = d_coor[e];
+        }
+        if ( max_span == -1 || e - s > max_span ) {
+            max_span = e - s;
+            max_s = s;
+            max_e = e;
+        }
+        s += 1;
+        if (s == d_len || e == d_len) {
+            break;
+        }
+    }
+
+    printf("X2\n");
+    printf("%ld %ld %ld %ld %ld\n", s, e, max_s, max_e, max_span);
+
+
+    if (d_s == -1 || d_e == -1 || max_e - max_s < 32) {
+        arange->s1 = 0;
+        arange->e1 = 0;
+        arange->s2 = 0;
+        arange->e2 = 0;
+        arange->score = 0;
+        free(d_coor);
+        return arange;
+    }
+
+    last_hit = calloc( km_ptr->count, sizeof(seq_coor_t) );
+    hit_count = calloc( km_ptr->count, sizeof(seq_coor_t) );
+
+    for (i = 0; i <  km_ptr->count; i++ ) {
+        last_hit[i] = -1;
+        hit_count[i] = 0;
+    }
+    max_hit_idx = -1;
+    max_hit_count = 0;
+    for (i = 0; i < km_ptr->count; i ++)  {
+        d = km_ptr->query_pos[i] - km_ptr->target_pos[i];
+        if ( d < d_coor[max_s] || d > d_coor[max_e] ) continue;
+
+        j = i - 1;
+        candidate_idx = -1;
+        max_d = 512 * 2;
+        while (1) {
+            if ( j < 0 ) break;
+            d = km_ptr->query_pos[j] - km_ptr->target_pos[j];
+            if ( d < d_coor[max_s] || d > d_coor[max_e] ) {
+                j--;
+                continue;
+            }
+            px = km_ptr->query_pos[j];
+            py = km_ptr->target_pos[j];
+            cx = km_ptr->query_pos[i];
+            cy = km_ptr->target_pos[i];
+            //printf("X3.0: %ld %ld %ld %ld %ld\n", px, py, cx, cy,  cx - px + cy - py);
+            if (cx - px > 256) break;
+            if (cy > py && cx - px + cy - py < max_d) {
+                //printf("X3.1: %ld %ld %ld %ld %ld\n", px, py, cx, cy,  cx - px + cy - py);
+                max_d = cx - px + cy - py;
+                candidate_idx = j;
+                //printf("X3.2: %ld %ld %ld\n", i, j, candidate_idx);
+            }
+            j--;
+        }
+        if (candidate_idx != -1) {
+            last_hit[i] = candidate_idx;
+            hit_count[i] = hit_count[candidate_idx] + 1;
+        } else {
+            hit_count[i] ++;
+        }
+        if (hit_count[i] > max_hit_count) {
+            max_hit_count = hit_count[i];
+            max_hit_idx = i;
+        }
+
+    }
+    arange->score = max_hit_count;
+    arange->e1 = km_ptr->query_pos[max_hit_idx];
+    arange->e2 = km_ptr->target_pos[max_hit_idx];
+    i = max_hit_idx;
+    while (last_hit[i] != -1) {
+        i = last_hit[i];
+    }
+    arange->s1 = km_ptr->query_pos[i];
+    arange->e1 = km_ptr->target_pos[i];
+
+    free(d_coor);
+    free(last_hit);
+    free(hit_count);
     return arange;
 }
 

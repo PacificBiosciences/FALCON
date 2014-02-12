@@ -89,6 +89,8 @@ kup.free_kmer_match.argtypes = [ POINTER(KmerMatch) ]
 
 kup.find_best_aln_range.argtypes = [POINTER(KmerMatch), seq_coor_t, seq_coor_t, seq_coor_t]
 kup.find_best_aln_range.restype = POINTER(AlnRange)
+kup.find_best_aln_range2.argtypes = [POINTER(KmerMatch), seq_coor_t, seq_coor_t, seq_coor_t]
+kup.find_best_aln_range2.restype = POINTER(AlnRange)
 kup.free_aln_range.argtypes = [POINTER(AlnRange)]
 
 
