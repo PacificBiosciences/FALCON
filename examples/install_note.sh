@@ -1,9 +1,8 @@
-
 # This is the script that will build everything needed to generate an assembly 
 # on top of the StarCluster Ubuntu AMI 
-
-mkdir -p $HOME/HBAR_ENV
-export HBAR_HOME=$HOME/HBAR_ENV/
+HBAR_ROOT=/home
+mkdir -p $HBAR_ROOT/HBAR_ENV
+export HBAR_HOME=$HBAR_ROOT/HBAR_ENV/
 sudo apt-get install python-virtualenv
 virtualenv -p /usr/bin/python2.7 $HBAR_HOME
 cd $HBAR_HOME
@@ -46,24 +45,24 @@ cd ..
 
 
 wget http://downloads.sourceforge.net/project/boost/boost/1.47.0/boost_1_47_0.tar.gz
-tar zxvf boost_1_47_0.tar.gz 
+tar zxvf boost_1_47_0.tar.gz
 cd boost_1_47_0/
-bash bootstrap.sh 
-./b2 install -j 24 --prefix=/home/HBAR_ENV/boost
+bash bootstrap.sh
+./b2 install -j 24 --prefix=$HBAR_ROOT/HBAR_ENV/boost
 cd ..
 
 sudo apt-get install libpcre3 libpcre3-dev
 wget http://downloads.sourceforge.net/project/swig/swig/swig-2.0.11/swig-2.0.11.tar.gz
 tar zxvf swig-2.0.11.tar.gz
 cd swig-2.0.11
-./configure --prefix=/home/HBAR_ENV
+./configure --prefix=$HBAR_ROOT/HBAR_ENV
 make
 make install
 cd ..
 
 git clone https://github.com/PacificBiosciences/ConsensusCore.git
 cd ConsensusCore/
-python setup.py install --swig=/home/HBAR_ENV/bin/swig --boost=/home/HBAR_ENV/boost/include/
+python setup.py install --swig=$HBAR_ROOT/HBAR_ENV/bin/swig --boost=$HBAR_ROOT/HBAR_ENV/boost/include/
 cd ..
 
 pip install git+https://github.com/PacificBiosciences/GenomicConsensus.git#GenomicConsensus
@@ -78,6 +77,7 @@ export PATH=$PATH:/home/HBAR_ENV/MUMmer3.23
 
 
 wget http://downloads.sourceforge.net/project/samtools/samtools/0.1.19/samtools-0.1.19.tar.bz2
+tar jxvf samtools-0.1.19.tar.bz2
 cd samtools-0.1.19
 make
 cp samtools ../bin
