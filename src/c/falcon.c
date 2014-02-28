@@ -337,6 +337,7 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq, unsigned min_c
     seq_array sa_ptr;
     seq_addr_array sda_ptr;
     kmer_match * kmer_match_ptr;
+    aln_range * arange_;
     aln_range * arange;
     alignment * aln;
     align_tags_t * tags;
@@ -362,12 +363,15 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq, unsigned min_c
 
         kmer_match_ptr = find_kmer_pos_for_seq(input_seq[j], strlen(input_seq[j]), K, sda_ptr, lk_ptr);
 #define INDEL_ALLOWENCE_0 6
-        //arange = find_best_aln_range(kmer_match_ptr, K, K * 8, 5);
+
+        //arange_ = find_best_aln_range(kmer_match_ptr, K, K * INDEL_ALLOWENCE_0, 5);  // narrow band to avoid aligning through big indels
+
+        //printf("1:%ld %ld %ld %ld\n", arange_->s1, arange_->e1, arange_->s2, arange_->e2);
 
         arange = find_best_aln_range(kmer_match_ptr, K, K * INDEL_ALLOWENCE_0, 5);  // narrow band to avoid aligning through big indels
 
-        //printf("%ld %ld %ld %ld\n", arange->s1, arange->e1, arange->s2, arange->e2);
-        //
+        //printf("2:%ld %ld %ld %ld\n\n", arange->s1, arange->e1, arange->s2, arange->e2);
+        
 #define INDEL_ALLOWENCE_1 400
 
         if (arange->e1 - arange->s1 < 100 || arange->e2 - arange->s2 < 100 ||

@@ -439,6 +439,7 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
     seq_coor_t * d_coor;
     seq_coor_t * hit_count;
     seq_coor_t * last_hit;
+    seq_coor_t max_q, max_t;
     seq_coor_t s, e, max_s, max_e, max_span, d_s, d_e, delta, d_len;
     seq_coor_t px, py, cx, cy;
     seq_coor_t max_hit_idx, max_hit_count;
@@ -451,8 +452,14 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
 
     d_coor = calloc( km_ptr->count, sizeof(seq_coor_t) );
 
+    max_q = -1;
+    max_t = -1;
+
     for (i = 0; i <  km_ptr->count; i++ ) {
         d_coor[i] = km_ptr->query_pos[i] - km_ptr->target_pos[i];
+        max_q = max_q > km_ptr->query_pos[i] ? max_q : km_ptr->query_pos[i];
+        max_t = max_t > km_ptr->target_pos[i] ? max_q : km_ptr->target_pos[i];
+
     }
 
     qsort(d_coor, km_ptr->count, sizeof(seq_coor_t), compare_seq_coor);
@@ -463,7 +470,7 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
     max_s = -1;
     max_e = -1;
     max_span = -1;
-    delta = 512;
+    delta = (long int) ( 0.02 * ( max_q + max_t ) );
     d_len =  km_ptr->count;
     d_s = -1;
     d_e = -1;
@@ -485,8 +492,7 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
         }
     }
 
-
-    if (d_s == -1 || d_e == -1 || max_e - max_s < 32) {
+    if (max_s == -1 || max_e == -1 || max_e - max_s < 32) {
         arange->s1 = 0;
         arange->e1 = 0;
         arange->s2 = 0;
@@ -506,24 +512,24 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
     max_hit_idx = -1;
     max_hit_count = 0;
     for (i = 0; i < km_ptr->count; i ++)  {
-        d = km_ptr->query_pos[i] - km_ptr->target_pos[i];
+        cx = km_ptr->query_pos[i];
+        cy = km_ptr->target_pos[i];
+        d = cx - cy; 
         if ( d < d_coor[max_s] || d > d_coor[max_e] ) continue;
 
         j = i - 1;
         candidate_idx = -1;
-        max_d = 512 * 2;
+        max_d = 50000;
         while (1) {
             if ( j < 0 ) break;
-            d = km_ptr->query_pos[j] - km_ptr->target_pos[j];
+            px = km_ptr->query_pos[j];
+            py = km_ptr->target_pos[j];
+            d = px - py;
             if ( d < d_coor[max_s] || d > d_coor[max_e] ) {
                 j--;
                 continue;
             }
-            px = km_ptr->query_pos[j];
-            py = km_ptr->target_pos[j];
-            cx = km_ptr->query_pos[i];
-            cy = km_ptr->target_pos[i];
-            if (cx - px > 256) break;
+            if (cx - px > 512) break;
             if (cy > py && cx - px + cy - py < max_d) {
                 max_d = cx - px + cy - py;
                 candidate_idx = j;
