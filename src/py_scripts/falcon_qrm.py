@@ -174,6 +174,8 @@ def get_candidate_aln(hit_input):
                 continue
             if aln_dist - aln_size > -1000:
                 continue
+            if (100 - 100.0*aln_dist/(aln_size+1)) < 30:
+                continue
             target_count[hit_id] += 1
             total_hit += 1
             rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
@@ -215,6 +217,8 @@ def get_candidate_aln(hit_input):
             if c_status == "none":
                 continue
             if aln_dist - aln_size > -1000:
+                continue
+            if (100 - 100.0*aln_dist/(aln_size+1)) < 30:
                 continue
             target_count[hit_id] += 1
             total_hit += 1

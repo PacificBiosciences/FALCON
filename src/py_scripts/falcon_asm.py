@@ -106,7 +106,46 @@ class StringGraph(object):
         edge =  self.edges[ (in_node_name, out_node_name) ]
         for k, v in attributes.items():
             edge.attr[k] = v
-            
+
+    def mark_chimer_edge(self):
+
+        for e in self.edges:
+            self.e_reduce[e] = False
+
+        for e_n, e in self.edges.items():
+            v = e_n[0]
+            w = e_n[1]
+            overlap_count = 0
+            for w_out_e in self.nodes[w].out_edges:
+                w_out_n = w_out_e.out_node.name
+                if (v, w_out_n) in self.edges:
+                    overlap_count += 1
+            for v_in_e in self.nodes[v].in_edges:
+                v_in_n = v_in_e.in_node.name
+                if (v_in_n, w) in self.edges:
+                    overlap_count += 1
+            if self.e_reduce[ (v, w) ] != True:
+                if overlap_count == 0:
+                    print "XXX: chimer edge %s %s removed" % (v, w)
+                    self.e_reduce[(v, w)] = True
+
+
+    def mark_spur_edge(self):
+
+        for e_n, e in self.edges.items():
+            v = e_n[0]
+            w = e_n[1]
+            overlap_count = 0
+            if len(self.nodes[v].out_edges) > 0 and len(self.nodes[w].out_edges) == 0:
+                if self.e_reduce[ (v, w) ] != True:
+                        print "XXX: spur edge %s %s removed" % (v, w)
+                        self.e_reduce[(v, w)] = True
+            if len(self.nodes[w].in_edges) > 0 and len(self.nodes[v].in_edges) == 0:
+                if self.e_reduce[ (v, w) ] != True:
+                        print "XXX: spur edge %s %s removed" % (v, w)
+                        self.e_reduce[(v, w)] = True
+
+
     def mark_tr_edges(self):
         """
         transitive reduction
@@ -116,8 +155,6 @@ class StringGraph(object):
         FUZZ = 500
         for n in self.nodes:
             n_mark[n] = "vacant"
-        for e in self.edges:
-            e_reduce[e] = False
     
         for n_name, node in self.nodes.items():
 
@@ -992,7 +1029,8 @@ if __name__ == "__main__":
                                                            length = abs(f_e - f_l),
                                                            score = -score)
     
-
+    sg.mark_chimer_edge()
+    sg.mark_spur_edge()
     sg.mark_tr_edges() # mark those edges that transitive redundant
 
     if DEBUG_LOG_LEVEL > 1:
