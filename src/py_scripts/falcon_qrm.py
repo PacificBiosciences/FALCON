@@ -103,32 +103,19 @@ def get_alignment(seq1, seq0):
 
     aln_size = 1
     if e1 - s1 > 500 and (1.0*(e0 - s0)/len_0 > 0.25 or s1 < 500 or len_1 - s1 < 500) :
-        #alignment = DWA.align(seq1[s1:e1], e1-s1,
-        #                      seq0[s0:e0], e0-s0,
-        #                      1000, 0)
-        #print seq1[s1:e1]
-        #print seq0[s2:e2]
-        #if alignment[0].aln_str_size > 500:
-
         aln_size = max( e1-s1, e0-s0 )
-        aln_dist = km_score * K
+        aln_hit_score = km_score * K
         aln_q_s = s1
         aln_q_e = e1
         aln_t_s = s0
         aln_t_e = e0
-        #assert aln_q_e- aln_q_s <= alignment[0].aln_str_size or aln_t_e- aln_t_s <= alignment[0].aln_str_size
-        #aln_str1 = alignment[0].q_aln_str
-        #aln_str0 = alignment[0].t_aln_str
-        #print aln_str1
-        #print aln_str0
-        #DWA.free_alignment(alignment)
-        
+
     kup.free_seq_addr_array(sda_ptr)
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
 
     if e1 - s1 > 500 and aln_size > 500 and 1.0*(aln_t_e-aln_t_s) / len_0 > 0.25:
-        return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_size - aln_dist, "aln"
+        return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_hit_score, "aln"
     else:
         return 0, 0, 0, 0, 0, 0, "none"
 
@@ -169,16 +156,16 @@ def get_candidate_aln(hit_input):
         aln_data = get_alignment(seq1, seq0)
         if rtn != None:
              
-            s1, e1, s2, e2, aln_size, aln_dist, c_status = aln_data
+            s1, e1, s2, e2, aln_size, aln_hit_score, c_status = aln_data
             if c_status == "none":
                 continue
-            if aln_dist - aln_size > -1000:
+            if -aln_hit_score > -1000:
                 continue
-            if (100 - 100.0*aln_dist/(aln_size+1)) < 30:
+            if (100.0*aln_hit_score/(aln_size+1)) < 30:
                 continue
             target_count[hit_id] += 1
             total_hit += 1
-            rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
+            rtn.append( ( hit_id, q_name, -aln_hit_score, "%0.2f" % (100.0*aln_hit_score/(aln_size+1)), 
                           0, s2, e2, len(seq0), 
                           0, s1, e1, len(seq1), c_status + " %d" % hit_count ) )
 
@@ -213,16 +200,16 @@ def get_candidate_aln(hit_input):
         seq1, seq0 = r_q_seq, hit[1]
         aln_data = get_alignment(seq1, seq0)
         if rtn != None:
-            s1, e1, s2, e2, aln_size, aln_dist, c_status = aln_data
+            s1, e1, s2, e2, aln_size, aln_hit_score, c_status = aln_data
             if c_status == "none":
                 continue
-            if aln_dist - aln_size > -1000:
+            if -aln_hit_score > -1000:
                 continue
-            if (100 - 100.0*aln_dist/(aln_size+1)) < 30:
+            if (100.0*aln_hit_score/(aln_size+1)) < 30:
                 continue
             target_count[hit_id] += 1
             total_hit += 1
-            rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
+            rtn.append( ( hit_id, q_name, -aln_hit_score, "%0.2f" % (100.0*aln_hit_score/(aln_size+1)), 
                           0, s2, e2, len(seq0), 
                           1, len(seq1) - e1, len(seq1)- s1, len(seq1), c_status + " %d" % hit_count ) )
 
