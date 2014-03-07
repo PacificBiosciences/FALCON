@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 
 #################################################################################$$
 # Copyright (c) 2011-2014, Pacific Biosciences of California, Inc.
@@ -161,7 +161,7 @@ def get_candidate_aln(hit_input):
     #s.sort()
     targets = set()
     for p in s:
-        hit_id = seqs[p/2][0]
+        hit_id = seqs[p][0]
         if hit_id in targets or hit_id == q_name:
             continue
         targets.add(hit_id)
@@ -186,7 +186,7 @@ def get_candidate_aln(hit_input):
     #s.sort()
     targets = set()
     for p in s:
-        hit_id = seqs[p/2][0]
+        hit_id = seqs[p][0]
         if hit_id in targets or hit_id == q_name:
             continue
         targets.add(hit_id)
@@ -220,11 +220,9 @@ def build_look_up(seqs, K):
     kup.init_kmer_lookup(c_lk_ptr, 1 << (K*2))
 
     start = 0
-    for r_name, prefix, suffix in seqs:
-        kup.add_sequence( start, K, prefix, 500, c_sda_ptr, c_sa_ptr, c_lk_ptr)
-        start += 500
-        kup.add_sequence( start, K, suffix, 500, c_sda_ptr, c_sa_ptr, c_lk_ptr)
-        start += 500
+    for r_name, seq in seqs:
+        kup.add_sequence( start, K, seq, 1000, c_sda_ptr, c_sa_ptr, c_lk_ptr)
+        start += 1000
 
     kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 256)
     
@@ -249,7 +247,7 @@ def get_candidate_hits(q_name):
     kmer_match_ptr = kup.find_kmer_pos_for_seq(q_seq, len(q_seq), K, c_sda_ptr, c_lk_ptr)
     kmer_match = kmer_match_ptr[0]
     count = kmer_match.count
-    hit_index_f = np.array(kmer_match.target_pos[0:count])/500
+    hit_index_f = np.array(kmer_match.target_pos[0:count])/1000
     kup.free_kmer_match(kmer_match_ptr)
 
     r_q_seq = "".join([RC_MAP[c] for c in q_seq[::-1]])
@@ -257,7 +255,7 @@ def get_candidate_hits(q_name):
     kmer_match_ptr = kup.find_kmer_pos_for_seq(r_q_seq, len(r_q_seq), K, c_sda_ptr, c_lk_ptr)
     kmer_match = kmer_match_ptr[0]
     count = kmer_match.count
-    hit_index_r = np.array(kmer_match.target_pos[0:count])/500
+    hit_index_r = np.array(kmer_match.target_pos[0:count])/1000
     kup.free_kmer_match(kmer_match_ptr)
     return  q_name, hit_index_f, hit_index_r
 
@@ -292,14 +290,23 @@ if __name__ == "__main__":
     t_seqs = {}
     f = FastaReader(args.target_fa) # take one commnad line argument of the input fasta file name
 
-    if  args.min_len < 1200:
-         args.min_len = 1200
+    if  args.min_len < 2200:
+         args.min_len = 2200
 
+    idx = 0
     for r in f:
         if len(r.sequence) < args.min_len:
             continue
         seq = r.sequence.upper()
-        seqs.append( (r.name, seq[:500], seq[-500:] ) )
+        for start in range(0, len(seq), 5000):
+            if start+1000 > len(seq):
+                break
+            seqs.append( (r.name, seq[start: start+1000]) )
+            idx += 1
+        
+        seqs.append( (r.name, seq[-1000:]) )
+        idx += 1
+
         t_seqs[r.name] = seq
 
     f = FastaReader(args.query_fa) # take one commnad line argument of the input fasta file name
