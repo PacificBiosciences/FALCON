@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 
 #################################################################################$$
 # Copyright (c) 2011-2014, Pacific Biosciences of California, Inc.
@@ -49,6 +49,8 @@ import math
 
 global sa_ptr, sda_ptr, lk_ptr
 global q_seqs,t_seqs, seqs
+
+seqs = []
 RC_MAP = dict( zip("ACGTacgtNn-", "TGCAtgcaNn-") )
 
 all_fivemers = []
@@ -103,19 +105,20 @@ def get_alignment(seq1, seq0):
 
     aln_size = 1
     if e1 - s1 > 500 and (1.0*(e0 - s0)/len_0 > 0.25 or s1 < 500 or len_1 - s1 < 500) :
+
         aln_size = max( e1-s1, e0-s0 )
-        aln_hit_score = km_score * K
+        aln_dist = km_score * K
         aln_q_s = s1
         aln_q_e = e1
         aln_t_s = s0
         aln_t_e = e0
-
+        
     kup.free_seq_addr_array(sda_ptr)
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
 
     if e1 - s1 > 500 and aln_size > 500 and 1.0*(aln_t_e-aln_t_s) / len_0 > 0.25:
-        return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_hit_score, "aln"
+        return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_size - aln_dist, "aln"
     else:
         return 0, 0, 0, 0, 0, 0, "none"
 
@@ -133,11 +136,12 @@ def get_candidate_aln(hit_input):
     hit_data = []
     hit_ids = set()
     for p, hit_count in s:
-        hit_id = seqs[p/2][0]
+        hit_id = seqs[p][0]
         if hit_id == q_name or hit_id in hit_ids:
             continue
-        hit_ids.add(hit_id)
-        hit_data.append( (hit_id, t_seqs[hit_id], len(t_seqs[hit_id]), hit_count) )
+        if hit_id not in hit_ids:
+            hit_ids.add(hit_id)
+            hit_data.append( (hit_id, t_seqs[hit_id], len(t_seqs[hit_id]), hit_count) )
 
     hit_data.sort( key=lambda x:-x[2] )
 
@@ -148,24 +152,24 @@ def get_candidate_aln(hit_input):
         hit_id = hit[0]
         hit_count = hit[3]
         target_count.setdefault(hit_id, 0)
-        if target_count[hit_id] > 96:
+        if target_count[hit_id] > 64:
             continue
-        if total_hit > 96:
+        if total_hit > 64:
             continue
         seq1, seq0 = q_seq, hit[1] 
         aln_data = get_alignment(seq1, seq0)
         if rtn != None:
              
-            s1, e1, s2, e2, aln_size, aln_hit_score, c_status = aln_data
+            s1, e1, s2, e2, aln_size, aln_dist, c_status = aln_data
             if c_status == "none":
                 continue
-            if -aln_hit_score > -1000:
+            if aln_dist - aln_size > -1000:
                 continue
-            if (100.0*aln_hit_score/(aln_size+1)) < 30:
+            if (100 - 100.0*aln_dist/(aln_size+1)) < 30:
                 continue
             target_count[hit_id] += 1
             total_hit += 1
-            rtn.append( ( hit_id, q_name, -aln_hit_score, "%0.2f" % (100.0*aln_hit_score/(aln_size+1)), 
+            rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
                           0, s2, e2, len(seq0), 
                           0, s1, e1, len(seq1), c_status + " %d" % hit_count ) )
 
@@ -178,11 +182,12 @@ def get_candidate_aln(hit_input):
     hit_data = []
     hit_ids = set()
     for p, hit_count in s:
-        hit_id = seqs[p/2][0]
+        hit_id = seqs[p][0]
         if hit_id == q_name or hit_id in hit_ids:
             continue
-        hit_ids.add(hit_id)
-        hit_data.append( (hit_id, t_seqs[hit_id], len(t_seqs[hit_id]), hit_count) )
+        if hit_id not in hit_ids:
+            hit_ids.add(hit_id)
+            hit_data.append( (hit_id, t_seqs[hit_id], len(t_seqs[hit_id]), hit_count) )
 
     hit_data.sort( key=lambda x:-x[2] )
 
@@ -193,32 +198,32 @@ def get_candidate_aln(hit_input):
         hit_id = hit[0] 
         hit_count = hit[3]
         target_count.setdefault(hit_id, 0)
-        if target_count[hit_id] > 96:
+        if target_count[hit_id] > 64:
             continue
-        if total_hit > 96:
+        if total_hit > 64:
             continue
         seq1, seq0 = r_q_seq, hit[1]
         aln_data = get_alignment(seq1, seq0)
         if rtn != None:
-            s1, e1, s2, e2, aln_size, aln_hit_score, c_status = aln_data
+            s1, e1, s2, e2, aln_size, aln_dist, c_status = aln_data
             if c_status == "none":
                 continue
-            if -aln_hit_score > -1000:
+            if aln_dist - aln_size > -1000:
                 continue
-            if (100.0*aln_hit_score/(aln_size+1)) < 30:
+            if (100 - 100.0*aln_dist/(aln_size+1)) < 30:
                 continue
             target_count[hit_id] += 1
             total_hit += 1
-            rtn.append( ( hit_id, q_name, -aln_hit_score, "%0.2f" % (100.0*aln_hit_score/(aln_size+1)), 
+            rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
                           0, s2, e2, len(seq0), 
                           1, len(seq1) - e1, len(seq1)- s1, len(seq1), c_status + " %d" % hit_count ) )
 
     return rtn
 
-def build_look_up(seqs, K):
+def build_look_up(seqs, size, K):
     global sa_ptr, sda_ptr, lk_ptr
 
-    total_index_base = len(seqs) * 1000 * 2
+    total_index_base = size * 1000
     sa_ptr = sharedctypes.RawArray(base_t, total_index_base)
     c_sa_ptr = cast(sa_ptr, POINTER(base_t))
     kup.init_seq_array(c_sa_ptr, total_index_base)
@@ -231,10 +236,8 @@ def build_look_up(seqs, K):
     kup.init_kmer_lookup(c_lk_ptr, 1 << (K*2))
 
     start = 0
-    for r_name, prefix, suffix in seqs:
-        kup.add_sequence( start, K, prefix, 1000, c_sda_ptr, c_sa_ptr, c_lk_ptr)
-        start += 1000
-        kup.add_sequence( start, K, suffix, 1000, c_sda_ptr, c_sa_ptr, c_lk_ptr)
+    for r_name, seq in seqs:
+        kup.add_sequence( start, K, seq, 1000, c_sda_ptr, c_sa_ptr, c_lk_ptr)
         start += 1000
 
     kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 1024)
@@ -298,13 +301,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    seqs = []
     q_seqs = {}
     t_seqs = {}
     if  args.min_len < 2200:
          args.min_len = 2200
 
     with open(args.target_fofn) as fofn:
+        idx = 0
         for fn in fofn:
             fn = fn.strip()
             f = FastaReader(fn) # take one commnad line argument of the input fasta file name
@@ -313,7 +316,15 @@ if __name__ == "__main__":
                     continue
                     
                 seq = r.sequence.upper()
-                seqs.append( (r.name, seq[:1000], seq[-1000:] ) )
+                for start in range(0, len(seq), 5000):
+                    if start+1000 > len(seq):
+                        break
+                    seqs.append( (r.name, seq[start: start+1000]) )
+                    idx += 1
+                
+                seqs.append( (r.name, seq[-1000:]) )
+                idx += 1
+
                 t_seqs[r.name] = seq
 
     with open(args.query_fofn) as fofn:
@@ -329,10 +340,9 @@ if __name__ == "__main__":
                 q_seqs[r.name] = seq
 
 
-    total_index_base = len(seqs) * 1000
     pool = mp.Pool(args.n_core)
     K = 14
-    build_look_up(seqs, K)
+    build_look_up(seqs, idx, K)
     m_pool = mp.Pool(args.d_core)
 
     
