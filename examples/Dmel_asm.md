@@ -50,8 +50,8 @@ Here is an example of the configuration for StarCluster::
     cluster_shell = bash
     master_image_id = ami-73d2d21a
     master_instance_type = cr1.8xlarge
-    node_image_id = ami-ef3c0e86
-    node_instance_type = c3.8xlarge
+    node_image_id = ami-73d2d21a
+    node_instance_type = cr1.8xlarge
     availability_zone = us-east-1a
     volumes = DMEL
 
