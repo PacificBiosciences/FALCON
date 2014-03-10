@@ -101,26 +101,26 @@ We will need the following steps to setup the running environment::
 
 1. update SGE environment
 
-```
-    cd /mnt/dmel_asm/sge_setup
-    bash sge_setup.sh
-```
+    ```
+        cd /mnt/dmel_asm/sge_setup
+        bash sge_setup.sh
+    ```
 
 2. setup HBAD-DTK environment
 
-```
-    . /home/HBAR_ENV/bin/activate
-```
+    ```
+        . /home/HBAR_ENV/bin/activate
+    ```
 
 3. update HBAR-DTK and falcon_asm
 
-```
-    cd /mnt/dmel_asm/packages/pbtools.hbar-dtk-0.1.5
-    python setup.py install
-    cd /mnt/dmel_asm/packages/falcon_kit-0.1.1
-    #edit falcon_asm.py to set identity threshold for overlapping at 98%, it is done in the EBS snapshot
-    python setup.py install
-```
+    ```
+        cd /mnt/dmel_asm/packages/pbtools.hbar-dtk-0.1.5
+        python setup.py install
+        cd /mnt/dmel_asm/packages/falcon_kit-0.1.1
+        #edit falcon_asm.py to set identity threshold for overlapping at 98%, it is done in the EBS snapshot
+        python setup.py install
+    ```
 
 If you want to do an assembly in `/mnt/dmel_asm/new_asm/`, just clone the 
 configuration in `/mnt/dmel_asm/asm_template/` to `/mnt/dmel_asm/new_asm/`:
