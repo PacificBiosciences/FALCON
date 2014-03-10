@@ -7,17 +7,26 @@ Preparation for Running StarCluster
 I use a development version of StarCluster since the stable version does
 not support the kind of instance that we need to use in AWS EC2.
 
+You can install the developement version by directly cloning the 
+StarCluster's GitHub repository. The following is a simple example
+for installing the development version. You might have to install
+other python packages that StarCluster is dependent on.
+
 ```
     git clone https://github.com/jtriley/StarCluster.git
-    git checkout 4149bbed292b0298478756d778d8fbf1dd210daf
+    cd StarCluster
+    # you can check out the exact revision that I am using for this document
+    git checkout 4149bbed292b0298478756d778d8fbf1dd210daf 
+    python setup.py install
 ```
 
-First of all, I assume you already know how to create an AWS EC2 account, and
-go through the tutorial for running it on EC2.
+For using StarCluster to create a SGE in AWS EC2, I assume you already know how
+to create an AWS EC2 account, and go through the tutorial for running VMs on
+EC2.
 
-I build a public EC2 EBS snapshot. You should create a new EBS volume using the
-`PacBio_Dmel_Asm / snap-19e7a0df` snapshop. It already contains the raw
-sequence fasta files and an assembly as example already.
+I have built a public EC2 EBS snapshot. You should create a new EBS volume
+using the `PacBio_Dmel_Asm / snap-19e7a0df` snapshop. It already contains the
+raw sequence fasta files and an assembly as example already.
 
 Here is an example of the configuration for StarCluster::
 
