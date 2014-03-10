@@ -152,9 +152,9 @@ def get_candidate_aln(hit_input):
         hit_id = hit[0]
         hit_count = hit[3]
         target_count.setdefault(hit_id, 0)
-        if target_count[hit_id] > 64:
+        if target_count[hit_id] > 96:
             continue
-        if total_hit > 64:
+        if total_hit > 96:
             continue
         seq1, seq0 = q_seq, hit[1] 
         aln_data = get_alignment(seq1, seq0)
@@ -198,9 +198,9 @@ def get_candidate_aln(hit_input):
         hit_id = hit[0] 
         hit_count = hit[3]
         target_count.setdefault(hit_id, 0)
-        if target_count[hit_id] > 64:
+        if target_count[hit_id] > 96:
             continue
-        if total_hit > 64:
+        if total_hit > 96:
             continue
         seq1, seq0 = r_q_seq, hit[1]
         aln_data = get_alignment(seq1, seq0)
@@ -220,10 +220,10 @@ def get_candidate_aln(hit_input):
 
     return rtn
 
-def build_look_up(seqs, size, K):
+def build_look_up(seqs, K):
     global sa_ptr, sda_ptr, lk_ptr
 
-    total_index_base = size * 1000
+    total_index_base = len(seqs) * 1000
     sa_ptr = sharedctypes.RawArray(base_t, total_index_base)
     c_sa_ptr = cast(sa_ptr, POINTER(base_t))
     kup.init_seq_array(c_sa_ptr, total_index_base)
@@ -307,7 +307,6 @@ if __name__ == "__main__":
          args.min_len = 2200
 
     with open(args.target_fofn) as fofn:
-        idx = 0
         for fn in fofn:
             fn = fn.strip()
             f = FastaReader(fn) # take one commnad line argument of the input fasta file name
@@ -316,14 +315,14 @@ if __name__ == "__main__":
                     continue
                     
                 seq = r.sequence.upper()
+                """
                 for start in range(0, len(seq), 5000):
                     if start+1000 > len(seq):
                         break
                     seqs.append( (r.name, seq[start: start+1000]) )
-                    idx += 1
-                
+                """
+                seqs.append( (r.name, seq[:1000]) )
                 seqs.append( (r.name, seq[-1000:]) )
-                idx += 1
 
                 t_seqs[r.name] = seq
 
@@ -342,7 +341,7 @@ if __name__ == "__main__":
 
     pool = mp.Pool(args.n_core)
     K = 14
-    build_look_up(seqs, idx, K)
+    build_look_up(seqs, K)
     m_pool = mp.Pool(args.d_core)
 
     

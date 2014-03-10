@@ -292,12 +292,13 @@ if __name__ == "__main__":
         if len(r.sequence) < args.min_len:
             continue
         seq = r.sequence.upper()
-        for start in range(0, len(seq), 5000):
-            if start+1000 > len(seq):
-                break
-            seqs.append( (r.name, seq[start: start+1000]) )
-            idx += 1
+        #for start in range(0, len(seq), 5000):
+        #    if start+1000 > len(seq):
+        #        break
+        #    seqs.append( (r.name, seq[start: start+1000]) )
+        #    idx += 1
         
+        seqs.append( (r.name, seq[:1000]) )
         seqs.append( (r.name, seq[-1000:]) )
         idx += 1
 
