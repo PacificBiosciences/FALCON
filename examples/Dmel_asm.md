@@ -15,9 +15,9 @@ not support the kind of instance that we need to use in AWS EC2.
 First of all, I assume you already know how to create an AWS EC2 account, and
 go through the tutorial for running it on EC2.
 
-I build a public EC2 EBS snapshot. You should create a new EBS volume using
-the `PacBio_Dmel_Asm` snapshop. It already contains the raw sequence fasta files and
-an assembly as example already.
+I build a public EC2 EBS snapshot. You should create a new EBS volume using the
+`PacBio_Dmel_Asm / snap-19e7a0df` snapshop. It already contains the raw
+sequence fasta files and an assembly as example already.
 
 Here is an example of the configuration for StarCluster::
 
