@@ -107,7 +107,7 @@ def get_alignment(seq1, seq0):
     if e1 - s1 > 500 and (1.0*(e0 - s0)/len_0 > 0.25 or s1 < 500 or len_1 - s1 < 500) :
 
         aln_size = max( e1-s1, e0-s0 )
-        aln_score = km_score / (48.0 - K/2) 
+        aln_score = int(km_score / 2)
         aln_q_s = s1
         aln_q_e = e1
         aln_t_s = s0
@@ -152,9 +152,9 @@ def get_candidate_aln(hit_input):
         hit_id = hit[0]
         hit_count = hit[3]
         target_count.setdefault(hit_id, 0)
-        if target_count[hit_id] > 96:
+        if target_count[hit_id] > 256:
             continue
-        if total_hit > 96:
+        if total_hit > 256:
             continue
         seq1, seq0 = q_seq, hit[1] 
         aln_data = get_alignment(seq1, seq0)
@@ -169,9 +169,9 @@ def get_candidate_aln(hit_input):
                 continue
             target_count[hit_id] += 1
             total_hit += 1
-            rtn.append( ( hit_id, q_name, aln_score, "%0.2f" % (100.0*aln_score/(aln_size+1)), 
-                          0, s2, e2, len(seq0), 
-                          0, s1, e1, len(seq1), c_status + " %d" % hit_count ) )
+            rtn.append( ( q_name, hit_id, -aln_score, "%0.2f" % (100.0*aln_score/(aln_size+1)), 
+                          0, s1, e1, len(seq1), 
+                          0, s2, e2, len(seq0), c_status + " %d" % hit_count ) )
 
     r_q_seq = "".join([RC_MAP[c] for c in q_seq[::-1]])
     
@@ -198,9 +198,9 @@ def get_candidate_aln(hit_input):
         hit_id = hit[0] 
         hit_count = hit[3]
         target_count.setdefault(hit_id, 0)
-        if target_count[hit_id] > 96:
+        if target_count[hit_id] > 256:
             continue
-        if total_hit > 96:
+        if total_hit > 256:
             continue
         seq1, seq0 = r_q_seq, hit[1]
         aln_data = get_alignment(seq1, seq0)
@@ -214,9 +214,9 @@ def get_candidate_aln(hit_input):
                 continue
             target_count[hit_id] += 1
             total_hit += 1
-            rtn.append( ( hit_id, q_name, aln_score, "%0.2f" % (100.0*aln_score/(aln_size+1)), 
-                          0, s2, e2, len(seq0), 
-                          1, len(seq1) - e1, len(seq1)- s1, len(seq1), c_status + " %d" % hit_count ) )
+            rtn.append( ( q_name, hit_id, -aln_score, "%0.2f" % (100.0*aln_score/(aln_size+1)), 
+                          0, len(seq1) - e1, len(seq1) - s1, len(seq1), 
+                          1, s2, e2, len(seq0), c_status + " %d" % hit_count ) )
 
     return rtn
 
@@ -289,8 +289,8 @@ def lookup_data_iterator( q_seqs, m_pool ):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='a simple multi-processor overlapper for sequence reads')
-    parser.add_argument('query_fofn', help='a fasta fofn  to be overlapped with sequence in target')
     parser.add_argument('target_fofn', help='a fasta fofn as the target sequences for overlapping')
+    parser.add_argument('query_fofn', help='a fasta fofn  to be overlapped with sequence in target')
     parser.add_argument('--min_len', type=int, default=4000, 
                         help='minimum length of the reads to be considered for overlapping')
     parser.add_argument('--n_core', type=int, default=1,
@@ -303,8 +303,8 @@ if __name__ == "__main__":
 
     q_seqs = {}
     t_seqs = {}
-    if  args.min_len < 2200:
-         args.min_len = 2200
+    if  args.min_len < 1200:
+         args.min_len = 1200
 
     with open(args.target_fofn) as fofn:
         for fn in fofn:
@@ -313,15 +313,12 @@ if __name__ == "__main__":
             for r in f:
                 if len(r.sequence) < args.min_len:
                     continue
-                    
                 seq = r.sequence.upper()
-                """
-                for start in range(0, len(seq), 5000):
+                for start in range(0, len(seq), 1000):
                     if start+1000 > len(seq):
                         break
                     seqs.append( (r.name, seq[start: start+1000]) )
-                """
-                seqs.append( (r.name, seq[:1000]) )
+                #seqs.append( (r.name, seq[:1000]) )
                 seqs.append( (r.name, seq[-1000:]) )
 
                 t_seqs[r.name] = seq
@@ -331,8 +328,8 @@ if __name__ == "__main__":
             fn = fn.strip()
             f = FastaReader(fn) # take one commnad line argument of the input fasta file name
             for r in f:
-                if len(r.sequence) < args.min_len:
-                    continue
+                #if len(r.sequence) < args.min_len:
+                #    continue
                 seq = r.sequence.upper()
                 if fivemer_entropy(seq) < 4:
                     continue
