@@ -107,7 +107,7 @@ def get_alignment(seq1, seq0):
     if e1 - s1 > 500 and (1.0*(e0 - s0)/len_0 > 0.25 or s1 < 500 or len_1 - s1 < 500) :
 
         aln_size = max( e1-s1, e0-s0 )
-        aln_dist = km_score * K
+        aln_score = km_score / (48.0 - K/2) 
         aln_q_s = s1
         aln_q_e = e1
         aln_t_s = s0
@@ -118,7 +118,7 @@ def get_alignment(seq1, seq0):
     kup.free_kmer_lookup(lk_ptr)
 
     if e1 - s1 > 500 and aln_size > 500 and 1.0*(aln_t_e-aln_t_s) / len_0 > 0.25:
-        return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_size - aln_dist, "aln"
+        return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_score, "aln"
     else:
         return 0, 0, 0, 0, 0, 0, "none"
 
@@ -160,16 +160,16 @@ def get_candidate_aln(hit_input):
         aln_data = get_alignment(seq1, seq0)
         if rtn != None:
              
-            s1, e1, s2, e2, aln_size, aln_dist, c_status = aln_data
+            s1, e1, s2, e2, aln_size, aln_score, c_status = aln_data
             if c_status == "none":
                 continue
-            if aln_dist - aln_size > -1000:
+            if -aln_score > -1000:
                 continue
-            if (100 - 100.0*aln_dist/(aln_size+1)) < 30:
+            if (100.0*aln_score/(aln_size+1)) < 30:
                 continue
             target_count[hit_id] += 1
             total_hit += 1
-            rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
+            rtn.append( ( hit_id, q_name, aln_score, "%0.2f" % (100.0*aln_score/(aln_size+1)), 
                           0, s2, e2, len(seq0), 
                           0, s1, e1, len(seq1), c_status + " %d" % hit_count ) )
 
@@ -205,16 +205,16 @@ def get_candidate_aln(hit_input):
         seq1, seq0 = r_q_seq, hit[1]
         aln_data = get_alignment(seq1, seq0)
         if rtn != None:
-            s1, e1, s2, e2, aln_size, aln_dist, c_status = aln_data
+            s1, e1, s2, e2, aln_size, aln_score, c_status = aln_data
             if c_status == "none":
                 continue
-            if aln_dist - aln_size > -1000:
+            if -aln_score > -1000:
                 continue
-            if (100 - 100.0*aln_dist/(aln_size+1)) < 30:
+            if (100.0*aln_score/(aln_size+1)) < 30:
                 continue
             target_count[hit_id] += 1
             total_hit += 1
-            rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
+            rtn.append( ( hit_id, q_name, aln_score, "%0.2f" % (100.0*aln_score/(aln_size+1)), 
                           0, s2, e2, len(seq0), 
                           1, len(seq1) - e1, len(seq1)- s1, len(seq1), c_status + " %d" % hit_count ) )
 
