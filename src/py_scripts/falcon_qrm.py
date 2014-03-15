@@ -104,10 +104,10 @@ def get_alignment(seq1, seq0):
         e0 = len_0
 
     aln_size = 1
-    if e1 - s1 > 500 and (1.0*(e0 - s0)/len_0 > 0.25 or s1 < 500 or len_1 - s1 < 500) :
+    if e1 - s1 > 500:
 
         aln_size = max( e1-s1, e0-s0 )
-        aln_score = int(km_score / 2)
+        aln_score = int(km_score * 2)
         aln_q_s = s1
         aln_q_e = e1
         aln_t_s = s0
@@ -117,7 +117,7 @@ def get_alignment(seq1, seq0):
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
 
-    if e1 - s1 > 500 and aln_size > 500 and 1.0*(aln_t_e-aln_t_s) / len_0 > 0.25:
+    if e1 - s1 > 500 and aln_size > 500:
         return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_score, "aln"
     else:
         return 0, 0, 0, 0, 0, 0, "none"
@@ -152,9 +152,9 @@ def get_candidate_aln(hit_input):
         hit_id = hit[0]
         hit_count = hit[3]
         target_count.setdefault(hit_id, 0)
-        if target_count[hit_id] > 256:
+        if target_count[hit_id] > 96:
             continue
-        if total_hit > 256:
+        if total_hit > 96:
             continue
         seq1, seq0 = q_seq, hit[1] 
         aln_data = get_alignment(seq1, seq0)
@@ -198,9 +198,9 @@ def get_candidate_aln(hit_input):
         hit_id = hit[0] 
         hit_count = hit[3]
         target_count.setdefault(hit_id, 0)
-        if target_count[hit_id] > 256:
+        if target_count[hit_id] > 96:
             continue
-        if total_hit > 256:
+        if total_hit > 96:
             continue
         seq1, seq0 = r_q_seq, hit[1]
         aln_data = get_alignment(seq1, seq0)
@@ -240,7 +240,7 @@ def build_look_up(seqs, K):
         kup.add_sequence( start, K, seq, 1000, c_sda_ptr, c_sa_ptr, c_lk_ptr)
         start += 1000
 
-    kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 1024)
+    kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 256)
     
     #return sda_ptr, sa_ptr, lk_ptr
 
