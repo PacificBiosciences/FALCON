@@ -470,7 +470,7 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
     max_s = -1;
     max_e = -1;
     max_span = -1;
-    delta = (long int) ( 0.02 * ( max_q + max_t ) );
+    delta = (long int) ( 0.05 * ( max_q + max_t ) );
     d_len =  km_ptr->count;
     d_s = -1;
     d_e = -1;
@@ -529,8 +529,8 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
                 j--;
                 continue;
             }
-            if (cx - px > 240) break; //the number here controling how big alignment gap to be considered
-            if (cy > py && cx - px + cy - py < max_d) {
+            if (cx - px > 160) break; //the number here controling how big alignment gap to be considered
+            if (cy > py && cx - px + cy - py < max_d && cy - py <= 160 ) {
                 max_d = cx - px + cy - py;
                 candidate_idx = j;
             }
@@ -538,15 +538,12 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
         }
         if (candidate_idx != -1) {
             last_hit[i] = candidate_idx;
-            hit_score[i] = hit_score[candidate_idx] + (48 - max_d);
+            hit_score[i] = hit_score[candidate_idx] + (64 - max_d);
             if (hit_score[i] < 0) {
                 hit_score[i] = 0;
             }
         } else {
-            hit_score[i] = (48 - max_d);
-            if (hit_score[i] < 0) {
-                hit_score[i] = 0;
-            }
+            hit_score[i] = 0;
         }
         if (hit_score[i] > max_hit_score) {
             max_hit_score = hit_score[i];
