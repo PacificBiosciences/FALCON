@@ -104,8 +104,9 @@ for id1 in query_to_target:
         d = l.split()
         id1, id2 = d[:2]
         target_to_query.setdefault(id2,[])
-        target_to_query[id2].append( ( (rank, int(d[2])), l ) )
-        rank += 1
+        target_to_query[id2].append( ( (int(d[5])-int(d[6]), int(d[2])), l ) )
+        #rank += 1
+
 from pbcore.io import FastaIO
 query_data = {}
 with open(query_fasta_fn) as fofn:
@@ -135,7 +136,7 @@ with open(target_fasta_fn) as fofn:
 ec_data = []
 base_count = Counter()
 r_count =0
-trim_align = 0
+
 for id2 in target_to_query:
     if len(target_to_query[id2])<10:
         continue
