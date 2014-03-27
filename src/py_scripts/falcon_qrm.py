@@ -357,7 +357,7 @@ if __name__ == "__main__":
 
     
     #for r in pool.imap(get_candidate_aln, lookup_data_iterator( q_seqs)):
-    for r in pool.imap(get_candidate_aln, lookup_data_iterator( q_seqs, m_pool)):
+    for r in pool.imap(get_candidate_aln, lookup_data_iterator(q_seqs, m_pool)):
         for h in r:
             print " ".join([str(x) for x in h]) 
 

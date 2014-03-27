@@ -585,6 +585,7 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
     free(d_coor);
     free(last_hit);
     free(hit_score);
+    free(hit_count);
     return arange;
 }
 
