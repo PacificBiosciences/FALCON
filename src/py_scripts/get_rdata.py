@@ -93,7 +93,7 @@ with open(m4_fofn) as fofn:
                 if int(d[2]) > -1000: continue
                 if int(d[11]) < 4000: continue
                 query_to_target.setdefault(id1, [])
-                query_to_target[id1].append( (int(d[2]),l) )
+                query_to_target[id1].append( (int(d[2]), l) )
 
 target_to_query = {}
 for id1 in query_to_target:
@@ -104,7 +104,8 @@ for id1 in query_to_target:
         d = l.split()
         id1, id2 = d[:2]
         target_to_query.setdefault(id2,[])
-        target_to_query[id2].append( ( (int(d[5])-int(d[6]), int(d[2])), l ) )
+        #target_to_query[id2].append( ( (int(d[5])-int(d[6]), int(d[2])), l ) )
+        target_to_query[id2].append( ( int(d[2]), l ) )
         #rank += 1
 
 from pbcore.io import FastaIO
@@ -158,7 +159,8 @@ for id2 in target_to_query:
     #min_cov_bases = min_cov * ref_len * 3
     
     for rank_score, l in query_alignment:
-        rank, score = rank_score
+        #rank, score = rank_score
+        score = rank_score
         l = l.split()
         id1 = l[0]
         #if -noSplitSubread not used, we will need the following line    

@@ -49,6 +49,7 @@ import math
 
 global sa_ptr, sda_ptr, lk_ptr
 global q_seqs,t_seqs, seqs
+global n_candidates, max_candidates
 
 seqs = []
 RC_MAP = dict( zip("ACGTacgtNn-", "TGCAtgcaNn-") )
@@ -107,7 +108,7 @@ def get_alignment(seq1, seq0):
     if e1 - s1 > 500:
 
         aln_size = max( e1-s1, e0-s0 )
-        aln_score = int(km_score * 2)
+        aln_score = int(km_score * 48)
         aln_q_s = s1
         aln_q_e = e1
         aln_t_s = s0
@@ -125,6 +126,8 @@ def get_alignment(seq1, seq0):
 def get_candidate_aln(hit_input):
     
     global q_seqs, seqs, t_seqs, q_len
+    global max_candidates
+    global n_candidates
     q_name, hit_index_f, hit_index_r = hit_input
     q_seq = q_seqs[q_name]
 
@@ -133,39 +136,38 @@ def get_candidate_aln(hit_input):
     c = collections.Counter(hit_index)
     s = [(c[0],c[1]) for c in c.items() if c[1] > 4]
     
-    hit_data = []
-    hit_ids = set()
+    hit_data = {}
+    #hit_ids = set()
+
     for p, hit_count in s:
         hit_id = seqs[p][0]
-        if hit_id == q_name or hit_id in hit_ids:
-            continue
-        if hit_id not in hit_ids:
-            hit_ids.add(hit_id)
-            hit_data.append( (hit_id, t_seqs[hit_id], len(t_seqs[hit_id]), hit_count) )
+        hit_data.setdefault(hit_id, [0, 0 ,0])
+        hit_data[hit_id][0] += hit_count;
+        if hit_count > hit_data[hit_id][1]:
+            hit_data[hit_id][1] = hit_count
+        hit_data[hit_id][2] += 1
 
-    hit_data.sort( key=lambda x:-x[2] )
+    hit_data = hit_data.items()
+
+    hit_data.sort( key=lambda x:-x[1][0] )
 
     target_count = {}
     total_hit = 0
 
-    for hit in hit_data:
+    for hit in hit_data[:n_candidates]:
         hit_id = hit[0]
-        hit_count = hit[3]
+        hit_count = hit[1][0]
         target_count.setdefault(hit_id, 0)
-        if target_count[hit_id] > 96:
+        if target_count[hit_id] > max_candidates:
             continue
-        if total_hit > 96:
+        if total_hit > max_candidates:
             continue
-        seq1, seq0 = q_seq, hit[1] 
+        seq1, seq0 = q_seq, t_seqs[hit_id]
         aln_data = get_alignment(seq1, seq0)
         if rtn != None:
              
             s1, e1, s2, e2, aln_size, aln_score, c_status = aln_data
             if c_status == "none":
-                continue
-            if -aln_score > -1000:
-                continue
-            if (100.0*aln_score/(aln_size+1)) < 30:
                 continue
             target_count[hit_id] += 1
             total_hit += 1
@@ -179,38 +181,38 @@ def get_candidate_aln(hit_input):
     c = collections.Counter(hit_index)
     s = [(c[0],c[1]) for c in c.items() if c[1] > 4]
 
-    hit_data = []
-    hit_ids = set()
+    hit_data = {}
+    #hit_ids = set()
+
     for p, hit_count in s:
         hit_id = seqs[p][0]
-        if hit_id == q_name or hit_id in hit_ids:
-            continue
-        if hit_id not in hit_ids:
-            hit_ids.add(hit_id)
-            hit_data.append( (hit_id, t_seqs[hit_id], len(t_seqs[hit_id]), hit_count) )
+        hit_data.setdefault(hit_id, [0, 0 ,0])
+        hit_data[hit_id][0] += hit_count;
+        if hit_count > hit_data[hit_id][1]:
+            hit_data[hit_id][1] = hit_count
+        hit_data[hit_id][2] += 1
 
-    hit_data.sort( key=lambda x:-x[2] )
+    hit_data = hit_data.items()
+
+    hit_data.sort( key=lambda x:-x[1][0] )
+
 
     target_count = {}
     total_hit = 0
 
-    for hit in hit_data:
+    for hit in hit_data[:n_candidates]:
         hit_id = hit[0] 
-        hit_count = hit[3]
+        hit_count = hit[1][0]
         target_count.setdefault(hit_id, 0)
-        if target_count[hit_id] > 96:
+        if target_count[hit_id] > max_candidates:
             continue
-        if total_hit > 96:
+        if total_hit > max_candidates:
             continue
-        seq1, seq0 = r_q_seq, hit[1]
+        seq1, seq0 = r_q_seq, t_seqs[hit_id]
         aln_data = get_alignment(seq1, seq0)
         if rtn != None:
             s1, e1, s2, e2, aln_size, aln_score, c_status = aln_data
             if c_status == "none":
-                continue
-            if -aln_score > -1000:
-                continue
-            if (100.0*aln_score/(aln_size+1)) < 30:
                 continue
             target_count[hit_id] += 1
             total_hit += 1
@@ -240,7 +242,7 @@ def build_look_up(seqs, K):
         kup.add_sequence( start, K, seq, 1000, c_sda_ptr, c_sa_ptr, c_lk_ptr)
         start += 1000
 
-    kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 256)
+    kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 1024)
     
     #return sda_ptr, sa_ptr, lk_ptr
 
@@ -297,9 +299,17 @@ if __name__ == "__main__":
                         help='number of processes used for detailed overlapping evalution')
     parser.add_argument('--d_core', type=int, default=1, 
                         help='number of processes used for k-mer matching')
+    parser.add_argument('--n_candidates', type=int, default=128, 
+                        help='number of candidates for read matching')
+    parser.add_argument('--max_candidates', type=int, default=64, 
+                        help='max number for read matching to output')
+
 
 
     args = parser.parse_args()
+
+    max_candidates = args.max_candidates
+    n_candidates = args.n_candidates
 
     q_seqs = {}
     t_seqs = {}
@@ -317,9 +327,15 @@ if __name__ == "__main__":
                 for start in range(0, len(seq), 1000):
                     if start+1000 > len(seq):
                         break
-                    seqs.append( (r.name, seq[start: start+1000]) )
+                    subseq = seq[start: start+1000]
+                    #if fivemer_entropy(subseq) < 4:
+                    #    continue
+                    seqs.append( (r.name, subseq) )
+                subseq = seq[-1000:]
+                #if fivemer_entropy(subseq) < 4:
+                #    continue
                 #seqs.append( (r.name, seq[:1000]) )
-                seqs.append( (r.name, seq[-1000:]) )
+                seqs.append( (r.name, subseq) )
 
                 t_seqs[r.name] = seq
 
@@ -328,11 +344,9 @@ if __name__ == "__main__":
             fn = fn.strip()
             f = FastaReader(fn) # take one commnad line argument of the input fasta file name
             for r in f:
-                #if len(r.sequence) < args.min_len:
-                #    continue
                 seq = r.sequence.upper()
-                if fivemer_entropy(seq) < 4:
-                    continue
+                #if fivemer_entropy(seq) < 4:
+                #    continue
                 q_seqs[r.name] = seq
 
 

@@ -438,11 +438,13 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
 
     seq_coor_t * d_coor;
     seq_coor_t * hit_score;
+    seq_coor_t * hit_count;
     seq_coor_t * last_hit;
     seq_coor_t max_q, max_t;
     seq_coor_t s, e, max_s, max_e, max_span, d_s, d_e, delta, d_len;
     seq_coor_t px, py, cx, cy;
-    seq_coor_t max_hit_idx, max_hit_score;
+    seq_coor_t max_hit_idx;
+    seq_coor_t max_hit_score, max_hit_count;
     seq_coor_t i, j;
     seq_coor_t candidate_idx, max_d, d;
 
@@ -504,10 +506,12 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
 
     last_hit = calloc( km_ptr->count, sizeof(seq_coor_t) );
     hit_score = calloc( km_ptr->count, sizeof(seq_coor_t) );
+    hit_count = calloc( km_ptr->count, sizeof(seq_coor_t) );
 
     for (i = 0; i <  km_ptr->count; i++ ) {
         last_hit[i] = -1;
         hit_score[i] = 0;
+        hit_count[i] = 0;
     }
     max_hit_idx = -1;
     max_hit_score = 0;
@@ -539,14 +543,18 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
         if (candidate_idx != -1) {
             last_hit[i] = candidate_idx;
             hit_score[i] = hit_score[candidate_idx] + (64 - max_d);
+            hit_count[i] = hit_count[candidate_idx] + 1;
             if (hit_score[i] < 0) {
                 hit_score[i] = 0;
+                hit_count[i] = 0;
             }
         } else {
             hit_score[i] = 0;
+            hit_count[i] = 0;
         }
         if (hit_score[i] > max_hit_score) {
             max_hit_score = hit_score[i];
+            max_hit_count = hit_count[i];
             max_hit_idx = i;
         }
 
@@ -560,10 +568,11 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
         free(d_coor);
         free(last_hit);
         free(hit_score);
+        free(hit_count);
         return arange;
     }
 
-    arange->score = max_hit_score;
+    arange->score = max_hit_count + 1;
     arange->e1 = km_ptr->query_pos[max_hit_idx];
     arange->e2 = km_ptr->target_pos[max_hit_idx];
     i = max_hit_idx;
