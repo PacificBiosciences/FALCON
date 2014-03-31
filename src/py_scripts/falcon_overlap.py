@@ -141,6 +141,15 @@ def get_ovelap_alignment(seq1, seq0):
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
 
+    if do_aln:
+        if s1 > 1000 and s0 > 1000:
+            return 0, 0, 0, 0, 0, 0, "none"
+        if len_1 - (s1+aln_q_e-aln_q_s) > 1000 and len_0 - (s0+aln_t_e-aln_t_s) > 1000:
+            return 0, 0, 0, 0, 0, 0, "none"
+
+
+
+
     if e1 - s1 > 500 and do_aln and aln_size > 500:
         #return s1, s1+aln_q_e-aln_q_s, s2, s2+aln_t_e-aln_t_s, aln_size, aln_dist, x, y
         return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_dist, contain_status
@@ -220,7 +229,7 @@ def build_look_up(seqs, K):
         kup.add_sequence( start, K, seq, 1000, c_sda_ptr, c_sa_ptr, c_lk_ptr)
         start += 1000
 
-    kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 256)
+    kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 512)
     
     #return sda_ptr, sa_ptr, lk_ptr
 
@@ -292,13 +301,13 @@ if __name__ == "__main__":
         if len(r.sequence) < args.min_len:
             continue
         seq = r.sequence.upper()
-        #for start in range(0, len(seq), 5000):
-        #    if start+1000 > len(seq):
-        #        break
-        #    seqs.append( (r.name, seq[start: start+1000]) )
-        #    idx += 1
+        for start in range(0, len(seq), 1000):
+            if start+1000 > len(seq):
+                break
+            seqs.append( (r.name, seq[start: start+1000]) )
+            idx += 1
         
-        seqs.append( (r.name, seq[:1000]) )
+        #seqs.append( (r.name, seq[:1000]) )
         seqs.append( (r.name, seq[-1000:]) )
         idx += 1
 

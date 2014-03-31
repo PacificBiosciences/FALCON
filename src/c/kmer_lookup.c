@@ -533,8 +533,8 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
                 j--;
                 continue;
             }
-            if (cx - px > 160) break; //the number here controling how big alignment gap to be considered
-            if (cy > py && cx - px + cy - py < max_d && cy - py <= 160 ) {
+            if (cx - px > 320) break; //the number here controling how big alignment gap to be considered
+            if (cy > py && cx - px + cy - py < max_d && cy - py <= 320 ) {
                 max_d = cx - px + cy - py;
                 candidate_idx = j;
             }

@@ -118,6 +118,13 @@ def get_alignment(seq1, seq0):
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
 
+    if s1 > 1000 and s0 > 1000:
+        return 0, 0, 0, 0, 0, 0, "none"
+
+    if len_1 - e1 > 1000 and len_0 - e0 > 1000:
+        return 0, 0, 0, 0, 0, 0, "none"
+
+
     if e1 - s1 > 500 and aln_size > 500:
         return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_score, "aln"
     else:
