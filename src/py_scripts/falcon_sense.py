@@ -106,7 +106,8 @@ def get_alignment(seq1, seq0):
 
 def get_consensus_without_trim( c_input ):
     seqs, seed_id, min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read = c_input
-    seqs = seqs[:max_n_read]
+    if max_n_read > len(seqs):
+        seqs = seqs[:max_n_read]
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
     consensus_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K, 
@@ -120,7 +121,6 @@ def get_consensus_with_trim( c_input ):
     seqs, seed_id, min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read = c_input
     trim_seqs = []
     seed = seqs[0]
-    trim_seqs.append(seed)
     for seq in seqs[1:]:
         aln_data = get_alignment(seq, seed)
         s1, e1, s2, e2, aln_size, aln_score, c_status = aln_data
@@ -129,8 +129,13 @@ def get_consensus_with_trim( c_input ):
         if aln_score > 1000 and e1 - s1 > 500:
             trim_seqs.append( (e1-s1, seq[s1:e1]) )
     trim_seqs.sort(key = lambda x:-x[0]) #use longest alignment first
-    trim_Seqs = [x[1] for x in trim_seqs]
+    trim_seqs = [x[1] for x in trim_seqs]
         
+    if len(trim_seqs) > max_n_read:
+        trim_seqs = trim_seqs[:max_n_read]
+
+    trim_seqs = [seed] + trim_seqs
+
 
     seqs_ptr = (c_char_p * len(trim_seqs))()
     seqs_ptr[:] = trim_seqs
@@ -142,7 +147,7 @@ def get_consensus_with_trim( c_input ):
     return consensus, seed_id
 
 
-def get_seq_data(min_cov = 8, K = 8, lmcw = 12, lmct = 6):
+def get_seq_data(min_cov = 8, K = 8, lmcw = 12, lmct = 6, max_n_read=500):
     seqs = []
     seed_id = None
     seqs_data = []
@@ -190,7 +195,7 @@ if __name__ == "__main__":
     for res in exe_pool.imap(get_consensus, get_seq_data( min_cov = args.min_cov, 
                                                           lmcw= args.local_match_count_window, 
                                                           lmct = args.local_match_count_threshold,
-                                                          max_n_read = args.max_n_read)):
+                                                          max_n_read = args.max_n_read ) ):
         cns, seed_id = res
         if len(cns) > 500:
             print ">"+seed_id
