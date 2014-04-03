@@ -126,20 +126,10 @@ DWA.free_alignment.argtypes = [POINTER(Alignment)]
 
 falcon = CDLL(os.path.join(module_path,"falcon.so"))
 
-falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint ]
+falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint, c_uint  ]
 falcon.generate_consensus.restype = POINTER(c_char)
 falcon.free_consensus.argtypes = [ c_char_p ]
 
-def get_consensus( c_input ):
-
-    seqs, seed_id = c_input, min_cov, K
-    seqs_ptr = (c_char_p * len(seqs))()
-    seqs_ptr[:] = seqs
-    consensus_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K )
-    consensus = string_at(consensus_ptr)[:]
-    falcon.free_consensus( consensus_ptr )
-    del seqs_ptr
-    return consensus, seed_id
 
 
 

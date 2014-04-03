@@ -46,15 +46,16 @@ module_path = falcon_kit.__path__[0]
 
 falcon = CDLL(os.path.join(module_path, "falcon.so"))
 
-falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint ]
+falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint ]
 falcon.generate_consensus.restype = POINTER(c_char)
 falcon.free_consensus.argtypes = [ c_char_p ]
 
 def get_consensus( c_input ):
-    seqs, seed_id, min_cov, K = c_input
+    seqs, seed_id, min_cov, K, local_match_count_window, local_match_count_threshold = c_input
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
-    consensus_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K )
+    consensus_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K, 
+                                               local_match_count_window, local_match_count_threshold )
     consensus = string_at(consensus_ptr)[:]
     falcon.free_consensus( consensus_ptr )
     del seqs_ptr
@@ -62,7 +63,7 @@ def get_consensus( c_input ):
 
 
 
-def get_seq_data(min_cov = 8, K = 8):
+def get_seq_data(min_cov = 8, K = 8, lmcw = 12, lmct = 6):
     seqs = []
     seed_id = None
     seqs_data = []
@@ -76,7 +77,7 @@ def get_seq_data(min_cov = 8, K = 8):
                 seqs.append(l[1])
             elif l[0] == "+":
                 if len(seqs) > 10:
-                    yield (seqs, seed_id, min_cov, K) 
+                    yield (seqs, seed_id, min_cov, K, lmcw, lmct) 
                 #seqs_data.append( (seqs, seed_id) ) 
                 seqs = []
                 seed_id = None
@@ -90,9 +91,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='a simple multi-processor consensus sequence generator')
     parser.add_argument('--n_core', type=int, default=24,
                         help='number of processes used for generating consensus')
+    parser.add_argument('--local_match_count_window', type=int, default=12,
+                        help='local match window size')
+    parser.add_argument('--local_match_count_threshold', type=int, default=6,
+                        help='local match count threshold')
+    parser.add_argument('--min_cov', type=int, default=6,
+                        help='minimum coverage to break the consensus')
     args = parser.parse_args()
     exe_pool = Pool(args.n_core)
-    for res in exe_pool.imap(get_consensus, get_seq_data()):
+    for res in exe_pool.imap(get_consensus, get_seq_data( min_cov = args.min_cov, lmcw= args.local_match_count_window, lmct = args.local_match_count_threshold )):
         cns, seed_id = res
         if len(cns) > 500:
             print ">"+seed_id

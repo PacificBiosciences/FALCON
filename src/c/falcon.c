@@ -84,7 +84,9 @@ align_tags_t * get_align_tags( char * aln_q_seq,
                                char * aln_t_seq, 
                                seq_coor_t aln_seq_len,
                                aln_range * range,
-                               unsigned long q_id) {
+                               unsigned long q_id,
+                               unsigned long local_match_count_window,
+                               unsigned long local_match_count_threshold) {
 
 #define LONGEST_INDEL_ALLOWED 6 
 
@@ -115,25 +117,26 @@ align_tags_t * get_align_tags( char * aln_q_seq,
             j ++;
             jj = 0;
         }
-        
-        if (k < aln_seq_len - 12 && aln_q_seq[k + 12]  == aln_t_seq[k + 12] ) {
-            match_count ++;
-        }
+       
+        if (local_match_count_threshold > 0) {
+            if (k < aln_seq_len - local_match_count_window && aln_q_seq[k + local_match_count_window]  == aln_t_seq[k + local_match_count_window] ) {
+                match_count ++;
+            }
 
-        if (k > 12 && aln_q_seq[k-12] == aln_t_seq[k-12] ) {
-            match_count --;
-        }
+            if (k > local_match_count_window && aln_q_seq[k - local_match_count_window] == aln_t_seq[k - local_match_count_window] ) {
+                match_count --;
+            }
 
-        if (match_count < 0) {
-            match_count = 0;
+            if (match_count < 0) {
+                match_count = 0;
+            }
         }
-
         
         //printf("X: %ld %c %c %ld\n", j, aln_q_seq[k], aln_t_seq[k], match_count);
         //
         (tags->align_tags[k]).t_pos = j;
         (tags->align_tags[k]).delta = jj;
-        if (jj == 0 && match_count < 6) {
+        if (local_match_count_threshold > 0 && jj == 0 && match_count < local_match_count_threshold) {
             (tags->align_tags[k]).q_base = '*';
         } else {
             (tags->align_tags[k]).q_base = aln_q_seq[k];
@@ -328,7 +331,12 @@ char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_se
 
 //const unsigned int K = 8;
 
-char * generate_consensus( char ** input_seq, unsigned int n_seq, unsigned min_cov, unsigned K ) {
+char * generate_consensus( char ** input_seq, 
+                           unsigned int n_seq, 
+                           unsigned min_cov, 
+                           unsigned K,
+                           unsigned long local_match_count_window,
+                           unsigned long local_match_count_threshold) {
 
     unsigned int i, j, k;
     unsigned int seq_count;
@@ -355,6 +363,7 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq, unsigned min_c
     sa_ptr = allocate_seq( (seq_coor_t) strlen( input_seq[0]) );
     sda_ptr = allocate_seq_addr( (seq_coor_t) strlen( input_seq[0]) );
     add_sequence( 0, K, input_seq[0], strlen(input_seq[0]), sda_ptr, sa_ptr, lk_ptr);
+    mask_k_mer(1 << (K * 2), lk_ptr, 16);
 
     aligned_seq_count = 0;
     for (j=1; j < seq_count; j++) {
@@ -373,27 +382,28 @@ char * generate_consensus( char ** input_seq, unsigned int n_seq, unsigned min_c
         //printf("2:%ld %ld %ld %ld\n\n", arange->s1, arange->e1, arange->s2, arange->e2);
         
 #define INDEL_ALLOWENCE_1 400
-
         if (arange->e1 - arange->s1 < 100 || arange->e2 - arange->s2 < 100 ||
             abs( (arange->e1 - arange->s1 ) - (arange->e2 - arange->s2) ) > INDEL_ALLOWENCE_1) {
             free_kmer_match( kmer_match_ptr);
             free_aln_range(arange);
             continue;
         }
-
         //printf("%ld %s\n", strlen(input_seq[j]), input_seq[j]);
         //printf("%ld %s\n\n", strlen(input_seq[0]), input_seq[0]);
-        //aln = align(input_seq[j]+arange->s1, arange->e1 - arange->s1 ,
-        //            input_seq[0]+arange->s2, arange->e2 - arange->s2 , 
-        //            100, 1);
-        //
+        
+        
 #define INDEL_ALLOWENCE_2 150
 
         aln = align(input_seq[j]+arange->s1, arange->e1 - arange->s1 ,
                     input_seq[0]+arange->s2, arange->e2 - arange->s2 , 
                     INDEL_ALLOWENCE_2, 1);
         if (aln->aln_str_size > 500) {
-            tags_list[aligned_seq_count] = get_align_tags( aln->q_aln_str, aln->t_aln_str, aln->aln_str_size, arange, j); 
+            tags_list[aligned_seq_count] = get_align_tags( aln->q_aln_str, 
+                                                           aln->t_aln_str, 
+                                                           aln->aln_str_size, 
+                                                           arange, j, 
+                                                           local_match_count_window,
+                                                           local_match_count_threshold); 
             aligned_seq_count ++;
         }
         /*** 
