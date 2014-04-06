@@ -127,6 +127,8 @@ def get_consensus_with_trim( c_input ):
         if c_status == "none":
             continue
         if aln_score > 1000 and e1 - s1 > 500:
+            e1 -= 50
+            s1 += 50
             trim_seqs.append( (e1-s1, seq[s1:e1]) )
     trim_seqs.sort(key = lambda x:-x[0]) #use longest alignment first
     trim_seqs = [x[1] for x in trim_seqs]
