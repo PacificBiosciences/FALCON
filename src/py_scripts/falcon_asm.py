@@ -861,6 +861,20 @@ if __name__ == "__main__":
     overlap_file = sys.argv[1]
     read_fasta = sys.argv[2]
 
+    parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes')
+    parser.add_argument('overlap_file', help='a file that contains the overlap information.')
+    parser.add_argument('read_fasta', help='the file that contains the sequence to be assembled')
+    parser.add_argument('--min_len', type=int, default=4000, 
+                        help='minimum length of the reads to be considered for assembling')
+    parser.add_argument('--min_idt', type=float, default=96,
+                        help='minimum alignment identity of the reads to be considered for assembling')
+
+    args = parser.parse_args()
+
+
+    overlap_file = args.overlap_file
+    read_fasta = args.read_fasta
+
     seqs = {}
     # load all p-reads into memory
     f = FastaReader(read_fasta)
@@ -907,7 +921,7 @@ if __name__ == "__main__":
             if contained == "none":
                 continue
 
-            if identity < 96: # only take record with >96% identity as overlapped reads
+            if identity < args.min_idt: # only take record with >96% identity as overlapped reads
                 continue
             #if score > -2000:
             #    continue
@@ -915,8 +929,8 @@ if __name__ == "__main__":
             g_strain, g_start, g_end, g_len = (int(c) for c in l[8:12])
 
             # only used reads longer than the 4kb for assembly
-            if f_len < 4000: continue
-            if g_len < 4000: continue
+            if f_len < args.min_len: continue
+            if g_len < args.min_len: continue
             
             # double check for proper overlap
             if f_start > 24 and f_len - f_end > 24:  # allow 24 base tolerance on both sides of the overlapping

@@ -5,7 +5,7 @@ from setuptools import setup
 from distutils.core import Extension
 
 setup(name='falcon_kit',
-      version='0.1.1',
+      version='0.1.2',
       description='a small toolkit for DNA seqeucne alignment, overlapping, and assembly',
       author='Jason Chin',
       author_email='jchin@pacificbiosciences.com',
