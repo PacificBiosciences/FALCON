@@ -857,6 +857,8 @@ def SGToNXG(sg):
     return G
 
 if __name__ == "__main__":
+
+    import argparse
     
     parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes')
     parser.add_argument('overlap_file', help='a file that contains the overlap information.')
