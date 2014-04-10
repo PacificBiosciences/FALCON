@@ -858,9 +858,6 @@ def SGToNXG(sg):
 
 if __name__ == "__main__":
     
-    overlap_file = sys.argv[1]
-    read_fasta = sys.argv[2]
-
     parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes')
     parser.add_argument('overlap_file', help='a file that contains the overlap information.')
     parser.add_argument('read_fasta', help='the file that contains the sequence to be assembled')
