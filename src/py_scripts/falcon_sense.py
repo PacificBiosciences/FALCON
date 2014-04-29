@@ -218,6 +218,8 @@ if __name__ == "__main__":
                 print cns
         else:
             cns = good_region.findall(cns)
+            if len(cns) == 0:
+                continue
             if args.output_multi == True:
                 seq_i = 0
                 for cns_seq in cns:
