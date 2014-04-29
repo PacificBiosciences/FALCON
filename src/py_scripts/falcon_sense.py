@@ -178,6 +178,7 @@ def get_seq_data(min_cov = 8, K = 8, lmcw = 12, lmct = 6, max_n_read=500, min_id
 
 if __name__ == "__main__":
     import argparse
+    import re
     parser = argparse.ArgumentParser(description='a simple multi-processor consensus sequence generator')
     parser.add_argument('--n_core', type=int, default=24,
                         help='number of processes used for generating consensus')
@@ -193,10 +194,11 @@ if __name__ == "__main__":
                         help='trim the input sequence with k-mer spare dynamic programming to find the mapped range')
     parser.add_argument('--output_full', type=bool, default=False,
                         help='output uncorrected regions too')
-    parser.add_argument('--output_mutli', type=bool, default=False,
+    parser.add_argument('--output_multi', type=bool, default=False,
                         help='output multi correct regions')
     parser.add_argument('--min_idt', type=float, default=0.70,
                         help='minimum identity of the alignments used for correction')
+    good_region = re.compile("[ACGT]+")
     args = parser.parse_args()
     exe_pool = Pool(args.n_core)
     if args.trim:
@@ -210,13 +212,13 @@ if __name__ == "__main__":
                                                           max_n_read = args.max_n_read,
                                                           min_idt = args.min_idt) ):
         cns, seed_id = res
-        if args.output_full:
+        if args.output_full == True:
             if len(cns) > 500:
-                print ">"+seed_id
+                print ">"+seed_id+"_f"
                 print cns
         else:
-            cns = cns.split("acgt")
-            if args.output_mutli:
+            cns = good_region.findall(cns)
+            if args.output_multi == True:
                 seq_i = 0
                 for cns_seq in cns:
                     if len(cns_seq) > 500:

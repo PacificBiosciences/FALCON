@@ -429,7 +429,7 @@ consensus_data * generate_consensus( char ** input_seq,
         aln = align(input_seq[j]+arange->s1, arange->e1 - arange->s1 ,
                     input_seq[0]+arange->s2, arange->e2 - arange->s2 , 
                     INDEL_ALLOWENCE_2, 1);
-        if (aln->aln_str_size > 500 && (aln->dist / aln->aln_str_size) < max_diff) {
+        if (aln->aln_str_size > 500 && ((double) aln->dist / (double) aln->aln_str_size) < max_diff) {
             tags_list[aligned_seq_count] = get_align_tags( aln->q_aln_str, 
                                                            aln->t_aln_str, 
                                                            aln->aln_str_size, 
