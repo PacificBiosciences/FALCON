@@ -107,7 +107,7 @@ def get_alignment(seq1, seq0, edge_tolerance = 1000):
 
 def get_consensus_without_trim( c_input ):
     seqs, seed_id, config = c_input
-    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance = config
+    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size = config
     if max_n_read > len(seqs):
         seqs = seqs[:max_n_read]
     seqs_ptr = (c_char_p * len(seqs))()
@@ -123,7 +123,7 @@ def get_consensus_without_trim( c_input ):
 
 def get_consensus_with_trim( c_input ):
     seqs, seed_id, config = c_input
-    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance = config
+    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size = config
     trim_seqs = []
     seed = seqs[0]
     for seq in seqs[1:]:
@@ -132,8 +132,8 @@ def get_consensus_with_trim( c_input ):
         if c_status == "none":
             continue
         if aln_score > 1000 and e1 - s1 > 500:
-            e1 -= 50
-            s1 += 50
+            e1 -= trim_size
+            s1 += trim_size
             trim_seqs.append( (e1-s1, seq[s1:e1]) )
     trim_seqs.sort(key = lambda x:-x[0]) #use longest alignment first
     trim_seqs = [x[1] for x in trim_seqs]
@@ -205,6 +205,8 @@ if __name__ == "__main__":
                         help='minimum identity of the alignments used for correction')
     parser.add_argument('--edge_tolerance', type=int, default=1000,
                         help='for trimming, the there is unaligned edge leng > edge_tolerance, ignore the read')
+    parser.add_argument('--trim_size', type=int, default=50,
+                        help='the size for triming both ends from initial sparse aligned region')
     good_region = re.compile("[ACGT]+")
     args = parser.parse_args()
     exe_pool = Pool(args.n_core)
@@ -215,7 +217,7 @@ if __name__ == "__main__":
 
     K = 8
     config = args.min_cov, K, args.local_match_count_window, args.local_match_count_threshold,\
-             args.max_n_read, args.min_idt, args.edge_tolerance
+             args.max_n_read, args.min_idt, args.edge_tolerance, args.trim_size
     for res in exe_pool.imap(get_consensus, get_seq_data(config)):  
         cns, seed_id = res
         if args.output_full == True:
