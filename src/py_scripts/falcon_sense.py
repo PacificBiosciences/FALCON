@@ -191,6 +191,10 @@ if __name__ == "__main__":
                         help='minimum number of reads used in generating the consensus')
     parser.add_argument('--trim', type=bool, default=False,
                         help='trim the input sequence with k-mer spare dynamic programming to find the mapped range')
+    parser.add_argument('--output_full', type=bool, default=False,
+                        help='output uncorrected regions too')
+    parser.add_argument('--output_mutli', type=bool, default=False,
+                        help='output multi correct regions')
     parser.add_argument('--min_idt', type=float, default=0.70,
                         help='minimum identity of the alignments used for correction')
     args = parser.parse_args()
@@ -206,6 +210,22 @@ if __name__ == "__main__":
                                                           max_n_read = args.max_n_read,
                                                           min_idt = args.min_idt) ):
         cns, seed_id = res
-        if len(cns) > 500:
-            print ">"+seed_id
-            print cns
+        if args.output_full:
+            if len(cns) > 500:
+                print ">"+seed_id
+                print cns
+        else:
+            cns = cns.split("acgt")
+            if args.output_mutli:
+                seq_i = 0
+                for cns_seq in cns:
+                    if len(cns_seq) > 500:
+                        print ">"+seed_id+"_%d" % seq_i
+                        print cns_seq
+                    seq_i += 1
+            else:
+                cns.sort(key = lambda x: len(x))
+                if len(cns[-1]) > 500:
+                    print ">"+seed_id
+                    print cns[-1]
+
