@@ -103,7 +103,7 @@ align_tags_t * get_align_tags( char * aln_q_seq,
     j = range->s2 - 1;
     match_count = 0;
     jj = 0;
-    for (k = 0; k< 12 && k < aln_seq_len; k++) {
+    for (k = 0; k< local_match_count_window && k < aln_seq_len; k++) {
         if (aln_q_seq[k]  == aln_t_seq[k] ) {
             match_count ++;
         }
