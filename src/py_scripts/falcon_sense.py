@@ -108,7 +108,7 @@ def get_alignment(seq1, seq0, edge_tolerance = 1000):
 def get_consensus_without_trim( c_input ):
     seqs, seed_id, config = c_input
     min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size = config
-    if max_n_read > len(seqs):
+    if len(seqs) > max_n_read:
         seqs = seqs[:max_n_read]
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
