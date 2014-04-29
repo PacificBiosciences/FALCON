@@ -747,12 +747,17 @@ def get_bundles(u_edges):
                             visited_u_edges.add("-".join(ue[0]))
                             extra_u_edges.append(ue)
                 seq = "".join(subseqs)        
+                sv_tig_idx = 0
+                print >> sv_tig_paths, ">%04d-%04d %s" % ( bundle_index, sv_tig_idx, " ".join(bundle_paths[0]) )
                 if len(seq) > 0:
                     print >> out_f, ">%04d %s-%s" % (bundle_index, bundle_paths[0][0], bundle_paths[0][-1])
                     print >> out_f, seq
-                
-                sv_tig_idx = 0
-                for sv_path in bundle_paths:
+                    print >> sv_tigs, ">%04d-%04d %s-%s" % (bundle_index, sv_tig_idx, bundle_paths[0][0], bundle_paths[0][-1])
+                    print >> sv_tigs, "".join(subseqs)
+
+                sv_tig_idx += 1
+
+                for sv_path in bundle_paths[1:]:
                     print >> sv_tig_paths, ">%04d-%04d %s" % ( bundle_index, sv_tig_idx, " ".join(sv_path) )
                     ASM_graph.add_path(sv_path, ctg="%04d" % bundle_index)
                     subseqs = []
