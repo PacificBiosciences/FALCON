@@ -52,7 +52,7 @@ falcon.generate_consensus.restype = POINTER(falcon_kit.ConsensusData)
 falcon.free_consensus_data.argtypes = [ POINTER(falcon_kit.ConsensusData) ]
 
 
-def get_alignment(seq1, seq0):
+def get_alignment(seq1, seq0, edge_tolerance = 1000):
 
     kup = falcon_kit.kup
     K = 8 
@@ -93,10 +93,10 @@ def get_alignment(seq1, seq0):
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
 
-    if s1 > 1000 and s0 > 1000:
+    if s1 > edge_tolerance and s0 > edge_tolerance:
         return 0, 0, 0, 0, 0, 0, "none"
 
-    if len_1 - e1 > 1000 and len_0 - e0 > 1000:
+    if len_1 - e1 > edge_tolerance and len_0 - e0 > edge_tolerance:
         return 0, 0, 0, 0, 0, 0, "none"
 
 
@@ -106,7 +106,8 @@ def get_alignment(seq1, seq0):
         return 0, 0, 0, 0, 0, 0, "none"
 
 def get_consensus_without_trim( c_input ):
-    seqs, seed_id, min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt = c_input
+    seqs, seed_id, config = c_input
+    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance = config
     if max_n_read > len(seqs):
         seqs = seqs[:max_n_read]
     seqs_ptr = (c_char_p * len(seqs))()
@@ -121,11 +122,12 @@ def get_consensus_without_trim( c_input ):
     return consensus, seed_id
 
 def get_consensus_with_trim( c_input ):
-    seqs, seed_id, min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt = c_input
+    seqs, seed_id, config = c_input
+    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance = config
     trim_seqs = []
     seed = seqs[0]
     for seq in seqs[1:]:
-        aln_data = get_alignment(seq, seed)
+        aln_data = get_alignment(seq, seed, edge_tolerance)
         s1, e1, s2, e2, aln_size, aln_score, c_status = aln_data
         if c_status == "none":
             continue
@@ -153,21 +155,24 @@ def get_consensus_with_trim( c_input ):
     return consensus, seed_id
 
 
-def get_seq_data(min_cov = 8, K = 8, lmcw = 12, lmct = 6, max_n_read=500, min_idt=0.7):
+def get_seq_data(config):
     seqs = []
     seed_id = None
     seqs_data = []
     with sys.stdin as f:
         for l in f:
             l = l.strip().split()
+            if len(l) != 2:
+                continue
             if l[0] not in ("+", "-"):
-                if len(seqs) == 0:
-                    seqs.append(l[1]) #the "seed"
-                    seed_id = l[0]
-                seqs.append(l[1])
+                if len(l[1]) > 100:
+                    if len(seqs) == 0:
+                        seqs.append(l[1]) #the "seed"
+                        seed_id = l[0]
+                    seqs.append(l[1])
             elif l[0] == "+":
                 if len(seqs) > 10:
-                    yield (seqs, seed_id, min_cov, K, lmcw, lmct, max_n_read, min_idt) 
+                    yield (seqs, seed_id, config) 
                 #seqs_data.append( (seqs, seed_id) ) 
                 seqs = []
                 seed_id = None
@@ -190,14 +195,16 @@ if __name__ == "__main__":
                         help='minimum coverage to break the consensus')
     parser.add_argument('--max_n_read', type=int, default=500,
                         help='minimum number of reads used in generating the consensus')
-    parser.add_argument('--trim', type=bool, default=False,
+    parser.add_argument('--trim', action="store_true", default=False,
                         help='trim the input sequence with k-mer spare dynamic programming to find the mapped range')
-    parser.add_argument('--output_full', type=bool, default=False,
+    parser.add_argument('--output_full', action="store_true", default=False,
                         help='output uncorrected regions too')
-    parser.add_argument('--output_multi', type=bool, default=False,
+    parser.add_argument('--output_multi', action="store_true", default=False,
                         help='output multi correct regions')
     parser.add_argument('--min_idt', type=float, default=0.70,
                         help='minimum identity of the alignments used for correction')
+    parser.add_argument('--edge_tolerance', type=int, default=1000,
+                        help='for trimming, the there is unaligned edge leng > edge_tolerance, ignore the read')
     good_region = re.compile("[ACGT]+")
     args = parser.parse_args()
     exe_pool = Pool(args.n_core)
@@ -206,11 +213,10 @@ if __name__ == "__main__":
     else:
         get_consensus = get_consensus_without_trim
 
-    for res in exe_pool.imap(get_consensus, get_seq_data( min_cov = args.min_cov, 
-                                                          lmcw= args.local_match_count_window, 
-                                                          lmct = args.local_match_count_threshold,
-                                                          max_n_read = args.max_n_read,
-                                                          min_idt = args.min_idt) ):
+    K = 8
+    config = args.min_cov, K, args.local_match_count_window, args.local_match_count_threshold,\
+             args.max_n_read, args.min_idt, args.edge_tolerance
+    for res in exe_pool.imap(get_consensus, get_seq_data(config)):  
         cns, seed_id = res
         if args.output_full == True:
             if len(cns) > 500:
