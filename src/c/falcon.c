@@ -174,7 +174,7 @@ int compare_tags(const void * a, const void * b)
     }
 }
 
-char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_seqs, unsigned t_len, unsigned min_cov ) {
+consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_seqs, unsigned t_len, unsigned min_cov ) {
 
     seq_coor_t i, j, t_pos, tmp_pos;
     unsigned int * coverage;
@@ -189,7 +189,9 @@ char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_se
     seq_coor_t consensus_index;
     seq_coor_t c_start, c_end, max_start;
     unsigned int cov_score, max_cov_score;
-    char * consensus;
+    consensus_data * consensus;
+    //char * consensus;
+
 
 
     align_tag_t ** tag_seq_index;
@@ -222,7 +224,7 @@ char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_se
         }
     }
 
-
+    /***
     cov_score = 0;
     max_cov_score = 0;
     max_start = 0;
@@ -241,11 +243,17 @@ char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_se
         }
         cov_score += 1;
     }
-
+    ***/
 
     consensus_index = 0;
-    consensus = calloc( t_len * 2 + 1, sizeof(char) );
-    for (i = c_start; i < c_end; i++) {
+
+    //consensus = calloc( t_len * 2 + 1, sizeof(char) );
+    
+    consensus = calloc( 1, sizeof(consensus_data) );
+    consensus->sequence = calloc( t_len * 2 + 1, sizeof(char) );
+    consensus->eff_cov = calloc( t_len * 2 + 1, sizeof(unsigned int) );
+
+    for (i = 0; i < t_len; i++) {
         qsort(tag_seq_index[i], local_nbase[i], sizeof(align_tag_t), compare_tags);
         cur_delta = 0;
         for (j = 0; j <= local_nbase[i]; j++) {
@@ -264,19 +272,39 @@ char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_se
                 if (max_count > coverage[i] * 0.5) { 
                     switch (max_count_index) {
                         case 0:
-                            consensus[consensus_index] = 'A';
+                            if (coverage[i] < min_cov + 1) {
+                                consensus->sequence[consensus_index] = 'a';
+                            } else {
+                                consensus->sequence[consensus_index] = 'A';
+                            }
+                            consensus->eff_cov[consensus_index] = coverage[i] ;
                             consensus_index ++;
                             break;
                         case 1:
-                            consensus[consensus_index] = 'C';
+                            if (coverage[i] < min_cov + 1) {
+                                consensus->sequence[consensus_index] = 'c';
+                            } else {
+                                consensus->sequence[consensus_index] = 'C';
+                            }
+                            consensus->eff_cov[consensus_index] = coverage[i] ;
                             consensus_index ++;
                             break;
                         case 2:
-                            consensus[consensus_index] = 'G';
+                            if (coverage[i] < min_cov + 1) {
+                                consensus->sequence[consensus_index] = 'g';
+                            } else {
+                                consensus->sequence[consensus_index] = 'G';
+                            }
+                            consensus->eff_cov[consensus_index] = coverage[i] ;
                             consensus_index ++;
                             break;
                         case 3:
-                            consensus[consensus_index] = 'T';
+                            if (coverage[i] < min_cov + 1) {
+                                consensus->sequence[consensus_index] = 't';
+                            } else {
+                                consensus->sequence[consensus_index] = 'T';
+                            }
+                            consensus->eff_cov[consensus_index] = coverage[i] ;
                             consensus_index ++;
                             break;
                         default:
@@ -331,12 +359,13 @@ char * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_se
 
 //const unsigned int K = 8;
 
-char * generate_consensus( char ** input_seq, 
+consensus_data * generate_consensus( char ** input_seq, 
                            unsigned int n_seq, 
                            unsigned min_cov, 
                            unsigned K,
                            unsigned long local_match_count_window,
-                           unsigned long local_match_count_threshold) {
+                           unsigned long local_match_count_threshold,
+                           double min_idt) {
 
     unsigned int i, j, k;
     unsigned int seq_count;
@@ -350,7 +379,10 @@ char * generate_consensus( char ** input_seq,
     alignment * aln;
     align_tags_t * tags;
     align_tags_t ** tags_list;
-    char * consensus;
+    //char * consensus;
+    consensus_data * consensus;
+    double max_diff;
+    max_diff = 1.0 - min_idt;
 
     seq_count = n_seq;
     //for (j=0; j < seq_count; j++) {
@@ -397,7 +429,7 @@ char * generate_consensus( char ** input_seq,
         aln = align(input_seq[j]+arange->s1, arange->e1 - arange->s1 ,
                     input_seq[0]+arange->s2, arange->e2 - arange->s2 , 
                     INDEL_ALLOWENCE_2, 1);
-        if (aln->aln_str_size > 500) {
+        if (aln->aln_str_size > 500 && (aln->dist / aln->aln_str_size) < max_diff) {
             tags_list[aligned_seq_count] = get_align_tags( aln->q_aln_str, 
                                                            aln->t_aln_str, 
                                                            aln->aln_str_size, 
@@ -431,8 +463,10 @@ char * generate_consensus( char ** input_seq,
 }
 
 
-void free_consensus( char * str ){
-    free(str);
+void free_consensus_data( consensus_data * consensus ){
+    free(consensus->sequence);
+    free(consensus->eff_cov);
+    free(consensus);
 }
 
 /***

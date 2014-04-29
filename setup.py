@@ -5,7 +5,7 @@ from setuptools import setup
 from distutils.core import Extension
 
 setup(name='falcon_kit',
-      version='0.1.2',
+      version='0.1.3',
       description='a small toolkit for DNA seqeucne alignment, overlapping, and assembly',
       author='Jason Chin',
       author_email='jchin@pacificbiosciences.com',
@@ -24,7 +24,6 @@ setup(name='falcon_kit',
                  "src/py_scripts/falcon_overlap2.py",
                  "src/py_scripts/falcon_qrm.py",
                  "src/py_scripts/falcon_fixasm.py",
-                 "src/py_scripts/falcon_wrap.py",
                  "src/py_scripts/falcon_sense.py",
                  "src/py_scripts/get_rdata.py",
                  "src/py_scripts/remove_dup_ctg.py"],

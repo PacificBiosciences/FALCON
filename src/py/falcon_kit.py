@@ -62,6 +62,10 @@ class AlnRange(Structure):
                  ("e2", seq_coor_t),
                  ("score", c_long) ]
 
+class ConsensusData(Structure):
+    _fields_ = [ ("sequence", c_char_p),
+                 ("eff_cov", POINTER(c_uint)) ]
+
 kup = CDLL(os.path.join(module_path, "kmer_lookup.so"))
 
 kup.allocate_kmer_lookup.argtypes =  [seq_coor_t] 
@@ -126,9 +130,9 @@ DWA.free_alignment.argtypes = [POINTER(Alignment)]
 
 falcon = CDLL(os.path.join(module_path,"falcon.so"))
 
-falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint, c_uint  ]
-falcon.generate_consensus.restype = POINTER(c_char)
-falcon.free_consensus.argtypes = [ c_char_p ]
+falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint, c_uint, c_double  ]
+falcon.generate_consensus.restype = POINTER(ConsensusData)
+falcon.free_consensus_data.argtypes = [ POINTER(ConsensusData) ]
 
 
 

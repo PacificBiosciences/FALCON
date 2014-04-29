@@ -47,9 +47,10 @@ module_path = falcon_kit.__path__[0]
 
 falcon = CDLL(os.path.join(module_path, "falcon.so"))
 
-falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint ]
-falcon.generate_consensus.restype = POINTER(c_char)
-falcon.free_consensus.argtypes = [ c_char_p ]
+falcon.generate_consensus.argtypes = [ POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint, c_uint, c_double ]
+falcon.generate_consensus.restype = POINTER(falcon_kit.ConsensusData)
+falcon.free_consensus_data.argtypes = [ POINTER(falcon_kit.ConsensusData) ]
+
 
 def get_alignment(seq1, seq0):
 
@@ -105,20 +106,22 @@ def get_alignment(seq1, seq0):
         return 0, 0, 0, 0, 0, 0, "none"
 
 def get_consensus_without_trim( c_input ):
-    seqs, seed_id, min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read = c_input
+    seqs, seed_id, min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt = c_input
     if max_n_read > len(seqs):
         seqs = seqs[:max_n_read]
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
-    consensus_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K, 
-                                               local_match_count_window, local_match_count_threshold )
-    consensus = string_at(consensus_ptr)[:]
-    falcon.free_consensus( consensus_ptr )
+    consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K, 
+                                                    local_match_count_window, local_match_count_threshold, min_idt )
+
+    consensus = string_at(consensus_data_ptr[0].sequence)[:]
+    eff_cov = consensus_data_ptr[0].eff_cov[:len(consensus)]
+    falcon.free_consensus_data( consensus_data_ptr )
     del seqs_ptr
     return consensus, seed_id
 
 def get_consensus_with_trim( c_input ):
-    seqs, seed_id, min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read = c_input
+    seqs, seed_id, min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt = c_input
     trim_seqs = []
     seed = seqs[0]
     for seq in seqs[1:]:
@@ -141,15 +144,16 @@ def get_consensus_with_trim( c_input ):
 
     seqs_ptr = (c_char_p * len(trim_seqs))()
     seqs_ptr[:] = trim_seqs
-    consensus_ptr = falcon.generate_consensus( seqs_ptr, len(trim_seqs), min_cov, K, 
-                                               local_match_count_window, local_match_count_threshold )
-    consensus = string_at(consensus_ptr)[:]
-    falcon.free_consensus( consensus_ptr )
+    consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(trim_seqs), min_cov, K, 
+                                               local_match_count_window, local_match_count_threshold, min_idt )
+    consensus = string_at(consensus_data_ptr[0].sequence)[:]
+    eff_cov = consensus_data_ptr[0].eff_cov[:len(consensus)]
+    falcon.free_consensus_data( consensus_data_ptr )
     del seqs_ptr
     return consensus, seed_id
 
 
-def get_seq_data(min_cov = 8, K = 8, lmcw = 12, lmct = 6, max_n_read=500):
+def get_seq_data(min_cov = 8, K = 8, lmcw = 12, lmct = 6, max_n_read=500, min_idt=0.7):
     seqs = []
     seed_id = None
     seqs_data = []
@@ -163,7 +167,7 @@ def get_seq_data(min_cov = 8, K = 8, lmcw = 12, lmct = 6, max_n_read=500):
                 seqs.append(l[1])
             elif l[0] == "+":
                 if len(seqs) > 10:
-                    yield (seqs, seed_id, min_cov, K, lmcw, lmct, max_n_read) 
+                    yield (seqs, seed_id, min_cov, K, lmcw, lmct, max_n_read, min_idt) 
                 #seqs_data.append( (seqs, seed_id) ) 
                 seqs = []
                 seed_id = None
@@ -187,6 +191,8 @@ if __name__ == "__main__":
                         help='minimum number of reads used in generating the consensus')
     parser.add_argument('--trim', type=bool, default=False,
                         help='trim the input sequence with k-mer spare dynamic programming to find the mapped range')
+    parser.add_argument('--min_idt', type=float, default=0.70,
+                        help='minimum identity of the alignments used for correction')
     args = parser.parse_args()
     exe_pool = Pool(args.n_core)
     if args.trim:
@@ -197,7 +203,8 @@ if __name__ == "__main__":
     for res in exe_pool.imap(get_consensus, get_seq_data( min_cov = args.min_cov, 
                                                           lmcw= args.local_match_count_window, 
                                                           lmct = args.local_match_count_threshold,
-                                                          max_n_read = args.max_n_read ) ):
+                                                          max_n_read = args.max_n_read,
+                                                          min_idt = args.min_idt) ):
         cns, seed_id = res
         if len(cns) > 500:
             print ">"+seed_id

@@ -120,6 +120,11 @@ typedef struct {
 } aln_range;
 
 
+typedef struct {
+    char * sequence;
+    unsigned int * eff_cov;
+} consensus_data;
+
 kmer_lookup * allocate_kmer_lookup (seq_coor_t);
 void init_kmer_lookup ( kmer_lookup *,  seq_coor_t );
 void free_kmer_lookup(kmer_lookup *);
@@ -166,3 +171,7 @@ alignment * align(char *, seq_coor_t,
                   int); 
 
 void free_alignment(alignment *);
+
+
+void free_consensus_data(consensus_data *);
+
