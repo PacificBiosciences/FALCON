@@ -57,6 +57,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
+#include <assert.h>
 #include "common.h"
 
 typedef struct {
@@ -87,7 +88,7 @@ align_tags_t * get_align_tags( char * aln_q_seq,
                                unsigned long q_id,
                                unsigned long local_match_count_window,
                                unsigned long local_match_count_threshold,
-                               unsigned long t_offset) {
+                               seq_coor_t t_offset) {
 
 #define LONGEST_INDEL_ALLOWED 6 
 
@@ -132,18 +133,17 @@ align_tags_t * get_align_tags( char * aln_q_seq,
                 match_count = 0;
             }
         }
-        
-        //printf("X: %ld %c %c %ld\n", j, aln_q_seq[k], aln_t_seq[k], match_count);
-        
-        (tags->align_tags[k]).t_pos = j + t_offset;
-        (tags->align_tags[k]).delta = jj;
-        if (local_match_count_threshold > 0 && jj == 0 && match_count < local_match_count_threshold) {
-            (tags->align_tags[k]).q_base = '*';
-        } else {
-            (tags->align_tags[k]).q_base = aln_q_seq[k];
+       
+        if ( j + t_offset >= 0) {
+            (tags->align_tags[k]).t_pos = j + t_offset;
+            (tags->align_tags[k]).delta = jj;
+            if (local_match_count_threshold > 0 && jj == 0 && match_count < local_match_count_threshold) {
+                (tags->align_tags[k]).q_base = '*';
+            } else {
+                (tags->align_tags[k]).q_base = aln_q_seq[k];
+            }
+            (tags->align_tags[k]).q_id = q_id;
         }
-        (tags->align_tags[k]).q_id = q_id;
-
         //if (jj > LONGEST_INDEL_ALLOWED) {
         //   break;
         //}
@@ -205,7 +205,8 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
     for (i = 0; i < n_tag_seqs; i++) {
         for (j = 0; j < tag_seqs[i]->len; j++) {
             if (tag_seqs[i]->align_tags[j].delta == 0 && tag_seqs[i]->align_tags[j].q_base != '*') {
-                coverage[ tag_seqs[i]->align_tags[j].t_pos ] ++;
+                t_pos = tag_seqs[i]->align_tags[j].t_pos;
+                coverage[ t_pos ] ++;
             }
             local_nbase[ tag_seqs[i]->align_tags[j].t_pos ] ++;
         }
@@ -219,36 +220,14 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
     for (i = 0; i < n_tag_seqs; i++) {
         for (j = 0; j < tag_seqs[i]->len; j++) {
             t_pos = tag_seqs[i]->align_tags[j].t_pos;
-            //printf("t_pos %ld\n", t_pos);
             tag_seq_index[ t_pos ][ aux_index[ t_pos ] ] = tag_seqs[i]->align_tags[j];
             aux_index[ t_pos ] ++;
         }
     }
 
-    /***
-    cov_score = 0;
-    max_cov_score = 0;
-    max_start = 0;
-    c_start = 0;
-    c_end = 0;
-    for (i = 0; i < t_len; i++) {
-        //printf("i,cov: %ld %d\n", i, coverage[i]);
-        if (coverage[i] < min_cov + 1) {
-            if (cov_score > max_cov_score) {
-                max_cov_score = cov_score;
-                c_start = max_start + 1;
-                c_end = i;
-            }
-            cov_score = 0;
-            max_start = i;
-        }
-        cov_score += 1;
-    }
-    ***/
 
     consensus_index = 0;
 
-    //consensus = calloc( t_len * 2 + 1, sizeof(char) );
     
     consensus = calloc( 1, sizeof(consensus_data) );
     consensus->sequence = calloc( t_len * 2 + 1, sizeof(char) );
@@ -481,49 +460,83 @@ consensus_data * generate_utg_consensus( char ** input_seq,
     //char * consensus;
     consensus_data * consensus;
     double max_diff;
-    char * buffer[100000];
+    seq_coor_t utg_len;
+    seq_coor_t r_len;
     max_diff = 1.0 - min_idt;
     
 
     seq_count = n_seq;
-    //for (j=0; j < seq_count; j++) {
-    //    printf("seq_len: %u %u\n", j, strlen(input_seq[j]));
-    //};
-    //fflush(stdout);
-
-    tags_list = calloc( seq_count, sizeof(align_tags_t *) );
+    /***
+    for (j=0; j < seq_count; j++) {
+        printf("seq_len: %u %u\n", j, strlen(input_seq[j]));
+    };
+    fflush(stdout);
+    ***/
+    tags_list = calloc( seq_count+1, sizeof(align_tags_t *) );
+    utg_len =  strlen(input_seq[0]);
     aligned_seq_count = 0;
     arange = calloc( 1, sizeof(aln_range) );
+
+    arange->s1 = 0;
+    arange->e1 = strlen(input_seq[0]);
+    arange->s2 = 0;
+    arange->e2 = strlen(input_seq[0]); 
+    tags_list[aligned_seq_count] = get_align_tags( input_seq[0], input_seq[0], 
+                                                   strlen(input_seq[0]), arange, 0, 
+                                                   12, 0, 0); 
+    aligned_seq_count += 1;
     for (j=1; j < seq_count; j++) {
         arange->s1 = 0;
         arange->e1 = strlen(input_seq[j])-1;
         arange->s2 = 0;
         arange->e2 = strlen(input_seq[j])-1; 
 
-        strncpy(buffer, input_seq[0]+offset[j], strlen(input_seq[j])+1);
-        printf("seq_len: %ld %u\n", j, strlen(input_seq[j]));
-        printf("offset: %ld %u\n", j, offset[j]);
-        fflush(stdout);
-        
-        
-        aln = align(input_seq[j], strlen(input_seq[j]),
-                    buffer, strlen(input_seq[j]), 
-                    100, 1);
-        printf("aln_done\n");
-        fflush(stdout);
+        r_len = strlen(input_seq[j]);
+        //printf("seq_len: %u %u\n", j, r_len);
+        if ( offset[j] < 0) {
+            if ((r_len + offset[j]) < 128) {
+                continue;
+            }
+            if ( r_len + offset[j] < utg_len ) {
+
+                //printf("1: %ld %u %u\n", offset[j], r_len, utg_len);
+                aln = align(input_seq[j] - offset[j], r_len + offset[j] ,
+                            input_seq[0], r_len + offset[j] , 
+                            500, 1);
+            } else {
+                //printf("2: %ld %u %u\n", offset[j], r_len, utg_len);
+                aln = align(input_seq[j] - offset[j], utg_len ,
+                            input_seq[0], utg_len , 
+                            500, 1);
+            }
+            offset[j] = 0;
+
+        } else {
+            if ( offset[j] > utg_len - 128) {
+                continue;
+            }
+            if ( offset[j] + r_len > utg_len ) {
+                //printf("3: %ld %u %u\n", offset[j], r_len, utg_len);
+                aln = align(input_seq[j], utg_len - offset[j] ,
+                            input_seq[0]+offset[j], utg_len - offset[j], 
+                            500, 1);
+            } else {
+                //printf("4: %ld %u %u\n", offset[j], r_len, utg_len);
+                aln = align(input_seq[j], r_len ,
+                            input_seq[0]+offset[j], r_len , 
+                            500, 1);
+            }
+        }
         if (aln->aln_str_size > 500 && ((double) aln->dist / (double) aln->aln_str_size) < max_diff) {
             tags_list[aligned_seq_count] = get_align_tags( aln->q_aln_str, aln->t_aln_str, 
                                                            aln->aln_str_size, arange, j, 
                                                            12, 0, offset[j]); 
             aligned_seq_count ++;
         }
-        printf("tag_generation_done\n");
-        fflush(stdout);
         free_alignment(aln);
     }
     free_aln_range(arange);
-
-    consensus = get_cns_from_align_tags( tags_list, aligned_seq_count, strlen(input_seq[0]), 0 );
+    consensus = get_cns_from_align_tags( tags_list, aligned_seq_count, utg_len, 0 );
     //free(consensus);
     for (j=0; j < aligned_seq_count; j++) {
         free_align_tags(tags_list[j]);
