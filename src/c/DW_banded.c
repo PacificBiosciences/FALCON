@@ -229,7 +229,7 @@ alignment * align(char * query_seq, seq_coor_t q_len,
         // min_k --;
 
         // For debuging 
-        //printf("min_max_k,d, %ld %ld %ld\n", min_k, max_k, d);
+        // printf("min_max_k,d, %ld %ld %ld\n", min_k, max_k, d);
         
         if (aligned == true) {
             align_rtn->aln_q_e = x;

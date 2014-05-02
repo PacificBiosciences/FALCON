@@ -69,13 +69,17 @@ def is_branch_node(G, n):
 
 def get_seq(u_edges, path):
     subseqs = []
+    pos = []
+    cur_len = 0
     for i in range( len(path) - 1):
         v, w = path[i:i+2]
+        pos.append( (v, cur_len) )
         uedges = u_edges[ (v, w) ]
         uedges.sort( key= lambda x: len(x[0]) )
         subseqs.append( uedges[-1][1] )
-        
-    return "".join(subseqs)
+        cur_len += len( uedges[-1][1] )
+    pos.append( (w, cur_len) ) 
+    return "".join(subseqs), pos
 
 
 
@@ -116,6 +120,7 @@ path_names = primary_tigs_path.keys()
 path_names.sort()
 primary_path_graph_r = primary_path_graph.reverse()
 path_f = open("primary_tigs_paths_c","w")
+pos_f = open("primary_tigs_node_pos_c", "w")
 with open("primary_tigs_c.fa","w") as out_f:
     for name in path_names:
         sub_idx = 0
@@ -131,21 +136,25 @@ with open("primary_tigs_c.fa","w") as out_f:
                 break_path = is_branch_node(primary_path_graph_r, vn)
             if break_path:
                 c_path.append(v)
-                seq = get_seq(u_edges, c_path)
+                seq, pos = get_seq(u_edges, c_path)
                 print >>out_f, ">%s_%02d" % (name, sub_idx)
                 print >>out_f, seq
                 print >>path_f, ">%s_%02d" % (name, sub_idx), " ".join(c_path)
                 #print c_path
+                for node, p in pos:
+                    print >> pos_f, "%s_%02d %s %d" % (name, sub_idx, node, p)
                 c_path = [v]
                 sub_idx += 1
             else:
                 c_path.append(v)
                 
         if len(c_path) > 1:
-            seq = get_seq(u_edges, c_path)
+            seq, pos = get_seq(u_edges, c_path)
             print >>out_f, ">%s_%02d" % (name, sub_idx)
             print >>out_f, seq
             print >>path_f, ">%s_%02d" % (name, sub_idx), " ".join(c_path)
+            for node, p in pos:
+                print >> pos_f, "%s_%02d %s %d" % (name, sub_idx, node, p)
 
             
 path_f.close()
