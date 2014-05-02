@@ -49,7 +49,7 @@ if __name__ == "__main__":
     from pbcore.io import FastaReader
     
     tiling_path = {}
-    with open("primary_tigs_tiling_path_c") as f:
+    with open("all_tiling_path_c") as f:
         for l in f:
             l = l.strip().split()
             tiling_path.setdefault( l[0], [])
@@ -67,17 +67,17 @@ if __name__ == "__main__":
          seq_db[r.name] = r.sequence
 
     f = FastaReader("primary_tigs_c.fa")
-    ptigs_db = {}
+    p_tigs_db = {}
     for r in f:
-         ptigs_db[r.name] = r.sequence
+         p_tigs_db[r.name] = r.sequence
 
-    for ptig_id in ptigs_db:
+    for p_tig_id in p_tigs_db:
         pread_data = {}
         offsets = []
         seqs = []
-        p_tig = ptigs_db[ptig_id]
-        print ptig_id, 0, p_tig
-        for offset, s_id, end, s, e in tiling_path[ptig_id]:
+        p_tig = p_tigs_db[p_tig_id]
+        print p_tig_id, 0, p_tig
+        for offset, s_id, end, s, e in tiling_path[p_tig_id]:
             seq = seq_db[s_id]
             if end == "B":
                 s, e = e, s
@@ -88,5 +88,29 @@ if __name__ == "__main__":
             print s_id, offset, seq
         
         print "+ + +"
+
+    f = FastaReader("a_nodup.fa")
+    a_tigs_db = {}
+    for r in f:
+         a_tigs_db[r.name] = r.sequence
+
+    for atig_id in a_tigs_db:
+        pread_data = {}
+        offsets = []
+        seqs = []
+        a_tig = a_tigs_db[atig_id]
+        print atig_id, 0, a_tig
+        for offset, s_id, end, s, e in tiling_path[atig_id]:
+            seq = seq_db[s_id]
+            if end == "B":
+                s, e = e, s
+                offset = offset - len(seq) 
+                seq = "".join([rcmap[c] for c in seq[::-1]])
+            else:
+                offset = offset - len(seq)
+            print s_id, offset, seq
+        
+        print "+ + +"
+
     print "- - -"
 
