@@ -519,9 +519,9 @@ def get_bundle( path, u_graph ):
         ct += 1
     last_node = None
     longest_len = 0
+        
     sub_graph2_nodes = sub_graph2.nodes()
     sub_graph2_edges = sub_graph2.edges()
-        
 
 
     new_path = [path[0]]
@@ -547,13 +547,14 @@ def get_bundle( path, u_graph ):
     path = new_path
 
     # clean up sub_graph2 according to new begin and end
+    sub_graph2_r = sub_graph2.reverse()
     down_path = nx.ego_graph(sub_graph2, path[0], radius=len(path), undirected=False)
-    up_path = nx.ego_graph(sub_graph2, path[-1], radius=len(path), undirected=False)
+    up_path = nx.ego_graph(sub_graph2_r, path[-1], radius=len(path), undirected=False)
     subgraph_nodes = set(down_path) & set(up_path)
-    for n in sub_graph2_nodes:
-        if n not in subgraph_nodes:
-            sub_graph2.remove_node(n)
-
+    for v in sub_graph2_nodes:
+        if v not in subgraph_nodes:
+            sub_graph2.remove_node(v)
+    
     if DEBUG_LOG_LEVEL > 1:
         print "new_path", path[0], last_node, len(sub_graph2_nodes), path
 
@@ -561,8 +562,9 @@ def get_bundle( path, u_graph ):
     bundle_paths = [path]
     p_nodes = set(path)
     p_edges = set(zip(path[:-1], path[1:]))
-    for v, w in p_edges:
-        sub_graph2.add_edge( v, w)
+
+    sub_graph2_nodes = sub_graph2.nodes()
+    sub_graph2_edges = sub_graph2.edges()
 
     nodes_idx = dict( [ (n[1], n[0]) for n in enumerate(path) ]  )
     
@@ -572,7 +574,7 @@ def get_bundle( path, u_graph ):
     wi = 0
     vi = 0
     v = path[0]
-    while v != path[-1]:
+    while v != path[-1] and wi < len(path)-1:
         wi += 1
         w = path[wi]
         while len( sub_graph2.successors(w) ) == 1 and len( sub_graph2.predecessors(w) ) == 1:
@@ -582,6 +584,7 @@ def get_bundle( path, u_graph ):
             branched = True
         else:
             branched = False
+
         if not branched:
             non_branch_subpaths.append( path[vi:wi+1] )
         v = w
@@ -596,7 +599,7 @@ def get_bundle( path, u_graph ):
 
     if DEBUG_LOG_LEVEL > 1:
         print "associate_graph size:", len(associate_graph)           
-        print "non_branch_subpaths", non_branch_subpaths
+        print "non_branch_subpaths",len(non_branch_subpaths), non_branch_subpaths
 
     # construct the bundle graph                
     associate_graph_nodes = set(associate_graph.nodes())
@@ -606,8 +609,6 @@ def get_bundle( path, u_graph ):
         if len(non_branch_subpaths[i]) == 0 or len( non_branch_subpaths[i+1] ) == 0:
             continue
         e1, e2 = non_branch_subpaths[i: i+2]
-        #v = e1[-1][-1]
-        #w = e2[0][0]
         v = e1[-1]
         w = e2[0]
         if v == w:
@@ -749,7 +750,9 @@ def get_bundles(u_edges):
 
             bundle_graph, bundle_paths, bundle_graph_edges = get_bundle( path, G )
             for bg_edge in bundle_graph_edges:
-                print >> bundle_edge_out, bundle_index, bg_edge[0], bg_edge[1]
+                print >> bundle_edge_out, bundle_index, "edge", bg_edge[0], bg_edge[1]
+            for path_ in bundle_paths:
+                print >>bundle_edge_out, "path", bundle_index, " ".join(path_) 
 
             edges_to_be_removed = set()
             if DEBUG_LOG_LEVEL > 2:
@@ -817,6 +820,7 @@ def get_bundles(u_edges):
                 
                 bundle_index += 1
             else:
+                #TODO, consolidate code here
                 v,w = path
                 uedges = u_edges[ (v,w) ]
                 uedges.sort( key= lambda x: len(x[0]) )
@@ -829,6 +833,7 @@ def get_bundles(u_edges):
                 bundle_index += 1
                 bundle_graph_edges = zip(path[:-1],path[1:])
         else:
+            #TODO, consolidate code here
             v,w = path
             uedges = u_edges[ (v,w) ]
             uedges.sort( key= lambda x: len(x[0]) )
