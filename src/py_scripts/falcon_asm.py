@@ -545,6 +545,15 @@ def get_bundle( path, u_graph ):
 
 
     path = new_path
+
+    # clean up sub_graph2 according to new begin and end
+    down_path = nx.ego_graph(sub_graph2, path[0], radius=len(path), undirected=False)
+    up_path = nx.ego_graph(sub_graph2, path[-1], radius=len(path), undirected=False)
+    subgraph_nodes = set(down_path) & set(up_path)
+    for n in sub_graph2_nodes:
+        if n not in subgraph_nodes:
+            sub_graph2.remove_node(n)
+
     if DEBUG_LOG_LEVEL > 1:
         print "new_path", path[0], last_node, len(sub_graph2_nodes), path
 
@@ -552,23 +561,32 @@ def get_bundle( path, u_graph ):
     bundle_paths = [path]
     p_nodes = set(path)
     p_edges = set(zip(path[:-1], path[1:]))
+    for v, w in p_edges:
+        sub_graph2.add_edge( v, w)
+
     nodes_idx = dict( [ (n[1], n[0]) for n in enumerate(path) ]  )
     
          
     # create a list of subpath that has no branch
-    non_branch_subpaths = [ [] ]
-    non_branch_edges = set()
-    mtg_edges = set()
-    
-    for i in range(len(path)-1):
-        v, w = path[i:i+2]
-        if len(sub_graph2.successors(v)) == 1 and len(sub_graph2.predecessors(w)) == 1:
-            non_branch_subpaths[-1].append( (v, w) )
-            non_branch_edges.add( (v, w) )
+    non_branch_subpaths = []
+    wi = 0
+    vi = 0
+    v = path[0]
+    while v != path[-1]:
+        wi += 1
+        w = path[wi]
+        while len( sub_graph2.successors(w) ) == 1 and len( sub_graph2.predecessors(w) ) == 1:
+            wi += 1
+            w = path[wi]
+        if  len( sub_graph2.successors(v) )!= 1 or len( sub_graph2.predecessors(w) )!= 1:
+            branched = True
         else:
-            if len(non_branch_subpaths[-1]) != 0:
-                non_branch_subpaths.append([])
-                
+            branched = False
+        if not branched:
+            non_branch_subpaths.append( path[vi:wi+1] )
+        v = w
+        vi = wi
+
     # create the accompany_graph that has the path of the alternative subpaths
     
     associate_graph = nx.DiGraph()
@@ -588,8 +606,10 @@ def get_bundle( path, u_graph ):
         if len(non_branch_subpaths[i]) == 0 or len( non_branch_subpaths[i+1] ) == 0:
             continue
         e1, e2 = non_branch_subpaths[i: i+2]
-        v = e1[-1][-1]
-        w = e2[0][0]
+        #v = e1[-1][-1]
+        #w = e2[0][0]
+        v = e1[-1]
+        w = e2[0]
         if v == w:
             continue
         in_between_node_count = nodes_idx[w] - nodes_idx[v] 
@@ -639,6 +659,7 @@ def get_bundles(u_edges):
 
         u_graph.add_edge(v, w, n_weight = max_weight - max( [len(s[1]) for s in  u_edges[ (v,w) ] ] ) )
     
+    bundle_edge_out = open("bundle_edges","w")
     bundle_index = 0
     G = u_graph.copy()
     visited_u_edges = set()
@@ -669,6 +690,7 @@ def get_bundles(u_edges):
             print "no more candiate", len(G.edges()), len(G.nodes())
             if len(G.edges()) > 0:
                 path = G.edges()[0] 
+                print path
             else:
                 break
         else:
@@ -690,30 +712,33 @@ def get_bundles(u_edges):
         new_path = []  
         tail = True
         # avioid confusion due to long palindrome sequence
-        for i in range( 0, len( path ) - 1 ):
-            v_n, w_n = path[i:i+2]
-            new_path.append(v_n)
-            # the comment out code below might be useful for filter out some high connectivity nodes
-            #if (v_n, w_n) in cmp_edges or\
-            #    len(u_graph.out_edges(w_n)) > 5 or\
-            #    len(u_graph.in_edges(w_n)) > 5:
-            if (v_n, w_n) in cmp_edges: 
-                tail = False
-                break
+        if len(path) > 2:
+            for i in range( 0, len( path ) - 1 ):
+                v_n, w_n = path[i:i+2]
+                new_path.append(v_n)
+                # the comment out code below might be useful for filter out some high connectivity nodes
+                #if (v_n, w_n) in cmp_edges or\
+                #    len(u_graph.out_edges(w_n)) > 5 or\
+                #    len(u_graph.in_edges(w_n)) > 5:
+                if (v_n, w_n) in cmp_edges: 
+                    tail = False
+                    break
 
-            r_id, end = v_n.split(":")
-            end = "E" if end == "B" else "B" 
-            v_n2 = r_id + ":" + end 
+                r_id, end = v_n.split(":")
+                end = "E" if end == "B" else "B" 
+                v_n2 = r_id + ":" + end 
 
-            r_id, end = w_n.split(":")
-            end = "E" if end == "B" else "B" 
-            w_n2 = r_id + ":" + end 
+                r_id, end = w_n.split(":")
+                end = "E" if end == "B" else "B" 
+                w_n2 = r_id + ":" + end 
 
-            if (w_n2, v_n2) in g_edges:
-                cmp_edges.add( (w_n2, v_n2) )
+                if (w_n2, v_n2) in g_edges:
+                    cmp_edges.add( (w_n2, v_n2) )
 
-        if tail:
-            new_path.append(w_n)
+            if tail:
+                new_path.append(w_n)
+        else:
+            new_path = path[:]
                 
         
         if len(new_path) > 1:
@@ -723,7 +748,10 @@ def get_bundles(u_edges):
                 print "Y", path[0], path[-1], len(path)
 
             bundle_graph, bundle_paths, bundle_graph_edges = get_bundle( path, G )
+            for bg_edge in bundle_graph_edges:
+                print >> bundle_edge_out, bundle_index, bg_edge[0], bg_edge[1]
 
+            edges_to_be_removed = set()
             if DEBUG_LOG_LEVEL > 2:
                 print "Z", bundle_paths[0][0], bundle_paths[0][-1]
                 print bundle_index, len(path), len(bundle_paths[0]), len(bundle_paths), len(bundle_graph_edges)
@@ -738,6 +766,7 @@ def get_bundles(u_edges):
             
                 for i in range(len(bundle_paths[0]) - 1): 
                     v, w = bundle_paths[0][i:i+2]
+                    edges_to_be_removed.add( (v,w) )
                     uedges = u_edges[ (v,w) ]
                     uedges.sort( key= lambda x: len(x[0]) )
                     subseqs.append( uedges[-1][1] )
@@ -763,6 +792,7 @@ def get_bundles(u_edges):
                     subseqs = []
                     for i in range(len(sv_path) - 1): 
                         v, w = sv_path[i:i+2]
+                        edges_to_be_removed.add( (v,w) )
                         uedges = u_edges[ (v,w) ]
                         uedges.sort( key= lambda x: len(x[0]) )
                         subseqs.append( uedges[-1][1] )
@@ -787,14 +817,34 @@ def get_bundles(u_edges):
                 
                 bundle_index += 1
             else:
+                v,w = path
+                uedges = u_edges[ (v,w) ]
+                uedges.sort( key= lambda x: len(x[0]) )
+                subseqs.append( uedges[-1][1] )
+                seq = "".join(subseqs)
+                print >> sv_tig_paths, ">%04d-%04d %s" % ( bundle_index, sv_tig_idx, " ".join(path) )
+                print >> sv_tigs, ">%04d-%04d-u %s-%s" % (bundle_index, sv_tig_idx, path[0], path[-1])
+                print >> sv_tigs, seq
+                sv_tig_idx += 1
+                bundle_index += 1
                 bundle_graph_edges = zip(path[:-1],path[1:])
         else:
+            v,w = path
+            uedges = u_edges[ (v,w) ]
+            uedges.sort( key= lambda x: len(x[0]) )
+            subseqs.append( uedges[-1][1] )
+            seq = "".join(subseqs)
+            print >> sv_tig_paths, ">%04d-%04d %s" % ( bundle_index, sv_tig_idx, " ".join(paths) )
+            print >> sv_tigs, ">%04d-%04d-u %s-%s" % (bundle_index, sv_tig_idx, path[0], path[-1])
+            print >> sv_tigs, seq
+            sv_tig_idx += 1
+            bundle_index += 1
             bundle_graph_edges = zip(path[:-1],path[1:])
         
         #clean up the graph
 
         edges = set(G.edges())
-        edges_to_be_removed = list(set(bundle_graph_edges))
+        edges_to_be_removed |= set(bundle_graph_edges)
 
         if DEBUG_LOG_LEVEL > 2:
             print "BGE",bundle_graph_edges
@@ -838,6 +888,7 @@ def get_bundles(u_edges):
     sv_tigs.close()
     main_tig_paths.close()
     out_f.close()
+    bundle_edge_out.close()
     return ASM_graph
 
 
