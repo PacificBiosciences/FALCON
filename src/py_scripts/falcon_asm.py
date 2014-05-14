@@ -868,7 +868,6 @@ def get_bundles(u_edges):
             if (v, w) in edges:
                 G.remove_edge( v, w )
                 edge_remove_count += 1
-                #if DEBUG_LOG_LEVEL > 2:
                 if 1:
                     print "remove edge", bundle_index, w, v
                 
@@ -886,8 +885,7 @@ def get_bundles(u_edges):
             if (w, v) in edges:
                 G.remove_edge( w, v )
                 edge_remove_count += 1
-                #if DEBUG_LOG_LEVEL > 2:
-                if 1:
+                if DEBUG_LOG_LEVEL > 2:
                     print "remove edge", bundle_index, w, v
 
         if edge_remove_count == 0:
