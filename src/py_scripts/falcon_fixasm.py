@@ -67,21 +67,38 @@ def is_branch_node(G, n):
     return is_branch
 
 
-def get_seq(u_edges, path):
+def get_r_path(r_edges, u_path):
+    tiling_path = []
+    pos = 0
+     
+    for i in range( len(u_path) - 1): 
+        v, w = u_path[i:i+2]
+        r_edge_label, overlap = r_edges[ (v, w) ]
+        r_edge_seq_id, range_ = r_edge_label.split(":")
+        range_ = range_.split("-")
+        s, e = int(range_[0]), int(range_[1])
+        pos += abs(e-s)
+        tiling_path.append( (pos, w, s, e) )
+    return tiling_path
+
+def get_seq(u_edges, r_edges, path):
     subseqs = []
     pos = []
-    cur_len = 0
+    cur_pos = 0
+    full_tiling_path = []
+
     for i in range( len(path) - 1):
         v, w = path[i:i+2]
-        pos.append( (v, cur_len) )
+        pos.append( (v, cur_pos) )
         uedges = u_edges[ (v, w) ]
         uedges.sort( key= lambda x: len(x[0]) )
         subseqs.append( uedges[-1][1] )
-        cur_len += len( uedges[-1][1] )
-    pos.append( (w, cur_len) ) 
-    return "".join(subseqs), pos
-
-
+        r_path = get_r_path( r_edges, uedges[-1][0].split("-") )
+        r_path = [ ( x[0] + cur_pos, x[1], x[2], x[3]) for x in r_path ]
+        full_tiling_path.extend( r_path )
+        cur_pos += len( uedges[-1][1] )
+    pos.append( (w, cur_pos) ) 
+    return "".join(subseqs), pos, full_tiling_path
 
 
 u_edges = {}
@@ -91,6 +108,13 @@ with open("unit_edges.dat") as f:
         u_edges.setdefault( (v, w), [] )
         u_edges[ (v, w) ].append( (path, seq) )
 len(u_edges)
+
+
+r_edges = {}
+with open("edges_list") as f:
+    for l in f:
+        v, w, edge_label, overlap = l.strip().split()
+        r_edges[ (v, w) ] = (edge_label, int(overlap) ) 
 
 
 primary_tigs_path = {}
@@ -121,6 +145,7 @@ path_names.sort()
 primary_path_graph_r = primary_path_graph.reverse()
 path_f = open("primary_tigs_paths_c","w")
 pos_f = open("primary_tigs_node_pos_c", "w")
+tiling_path_f = open("all_tiling_path_c", "w")
 with open("primary_tigs_c.fa","w") as out_f:
     for name in path_names:
         sub_idx = 0
@@ -136,7 +161,11 @@ with open("primary_tigs_c.fa","w") as out_f:
                 break_path = is_branch_node(primary_path_graph_r, vn)
             if break_path:
                 c_path.append(v)
-                seq, pos = get_seq(u_edges, c_path)
+                seq, pos, full_tiling_path = get_seq(u_edges, r_edges, c_path)
+                for p, w, s, e in full_tiling_path:
+                    print >> tiling_path_f, "%s_%02d" % (name, sub_idx), p, w, s, e
+                if len(full_tiling_path) <= 5:
+                    continue
                 print >>out_f, ">%s_%02d" % (name, sub_idx)
                 print >>out_f, seq
                 print >>path_f, ">%s_%02d" % (name, sub_idx), " ".join(c_path)
@@ -149,12 +178,36 @@ with open("primary_tigs_c.fa","w") as out_f:
                 c_path.append(v)
                 
         if len(c_path) > 1:
-            seq, pos = get_seq(u_edges, c_path)
+            seq, pos, full_tiling_path = get_seq(u_edges, r_edges, c_path)
+            for p, w, s, e in full_tiling_path:
+                print >> tiling_path_f, "%s_%02d" % (name, sub_idx), p, w, s, e
+            if len(full_tiling_path) <= 5:
+                continue
             print >>out_f, ">%s_%02d" % (name, sub_idx)
             print >>out_f, seq
             print >>path_f, ">%s_%02d" % (name, sub_idx), " ".join(c_path)
             for node, p in pos:
                 print >> pos_f, "%s_%02d %s %d" % (name, sub_idx, node, p)
 
+with open("all_tigs_paths") as f:
+    for l in f:
+        l = l.strip().split()
+        name = l[0][1:]
+        name = name.split("-")
+        if name[1] == "0000":
+            continue
+        if len(name) == 2:
+            path = l[1:]
+            seq, pos, full_tiling_path = get_seq(u_edges, r_edges, path)
+            for p, w, s, e in full_tiling_path:
+                print >> tiling_path_f, "%s" % ("-".join(name)), p, w, s, e
+        else:
+            path = l[1:]
+            full_tiling_path = get_r_path(r_edges, path)
+            for p, w, s, e in full_tiling_path:
+                print >> tiling_path_f, "%s" % ("-".join(name)), p, w, s, e
+
             
 path_f.close()
+tiling_path_f.close()
+pos_f.close()
