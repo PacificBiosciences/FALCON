@@ -107,10 +107,11 @@ class StringGraph(object):
         for k, v in attributes.items():
             edge.attr[k] = v
 
-    def mark_chimer_edge(self):
-
+    def init_reduce_dict(self):
         for e in self.edges:
             self.e_reduce[e] = False
+
+    def mark_chimer_edge(self):
 
         for e_n, e in self.edges.items():
             v = e_n[0]
@@ -132,18 +133,21 @@ class StringGraph(object):
 
     def mark_spur_edge(self):
 
-        for e_n, e in self.edges.items():
-            v = e_n[0]
-            w = e_n[1]
-            overlap_count = 0
-            if len(self.nodes[v].out_edges) > 0 and len(self.nodes[w].out_edges) == 0:
-                if self.e_reduce[ (v, w) ] != True:
+        for  v in self.nodes.keys():
+            if len(self.nodes[v].out_edges) > 1:
+                for out_edge in self.nodes[v].out_edges:
+                    w = out_edge.out_node.name
+                    
+                    if len(self.nodes[w].out_edges) == 0 and self.e_reduce[ (v, w) ] != True:
                         print "XXX: spur edge %s %s removed" % (v, w)
                         self.e_reduce[(v, w)] = True
-            if len(self.nodes[w].in_edges) > 0 and len(self.nodes[v].in_edges) == 0:
-                if self.e_reduce[ (v, w) ] != True:
-                        print "XXX: spur edge %s %s removed" % (v, w)
-                        self.e_reduce[(v, w)] = True
+
+            if len(self.nodes[v].in_edges) > 1:
+                for in_edge in self.nodes[v].in_edges:
+                    w = in_edge.in_node.name
+                    if len(self.nodes[w].in_edges) == 0 and self.e_reduce[ (w, v) ] != True:
+                        print "XXX: spur edge %s %s removed" % (w, v)
+                        self.e_reduce[(w, v)] = True
 
 
     def mark_tr_edges(self):
@@ -278,13 +282,9 @@ class StringGraph(object):
         
 
 RCMAP = dict(zip("ACGTacgtNn-","TGCAtgcaNn-"))
-def generate_contig_from_path(sg, seqs, path):
+def generate_seq_from_path(sg, seqs, path):
     subseqs = []
     r_id, end = path[0].split(":")
-    if end == "B":
-        subseqs= [ "".join( [RCMAP[c] for c in seqs[r_id][::-1]] ) ]
-    else:
-        subseqs=[ seqs[r_id] ]
     
     count = 0
     for i in range( len( path ) -1 ):
@@ -300,6 +300,15 @@ def generate_contig_from_path(sg, seqs, path):
             subseqs.append( "".join( [RCMAP[c] for c in seqs[read_id][b:e:-1]] ) )
 
     return "".join(subseqs)
+
+
+def reverse_path( path ):
+    new_path = []
+    for n in list(path[::-1]):
+        rid, end = n.split(":")
+        new_end = "B" if end == "E" else "E"
+        new_path.append( rid+":"+new_end)
+    return new_path
 
 
 def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
@@ -343,7 +352,6 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
             upstream_nodes.append(p_node.name)
             if (p_node.name, c_node) not in  sg_edges:
                 break
-            sg_edges.remove( (p_node.name, c_node) )
             p_in_edges = sg.get_in_edges_for_node(p_node.name)
             p_out_edges = sg.get_out_edges_for_node(p_node.name)
             c_node = p_node.name
@@ -359,42 +367,43 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
             downstream_nodes.append(n_node.name)
             if (c_node, n_node.name) not in  sg_edges:
                 break
-            sg_edges.remove( (c_node, n_node.name) )
             n_out_edges = sg.get_out_edges_for_node(n_node.name)
             n_in_edges = sg.get_in_edges_for_node(n_node.name)
             c_node = n_node.name 
         
         whole_path = upstream_nodes + [v, w] + downstream_nodes
-
         count += 1
-        subseqs = []
-        for i in range( len( whole_path ) - 1):
-            v_n, w_n = whole_path[i:i+2]
-            
-            edge = sg.edges[ (v_n, w_n ) ]
-            edges_in_tigs.add( (v_n, w_n ) )
-            
-            read_id, coor = edge.attr["label"].split(":")
-            b,e = coor.split("-")
-            b = int(b)
-            e = int(e)
-            if b < e:
-                subseqs.append( seqs[read_id][b:e] )
-            else:
-                try:
-                    subseqs.append( "".join( [RCMAP[c] for c in seqs[read_id][b:e:-1]] ) )
-                except:
-                    if DEBUG_LOG_LEVEL > 1:
-                        print "something wrong", seqs[read_id]
-            
+        subseq = generate_seq_from_path(sg, seqs, whole_path) 
         uni_edges.setdefault( (whole_path[0], whole_path[-1]), [] )
-        uni_edges[(whole_path[0], whole_path[-1])].append(  ( whole_path, "".join(subseqs) ) )
-        print >> uni_edge_f, whole_path[0], whole_path[-1], "-".join(whole_path), "".join(subseqs)
-
+        uni_edges[(whole_path[0], whole_path[-1])].append(  ( whole_path, subseq ) )
+        print >> uni_edge_f, whole_path[0], whole_path[-1], "-".join(whole_path), subseq
         print >>path_f, ">%05dc-%s-%s-%d %s" % (count, whole_path[0], whole_path[-1], len(whole_path), " ".join(whole_path))
-
         print >>out_fasta, ">%05dc-%s-%s-%d" % (count, whole_path[0], whole_path[-1], len(whole_path))
-        print >>out_fasta,"".join(subseqs)
+        print >>out_fasta, subseq
+        for i in range( len( whole_path ) -1 ):
+            w_n, v_n = whole_path[i:i+2]
+            try:
+                sg_edges.remove( (w_n, v_n) )
+            except KeyError: #if an edge is already deleted, ignore it
+                pass
+
+        r_whole_path = reverse_path( whole_path )
+        count += 1
+        subseq = generate_seq_from_path(sg, seqs, r_whole_path) 
+        uni_edges.setdefault( (r_whole_path[0], r_whole_path[-1]), [] )
+        uni_edges[(r_whole_path[0], r_whole_path[-1])].append(  ( r_whole_path, subseq ) )
+        print >> uni_edge_f, r_whole_path[0], r_whole_path[-1], "-".join(r_whole_path), subseq
+        print >>path_f, ">%05dc-%s-%s-%d %s" % (count, r_whole_path[0], r_whole_path[-1], len(r_whole_path), " ".join(r_whole_path))
+        print >>out_fasta, ">%05dc-%s-%s-%d" % (count, r_whole_path[0], r_whole_path[-1], len(r_whole_path))
+        print >>out_fasta, subseq
+        for i in range( len( r_whole_path ) -1 ):
+            w_n, v_n = r_whole_path[i:i+2]
+            try:
+                sg_edges.remove( (w_n, v_n) )
+            except KeyError: #if an edge is already deleted, ignore it
+                pass
+
+
     path_f.close()
     uni_edge_f.close()
     uni_graph = nx.DiGraph()
@@ -577,7 +586,7 @@ def get_bundle( path, u_graph ):
     while v != path[-1] and wi < len(path)-1:
         wi += 1
         w = path[wi]
-        while len( sub_graph2.successors(w) ) == 1 and len( sub_graph2.predecessors(w) ) == 1:
+        while len( sub_graph2.successors(w) ) == 1 and len( sub_graph2.predecessors(w) ) == 1 and wi < len(path)-1:
             wi += 1
             w = path[wi]
         if  len( sub_graph2.successors(v) )!= 1 or len( sub_graph2.predecessors(w) )!= 1:
@@ -761,7 +770,7 @@ def get_bundles(u_edges):
 
             if len(bundle_graph_edges) > 0:
 
-                #ASM_graph.add_path(bundle_paths[0], ctg="%04d" % bundle_index)
+                ASM_graph.add_path(bundle_paths[0], ctg="%04d" % bundle_index)
                 extra_u_edges = []
                 
                 print >> main_tig_paths, ">%04d %s" % ( bundle_index, " ".join(bundle_paths[0]) )
@@ -859,8 +868,9 @@ def get_bundles(u_edges):
             if (v, w) in edges:
                 G.remove_edge( v, w )
                 edge_remove_count += 1
-                if DEBUG_LOG_LEVEL > 2:
-                    print "remove edge", w, v
+                #if DEBUG_LOG_LEVEL > 2:
+                if 1:
+                    print "remove edge", bundle_index, w, v
                 
         edges = set(G.edges())
         for v, w in edges_to_be_removed:
@@ -876,8 +886,9 @@ def get_bundles(u_edges):
             if (w, v) in edges:
                 G.remove_edge( w, v )
                 edge_remove_count += 1
-                if DEBUG_LOG_LEVEL > 2:
-                    print "remove edge", w, v
+                #if DEBUG_LOG_LEVEL > 2:
+                if 1:
+                    print "remove edge", bundle_index, w, v
 
         if edge_remove_count == 0:
             break
@@ -1103,6 +1114,7 @@ if __name__ == "__main__":
                                                            length = abs(f_e - f_l),
                                                            score = -score)
     
+    sg.init_reduce_dict()
     sg.mark_chimer_edge()
     sg.mark_spur_edge()
     sg.mark_tr_edges() # mark those edges that transitive redundant
