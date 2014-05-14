@@ -408,7 +408,7 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
     uni_edge_f.close()
     uni_graph = nx.DiGraph()
     for n1, n2 in uni_edges.keys():
-        uni_graph.add_edge(n1, n2, weight = len( uni_edges[ (n1,n2) ] ))
+        uni_graph.add_edge(n1, n2, count = len( uni_edges[ (n1,n2) ] ))
     nx.write_gexf(uni_graph, "uni_graph.gexf")
 
     out_fasta.close()
@@ -828,19 +828,6 @@ def get_bundles(u_edges):
                     
                 
                 bundle_index += 1
-            else:
-                #TODO, consolidate code here
-                v,w = path
-                uedges = u_edges[ (v,w) ]
-                uedges.sort( key= lambda x: len(x[0]) )
-                subseqs.append( uedges[-1][1] )
-                seq = "".join(subseqs)
-                print >> sv_tig_paths, ">%04d-%04d %s" % ( bundle_index, sv_tig_idx, " ".join(path) )
-                print >> sv_tigs, ">%04d-%04d-u %s-%s" % (bundle_index, sv_tig_idx, path[0], path[-1])
-                print >> sv_tigs, seq
-                sv_tig_idx += 1
-                bundle_index += 1
-                bundle_graph_edges = zip(path[:-1],path[1:])
         else:
             #TODO, consolidate code here
             v,w = path
@@ -937,6 +924,8 @@ if __name__ == "__main__":
                         help='minimum length of the reads to be considered for assembling')
     parser.add_argument('--min_idt', type=float, default=96,
                         help='minimum alignment identity of the reads to be considered for assembling')
+    parser.add_argument('--enable_chimer_prediction', action="store_true", default=False,
+                        help='for high coverage data, enable this will help reduce mis-assemblies')
 
     args = parser.parse_args()
 
@@ -1113,7 +1102,8 @@ if __name__ == "__main__":
                                                            score = -score)
     
     sg.init_reduce_dict()
-    sg.mark_chimer_edge()
+    if args.enable_chimer_prediction:
+        sg.mark_chimer_edge()
     sg.mark_spur_edge()
     sg.mark_tr_edges() # mark those edges that transitive redundant
 
