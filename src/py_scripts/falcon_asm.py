@@ -70,6 +70,11 @@ class SGEdge(object):
     def set_attribute(self, attr, value):
         self.attr[attr] = value
 
+def reverse_end( node_id ):
+    node_id, end = node_id.split(":")
+    new_end = "B" if end == "E" else "E"
+    return node_id + ":" + new_end
+
 class StringGraph(object):
     """
     class representing the string graph
@@ -127,13 +132,17 @@ class StringGraph(object):
                     overlap_count += 1
             if self.e_reduce[ (v, w) ] != True:
                 if overlap_count == 0:
-                    print "XXX: chimer edge %s %s removed" % (v, w)
                     self.e_reduce[(v, w)] = True
+                    print "XXX: chimer edge %s %s removed" % (v, w)
+                    v, w = reverse_end(w), reverse_end(v)
+                    self.e_reduce[(v, w)] = True
+                    print "XXX: chimer edge %s %s removed" % (v, w)
+
 
 
     def mark_spur_edge(self):
 
-        for  v in self.nodes.keys():
+        for  v in self.nodes:
             if len(self.nodes[v].out_edges) > 1:
                 for out_edge in self.nodes[v].out_edges:
                     w = out_edge.out_node.name
@@ -141,12 +150,18 @@ class StringGraph(object):
                     if len(self.nodes[w].out_edges) == 0 and self.e_reduce[ (v, w) ] != True:
                         print "XXX: spur edge %s %s removed" % (v, w)
                         self.e_reduce[(v, w)] = True
+                        v2, w2 = reverse_end(w), reverse_end(v)
+                        print "XXX: spur edge %s %s removed" % (v2, w2)
+                        self.e_reduce[(v, w)] = True
 
             if len(self.nodes[v].in_edges) > 1:
                 for in_edge in self.nodes[v].in_edges:
                     w = in_edge.in_node.name
                     if len(self.nodes[w].in_edges) == 0 and self.e_reduce[ (w, v) ] != True:
                         print "XXX: spur edge %s %s removed" % (w, v)
+                        self.e_reduce[(w, v)] = True
+                        v2, w2 = reverse_end(w), reverse_end(v)
+                        print "XXX: spur edge %s %s removed" % (w2, v2)
                         self.e_reduce[(w, v)] = True
 
 
@@ -206,6 +221,10 @@ class StringGraph(object):
                 w = out_edge.out_node
                 if n_mark[w.name] == "eliminated":
                     e_reduce[ (v.name, w.name) ] = True
+                    print "XXX: tr edge %s %s removed" % (v.name, w.name)
+                    v_name, w_name = reverse_end(w.name), reverse_end(v.name)
+                    e_reduce[(v_name, w_name)] = True
+                    print "XXX: tr edge %s %s removed" % (v_name, w_name)
                 n_mark[w.name] = "vacant"
                 
 
@@ -855,7 +874,7 @@ def get_bundles(u_edges):
             if (v, w) in edges:
                 G.remove_edge( v, w )
                 edge_remove_count += 1
-                if 1:
+                if DEBUG_LOG_LEVEL > 2:
                     print "remove edge", bundle_index, w, v
                 
         edges = set(G.edges())
