@@ -425,10 +425,10 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
 
     path_f.close()
     uni_edge_f.close()
-    uni_graph = nx.DiGraph()
-    for n1, n2 in uni_edges.keys():
-        uni_graph.add_edge(n1, n2, count = len( uni_edges[ (n1,n2) ] ))
-    nx.write_gexf(uni_graph, "uni_graph.gexf")
+    #uni_graph = nx.DiGraph()
+    #for n1, n2 in uni_edges.keys():
+    #    uni_graph.add_edge(n1, n2, count = len( uni_edges[ (n1,n2) ] ))
+    #nx.write_gexf(uni_graph, "uni_graph.gexf")
 
     out_fasta.close()
     return uni_edges
@@ -1139,9 +1139,9 @@ if __name__ == "__main__":
 
 
     G = SGToNXG(sg)
-    nx.write_gexf(G, "string_graph.gexf") # output the raw string string graph for visuliation
+    #nx.write_gexf(G, "string_graph.gexf") # output the raw string string graph for visuliation
     nx.write_adjlist(G, "string_graph.adj") # write out the whole adjacent list of the string graph
 
     u_edges = generate_unitig(sg, seqs, out_fn = "unitgs.fa") # reduct to string graph into unitig graph
     ASM_graph = get_bundles(u_edges )  # get the assembly
-    nx.write_gexf(ASM_graph, "asm_graph.gexf")
+    #nx.write_gexf(ASM_graph, "asm_graph.gexf")
