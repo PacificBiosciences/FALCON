@@ -133,10 +133,10 @@ class StringGraph(object):
             if self.e_reduce[ (v, w) ] != True:
                 if overlap_count == 0:
                     self.e_reduce[(v, w)] = True
-                    print "XXX: chimer edge %s %s removed" % (v, w)
+                    #print "XXX: chimer edge %s %s removed" % (v, w)
                     v, w = reverse_end(w), reverse_end(v)
                     self.e_reduce[(v, w)] = True
-                    print "XXX: chimer edge %s %s removed" % (v, w)
+                    #print "XXX: chimer edge %s %s removed" % (v, w)
 
 
 
@@ -148,20 +148,20 @@ class StringGraph(object):
                     w = out_edge.out_node.name
                     
                     if len(self.nodes[w].out_edges) == 0 and self.e_reduce[ (v, w) ] != True:
-                        print "XXX: spur edge %s %s removed" % (v, w)
+                        #print "XXX: spur edge %s %s removed" % (v, w)
                         self.e_reduce[(v, w)] = True
                         v2, w2 = reverse_end(w), reverse_end(v)
-                        print "XXX: spur edge %s %s removed" % (v2, w2)
+                        #print "XXX: spur edge %s %s removed" % (v2, w2)
                         self.e_reduce[(v, w)] = True
 
             if len(self.nodes[v].in_edges) > 1:
                 for in_edge in self.nodes[v].in_edges:
                     w = in_edge.in_node.name
                     if len(self.nodes[w].in_edges) == 0 and self.e_reduce[ (w, v) ] != True:
-                        print "XXX: spur edge %s %s removed" % (w, v)
+                        #print "XXX: spur edge %s %s removed" % (w, v)
                         self.e_reduce[(w, v)] = True
                         v2, w2 = reverse_end(w), reverse_end(v)
-                        print "XXX: spur edge %s %s removed" % (w2, v2)
+                        #print "XXX: spur edge %s %s removed" % (w2, v2)
                         self.e_reduce[(w, v)] = True
 
 
@@ -221,10 +221,10 @@ class StringGraph(object):
                 w = out_edge.out_node
                 if n_mark[w.name] == "eliminated":
                     e_reduce[ (v.name, w.name) ] = True
-                    print "XXX: tr edge %s %s removed" % (v.name, w.name)
+                    #print "XXX: tr edge %s %s removed" % (v.name, w.name)
                     v_name, w_name = reverse_end(w.name), reverse_end(v.name)
                     e_reduce[(v_name, w_name)] = True
-                    print "XXX: tr edge %s %s removed" % (v_name, w_name)
+                    #print "XXX: tr edge %s %s removed" % (v_name, w_name)
                 n_mark[w.name] = "vacant"
                 
 
@@ -258,6 +258,10 @@ class StringGraph(object):
             if self.e_reduce[ (v, w) ] != True:
                 if (v, w) not in best_edges:
                     self.e_reduce[(v, w)] = True
+                    #print "XXX: in best edge %s %s removed" % (v, w)
+                    v2, w2 = reverse_end(w), reverse_end(v)
+                    #print "XXX: in best edge %s %s removed" % (v2, w2)
+                    self.e_reduce[(v2, w2)] = True
                 
     def get_out_edges_for_node(self, name, mask=True):
         rtn = []
@@ -696,7 +700,11 @@ def get_bundles(u_edges):
         
         root_nodes = set() 
         for n in G: 
-            if G.in_degree(n) != 1 or G.out_degree(n) !=1 : 
+            if G.in_degree(n) == 0: 
+                root_nodes.add(n) 
+
+        if len(root_nodes) == 0:
+            if G.in_degree(n) != 1: 
                 root_nodes.add(n) 
         
         if len(root_nodes) == 0:  
@@ -1119,6 +1127,7 @@ if __name__ == "__main__":
                 sg.add_edge( "%s:B" % g_id, "%s:E" % f_id, label = "%s:%d-%d" % (f_id, f_e, f_l), 
                                                            length = abs(f_e - f_l),
                                                            score = -score)
+
     
     sg.init_reduce_dict()
     if args.enable_chimer_prediction:
@@ -1130,8 +1139,6 @@ if __name__ == "__main__":
         print sum( [1 for c in sg.e_reduce.values() if c == True] )
         print sum( [1 for c in sg.e_reduce.values() if c == False] )
 
-    G = SGToNXG(sg)
-    nx.write_adjlist(G, "full_string_graph.adj") # write out the whole adjacent list of the graph
     sg.mark_best_overlap() # mark those edges that are best overlap edges
 
     if DEBUG_LOG_LEVEL > 1:

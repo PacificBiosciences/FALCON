@@ -45,7 +45,7 @@ def neighbor_bound(G, v, w, radius):
     g2 = nx.ego_graph(G, w, radius=radius, undirected=False)
     if len(g1) < radius or len(g2) < radius:
         return True
-    print len(g1), len(g2), radius
+    print v, len(g1), w, len(g2), radius
     if len(set(g1.edges()) & set(g2.edges())) > 0:
         return True
     else:
