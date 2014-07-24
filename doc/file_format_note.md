@@ -85,7 +85,7 @@ Some of the associated contigs might be formal because sequencing / consensus er
 Final Note
 ----------
 
-1. Typically the size of `unitgs.fa` will be roughly twice of the genome sizes, since it contains all dual edges from each overlap. In the process of the assembly, typically, only one of the dual edges will be used in the final contigs.  
+1. Typically, the size of `unitgs.fa` will be roughly twice of the genome size, since the file contains both dual edges from each overlap. In the process of the assembly, only one of the dual edges will be used in the final contigs.  
 
 2. The relation between the associate contigs and the primary contigs can be simply identified by the begin and the end nods of the associted contigs. One can easily constructed the corresponding sequences in the primary contigs for identify the variants between them.
 
