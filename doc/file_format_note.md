@@ -25,7 +25,7 @@ end of the read that is corresponding to the node.
 
 The `egdes_list` is a simple 4 column format: `in_node out_node edge_label overlap_length`.
  
-Here is an example how edges are represented in the `egdes_list`:
+Here is an example how edges are represented in the `egdes_list` file:
 	
 	00099576_1:B 00101043_0:B 00101043_0:1991-0 14333
 	00215514_0:E 00025025_0:B 00025025_0:99-0 14948
@@ -33,7 +33,7 @@ Here is an example how edges are represented in the `egdes_list`:
 	00205542_0:E 00076625_0:B 00076625_0:396-0 11067
 
 The `edge_label` encode the correspondent sequence of the edge from the DNA fragment. For example, the
-edge `00099576_1:B -> 00101043_0:B` has a sequence from read `00101043_0` base 1990 to 0.
+edge `00099576_1:B -> 00101043_0:B` has a sequence from read `00101043_0` base 1991 to 0.
 
 
 The `unit_edge_paths` encode the path of each unitig. Each line represents an unitig. For example unitig
