@@ -951,8 +951,8 @@ if __name__ == "__main__":
                         help='minimum length of the reads to be considered for assembling')
     parser.add_argument('--min_idt', type=float, default=96,
                         help='minimum alignment identity of the reads to be considered for assembling')
-    parser.add_argument('--enable_chimer_prediction', action="store_true", default=False,
-                        help='for high coverage data, enable this will help reduce mis-assemblies')
+    parser.add_argument('--disable_chimer_prediction', action="store_true", default=False,
+                        help='you may want to disable this as some reads can be falsely identified as chimers in low coverage case')
 
     args = parser.parse_args()
 
@@ -1130,7 +1130,7 @@ if __name__ == "__main__":
 
     
     sg.init_reduce_dict()
-    if args.enable_chimer_prediction:
+    if not args.disable_chimer_prediction:
         sg.mark_chimer_edge()
     sg.mark_spur_edge()
     sg.mark_tr_edges() # mark those edges that transitive redundant
