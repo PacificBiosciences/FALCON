@@ -1,6 +1,7 @@
 # This is the script that will build everything needed to generate an assembly 
 # on top of the StarCluster Ubuntu AMI 
-HBAR_ROOT=/home
+
+HBAR_ROOT=$HOME #if you don't want to install this in your home directory, replace $HOME with a proper directory
 mkdir -p $HBAR_ROOT/HBAR_ENV
 export HBAR_HOME=$HBAR_ROOT/HBAR_ENV/
 sudo apt-get install python-virtualenv
