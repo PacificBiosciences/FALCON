@@ -83,11 +83,11 @@ def get_ovelap_alignment(seq1, seq0):
         elif s1 <= s0 and s1 > 24:
             do_aln = False
         elif s1 < 24 and len_1 - e1 < 24:
-            do_aln = False
+            do_aln = True
             contain_status = "contains"
             #print "X1"
         elif s0 < 24 and len_0 - e0 < 24:
-            do_aln = False
+            do_aln = True
             contain_status = "contained"
             #print "X2"
         else:
@@ -133,7 +133,7 @@ def get_ovelap_alignment(seq1, seq0):
             assert aln_q_e- aln_q_s <= alignment[0].aln_str_size or aln_t_e- aln_t_s <= alignment[0].aln_str_size
             #print aln_str1
             #print aln_str0
-            if aln_size > 500: 
+            if aln_size > 500 and contain_status == "none": 
                 contain_status = "overlap"            
             DWA.free_alignment(alignment)
         
