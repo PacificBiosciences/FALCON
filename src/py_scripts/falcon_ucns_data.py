@@ -76,8 +76,8 @@ if __name__ == "__main__":
         offsets = []
         seqs = []
         p_tig = p_tigs_db[p_tig_id]
-        if len(tiling_path[p_tig_id]) <= 5:
-            continue
+        #if len(tiling_path[p_tig_id]) <= 2:
+        #    continue
         print p_tig_id, 0, p_tig
         for offset, s_id, end, s, e in tiling_path[p_tig_id]:
             seq = seq_db[s_id]
@@ -101,8 +101,8 @@ if __name__ == "__main__":
         offsets = []
         seqs = []
         a_tig = a_tigs_db[a_tig_id]
-        if len(tiling_path[a_tig_id]) <= 5:
-            continue
+        #if len(tiling_path[a_tig_id]) <= 2:
+        #    continue
         print a_tig_id, 0, a_tig
         for offset, s_id, end, s, e in tiling_path[a_tig_id]:
             seq = seq_db[s_id]

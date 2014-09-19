@@ -164,8 +164,8 @@ with open("primary_tigs_c.fa","w") as out_f:
                 seq, pos, full_tiling_path = get_seq(u_edges, r_edges, c_path)
                 for p, w, s, e in full_tiling_path:
                     print >> tiling_path_f, "%s_%02d" % (name, sub_idx), p, w, s, e
-                if len(full_tiling_path) <= 5:
-                    continue
+                #if len(full_tiling_path) <= 5:
+                #    continue
                 print >>out_f, ">%s_%02d" % (name, sub_idx)
                 print >>out_f, seq
                 print >>path_f, ">%s_%02d" % (name, sub_idx), " ".join(c_path)
