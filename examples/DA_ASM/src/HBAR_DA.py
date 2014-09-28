@@ -309,12 +309,13 @@ def create_merge_tasks(wd, db_prefix, db_file, config):
 
 
         out_file = makePypeLocalFile(os.path.abspath( "%s/preads/out.%04d.fa" % (wd, p_id)  ))
+        out_done = makePypeLocalFile(os.path.abspath( "%s/preads/c_%05d_done" % (wd, p_id)  ))
         parameters =  {"cwd": os.path.join(wd, "preads" ),
                        "job_id": p_id, 
                        "prefix": db_prefix,
                        "config": config}
         make_c_task = PypeTask( inputs = {"job_done": job_done},
-                                outputs = {"out_file": out_file },
+                                outputs = {"out_file": out_file, "out_done": out_done },
                                 parameters = parameters,
                                 TaskType = PypeThreadTaskBase,
                                 URL = "task://localhost/ct_%05d" % p_id )
