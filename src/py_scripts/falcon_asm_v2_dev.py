@@ -317,7 +317,7 @@ class StringGraph(object):
                 for e in self.nodes[ww].in_edges:
                     if self.e_reduce[ ( e.in_node.name, e.out_node.name ) ] == False:
                         ww_in_count += 1
-                print ww, ww_in_count 
+                #print ww, ww_in_count 
                 #G1 = nx.ego_graph( nxsg,  ww, 3, undirected=False)
                 #G2 = nx.ego_graph( nxsg,  v_n, 3, undirected=False)
                 #o_overlap = len( set(G1.nodes()) & set(G2.nodes()) )
@@ -345,7 +345,7 @@ class StringGraph(object):
                 for e in self.nodes[vv].out_edges:
                     if self.e_reduce[ ( e.in_node.name, e.out_node.name )] == False:
                         vv_out_count += 1
-                print vv, vv_out_count 
+                #print vv, vv_out_count 
                 #G1 = nx.ego_graph( nxsg_r,  vv, 3, undirected=False)
                 #G2 = nx.ego_graph( nxsg_r,  v_n, 3, undirected=False)
                 #i_overlap = len( set(G1.nodes()) & set(G2.nodes()) )
@@ -456,7 +456,7 @@ def find_bundle(sg, edge_data, start_node, depth_cutoff, width_cutoff, length_cu
     for v, w in local_graph.out_edges(v):
         max_score = 0
         max_length = 0
-        if w not in bundle_nodes and reverse_end(w) not in bundle_nodes and len(local_graph.out_edges(w)) != 0:
+        if w not in bundle_nodes and reverse_end(w) not in bundle_nodes:
             bundle_edges.add( (v, w) )
             tips.add(w)
 
@@ -481,7 +481,11 @@ def find_bundle(sg, edge_data, start_node, depth_cutoff, width_cutoff, length_cu
     width = 1.0
     converage = False
 
+    #print "start", start_node
+
     while 1:
+        
+        #print tips
 
         depth += 1
         width = 1.0 * len(bundle_edges) / depth
@@ -599,6 +603,7 @@ def find_bundle(sg, edge_data, start_node, depth_cutoff, width_cutoff, length_cu
 
     data_r = start_node_r, end_node_r, bundle_edge_r, length_to_node[end_node], score_to_node[end_node], depth
 
+    #print converage, data, data_r
     return converage, data, data_r
 
 def generate_string_graph(args):
@@ -881,7 +886,7 @@ def construct_compound_paths(sg, sg_r, edge_data):
     compound_path_end_at = {}
     for p in list(branch_nodes):
         if sg.out_degree(p) > 1:
-            coverage, data, data_r =  find_bundle(sg, edge_data, p, 1024, 8, 1200000)
+            coverage, data, data_r =  find_bundle(sg, edge_data, p, 128, 8, 500000)
             if coverage == True:
                 start_node, end_node, bundle_edges, length, score, depth = data
                 compound_paths_[ (start_node, "NA", end_node) ] = ( 1.0*len(bundle_edges)/depth, length, score, bundle_edges )
