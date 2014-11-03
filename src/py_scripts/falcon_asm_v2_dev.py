@@ -1040,6 +1040,12 @@ if __name__ == "__main__":
     
     for s, v, t in compound_paths:
         free_edges.remove( (s, t) )
+        if t in simple_nodes:
+            simple_nodes.remove(t)
+            s_nodes.add(t)
+        if s in simple_nodes:
+            simple_nodes.remove(s)
+            t_nodes.add(s)
 
     for v,w in free_edges:
         if (reverse_end(w), reverse_end(v) ) not in free_edges:
