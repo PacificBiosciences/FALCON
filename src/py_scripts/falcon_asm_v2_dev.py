@@ -439,53 +439,72 @@ def reverse_path( p ):
     return [reverse_end(n) for n in p]
 
     
-def find_bundle(sg, edge_data, start_node, depth_cutoff, width_cutoff, length_cutoff):
+def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_cutoff):
 
     tips = set()
     bundle_edges = set()
     bundle_nodes = set()
 
-    local_graph = nx.ego_graph(sg, start_node, depth_cutoff, undirected=False)
+    local_graph = nx.ego_graph(ug, start_node, depth_cutoff, undirected=False)
     length_to_node = {start_node:0}
     score_to_node = {start_node:0}
 
     v = start_node
     end_node = start_node
-
+    print
+    print 
+    print "start", start_node
     bundle_nodes.add(v)
-    for v, w in local_graph.out_edges(v):
+    for vv, ww, kk in local_graph.out_edges(v, keys = True):
         max_score = 0
         max_length = 0
-        if w not in bundle_nodes and reverse_end(w) not in bundle_nodes:
-            bundle_edges.add( (v, w) )
-            tips.add(w)
 
-    for v in list(tips):
-        max_score_node = None
-        max_score = 0
-        for u, v in local_graph.in_edges(v):
-            if u not in length_to_node:
-                continue
-            score = edge_data[ (u, v) ][4]
-            if score > max_score:
-                max_score = score
-                max_score_node = u
+        if (vv, ww, kk) not in bundle_edges and\
+                reverse_end(ww) not in bundle_nodes:
 
-        length_to_node[v] = length_to_node[max_score_node] +  edge_data[ (max_score_node, v) ][3]
-        score_to_node[v] = score_to_node[max_score_node] +  edge_data[ (max_score_node, v) ][4]
+            bundle_edges.add( (vv, ww, kk) )
+            tips.add(ww)
 
     for v in list(tips):
         bundle_nodes.add(v)
 
-    depth = 0
+    depth = 1
     width = 1.0
     converage = False
 
-    #print "start", start_node
 
     while 1:
+
+        print "# of tips", len(tips)
+        if len(tips) > 4:
+            converage = False
+            break
+
+        if len(tips) == 1:
+            end_node = tips.pop()
+            print "end", end_node
+            if end_node not in length_to_node:
+                v = end_node
+                max_score_edge = None
+                max_score = 0
+                for uu, vv, kk in local_graph.in_edges(v, keys=True):
+                    if uu not in length_to_node:
+                        continue
+
+                    score = u_edge_data[ (uu, vv, kk) ][1]
+
+                    if score > max_score:
+
+                        max_score = score
+                        max_score_edge = (uu, vv, kk)
+
+                length_to_node[v] = length_to_node[max_score_edge[0]] +  u_edge_data[ max_score_edge ][0]
+                score_to_node[v] = score_to_node[max_score_edge[0]] +  u_edge_data[ max_score_edge ][1]
+                
+
+            converage = True
+            break
         
-        #print tips
 
         depth += 1
         width = 1.0 * len(bundle_edges) / depth
@@ -504,55 +523,66 @@ def find_bundle(sg, edge_data, start_node, depth_cutoff, width_cutoff, length_cu
         loop_detect = False
 
         for v in tips_list:
+            print "process", v
 
-            if len(local_graph.out_edges(v)) == 0: # dead end route
-                tip_updated = False
-                break
+            if len(local_graph.out_edges(v, keys=True)) == 0: # dead end route
+                print "no out edge", v
+                continue
 
-            max_score_node = None
+            max_score_edge = None
             max_score = 0
 
             extend_tip = True
-            for u, v in local_graph.in_edges(v):
 
+            for uu, vv, kk in local_graph.in_edges(v, keys=True):
+                print "in_edges", uu, vv, kk
+                print uu, "in length_to_node",  uu in length_to_node
 
-                if u not in length_to_node:
+                if uu not in length_to_node:
                     extend_tip = False
                     break
 
-                score = edge_data[ (u, v) ][4]
+                score = u_edge_data[ (uu, vv, kk) ][1]
 
                 if score > max_score:
 
                     max_score = score
-                    max_score_node = u
+                    max_score_edge = (uu, vv, kk)
             
             if extend_tip:
             
-                length_to_node[v] = length_to_node[max_score_node] +  edge_data[ (max_score_node, v) ][3]
-                score_to_node[v] = score_to_node[max_score_node] +  edge_data[ (max_score_node, v) ][4]
+                length_to_node[v] = length_to_node[max_score_edge[0]] +  u_edge_data[ max_score_edge ][0]
+                score_to_node[v] = score_to_node[max_score_edge[0]] +  u_edge_data[ max_score_edge ][1]
 
                 if length_to_node[v] > length_cutoff:
                     converage = False
                     break
 
-                for v, w in local_graph.out_edges(v):
-                    if w in length_to_node:
+                for vv, ww, kk in local_graph.out_edges(v, keys=True):
+                    print "test", vv, ww, kk
+                    if ww in length_to_node:
                         loop_detect = True
+                        print "loop_detect", ww
+                        break
 
-                    if w not in bundle_nodes and reverse_end(w) not in bundle_nodes:
-                        tips.add(w)
-                        bundle_edges.add( (v, w) )
+                    if (vv, ww, kk) not in bundle_edges and\
+                            reverse_end(ww) not in bundle_nodes:
+                        print "add", ww
+                        tips.add(ww)
+                        bundle_edges.add( (vv, ww, kk) )
                         tip_updated = True
 
-                    if w in bundle_nodes and (v, w) not in bundle_edges:
-                        bundle_edges.add( (v, w) )
-                        tip_updated = True
-                
-                tips.remove(v)
+                if tip_updated:
+                    print "remove", v
+                    tips.remove(v)
 
-            if len(tips) == 1:
+                    if len(tips) == 1:
+                        break
+
+            if loop_detect:
+                converage = False
                 break
+
 
         if loop_detect:
             converage = False
@@ -565,45 +595,23 @@ def find_bundle(sg, edge_data, start_node, depth_cutoff, width_cutoff, length_cu
         for v in list(tips):
             bundle_nodes.add(v)
 
-        if len(tips) == 1:
-
-            end_node = tips.pop()
-            v = end_node
-            max_score_node = None
-            max_score = 0
-
-            for u, v in local_graph.in_edges(v):
-
-                if u not in length_to_node:
-                    continue
-
-                score = edge_data[ (u, v) ][4]
-                if score > max_score:
-                    max_score = score
-                    max_score_node = u
-
-            if max_score_node == None:
-                converage = False
-                break
-
-            length_to_node[v] = length_to_node[max_score_node] +  edge_data[ (max_score_node, v) ][3]
-            score_to_node[v] = score_to_node[max_score_node] +  edge_data[ (max_score_node, v) ][4]
-            converage = True
-
-            break
+        
 
     data = start_node, end_node, bundle_edges, length_to_node[end_node], score_to_node[end_node], depth
-        
+    
+    """
     start_node_r, end_node_r = reverse_end(end_node), reverse_end(start_node)
     
     bundle_edge_r = set()
-    for v, w in list(bundle_edges):
-        vv, ww = reverse_end(w), reverse_end(v)
-        bundle_edge_r.add( (vv, ww) )
+    for v, w, k in list(bundle_edges):
+        vv, ww, kk = reverse_end(w), reverse_end(v), reverse_end(k)
+        bundle_edge_r.add( (vv, ww, kk) )
 
     data_r = start_node_r, end_node_r, bundle_edge_r, length_to_node[end_node], score_to_node[end_node], depth
+    """
+    data_r = None
 
-    #print converage, data, data_r
+    print converage, data, data_r
     return converage, data, data_r
 
 def generate_string_graph(args):
@@ -859,17 +867,17 @@ def generate_string_graph(args):
 
 
 
-def construct_compound_paths(sg, sg_r, edge_data):
+def construct_compound_paths(ug, u_edge_data):
 
     source_nodes = set()
     sink_nodes = set()
     simple_nodes = set()
     branch_nodes = set()
 
-    all_nodes = sg.nodes()
+    all_nodes = ug.nodes()
     for n in all_nodes:
-        in_degree = len( sg.in_edges(n) )
-        out_degree = len( sg.out_edges(n) )
+        in_degree = len( ug.in_edges(n) )
+        out_degree = len( ug.out_edges(n) )
         if in_degree == 0:
             source_nodes.add(n)
         if out_degree == 0:
@@ -880,76 +888,51 @@ def construct_compound_paths(sg, sg_r, edge_data):
             branch_nodes.add(n)
 
     #print "#", len(all_nodes),len(source_nodes), len(sink_nodes), len(simple_nodes), len(branch_nodes)
-    compound_paths_ = {}
-
-    compound_path_start_at = {}
-    compound_path_end_at = {}
+    compound_paths_0 = {}
     for p in list(branch_nodes):
-        if sg.out_degree(p) > 1:
-            coverage, data, data_r =  find_bundle(sg, edge_data, p, 128, 8, 500000)
+        if ug.out_degree(p) > 1:
+            coverage, data, data_r =  find_bundle(ug, u_edge_data, p, 32, 8, 500000)
             if coverage == True:
                 start_node, end_node, bundle_edges, length, score, depth = data
-                compound_paths_[ (start_node, "NA", end_node) ] = ( 1.0*len(bundle_edges)/depth, length, score, bundle_edges )
-               
-                compound_path_start_at.setdefault( start_node, [] )
-                compound_path_start_at[start_node].append( ( len(bundle_edges), (start_node, "NA", end_node) ) )
-                
-                compound_path_end_at.setdefault( end_node, [] )
-                compound_path_end_at[end_node].append( ( len(bundle_edges), (start_node, "NA", end_node) ) )
-                
-                start_node, end_node, bundle_edges, length, score, depth = data_r
-                compound_paths_[ (start_node, "NA", end_node) ] = ( 1.0*len(bundle_edges)/depth, length, score, bundle_edges )
+                compound_paths_0[ (start_node, "NA", end_node) ] = ( 1.0*len(bundle_edges)/depth, length, score, bundle_edges )
 
-                compound_path_start_at.setdefault( start_node, [] )
-                compound_path_start_at[start_node].append( ( len(bundle_edges), (start_node, "NA", end_node) ) )
 
-                compound_path_end_at.setdefault( end_node, [] )
-                compound_path_end_at[end_node].append( ( len(bundle_edges), (start_node, "NA", end_node) ) )
 
-    duplicate_edges = set()
-    for start_node in compound_path_start_at:
-        if len(compound_path_start_at[start_node]) == 1:
+
+    compound_paths_1 = {}
+    compound_internal_nodes = set()
+    for s, v, t in compound_paths_0:
+        rs = reverse_end(t)
+        rt = reverse_end(s)
+        if (rs, "NA", rt) not in compound_paths_0:
             continue
+        width, length, score, bundle_edges = compound_paths_0[ (s, v, t) ]
+        compound_paths_1[ (s, v, t) ] = width, length, score, bundle_edges
+        for vv, ww, k in list(bundle_edges):
+            if vv != s and vv != t:
+                compound_internal_nodes.add(vv)
+            if ww != s and ww != t:
+                compound_internal_nodes.add(ww)
 
-        compound_path_start_at[start_node].sort()
+    compound_paths_2 = {}
+    for k, val in compound_paths_1.items():
         
-        max_path_id = compound_path_start_at[start_node][-1][1]
-
-        max_cover_edges = set(compound_paths_[max_path_id][3])
-
-        for l_e, path_id in compound_path_start_at[start_node][:-1]:
-            if path_id == max_path_id:
-                continue
-            edges = set(compound_paths_[path_id][3])
-            if len( max_cover_edges | edges ) == len( max_cover_edges ) : #edges is a subset if max_cover_edges
-                #print "remove", path_id, "covered by", compound_path_start_at[start_node][-1][1]
-                duplicate_edges.add( path_id )
-
-    for end_node in compound_path_end_at:
-        if len(compound_path_end_at[end_node]) == 1:
-            continue
-
-        compound_path_end_at[end_node].sort()
+        start_node, NA, end_node = k
+        rs = reverse_end(end_node)
+        rt = reverse_end(start_node)
+        assert (rs, "NA", rt) in compound_paths_1
         
-        max_path_id = compound_path_end_at[end_node][-1][1]
+        if start_node not in compound_internal_nodes and (rs, "NA", rt) in compound_paths_1:
+            compound_paths_2[k] = val
+            print "compound", k 
 
-        max_cover_edges = set(compound_paths_[max_path_id][3])
-
-        for l_e, path_id in compound_path_end_at[end_node][:-1]:
-            if path_id == max_path_id:
-                continue
-            edges = set(compound_paths_[path_id][3])
-            if len( max_cover_edges | edges ) == len( max_cover_edges ) : #edges is a subset if max_cover_edges
-                #print "remove", path_id, "covered by", compound_path_end_at[end_node][-1][1]
-                duplicate_edges.add( path_id )
-
-    #for path_id in list(duplicate_edges):
-    #    print "remove",path_id
     compound_paths = {}
-    for k, v in compound_paths_.items():
-        if k in duplicate_edges:
+    for s, v, t in compound_paths_2:
+        rs = reverse_end(t)
+        rt = reverse_end(s)
+        if (rs, "NA", rt) not in compound_paths_2:
             continue
-        compound_paths[ k ] = v
+        compound_paths[ (s, v, t) ] = compound_paths_2[ (s, v, t) ]
 
     return compound_paths
 
@@ -974,38 +957,19 @@ if __name__ == "__main__":
     # transitivity reduction, remove spurs, remove putative edges caused by repeats
     sg, sg_r, edge_data = generate_string_graph(args)
 
-    # identify compound_paths
-    compound_paths = construct_compound_paths(sg, sg_r, edge_data)
 
     simple_paths = {}
     dual_path = {}
 
-    for s, v, t in compound_paths:
-        dual_path[ (s, v, t)  ] = (reverse_end(t), v, reverse_end(s))
-        dual_path[ (reverse_end(t), v, reverse_end(s)) ] = (s, v, t)
-        assert (reverse_end(t), v, reverse_end(s)) in compound_paths
 
-
-    masked_edges = set()
-    for e in compound_paths:
-        edges = compound_paths[e][3]
-        for e in edges:
-            masked_edges.add( (e[0], e[1]) )
-            #masked_edges.add( (reverse_end(e[1]), reverse_end( e[0]) ) )
-        
-    for s,t in list(masked_edges):
-        assert (reverse_end(t), reverse_end(s)) in masked_edges
-
-
-    # create a string graph without compound edges
     sg2 = nx.DiGraph()
 
     for v, w in edge_data:
 
         assert (reverse_end(w), reverse_end(v)) in edge_data
         
-        if (v, w) in masked_edges:
-            continue
+        #if (v, w) in masked_edges:
+        #    continue
 
         rid, sp, tp, length, score, identity, type_ = edge_data[ (v, w) ]
         if type_ != "G":
@@ -1014,11 +978,7 @@ if __name__ == "__main__":
         label = "%s:%d-%d" % (rid, sp, tp)
         sg2.add_edge( v, w, label = label, length = length, score = score)
 
-    for s, v, t in compound_paths:
-        width, length, score, bundle_edges =  compound_paths[ (s, v, t) ] 
-        sg2.add_edge( s, t, label = "c:%s~%s" % (s, t), length = length, score = score)
-                
-
+        
     # utg construction phase 1, identify all simple paths
     s_nodes = set()
     t_nodes = set()
@@ -1036,35 +996,36 @@ if __name__ == "__main__":
             if in_degree != 0:
                 t_nodes.add(n)
 
+
     free_edges = set(sg2.edges())
     
-    for s, v, t in compound_paths:
-        free_edges.remove( (s, t) )
-        if t in simple_nodes:
-            simple_nodes.remove(t)
-            s_nodes.add(t)
-        if s in simple_nodes:
-            simple_nodes.remove(s)
-            t_nodes.add(s)
+    for s in list(simple_nodes):
+        print "simple_node", s
+    for s in list(s_nodes):
+        print "s_node", s
+    for s in list(t_nodes):
+        print "t_node", s
 
     for v,w in free_edges:
         if (reverse_end(w), reverse_end(v) ) not in free_edges:
-            print v,w
+            print "bug", v,w
             print oreverse_end(w), reverse_end(v)
 
     while len(free_edges) != 0:
         if len(s_nodes) != 0:
             n = s_nodes.pop()
+            print "initial utg 1", n
         else:
             e = free_edges.pop()
             free_edges.add(e)
             n = e[0]
-
+            print "initial utg 2", n
 
         path = []
         path_length =0
         path_score = 0 
         for v, w in sg2.out_edges(n):
+            #print "test",v,w,path
             if (v, w) not in free_edges:
                 continue
             rv = reverse_end(v)
@@ -1123,59 +1084,12 @@ if __name__ == "__main__":
             assert r_path[0] == reverse_end(path[-1])
             simple_paths[ (r_path[0], rw0, rv0) ] = r_path_length, r_path_score, r_path
 
+            print  path_length, path_score, path
+
             dual_path[ (r_path[0], rw0, rv0) ] = (v0, w0, path[-1])
             dual_path[ (v0, w0, path[-1]) ] = (r_path[0], rw0, rv0)
 
 
-    #phase 2
-
-    #convert simple paths that have the same source and sink to a compound path
-    
-    st_path = {}
-    for s, v, t in simple_paths:
-        length, score, path = simple_paths[ (s, v, t) ]
-        st_path.setdefault( (s,t), [] )
-        st_path[ (s, t) ].append( ( (s, v, t), length, score,  path ) )
-    
-    for s, v, t in compound_paths:
-        width, length, score, edges = compound_paths[ (s, v, t) ]
-        st_path.setdefault( (s,t), [] )
-        st_path[ (s, t) ].append( ( (s, v, t), length, score,  edges ) )
-
-    simple_paths = {}
-    compound_paths = {}
-
-    for s, t in st_path:
-        if len( st_path[ (s, t) ] ) == 1:
-            svt, length, score, path_or_edges = st_path[ (s, t) ][0]
-            if svt[1] == "NA":
-                compound_paths[ svt ] = length, score, path_or_edges
-            else:
-                simple_paths[ svt ] = length, score, path_or_edges
-        else:
-            edges = []
-            total_score = 0
-            max_length = 0
-            for svt, length, score, path_or_edges in st_path[ (s, t) ]:
-                ss, vv, tt = svt
-                total_score += score
-                if length > max_length:
-                    max_length = length
-                if vv[1] != "NA": #a path
-                    path = path_or_edges
-                    n1 = path[0]
-                    for i in xrange(1, len(path_or_edges)):
-                        n2 = path[i]
-                        edges.append( (n1, n2) )
-                        n1 = n2
-                else:
-                    edges.extend( path_or_edges )
-            compound_paths[ (ss, "NA", tt) ] = max_length, total_score, edges 
-            dual_path[ (v0, w0, path[-1]) ] = (r_path[0], rw0, rv0)
-
-    for s, v, t in compound_paths:
-        dual_path[ (s, v, t)  ] = (reverse_end(t), v, reverse_end(s))
-        dual_path[ (reverse_end(t), v, reverse_end(s)) ] = (s, v, t)
 
     ug = nx.MultiDiGraph()
     u_edge_data = {}
@@ -1183,28 +1097,156 @@ if __name__ == "__main__":
 
     for s, v, t in simple_paths:
         length, score, path = simple_paths[ (s, v, t) ]
-        u_edge_data[ (s, t, v) ] = (length, score, path)
+        u_edge_data[ (s, t, v) ] = (length, score, path, "simple")
         if s != t:
             ug.add_edge(s, t, key = v, type_ = "simple", via = v, length = length, score = score)
         else:
             circular_path.add( (s, t, v) )
 
-    for s, v, t in compound_paths:
-        length, score, edges = compound_paths[ (s, v, t) ]
-        u_edge_data[ (s, t, v) ] = (length, score, edges)
-        assert v == "NA"
-        if s != t:
-            ug.add_edge(s, t, key = v, type_ = "compound", via = v, length = length, score = score)
-        else:
-            circular_path.add( (s, t, v) )
 
+
+    with open("utg_data0","w") as f:
+        for s, t, v in u_edge_data:
+            rs = reverse_end(t)
+            rt = reverse_end(s)
+            rv = reverse_end(v)
+            assert (rs, rt, rv) in u_edge_data
+            length, score, path_or_edges, type_ = u_edge_data[ (s, t, v) ]
+            
+            if type_ == "compound":
+                path_or_edges = "|".join( [ ss+"~"+vv+"~"+tt for ss, tt, vv in path_or_edges ] )
+            else:
+                path_or_edges = "~".join( path_or_edges )
+            print >>f, s, v, t, type_, length, score, path_or_edges
+
+
+    utg_spurs = set()
+    all_nodes = ug.nodes()
+    excessive_link_nodes = set()
+    for n in all_nodes:
+        in_degree = len( set( e[0] for e in ug.in_edges(n))  ) # ignore mutli-edges
+        out_degree = len( set( e[1] for e in ug.out_edges(n)) )
+        if in_degree == 1 and out_degree == 1:
+            simple_nodes.add(n)
+        else:
+            if out_degree != 0:
+                s_nodes.add(n)
+            if in_degree != 0:
+                t_nodes.add(n)
+
+            if out_degree >= 2 and in_degree == 0:
+                excessive_link_nodes.add(n)
+            if in_degree >= 2 and out_degree == 0:
+                excessive_link_nodes.add(n)
+            if out_degree > 3 and in_degree < 2:
+                excessive_link_nodes.add(n)
+            if in_degree > 3 and out_degree < 2:
+                excessive_link_nodes.add(n)
+
+
+    spur_edges = set()
+
+    ug2 = ug.copy()
+    edges_to_remove = set()
+
+    for n in list(excessive_link_nodes):
+        in_degree = len( set( e[0] for e in ug.in_edges(n))  ) # ignore mutli-edges
+        out_degree = len( set( e[1] for e in ug.out_edges(n)) )
+
+        for s, t, v in ug.in_edges(n, keys=True):
+            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+            if length > 30000:
+                continue
+            u_edge_data[ (s, t, v) ] = length, score, edges, "spur:1"
+            print "spur:1", s,t,v, in_degree, out_degree
+            spur_edges.add( (s, t, v) )
+            edges_to_remove.add( (s, t, v) )
+        
+
+        for s, t, v in ug.out_edges(n, keys=True):
+            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+            if length > 30000:
+                continue
+            u_edge_data[ (s, t, v) ] = length, score, edges, "spur:1"
+            print "spur:1", s,t,v, in_degree, out_degree
+            spur_edges.add( (s, t, v) )
+            edges_to_remove.add( (s, t, v) )
+
+    for n in s_nodes:
+        if ug.in_degree(n) != 0:
+            continue
+        for s, t, v in ug.out_edges(n, keys=True):
+            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+            if length > 30000:
+                continue
+            in_degree = len( set( e[0] for e in ug.in_edges(t))  ) # ignore mutli-edges
+            out_degree = len( set( e[1] for e in ug.out_edges(t)) )
+            if in_degree > 1 and out_degree > 0:
+                spur_edges.add( (s, t, v) )
+                edges_to_remove.add( (s, t, v) )
+                u_edge_data[ (s, t, v) ] = length, score, edges, "spur:2"
+
+    for n in t_nodes:
+        if ug.out_degree(n) != 0:
+            continue
+        for s, t, v in ug.in_edges(n, keys=True):
+            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+            if length > 30000:
+                continue
+            in_degree = len( set( e[0] for e in ug.in_edges(s))  ) # ignore mutli-edges
+            out_degree = len( set( e[1] for e in ug.out_edges(s)) )
+            if in_degree > 0 and out_degree > 1:
+                spur_edges.add( (s, t, v) )
+                edges_to_remove.add( (s, t, v) )
+                u_edge_data[ (s, t, v) ] = length, score, edges, "spur:2"
+
+    for s, t, v in list(edges_to_remove):
+        ug2.remove_edge( s, t, key= v)
+    
+    #phase 2, finding all "consistent" compound paths
+    compound_paths = construct_compound_paths(ug2, u_edge_data)
+    compound_path_file = open("c_path","w")
+
+    ug2_edges = set(ug2.edges(keys = True))
+    edges_to_remove  = set()
+    for s, v, t in compound_paths:
+        width, length, score, bundle_edges =  compound_paths[ (s, v, t) ] 
+        print >> compound_path_file, s,v,t, width, length, score, "|".join( [e[0]+"~"+e[2]+"~"+e[1] for e in bundle_edges] )
+        for ss, tt, vv in bundle_edges:
+            if (ss, tt, vv) in ug2_edges:
+                edges_to_remove.add( (ss, tt, vv) )
+
+    
+    for s, t, v in edges_to_remove:
+        ug2.remove_edge( s, t ,v )
+        length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+        if type_ != "spur":
+            u_edge_data[ (s, t, v) ] = length, score, edges, "contained"
+
+
+    for s, v, t in compound_paths:
+        width, length, score, bundle_edges =  compound_paths[ (s, v, t) ] 
+        u_edge_data[ (s, t, v) ] = (length, score, bundle_edges, "compound")
+        ug2.add_edge( s, t, key = v, via = v, type_="compound", length = length, score = score)
+
+        assert v == "NA"
+        rs = reverse_end(t)
+        rt = reverse_end(s)
+        assert (rs, v, rt) in compound_paths
+        dual_path[ (s, v, t) ] = (rs, v, rt)
+        dual_path[ (rs, v, rt) ] = (s, v, t)
+
+    compound_path_file.close()
+
+    ug = ug2
 
     # identify spurs in the utg graph
     # Currently, we use ad-hoc logic filtering out shorter utg, but we ca
     # add proper alignment comparison later to remove redundant utgs 
-    utg_spurs = set()
 
+    utg_spurs = set()
     all_nodes = ug.nodes()
+
     for n in all_nodes:
         in_degree = len( ug.in_edges(n) )
         out_degree = len( ug.out_edges(n) )
@@ -1220,65 +1262,85 @@ if __name__ == "__main__":
         max_length = 0
         more_connection = 0
         for s, t, v in ug.out_edges(n, keys=True):
-            length, score, edges = u_edge_data[ (s, t, v) ]
+            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
             if length > max_length:
                 max_length = length
             if ug.out_degree(t) > 0:
                 more_connection = 1
 
         for s, t, v in ug.out_edges(n, keys=True):
-            length, score, edges = u_edge_data[ (s, t, v) ]
+
+            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+
             if length < max_length * 0.25 and length < 50000:  
+
                 utg_spurs.add( ( s, t, v ) )
+                u_edge_data[ (s, t, v) ] = length, score, edges, "spur:3"
+
                 ds, dv, dt = dual_path[ (s, v, t) ]
                 utg_spurs.add( (ds, dt, dv) ) 
+                length, score, edges, type_ = u_edge_data[ (ds, dt, dv) ]
+                u_edge_data[ (ds, dt, dv) ] = length, score, edges, "spur:3"
+
             elif length < 50000 and more_connection == 1 and ug.out_degree(t) == 0:
+
                 utg_spurs.add( ( s, t, v ) )
+                u_edge_data[ (s, t, v) ] = length, score, edges, "spur:3"
+
                 ds, dv, dt = dual_path[ (s, v, t) ]
                 utg_spurs.add( (ds, dt, dv) ) 
+                length, score, edges, type_ = u_edge_data[ (ds, dt, dv) ]
+                u_edge_data[ (ds, dt, dv) ] = length, score, edges, "spur:3"
 
 
     for n in t_nodes:
         max_length = 0
         more_connection = 0
         for s, t, v in ug.in_edges(n, keys=True):
-            length, score, edges = u_edge_data[ (s, t, v) ]
+            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
             if length > max_length:
                 max_length = length
             if ug.in_degree(s) > 0:
                 more_connection = 1
+
         for s, t, v in ug.in_edges(n, keys=True):
-            length, score, edges = u_edge_data[ (s, t, v) ]
+
+            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+
             if length < max_length * 0.25 and length < 50000:
+
                 utg_spurs.add( ( s, t, v ) )
+                u_edge_data[ (s, t, v) ] = length, score, edges, "spur:3"
+
                 ds, dv, dt = dual_path[ (s, v, t) ]
                 utg_spurs.add( (ds, dt, dv) ) 
+                length, score, edges, type_ = u_edge_data[ (ds, dt, dv) ]
+                u_edge_data[ (ds, dt, dv) ] = length, score, edges, "spur:3"
+
             elif length < 50000 and more_connection == 1 and ug.in_degree(s) == 0:
+
                 utg_spurs.add( ( s, t, v ) )
+                u_edge_data[ (s, t, v) ] = length, score, edges, "spur:3"
+
                 ds, dv, dt = dual_path[ (s, v, t) ]
                 utg_spurs.add( (ds, dt, dv)  ) 
+                length, score, edges, type_ = u_edge_data[ (ds, dt, dv) ]
+                u_edge_data[ (ds, dt, dv) ] = length, score, edges, "spur:3"
 
+    for s, t, v in ug.edges(keys=True):
+        if (s, t, v) in utg_spurs:
+            ug.remove_edge( s, t, key=v)
 
 
     with open("utg_data","w") as f:
         for s, t, v in u_edge_data:
-            if (s, t, v) in utg_spurs:
-                is_spur = "+"
-                try:
-                    ug.remove_edge(s, t, key=v)
-                except: #some self-dual edge can be already removed
-                    pass
-            else:
-                is_spur = "-"
-
-            length, score, path_or_edges = u_edge_data[ (s, t, v) ]
+            length, score, path_or_edges, type_ = u_edge_data[ (s, t, v) ]
+            
             if v == "NA":
-                type_ = "edges"
-                path_or_edges = ".".join( [ vv+"~"+ww for vv, ww in path_or_edges ] )
+                path_or_edges = "|".join( [ ss+"~"+vv+"~"+tt for ss, tt, vv in path_or_edges ] )
             else:
-                type_ = "path"
                 path_or_edges = "~".join( path_or_edges )
-            print >>f, s, v, t, type_, is_spur, length, score, path_or_edges
+            print >>f, s, v, t, type_, length, score, path_or_edges
 
 
 
@@ -1394,16 +1456,16 @@ if __name__ == "__main__":
 
                 t = t_
 
-            print >> ctg_paths, "%06dF" % ctg_id, "ctg_linear", s0+"~"+v0+"~"+t0, path[-1][1], path_length, path_score, ".".join([ c[0]+"~"+c[2]+"~"+c[1] for c in path ] )
+            print >> ctg_paths, "%06dF" % ctg_id, "ctg_linear", s0+"~"+v0+"~"+t0, path[-1][1], path_length, path_score, "|".join([ c[0]+"~"+c[2]+"~"+c[1] for c in path ] )
             r_path.reverse()
-            print >> ctg_paths, "%06dR" % ctg_id, "ctg_linear", r_path[0][0]+"~"+r_path[0][2]+"~"+r_path[0][1], r_path[-1][1], r_path_length, r_path_score, ".".join([ c[0]+"~"+c[2]+"~"+c[1] for c in r_path ] )
+            print >> ctg_paths, "%06dR" % ctg_id, "ctg_linear", r_path[0][0]+"~"+r_path[0][2]+"~"+r_path[0][1], r_path[-1][1], r_path_length, r_path_score, "|".join([ c[0]+"~"+c[2]+"~"+c[1] for c in r_path ] )
             ctg_id += 1
 
         
 
 
     for s, t, v in list(circular_path):
-        length, score, path = u_edge_data[ (s, t, v) ]
+        length, score, path, type_ = u_edge_data[ (s, t, v) ]
         print >> ctg_paths, "%6d" % ctg_id, "ctg_circular", s+"~"+v+"~"+t, t, length, score, s+"~"+v+"~"+t
         ctg_id += 1
 
