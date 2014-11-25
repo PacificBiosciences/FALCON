@@ -235,6 +235,7 @@ class StringGraph(object):
         """
 
         best_edges = set()
+        removed_edges = set()
 
         for v in self.nodes:
 
@@ -259,9 +260,13 @@ class StringGraph(object):
             if self.e_reduce[ (v, w) ] != True:
                 if (v, w) not in best_edges:
                     self.e_reduce[(v, w)] = True
+                    removed_edges.add( (v, w) )
                     v2, w2 = reverse_end(w), reverse_end(v)
                     self.e_reduce[(v2, w2)] = True
+                    removed_edges.add( (v2, w2) )
                 
+        return removed_edges
+
     def resolve_repeat_edges(self):
 
         #nxsg = nx.DiGraph()
@@ -823,9 +828,9 @@ def generate_string_graph(args):
         print sum( [1 for c in sg.e_reduce.values() if c == False] )
 
 
-    #sg.mark_best_overlap() # mark those edges that are best overlap edges
+    #removed_edges = sg.mark_best_overlap() # mark those edges that are best overlap edges
     removed_edges = sg.resolve_repeat_edges()  
-    #removed_edges = set()
+    removed_edges = set()
 
     spur_edges = sg.mark_spur_edge()
 
@@ -837,27 +842,27 @@ def generate_string_graph(args):
     nxsg = nx.DiGraph()
     edge_data = {}
     for v, w in sg.edges:
-        if sg.e_reduce[(v, w)] != True or (v, w) in removed_edges or (v, w) in spur_edges:
-            e = sg.edges[ (v, w) ]
-            rid, sp, tp = e.attr["label"]
-            score = e.attr["score"]
-            identity = e.attr["identity"]
-            length = abs(sp-tp)
+        e = sg.edges[ (v, w) ]
+        rid, sp, tp = e.attr["label"]
+        score = e.attr["score"]
+        identity = e.attr["identity"]
+        length = abs(sp-tp)
 
 
-            if  sg.e_reduce[(v, w)] != True:
-                type_ = "G"
-                label = "%s:%d-%d" % (rid, sp, tp)
-                nxsg.add_edge(v, w, label = label, length = length, score = score)
-
-            elif (v, w) in removed_edges:
-                type_ = "R"
-
-            elif (v, w) in spur_edges:
-                type_ = "S"
-
-            print >>out_f, v, w, rid, sp, tp, score, identity, type_
+        if  sg.e_reduce[(v, w)] != True:
+            type_ = "G"
+            label = "%s:%d-%d" % (rid, sp, tp)
+            nxsg.add_edge(v, w, label = label, length = length, score = score)
             edge_data[ (v, w) ] = (rid, sp, tp, length, score, identity, type_)
+        elif (v, w) in removed_edges:
+            type_ = "R"
+        elif (v, w) in spur_edges:
+            type_ = "S"
+        elif sg.e_reduce[(v, w)] == True:
+            type_ = "TR"
+
+        print >>out_f, v, w, rid, sp, tp, score, identity, type_
+
 
         
     out_f.close()
@@ -1165,6 +1170,7 @@ if __name__ == "__main__":
     utg_spurs = set()
     all_nodes = ug.nodes()
     excessive_link_nodes = set()
+
     for n in all_nodes:
         in_degree = len( set( e[0] for e in ug.in_edges(n))  ) # ignore mutli-edges
         out_degree = len( set( e[1] for e in ug.out_edges(n)) )
@@ -1189,7 +1195,6 @@ if __name__ == "__main__":
             if in_degree >= 3 and out_degree >= 3:
                 excessive_link_nodes.add(n)
 
-
     spur_edges = set()
 
     ug2 = ug.copy()
@@ -1207,7 +1212,12 @@ if __name__ == "__main__":
             print "spur:1", s,t,v, in_degree, out_degree
             spur_edges.add( (s, t, v) )
             edges_to_remove.add( (s, t, v) )
-        
+            rs = reverse_end(t)
+            rt = reverse_end(s)
+            rv = reverse_end(v)
+            edges_to_remove.add( (rs, rt, rv) )
+            length, score, edges, type_ = u_edge_data[ (rs, rt, rv) ]
+            u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:1"
 
         for s, t, v in ug.out_edges(n, keys=True):
             length, score, edges, type_ = u_edge_data[ (s, t, v) ]
@@ -1217,6 +1227,12 @@ if __name__ == "__main__":
             print "spur:1", s,t,v, in_degree, out_degree
             spur_edges.add( (s, t, v) )
             edges_to_remove.add( (s, t, v) )
+            rs = reverse_end(t)
+            rt = reverse_end(s)
+            rv = reverse_end(v)
+            edges_to_remove.add( (rs, rt, rv) )
+            length, score, edges, type_ = u_edge_data[ (rs, rt, rv) ]
+            u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:1"
 
     for n in s_nodes:
         if ug.in_degree(n) != 0:
@@ -1231,6 +1247,12 @@ if __name__ == "__main__":
                 spur_edges.add( (s, t, v) )
                 edges_to_remove.add( (s, t, v) )
                 u_edge_data[ (s, t, v) ] = length, score, edges, "spur:2"
+                rs = reverse_end(t)
+                rt = reverse_end(s)
+                rv = reverse_end(v)
+                edges_to_remove.add( (rs, rt, rv) )
+                length, score, edges, type_ = u_edge_data[ (rs, rt, rv) ]
+                u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:2"
 
     for n in t_nodes:
         if ug.out_degree(n) != 0:
@@ -1245,10 +1267,16 @@ if __name__ == "__main__":
                 spur_edges.add( (s, t, v) )
                 edges_to_remove.add( (s, t, v) )
                 u_edge_data[ (s, t, v) ] = length, score, edges, "spur:2"
+                rs = reverse_end(t)
+                rt = reverse_end(s)
+                rv = reverse_end(v)
+                edges_to_remove.add( (rs, rt, rv) )
+                length, score, edges, type_ = u_edge_data[ (rs, rt, rv) ]
+                u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:2"
 
     for s, t, v in list(edges_to_remove):
         ug2.remove_edge( s, t, key= v)
-    
+
     #phase 2, finding all "consistent" compound paths
     compound_paths = construct_compound_paths(ug2, u_edge_data)
     compound_path_file = open("c_path","w")
