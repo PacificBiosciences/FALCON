@@ -4,7 +4,7 @@ import shlex
 
 
 def filter_stage1(input_):
-    fn, max_diff, max_ovlp, min_ovlp = input_
+    fn, max_diff, max_ovlp, min_ovlp, min_len = input_
     try:
         ignore_rtn = []
         current_q_id = None
@@ -43,7 +43,7 @@ def filter_stage1(input_):
             if idt < 90:
                 continue
 
-            if q_l < 500 or t_l < 500:
+            if q_l < min_len or t_l < min_len:
                 continue
 
             if not contained:
@@ -71,12 +71,23 @@ def filter_stage1(input_):
         return
 
 def filter_stage2(input_):
-    fn, max_diff, max_ovlp, min_ovlp, ignore_set = input_
+    fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set = input_
     try:
         contained_id = set()
         for l in sp.check_output(shlex.split("LA4Falcon -mo %s" % fn)).splitlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
+
+            q_s, q_e, q_l = int(l[5]), int(l[6]), int(l[7])
+            t_s, t_e, t_l = int(l[9]), int(l[10]), int(l[11])
+
+            idt = float(l[3])
+            if idt < 90:
+                continue
+
+            if q_l < min_len or t_l < min_len:
+                continue
+
             if q_id in ignore_set:
                 continue
             if t_id in ignore_set:
@@ -91,7 +102,7 @@ def filter_stage2(input_):
         return
 
 def filter_stage3(input_):
-    fn, max_diff, max_ovlp, min_ovlp, ignore_set, contained_set = input_
+    fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set = input_
     try:
         ovlp_output = []
         current_q_id = None
@@ -144,8 +155,9 @@ def filter_stage3(input_):
 
             if idt < 90:
                 continue
-            if q_l < 1000 or t_l < 1000:
+            if q_l < min_len or t_l < min_len:
                 continue
+
             if q_s == 0:
                 overlap_data["5p"].append( (-overlap_len,  t_l - (t_e - t_s),  l) )
             elif q_e == q_l:
@@ -185,18 +197,20 @@ if __name__ == "__main__":
     parser.add_argument('--max_diff', type=int, help="max difference of 5' and 3' coverage")
     parser.add_argument('--max_cov', type=int, help="max coverage of 5' or 3' coverage")
     parser.add_argument('--min_cov', type=int, help="min coverage of 5' or 3' coverage")
+    parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
     args = parser.parse_args()
     exe_pool = Pool(args.n_core)
 
     max_diff = args.max_diff
     max_cov = args.max_cov
     min_cov = args.min_cov
+    min_len = args.min_len
 
     file_list = open(args.fofn).read().split("\n")
     inputs = []
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (fn, max_diff, max_cov, min_cov) )
+            inputs.append( (fn, max_diff, max_cov, min_cov, min_len) )
     
     ignore_all = []
     for res in exe_pool.imap(filter_stage1, inputs):  
@@ -206,7 +220,7 @@ if __name__ == "__main__":
     ignore_all = set(ignore_all)
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (fn, max_diff, max_cov, min_cov, ignore_all) )
+            inputs.append( (fn, max_diff, max_cov, min_cov, min_len, ignore_all) )
     contained = set()
     for res in exe_pool.imap(filter_stage2, inputs):  
         contained.update(res[1])
@@ -217,7 +231,7 @@ if __name__ == "__main__":
     ignore_all = set(ignore_all)
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (fn, max_diff, max_cov, min_cov, ignore_all, contained) )
+            inputs.append( (fn, max_diff, max_cov, min_cov, min_len, ignore_all, contained) )
     for res in exe_pool.imap(filter_stage3, inputs):  
         for l in res[1]:
             print " ".join(l)
