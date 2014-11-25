@@ -182,14 +182,21 @@ if __name__ == "__main__":
     parser.add_argument('--n_core', type=int, default=4,
                         help='number of processes used for generating consensus')
     parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
+    parser.add_argument('--max_diff', type=int, help="max difference of 5' and 3' coverage")
+    parser.add_argument('--max_cov', type=int, help="max coverage of 5' or 3' coverage")
+    parser.add_argument('--min_cov', type=int, help="min coverage of 5' or 3' coverage")
     args = parser.parse_args()
     exe_pool = Pool(args.n_core)
+
+    max_diff = args.max_diff
+    max_cov = args.max_cov
+    min_cov = args.min_cov
 
     file_list = open(args.fofn).read().split("\n")
     inputs = []
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (fn, 60, 120, 2) )
+            inputs.append( (fn, max_diff, max_cov, min_cov) )
     
     ignore_all = []
     for res in exe_pool.imap(filter_stage1, inputs):  
@@ -199,7 +206,7 @@ if __name__ == "__main__":
     ignore_all = set(ignore_all)
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (fn, 60, 120, 2, ignore_all) )
+            inputs.append( (fn, max_diff, max_cov, min_cov, ignore_all) )
     contained = set()
     for res in exe_pool.imap(filter_stage2, inputs):  
         contained.update(res[1])
@@ -210,7 +217,7 @@ if __name__ == "__main__":
     ignore_all = set(ignore_all)
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (fn, 60, 120, 2, ignore_all, contained) )
+            inputs.append( (fn, max_diff, max_cov, min_cov, ignore_all, contained) )
     for res in exe_pool.imap(filter_stage3, inputs):  
         for l in res[1]:
             print " ".join(l)
