@@ -223,6 +223,7 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
 
     job_id = 0
     tasks = []
+    tasks_out = {}
     with open(os.path.join(wd,  "run_jobs.sh")) as f :
         for l in f :
             l = l.strip().split()
@@ -246,12 +247,15 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
                                                URL = "task://localhost/d_%05d_%s" % (job_id, db_prefix) )
                 daligner_task = make_daligner_task ( run_daligner )
                 tasks.append( daligner_task )
+                tasks_out[ "ajob_%d" % job_id ] = job_done
                 job_id += 1
-    return tasks
+    return tasks, tasks_out
 
-def create_merge_tasks(wd, db_prefix, db_file, config):
+def create_merge_tasks(wd, db_prefix, input_dep, config):
     merge_tasks = []
     consensus_tasks = []
+    merge_out = {}
+    consensus_out ={}
     mjob_data = {}
 
     with open(os.path.join(wd,  "run_jobs.sh")) as f :
@@ -303,13 +307,14 @@ def create_merge_tasks(wd, db_prefix, db_file, config):
                        "job_id": p_id,
                        "config": config}
 
-        make_merge_task = PypeTask( inputs = {"db_file": db_file},
+        make_merge_task = PypeTask( inputs = {"input_dep": input_dep},
                                        outputs = {"job_done": job_done},
                                        parameters = parameters,
                                        TaskType = PypeThreadTaskBase,
                                        URL = "task://localhost/m_%05d_%s" % (p_id, db_prefix) )
         merge_task = make_merge_task ( run_merge_task )
 
+        merge_out["mjob_%d" % p_id] = job_done
         merge_tasks.append(merge_task)
 
 
@@ -327,8 +332,9 @@ def create_merge_tasks(wd, db_prefix, db_file, config):
         
         c_task = make_c_task( run_consensus_task )
         consensus_tasks.append(c_task)
+        consensus_out["cjob_%d" % p_id] = out_done 
 
-    return merge_tasks, consensus_tasks
+    return merge_tasks, merge_out, consensus_tasks, consensus_out
 
 
 
@@ -471,27 +477,59 @@ if __name__ == '__main__':
 
         db_file = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
         #### run daligner
-        daligner_tasks = create_daligner_tasks( rawread_dir, "raw_reads", db_file, rdb_build_done, config) 
+        daligner_tasks, daligner_out = create_daligner_tasks( rawread_dir, "raw_reads", db_file, rdb_build_done, config) 
 
         wf.addTasks(daligner_tasks)
-        wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
+        #wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
+
+        r_da_done = makePypeLocalFile( os.path.join( rawread_dir, "da_done") )
+
+        @PypeTask( inputs = daligner_out, 
+                   outputs =  {"da_done":r_da_done},
+                   TaskType = PypeThreadTaskBase,
+                   URL = "task://localhost/rda_check" )
+        def check_r_da_task(self):
+            os.system("touch %s" % fn(self.da_done))
         
-        merge_tasks, consensus_tasks = create_merge_tasks( rawread_dir, "raw_reads", db_file, config )
+        wf.addTask(check_r_da_task)
+        
+        merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( rawread_dir, "raw_reads", r_da_done, config )
         wf.addTasks( merge_tasks )
         wf.addTasks( consensus_tasks )
-        wf.refreshTargets(updateFreq = 30) #all            
 
-        with open("%s/input_preads.fofn" % pread_dir,  "w") as f:
-            for fa_fn in glob.glob("%s/preads/out*.fa" % rawread_dir):
-                print >>f, fa_fn
+        r_cns_done = makePypeLocalFile( os.path.join( rawread_dir, "cns_done") )
+        pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
+
+        @PypeTask( inputs = consensus_out, 
+                   outputs =  {"cns_done":r_cns_done, "pread_fofn": pread_fofn},
+                   TaskType = PypeThreadTaskBase,
+                   URL = "task://localhost/cns_check" )
+        def check_r_cns_task(self):
+            with open(fn(self.pread_fofn),  "w") as f:
+                for fa_fn in glob.glob("%s/preads/out*.fa" % rawread_dir):
+                    print >>f, fa_fn
+            os.system("touch %s" % fn(self.cns_done))
+         
+
+        wf.addTask(check_r_cns_task)
+        wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
     
     if config["input_type"] == "preads":
-        os.system( "cp %s %s/input_preads.fofn" % (os.path.abspath( config["input_fofn_fn"] ),pread_dir) )
+        os.system( "cp %s %s/input_preads.fofn" % (os.path.abspath( config["input_fofn_fn"] ), pread_dir) )
+        pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
 
-    if not os.path.exists("%s/rdb_build_done"  % pread_dir):
+    rdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "rdb_build_done") ) 
+    @PypeTask( inputs = { "pread_fofn": pread_fofn },
+               outputs = { "rdb_build_done": rdb_build_done },
+               parameters = {"config": config, "pread_dir": pread_dir},
+               TaskType = PypeThreadTaskBase,
+               URL = "task://localhost/build_p_rdb")
+    def build_p_rdb_task(self):
+        config = self.parameters["config"]
+        pread_dir = self.parameters["pread_dir"]
         with open("%s/preads_norm.fasta" % pread_dir, "w") as p_norm:
             c = 0
-            for fa_fn in open("%s/input_preads.fofn" % pread_dir).readlines():
+            for fa_fn in open(fn(self.pread_fofn)).readlines():
                 fa_fn = fa_fn.strip()
                 f = FastaReader(fa_fn)
                 for r in f:
@@ -504,13 +542,13 @@ if __name__ == '__main__':
                         print >> p_norm, r.sequence[ i *80 : (i + 1) * 80]
                     print >> p_norm, r.sequence[(i+1)*80:]
                     c += 1
-            print
         os.system("cd %s; fasta2DB preads preads_norm.fasta" % pread_dir)
         os.system("cd %s; DBsplit %s preads" % (pread_dir, config["ovlp_DBsplit_option"]))
         os.system("cd %s; HPCdaligner %s preads > run_jobs.sh" % (pread_dir, config["ovlp_HPCdaligner_option"]))
         os.system("cd %s; touch rdb_build_done" % pread_dir)
 
-    rdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "rdb_build_done") ) 
+    wf.addTask(build_p_rdb_task)
+    wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
 
     db_file = makePypeLocalFile(os.path.join( pread_dir, "%s.db" % "preads" ))
     #### run daligner
@@ -518,22 +556,40 @@ if __name__ == '__main__':
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     config["sge_option_da"] = config["sge_option_pda"]
     config["sge_option_la"] = config["sge_option_pla"]
-    daligner_tasks = create_daligner_tasks( pread_dir, "preads", db_file, rdb_build_done, config, pread_aln= True) 
+    daligner_tasks, daligner_out = create_daligner_tasks( pread_dir, "preads", db_file, rdb_build_done, config, pread_aln= True) 
     wf.addTasks(daligner_tasks)
-    wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
-    merge_tasks, consensus_tasks = create_merge_tasks( pread_dir, "preads", db_file, config )
+    #wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
+
+    p_da_done = makePypeLocalFile( os.path.join( pread_dir, "da_done") )
+
+    @PypeTask( inputs = daligner_out, 
+               outputs =  {"da_done":p_da_done},
+               TaskType = PypeThreadTaskBase,
+               URL = "task://localhost/pda_check" )
+    def check_p_da_task(self):
+        os.system("touch %s" % fn(self.da_done))
+    
+    wf.addTask(check_p_da_task)
+
+    merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( pread_dir, "preads", p_da_done, config )
     wf.addTasks( merge_tasks )
+    #wf.refreshTargets(updateFreq = 30) #all            
+
+    p_merge_done = makePypeLocalFile( os.path.join( pread_dir, "p_merge_done") )
+
+    @PypeTask( inputs = merge_out, 
+               outputs =  {"p_merge_done":p_merge_done},
+               TaskType = PypeThreadTaskBase,
+               URL = "task://localhost/pmerge_check" )
+    def check_p_merge_check_task(self):
+        os.system("touch %s" % fn(self.p_merge_done))
+    
+    wf.addTask(check_p_merge_check_task)
     wf.refreshTargets(updateFreq = 30) #all            
 
-
-
-    p_las_merge_done = makePypeLocalFile( os.path.join( pread_dir, "p_las_merge_done") )
-    
-    if not os.path.exists(fn(p_las_merge_done)):
-        os.system("touch %s" % fn(p_las_merge_done))
     
     falcon_asm_done = makePypeLocalFile( os.path.join( falcon_asm_dir, "falcon_asm_done") )
-    @PypeTask( iinputs = {"p_las_merge_done":p_las_merge_done}, 
+    @PypeTask( inputs = {"p_merge_done": p_merge_done}, 
                outputs =  {"falcon_asm_done":falcon_asm_done},
                parameters = {"wd": falcon_asm_dir,
                              "config": config,
@@ -544,7 +600,7 @@ if __name__ == '__main__':
         wd = self.parameters["wd"]
         config = self.parameters["config"]
         install_prefix = config["install_prefix"]
-        pread_dif = self.parameters["pread_dir"]
+        pread_dir = self.parameters["pread_dir"]
         script_dir = os.path.join( wd )
         script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
         
