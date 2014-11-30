@@ -816,6 +816,7 @@ def generate_string_graph(args):
 
 
     sg.init_reduce_dict()
+
     #if not args.disable_chimer_prediction:
     #    sg.mark_chimer_edges()
     #sg.mark_spur_edge()
@@ -828,9 +829,11 @@ def generate_string_graph(args):
         print sum( [1 for c in sg.e_reduce.values() if c == False] )
 
 
-    #removed_edges = sg.mark_best_overlap() # mark those edges that are best overlap edges
-    removed_edges = sg.resolve_repeat_edges()  
     removed_edges = set()
+    if args.lfc == True:
+        removed_edges = sg.resolve_repeat_edges()  
+    else:
+        removed_edges = sg.mark_best_overlap() # mark those edges that are best overlap edges
 
     spur_edges = sg.mark_spur_edge()
 
@@ -997,6 +1000,8 @@ if __name__ == "__main__":
                         help='minimum alignment identity of the reads to be considered for assembling')
     parser.add_argument('--disable_chimer_prediction', action="store_true", default=False,
                         help='you may want to disable this as some reads can be falsely identified as chimers in low coverage case')
+    parser.add_argument('--lfc', action="store_true", default=False,
+                        help='use local flow constraint method rather than best overlap method to resolve knots in string graph')
 
     args = parser.parse_args()
 

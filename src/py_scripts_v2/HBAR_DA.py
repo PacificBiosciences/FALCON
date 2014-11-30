@@ -298,7 +298,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
             print >> merge_script, """for f in `find .. -wholename "*job*/%s.%d.%s.*.*.las"`; do ln -sf $f .; done""" % (db_prefix, p_id, db_prefix)
             for l in s_data:
                 print >> merge_script, l
-                print >> merge_script, "mv %s.%d.las ../las_files" % (db_prefix, p_id) 
+            print >> merge_script, "mv %s.%d.las ../las_files" % (db_prefix, p_id) 
             
         merge_script_file = os.path.abspath( "%s/m_%05d/m_%05d.sh" % (wd, p_id, p_id) )
         job_done = makePypeLocalFile(os.path.abspath( "%s/m_%05d/m_%05d_done" % (wd, p_id, p_id)  ))
