@@ -1,3 +1,42 @@
+#!/usr/bin/env python
+
+#################################################################################$$
+# Copyright (c) 2011-2014, Pacific Biosciences of California, Inc.
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted (subject to the limitations in the
+# disclaimer below) provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#  notice, this list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above
+#  copyright notice, this list of conditions and the following
+#  disclaimer in the documentation and/or other materials provided
+#  with the distribution.
+#
+#  * Neither the name of Pacific Biosciences nor the names of its
+#  contributors may be used to endorse or promote products derived
+#  from this software without specific prior written permission.
+#
+# NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
+# GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY PACIFIC
+# BIOSCIENCES AND ITS CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL PACIFIC BIOSCIENCES OR ITS
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#################################################################################$$
+
 from multiprocessing import Pool
 import subprocess as sp
 import shlex
@@ -102,7 +141,7 @@ def filter_stage2(input_):
         return
 
 def filter_stage3(input_):
-    fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set = input_
+    fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set, bestn = input_
     try:
         ovlp_output = []
         current_q_id = None
@@ -126,14 +165,14 @@ def filter_stage3(input_):
                     score, m_range, ovlp = left[i]
                     ovlp_output.append(ovlp)
                     #print " ".join(ovlp), read_end_data[current_q_id] 
-                    if i >= 3 and m_range > 1000:
+                    if i >= bestn and m_range > 1000:
                         break
                 
                 for i in xrange(len(right)):
                     score, m_range, ovlp = right[i]
                     ovlp_output.append(ovlp)
                     #print " ".join(ovlp), read_end_data[current_q_id]
-                    if i >= 3 and m_range > 1000:
+                    if i >= bestn and m_range > 1000:
                         break
 
                 overlap_data = {"5p":[], "3p":[]}
@@ -173,14 +212,14 @@ def filter_stage3(input_):
             score, m_range, ovlp = left[i]
             ovlp_output.append(ovlp)
             #print " ".join(ovlp), read_end_data[current_q_id] 
-            if i >= 3 and m_range > 1000:
+            if i >= 5 and m_range > 1000:
                 break
 
         for i in xrange(len(right)):
             score, m_range, ovlp = right[i]
             ovlp_output.append(ovlp)
             #print " ".join(ovlp), read_end_data[current_q_id]
-            if i >= 3 and m_range > 1000:
+            if i >= 5 and m_range > 1000:
                 break
 
         return fn, ovlp_output
@@ -198,6 +237,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_cov', type=int, help="max coverage of 5' or 3' coverage")
     parser.add_argument('--min_cov', type=int, help="min coverage of 5' or 3' coverage")
     parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
+    parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible")
     args = parser.parse_args()
     exe_pool = Pool(args.n_core)
 
@@ -205,6 +245,7 @@ if __name__ == "__main__":
     max_cov = args.max_cov
     min_cov = args.min_cov
     min_len = args.min_len
+    bestn = args.bestn
 
     file_list = open(args.fofn).read().split("\n")
     inputs = []
@@ -231,7 +272,7 @@ if __name__ == "__main__":
     ignore_all = set(ignore_all)
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (fn, max_diff, max_cov, min_cov, min_len, ignore_all, contained) )
+            inputs.append( (fn, max_diff, max_cov, min_cov, min_len, ignore_all, contained, bestn) )
     for res in exe_pool.imap(filter_stage3, inputs):  
         for l in res[1]:
             print " ".join(l)
