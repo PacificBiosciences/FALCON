@@ -156,9 +156,11 @@ def get_consensus_with_trim( c_input ):
 
 
 def get_seq_data(config):
+    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size = config
     seqs = []
     seed_id = None
     seqs_data = []
+    read_ids = set()
     with sys.stdin as f:
         for l in f:
             l = l.strip().split()
@@ -169,12 +171,15 @@ def get_seq_data(config):
                     if len(seqs) == 0:
                         seqs.append(l[1]) #the "seed"
                         seed_id = l[0]
-                    seqs.append(l[1])
+                    if l[0] not in read_ids: #avoidng using the same read twice
+                        seqs.append(l[1])
             elif l[0] == "+":
                 if len(seqs) > 10:
-                    yield (seqs, seed_id, config) 
+                    seqs.sort( key=lambda x: -len(x) )
+                    yield (seqs[:max_n_read], seed_id, config) 
                 #seqs_data.append( (seqs, seed_id) ) 
                 seqs = []
+                read_id = set()
                 seed_id = None
             elif l[0] == "-":
                 #yield (seqs, seed_id)
