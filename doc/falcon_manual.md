@@ -216,6 +216,334 @@ The setting is mostly parallel to the first overlapping step. The major
 difference is the `-e` option in `ovlp_HPCdaligner_option`. The error rate is
 much lower now so we expect much higher correlation between the p-reads.
 
+
+## Overlap filtering
+
+Not all overlap are "independent" so it is possible to impose some filtering
+step to reduce computation and assembly graph complexity. For example, if a read
+is fully contained in another read, the overlap information between these two
+read does not provide extra information for re-constructing the genome. Also,
+due to the transitive property of the overlapping relations, many overlap
+information can be simply inferred.  In fact, the first stage for constructing
+contigs are to remove the transitive reducible edges. It means that we might
+just needs the "best `n` overlaps" in the 5' or 3' ends.  The `--bestn`
+parameter in `overlap_filtering_setting` option can be used to control the
+maximum overlap reported for each read.
+
+Another useful heuristics is to only keep reads that has average 5' and 3'
+coverage.  If a read is ended in a repeat regions, it might have higher than
+normal coverages of the end which is a repeat.  Such reads does not provide much
+value for uniquely resolving the related repeats.  We can filter them out and
+hopefully there are reads which span through the repeats and have "normal"
+unique anchors on both ends.  Also, if the coverage is too low on one end of a
+read, it could be just too many errors or sequencing artifacts over there.  Such
+reads create "spurs" in the assembly graph which are typically filtered out
+anyway. The `--max_cov` and `--min_cov` are used for filtering reads that have
+too high or too low overlaps. 
+
+The filtering scripts also allows filtering out some "split" reads.  If a read
+have very unequal coverages between the 5' and 3' ends, it can be also the signal that
+one end is a repeat.  The `--max_diff` parameter can be used to filter out the
+reads where one ends has much more coverage than the other end.
+
+What is the right numbers used for these parameters?  These parameters may the
+most tricky ones to be set right.  If the overall coverage of the error
+corrected reads longer than the length cut off is known and reasonable high
+(e.g. greater than 20x), it might be safe to set `min_cov` to be 5, `max_cov` to
+be three times of the average coverage and the `max_diff` to be twice of the
+average coverage.  However, in low coverage case, it might better to set
+`min_cov` to be one or two.  A helper script called `fc_ovlp_stats.py` can help
+to dump the number of the 3' and 5' overlap of a given length cutoff, you can
+plot the distribution of the number of overlaps to make a better decision. 
+
+One can also set the `max_diff` and `max_cov` to be really high to avoid any
+filtering if that is preferred in some cases.  
+
+This filtering process will certainly filter out information about high copy
+repeats.  Namely, those repeats will likely to be filtered out totally and do
+not appear in the final assembly.  If you are interested in those repeats even
+though they may not be able to placed within some longer contig, you will
+probably want to avoid filtering them out or process them differently.  In
+general, it might be more efficient and useful to process those repeats
+separately. Including them in the assembly process typically does not help much
+for getting better contiguity and maybe messy for post-processing with current
+algorithms. I think it is a very interesting but also very challenging
+bioinformatics topic on how to process these repeats better for improving
+assembly beside understand the nature of these repeats. 
+
+
+## Constructing graph from overlaps
+
+Given the overlapping data, the string graph is constructed by
+`fc_ovlp_to_graph.py` using the default parameters. `fc_ovlp_to_graph.py`
+generated several files representing the final string graph of the assembly. The
+final `ctg_path` contain the information of the graph of each contig. A contig
+is a linear of path of simple paths and compound paths. "Compound paths" are
+those subgraph that is not simple but have unique inlet and outlet after graph
+edge reduction. They can be induced by genome polymorphism or sequence errors.
+By explicitly encoding such information in the graph output, we can examine the
+sequences again to classify them later.
+
+(TODO: write more details about the layout rule and how it is useful for
+polyploid assembly.) 
+
+
+## Constructing contig from graph
+
+The final step to create draft contigs is to find a single path of each contig
+graph and to generate sequences accordingly.  In the case that a contig graph is
+not a simple path, we find the end-to-end path that has the most overlapped
+bases. This is called as the `primary contig`.  For each compound path within 
+the graph, if an alternative path different from primary one is possible, we
+will construct the associated contig.  In the case which the associated contigs
+are induced by sequencing error, the identity of the alternative contig and the
+primary contig will be high ( > 99% identity most of time). In the case where
+there are true structure polymorphism, there are typically bigger difference
+between the associated contigs and the primary contigs.   
+
+The script "fc_graph_to_contig.py" takes the sequence data and graph output to
+construct contigs. It generated all associated contigs at this moment. Some
+post-processing procedure to de-duplicate some of the associated contigs induced
+by errors will be developed in the future. ( You are encourage to find some
+creative way to solve this problem for sure. )
+
+# Working directory structure, job recovery and trouble shooting
+
+The code is designed to work in single directory.  The typical layout of a
+working directory looks like this:
+
+```
+$ ls -l
+total 56
+drwxr-xr-x 84 jchin Domain Users  8192 Nov 30 12:30 0-rawreads
+drwxr-xr-x 18 jchin Domain Users  4096 Nov 30 12:33 1-preads_ovl
+drwxr-xr-x  2 jchin Domain Users  4096 Nov 30 12:44 2-asm-falcon
+-rwxr-xr-x  1 jchin Domain Users  1041 Nov 30 12:13 fc_run.cfg
+-rw-r--r--  1 jchin Domain Users   378 Nov 29 23:20 input.fofn
+drwxr-xr-x  2 jchin Domain Users  4096 Nov 30 12:13 scripts
+drwxr-xr-x  2 jchin Domain Users 24576 Nov 30 12:33 sge_log
+```
+
+A typical input.fofn looks like this:
+
+```
+/mnt/data/Analysis_Results/m140913_050931_42139_c100713652400000001823152404301535_s1_p0.1.subreads.fasta
+/mnt/data/Analysis_Results/m140913_050931_42139_c100713652400000001823152404301535_s1_p0.2.subreads.fasta
+/mnt/data/Analysis_Results/m140913_050931_42139_c100713652400000001823152404301535_s1_p0.3.subreads.fasta
+```
+
+## Inside `0-rawreads` directory
+The directory `0-rawreads` includes all the scripts and data for overlapping the
+raw sequences. It contains various `job_*` and `m_*` directories:
+
+For example, if we divide the E. coli data into 20 chunks, the directory look
+like this,
+
+```
+job_00000  job_00018  job_00036  job_00054  m_00012
+job_00001  job_00019  job_00037  job_00055  m_00013
+job_00002  job_00020  job_00038  job_00056  m_00014
+job_00003  job_00021  job_00039  job_00057  m_00015
+job_00004  job_00022  job_00040  job_00058  m_00016
+job_00005  job_00023  job_00041  job_00059  m_00017
+job_00006  job_00024  job_00042  las_files  m_00018
+job_00007  job_00025  job_00043  m_00001    m_00019
+job_00008  job_00026  job_00044  m_00002    m_00020
+job_00009  job_00027  job_00045  m_00003    preads
+job_00010  job_00028  job_00046  m_00004    prepare_db.sh
+job_00011  job_00029  job_00047  m_00005    raw_reads.db
+job_00012  job_00030  job_00048  m_00006    rdb_build_done
+job_00013  job_00031  job_00049  m_00007    run_jobs.sh
+job_00014  job_00032  job_00050  m_00008
+job_00015  job_00033  job_00051  m_00009
+job_00016  job_00034  job_00052  m_00010
+job_00017  job_00035  job_00053  m_00011
+```
+
+The `job_*` directories store the output for each `daligner` job. The `m_*`
+directories are the working directory for merging jobs. There are some empty
+files which the name is ended with `done`. The time stamp of those files are
+used to track the stage of the workflow.  You can modify the time stamps and
+re-satrt the `fc_run.py` to trigger doing the computation for certain part of
+the workflow.  However, it is not recommended unless you have some time to read
+the source code of `fc_run.py` to know how the dependences inside the workflow
+are tracked. (For example, if you `touch rdb_build_done` after a successfully
+assembly and re-run `fc_run.py`, since all intermediate processes depends on the
+file and the `rdb_build_done` is newer than any of the intermediate files, it
+will trigger the `fc_run.py` to repeat the whole assembly process again.)
+
+The `las_files` stores the final alignment information. If you do not plan to
+re-run the jobs but like to know how the alignments look like, you can delete
+all `job_*` and `m_*` directory but keep the `las_files` and `preads`
+directories.
+
+The major output of this step is stored in `0-rawreads/preads`. The `out.%04d.fa`
+inside `0-rawreads/preads` are the fasta files of the output reads. The sentinel
+file `` will be created if this step is successfully finished.
+
+## Inside `1-preads_ovl` directory
+
+This directory store the data of the p-read vs. p-read overlapping. It is
+overall similar to the `0-rawreads` directory, but without the consensus step.
+The major output are the `*.las` files inside `1-preads_ovl/` directory.
+
+## The `2-asm-falcon` directory
+
+This is final output directory. It contains the information the assembly graph
+and the draft contigs.  The detail will be describe in the `Graph output format`
+section. 
+
+# Options for `fc_ovlp_to_graph.py` and assembly graph output format
+
+Here is the usage information for running `fc_ovlp_to_graph.py`:
+
+```
+usage: fc_ovlp_to_graph.py [-h] [--min_len MIN_LEN] [--min_idt MIN_IDT]
+                           [--lfc]
+                           overlap_file
+
+a example string graph assembler that is desinged for handling diploid genomes
+
+positional arguments:
+  overlap_file       a file that contains the overlap information.
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --min_len MIN_LEN  minimum length of the reads to be considered for
+                     assembling
+  --min_idt MIN_IDT  minimum alignment identity of the reads to be considered
+                     for assembling
+  --lfc              use local flow constraint method rather than best overlap
+                     method to resolve knots in string graph
+```
+
+In some case, you might want to lower the `min_idt` to keep more overlap or
+increase `min_len` to reduce the number of overlap used for constructing the
+contig after the overlap filtering step.  The `--lfc` toggles the rule for
+resolving local knots in the graph. If `--lfc` is not specified, "the best
+overlapped edge" will be kept when there are multiple in- or out- edges from a
+node while the others will be removed.  
+
+
+The first stage of the assembly is to construct the initial string graph and
+classify each edges in the string graph.  `sg_edges_list` contained the
+information of the information of the edges in the full string graph and the
+classification. For example, 5 edges are shown in the five lines of the file
+below
+
+```
+$ head -5 sg_edges_list 
+000017363:B 000007817:E 000007817 10841 28901 10841 99.52 TR
+000015379:E 000004331:B 000004331 6891 0 18178 99.35 TR
+000006813:B 000000681:E 000000681 7609 23795 7616 99.72 TR
+000002258:E 000002505:B 000002505 5850 0 17215 99.62 TR
+000013449:B 000012565:B 000012565 3317 0 20570 99.72 G
+```
+
+The first two columns indicates the in and out node of the edge.  The node
+notation contain two files operated by `:`.  The first field is the read
+identifier. The second field is either `B` or `E`. `B` is the 5' end of the read
+and `E` is the 3' end of the reads. The next three field indicates the
+corresponding sequences of the edges. In this example, the edge in the first
+line contains the sequence from read `000007817` base `[10841, 28901)`. If the
+second coordinate is smaller than the first one, it means the corresponded
+sequence is reverse complimented.  The next two column are the number of
+overlapped base and the overlap identity. The final column is the
+classification.  Currently, there are 4 different types `G`, `TR`, `R`, and `S`.
+An edge with type "`G`" is used for the final string graph. A "`TR`" means the edge is
+transitive reducible.  "`R`" means the edge is removed during the local repeat
+resolution and "`S`" means the edge is likely to be a "spur" which only one ends
+is connected.
+
+
+The initial string graph is further to be simplified into a set of "unitig" edges.
+The `utg_data` file contains the details of each unitig. Each line in the file
+represents a unitig. The first three files are "start node", "via node", and "end
+node".  Two unitgs might have the same "start node" and "end node", so we need
+another "via node" to uniquely identify the unitigs. Here is an example of the
+`utg_data` files:
+
+```
+$ head -10 utg_data
+000015696:B 000009028:B 000016941:B contained 16438 134865 000015696:B~000006612:B~000002456:B~000014643:B~000007407:B~000015939:E~000009028:B~000016941:B
+000010623:B 000015633:B 000014991:B contained 30158 18666 000010623:B~000015633:B~000014991:B
+000015636:B 000002245:B 000010757:E contained 15402 40356 000015636:B~000002245:B~000010757:E
+000014184:E NA 000012028:E compound 14895 56928 000014184:E~000012765:E~000012028:E|000014184:E~000007953:B~000012028:E
+000010757:B NA 000015636:E compound 15402 40356 000010757:B~000002245:E~000015636:E|000010757:B~000014783:E~000015636:E
+000014184:E 000007953:B 000012028:E contained 14792 32932 000014184:E~000007953:B~000012028:E
+000010623:B NA 000014991:B compound 30148 163627 000010623:B~000015633:B~000014991:B|000010623:B~000001407:B~000014991:B
+000012028:B 000012765:B 000014184:B contained 19137 56928 000012028:B~000000382:E~000012765:B~000014184:B
+000016941:B 000003353:B 000008783:B simple 88381 615439 000016941:B~000003353:B~000010261:B~000011789:E~000017006:B~000016307:B~...
+000014991:B 000013790:E 000002926:B simple 392373 2274104 000014991:B~000013790:E~000004614:B~000003329:B~000004898:B~000000461:B~000017105:E~... 
+```
+
+The forth field indicates the type of the unitigs, the fifth field is the
+estimate length of the untig and the six field is the total number of overlapped
+bases in the unitig.  There are three kinds of unitigs: "simple", "contained",
+and "compound".  "Simple" unitigs are those unitigs which are just a simple path
+(every node has one in- and one out-edge except the begining and ending nodes of
+the path.) It is represented by a list of nodes which each node is separated by
+`~` characters in the 7th column. The "contained" contigs are simple path but
+those unitigs are also part of other "compound" paths. The "compound" unitigs
+represents bubble-like subgraph in the graph. While it is not "simple", it has
+well defined in- and out- nodes and they are treated as a single unit when the
+contigs are constructed. The structure inside a "compound" unitig can be from
+biological nature or sequencing/alignment errors.  Each edge in the "compound"
+unitig subgraph are encoded explicitly as a collection of simple contained
+unitigs in the 7th column. The contained unitigs within a compound unitig 
+are separated by the `|` character.
+
+The file `ctg_paths` encodes the graph for each contig after the unitigs are
+analyzed and put into contigs. Each line has 7 columns.  The first column is the
+contig ID. The contig ID are just the serial numbers followed by `R` or `F`. Two
+contigs with same serial number but different endings are "dual" to each other.
+Namely, they are constructed from "dual" edges and they are mostly reverse
+complemented to each other except near the ends of the contigs.  The second
+column is the type of contig. If a unitig is circular (the beginning node and
+the ending node are the same), then it will be marked as "`ctg_circular`".
+Everything else will be "`ctg_linear`".  In some case, even a contig is marked
+as "`ctg_linear`", it can be still a circular contig if the beginning node and
+the ending node are the same but it is not a "simple" path.  One can detect that
+by checking the beginning and ending nodes if necessary. 
+
+The third field indicates the first unitig in the contig in the form of
+`begin_node~via_node~end_node`. The fourth field is the ending node of the
+contig. The 5th and 6th fields are the estimated length and the overlapped based
+of the contig respectively.  The final column are the unitigs in the contig. The
+three node format unitig IDs are separated by `|`.
+
+# De-dup example and strategy
+
+TODO
+
+# Low coverage assembly
+
+TODO
+
+# Assembly layout rule
+TODO
+
+
+# CPU usages
+
+This command helps to calculate the user cpu time.
+```
+ find . -name "*log" | xargs cat | grep sys | awk -F "u" '{print $1}' | awk '{s+=$1/3600};{print s}'
+```
+
+# Applications of the assembly graph
+
+TODO
+
+# Reproducibility and replicability 
+
+TDOD
+
+# Other TODOs
+
+* Incremental overlapping
+* Pre-processing repeat for overlapping
+
 Glossary
 ---------
 
@@ -235,8 +563,10 @@ contig:
 
 primary contig:
 
-associate contig:
+associated contig:
 
 p-read: Pre-assembled Reads, error corrected reads through the pre-assembly process. 
 
+compound path:
 
+simple path:
