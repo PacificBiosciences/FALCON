@@ -992,14 +992,11 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes')
     parser.add_argument('overlap_file', help='a file that contains the overlap information.')
-    parser.add_argument('--pread_names', default = "", help='the file that contains the name of the sequence to be assembled')
 
     parser.add_argument('--min_len', type=int, default=4000, 
                         help='minimum length of the reads to be considered for assembling')
     parser.add_argument('--min_idt', type=float, default=96,
                         help='minimum alignment identity of the reads to be considered for assembling')
-    parser.add_argument('--disable_chimer_prediction', action="store_true", default=False,
-                        help='you may want to disable this as some reads can be falsely identified as chimers in low coverage case')
     parser.add_argument('--lfc', action="store_true", default=False,
                         help='use local flow constraint method rather than best overlap method to resolve knots in string graph')
 
