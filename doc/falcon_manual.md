@@ -340,24 +340,19 @@ For example, if we divide the E. coli data into 20 chunks, the directory look
 like this,
 
 ```
-job_00000  job_00018  job_00036  job_00054  m_00012
-job_00001  job_00019  job_00037  job_00055  m_00013
-job_00002  job_00020  job_00038  job_00056  m_00014
-job_00003  job_00021  job_00039  job_00057  m_00015
-job_00004  job_00022  job_00040  job_00058  m_00016
-job_00005  job_00023  job_00041  job_00059  m_00017
-job_00006  job_00024  job_00042  las_files  m_00018
-job_00007  job_00025  job_00043  m_00001    m_00019
-job_00008  job_00026  job_00044  m_00002    m_00020
-job_00009  job_00027  job_00045  m_00003    preads
-job_00010  job_00028  job_00046  m_00004    prepare_db.sh
-job_00011  job_00029  job_00047  m_00005    raw_reads.db
-job_00012  job_00030  job_00048  m_00006    rdb_build_done
-job_00013  job_00031  job_00049  m_00007    run_jobs.sh
-job_00014  job_00032  job_00050  m_00008
-job_00015  job_00033  job_00051  m_00009
-job_00016  job_00034  job_00052  m_00010
-job_00017  job_00035  job_00053  m_00011
+cns_done   job_00011  job_00024  job_00037  job_00050  m_00003  m_00016
+da_done    job_00012  job_00025  job_00038  job_00051  m_00004  m_00017
+job_00000  job_00013  job_00026  job_00039  job_00052  m_00005  m_00018
+job_00001  job_00014  job_00027  job_00040  job_00053  m_00006  m_00019
+job_00002  job_00015  job_00028  job_00041  job_00054  m_00007  m_00020
+job_00003  job_00016  job_00029  job_00042  job_00055  m_00008  preads
+job_00004  job_00017  job_00030  job_00043  job_00056  m_00009  prepare_db.sh
+job_00005  job_00018  job_00031  job_00044  job_00057  m_00010  raw_reads.db
+job_00006  job_00019  job_00032  job_00045  job_00058  m_00011  rdb_build_done
+job_00007  job_00020  job_00033  job_00046  job_00059  m_00012  run_jobs.sh
+job_00008  job_00021  job_00034  job_00047  las_files  m_00013
+job_00009  job_00022  job_00035  job_00048  m_00001    m_00014
+job_00010  job_00023  job_00036  job_00049  m_00002    m_00015
 ```
 
 The `job_*` directories store the output for each `daligner` job. The `m_*`
@@ -379,7 +374,7 @@ directories.
 
 The major output of this step is stored in `0-rawreads/preads`. The `out.%04d.fa`
 inside `0-rawreads/preads` are the fasta files of the output reads. The sentinel
-file `` will be created if this step is successfully finished.
+file `cns_done` will be created if this step is successfully finished.
 
 ## Inside `1-preads_ovl` directory
 
