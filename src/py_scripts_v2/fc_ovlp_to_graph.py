@@ -456,9 +456,12 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
 
     v = start_node
     end_node = start_node
-    print
-    print 
-    print "start", start_node
+
+    if DEBUG_LOG_LEVEL > 1: 
+        print
+        print 
+        print "start", start_node
+
     bundle_nodes.add(v)
     for vv, ww, kk in local_graph.out_edges(v, keys = True):
         max_score = 0
@@ -479,15 +482,19 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
 
 
     while 1:
+        if DEBUG_LOG_LEVEL > 1:
+            print "# of tips", len(tips)
 
-        print "# of tips", len(tips)
         if len(tips) > 4:
             converage = False
             break
 
         if len(tips) == 1:
             end_node = tips.pop()
-            print "end", end_node
+
+            if DEBUG_LOG_LEVEL > 1:
+                print "end", end_node
+
             if end_node not in length_to_node:
                 v = end_node
                 max_score_edge = None
@@ -528,7 +535,8 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
         loop_detect = False
 
         for v in tips_list:
-            print "process", v
+            if DEBUG_LOG_LEVEL > 1:
+                print "process", v
 
             if len(local_graph.out_edges(v, keys=True)) == 0: # dead end route
                 print "no out edge", v
@@ -540,8 +548,9 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
             extend_tip = True
 
             for uu, vv, kk in local_graph.in_edges(v, keys=True):
-                print "in_edges", uu, vv, kk
-                print uu, "in length_to_node",  uu in length_to_node
+                if DEBUG_LOG_LEVEL > 1: 
+                    print "in_edges", uu, vv, kk
+                    print uu, "in length_to_node",  uu in length_to_node
 
                 if uu not in length_to_node:
                     extend_tip = False
@@ -564,21 +573,31 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
                     break
 
                 for vv, ww, kk in local_graph.out_edges(v, keys=True):
-                    print "test", vv, ww, kk
+
+                    if DEBUG_LOG_LEVEL > 1:
+                        print "test", vv, ww, kk
+
                     if ww in length_to_node:
                         loop_detect = True
-                        print "loop_detect", ww
+                        if DEBUG_LOG_LEVEL > 1:
+                            print "loop_detect", ww
                         break
 
                     if (vv, ww, kk) not in bundle_edges and\
                             reverse_end(ww) not in bundle_nodes:
-                        print "add", ww
+
+                        if DEBUG_LOG_LEVEL > 1:
+                            print "add", ww
+
                         tips.add(ww)
                         bundle_edges.add( (vv, ww, kk) )
                         tip_updated = True
 
                 if tip_updated:
-                    print "remove", v
+
+                    if DEBUG_LOG_LEVEL > 1:
+                        print "remove", v
+
                     tips.remove(v)
 
                     if len(tips) == 1:
@@ -616,7 +635,8 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
     """
     data_r = None
 
-    print converage, data, data_r
+    if DEBUG_LOG_LEVEL > 1:
+        print converage, data, data_r
     return converage, data, data_r
 
 def generate_string_graph(args):
@@ -629,14 +649,6 @@ def generate_string_graph(args):
     filter_reads = False
     
     seqs = set()
-
-    if args.pread_names != "":
-        filter_reads = True
-        with open(args.pread_names) as f:
-            for l in f:
-                l = l.strip()
-                seqs.add(l)
-
 
     G=nx.Graph()
     edges =set()
@@ -924,7 +936,8 @@ def construct_compound_paths(ug, u_edge_data):
             
 
         if not overlapped:
-            print "constructing", s,v, t
+            if DEBUG_LOG_LEVEL > 1:
+                print "constructing", s,v, t
 
             bundle_edges_r = []
             rs = reverse_end(t)
@@ -950,7 +963,8 @@ def construct_compound_paths(ug, u_edge_data):
         rs = reverse_end(t)
         rt = reverse_end(s)
         if (rs, "NA", rt) not in compound_paths_1:
-            print "non_compliment bundle", s, v, t, len(compound_paths_1[( s, v, t)][-1])
+            if DEBUG_LOG_LEVEL > 1:
+                print "non_compliment bundle", s, v, t, len(compound_paths_1[( s, v, t)][-1])
             continue
         width, length, score, bundle_edges = compound_paths_1[ (s, v, t) ]
         compound_paths_2[ (s, v, t) ] = width, length, score, bundle_edges
@@ -974,7 +988,8 @@ def construct_compound_paths(ug, u_edge_data):
 
         if not contained:
             compound_paths_3[k] = val
-            print "compound", k 
+            if DEBUG_LOG_LEVEL > 1:
+                print "compound", k 
 
     compound_paths = {}
     for s, v, t in compound_paths_3:
@@ -1047,28 +1062,31 @@ if __name__ == "__main__":
 
 
     free_edges = set(sg2.edges())
-    
-    for s in list(simple_nodes):
-        print "simple_node", s
-    for s in list(s_nodes):
-        print "s_node", s
-    for s in list(t_nodes):
-        print "t_node", s
 
-    for v,w in free_edges:
-        if (reverse_end(w), reverse_end(v) ) not in free_edges:
-            print "bug", v,w
-            print oreverse_end(w), reverse_end(v)
+    if DEBUG_LOG_LEVEL > 1: 
+        for s in list(simple_nodes):
+            print "simple_node", s
+        for s in list(s_nodes):
+            print "s_node", s
+        for s in list(t_nodes):
+            print "t_node", s
+
+        for v,w in free_edges:
+            if (reverse_end(w), reverse_end(v) ) not in free_edges:
+                print "bug", v,w
+                print oreverse_end(w), reverse_end(v)
 
     while len(free_edges) != 0:
         if len(s_nodes) != 0:
             n = s_nodes.pop()
-            print "initial utg 1", n
+            if DEBUG_LOG_LEVEL > 1:
+                print "initial utg 1", n
         else:
             e = free_edges.pop()
             free_edges.add(e)
             n = e[0]
-            print "initial utg 2", n
+            if DEBUG_LOG_LEVEL > 1:
+                print "initial utg 2", n
 
         path = []
         path_length =0
@@ -1133,7 +1151,8 @@ if __name__ == "__main__":
             assert r_path[0] == reverse_end(path[-1])
             simple_paths[ (r_path[0], rw0, rv0) ] = r_path_length, r_path_score, r_path
 
-            print  path_length, path_score, path
+            if DEBUG_LOG_LEVEL > 1:
+                print  path_length, path_score, path
 
             dual_path[ (r_path[0], rw0, rv0) ] = (v0, w0, path[-1])
             dual_path[ (v0, w0, path[-1]) ] = (r_path[0], rw0, rv0)
@@ -1153,21 +1172,20 @@ if __name__ == "__main__":
             circular_path.add( (s, t, v) )
 
 
-
-    with open("utg_data0","w") as f:
-        for s, t, v in u_edge_data:
-            rs = reverse_end(t)
-            rt = reverse_end(s)
-            rv = reverse_end(v)
-            assert (rs, rt, rv) in u_edge_data
-            length, score, path_or_edges, type_ = u_edge_data[ (s, t, v) ]
-            
-            if type_ == "compound":
-                path_or_edges = "|".join( [ ss+"~"+vv+"~"+tt for ss, tt, vv in path_or_edges ] )
-            else:
-                path_or_edges = "~".join( path_or_edges )
-            print >>f, s, v, t, type_, length, score, path_or_edges
-
+    if DEBUG_LOG_LEVEL > 1:
+        with open("utg_data0","w") as f:
+            for s, t, v in u_edge_data:
+                rs = reverse_end(t)
+                rt = reverse_end(s)
+                rv = reverse_end(v)
+                assert (rs, rt, rv) in u_edge_data
+                length, score, path_or_edges, type_ = u_edge_data[ (s, t, v) ]
+                
+                if type_ == "compound":
+                    path_or_edges = "|".join( [ ss+"~"+vv+"~"+tt for ss, tt, vv in path_or_edges ] )
+                else:
+                    path_or_edges = "~".join( path_or_edges )
+                print >>f, s, v, t, type_, length, score, path_or_edges
 
     utg_spurs = set()
     all_nodes = ug.nodes()
@@ -1211,7 +1229,8 @@ if __name__ == "__main__":
             if length > 30000:
                 continue
             u_edge_data[ (s, t, v) ] = length, score, edges, "spur:1"
-            print "spur:1", s,t,v, in_degree, out_degree
+            if DEBUG_LOG_LEVEL > 1:
+                print "spur:1", s,t,v, in_degree, out_degree
             spur_edges.add( (s, t, v) )
             edges_to_remove.add( (s, t, v) )
             rs = reverse_end(t)
@@ -1226,7 +1245,8 @@ if __name__ == "__main__":
             if length > 30000:
                 continue
             u_edge_data[ (s, t, v) ] = length, score, edges, "spur:1"
-            print "spur:1", s,t,v, in_degree, out_degree
+            if DEBUG_LOG_LEVEL > 1:
+                print "spur:1", s,t,v, in_degree, out_degree
             spur_edges.add( (s, t, v) )
             edges_to_remove.add( (s, t, v) )
             rs = reverse_end(t)
@@ -1381,7 +1401,8 @@ if __name__ == "__main__":
             path_score = 0
             path_nodes = set()
             path_nodes.add(s)
-            print "check 1", s, t, v
+            if DEBUG_LOG_LEVEL > 1:
+                print "check 1", s, t, v
             path_key = t
             t0 = s
             while t in simple_out:
@@ -1407,12 +1428,14 @@ if __name__ == "__main__":
             path_end = t
 
             c_path.append( (path_start, path_key, path_end, path_length, path_score, path, len(path)) ) 
-            print "c_path", path_start, path_key, path_end, path_length, path_score, len(path)
+            if DEBUG_LOG_LEVEL > 1:
+                print "c_path", path_start, path_key, path_end, path_length, path_score, len(path)
             for e in path:
                 if e in free_edges:
                     free_edges.remove( e )
  
-    print "left over edges:", len(free_edges)
+    if DEBUG_LOG_LEVEL > 1:
+        print "left over edges:", len(free_edges)
 
 
 
