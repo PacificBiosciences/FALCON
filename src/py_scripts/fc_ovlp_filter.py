@@ -212,14 +212,14 @@ def filter_stage3(input_):
             score, m_range, ovlp = left[i]
             ovlp_output.append(ovlp)
             #print " ".join(ovlp), read_end_data[current_q_id] 
-            if i >= 5 and m_range > 1000:
+            if i >= bestn and m_range > 1000:
                 break
 
         for i in xrange(len(right)):
             score, m_range, ovlp = right[i]
             ovlp_output.append(ovlp)
             #print " ".join(ovlp), read_end_data[current_q_id]
-            if i >= 5 and m_range > 1000:
+            if i >= bestn and m_range > 1000:
                 break
 
         return fn, ovlp_output

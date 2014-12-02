@@ -6,27 +6,14 @@ from distutils.core import Extension
 
 import glob
 
-scripts = ["src/py_scripts/falcon_asm.py", 
-         "src/py_scripts/falcon_overlap.py",
-         "src/py_scripts/falcon_overlap2.py",
-         "src/py_scripts/falcon_qrm.py",
-         "src/py_scripts/falcon_fixasm.py",
-         "src/py_scripts/falcon_dedup.py",
-         "src/py_scripts/falcon_sense.py",
-         "src/py_scripts/falcon_ucns_data.py",
-         "src/py_scripts/falcon_utgcns.py",
-         "src/py_scripts/get_rdata.py",
-         "src/py_scripts/remove_dup_ctg.py"]
-
-scripts_v2 = glob.glob("src/py_scripts_v2/*.py")
 
 #install_requires=[ "pbcore >= 0.6.3", "networkx >= 1.7" ]
 install_requires=[ "networkx >= 1.7" ]
 
-scripts.extend( scripts_v2 )
+scripts = glob.glob("src/py_scripts/*.py")
 
 setup(name='falcon_kit',
-      version='0.1.3',
+      version='0.2.1',
       description='a small toolkit for DNA seqeucne alignment, overlapping, and assembly',
       author='Jason Chin',
       author_email='jchin@pacificbiosciences.com',

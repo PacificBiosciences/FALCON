@@ -39,7 +39,7 @@
 
 import networkx as nx
 #from pbcore.io import FastaReader
-from FastaReader import *
+from falcon_kit.FastaReader import FastaReader 
 
 read_fasta = "preads4falcon.fasta"
 edge_data_file = "sg_edges_list"

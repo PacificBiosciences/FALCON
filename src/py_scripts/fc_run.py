@@ -42,7 +42,7 @@ from pypeflow.common import *
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
 from pypeflow.controller import PypeWorkflow, PypeThreadWorkflow
-from pbcore.io import FastaReader
+from falcon_kit.FastaReader import FastaReader
 import glob
 import sys
 import os
@@ -506,10 +506,11 @@ if __name__ == '__main__':
                    URL = "task://localhost/cns_check" )
         def check_r_cns_task(self):
             with open(fn(self.pread_fofn),  "w") as f:
-                for fa_fn in glob.glob("%s/preads/out*.fa" % rawread_dir):
+                fn_list =  glob.glob("%s/preads/out*.fa" % rawread_dir)
+                fn_list.sort()
+                for fa_fn in fn_list:
                     print >>f, fa_fn
             os.system("touch %s" % fn(self.cns_done))
-         
 
         wf.addTask(check_r_cns_task)
         wf.refreshTargets(updateFreq = 30) # larger number better for more jobs

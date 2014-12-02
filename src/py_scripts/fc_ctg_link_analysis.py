@@ -37,7 +37,9 @@
 # SUCH DAMAGE.
 #################################################################################$$
 
-from fc_asm_graph import AsmGraph
+from falcon_kit import fc_asm_graph 
+
+AsmGraph = fc_asm_graph.AsmGraph
 
 G_asm = AsmGraph("sg_edges_list", "utg_data", "ctg_paths")
 
