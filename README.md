@@ -56,5 +56,5 @@ Standard PacBio Open Source License that is associated with this package:
     # SUCH DAMAGE.
     #################################################################################$$
 
---Jason Chin, Dec 1, 2013
+--Jason Chin, Dec 1, 2014
 
