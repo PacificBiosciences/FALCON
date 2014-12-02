@@ -56,10 +56,8 @@ In this manual, we will go over the hierarchical genome assembly process and the
 
 ## Installation
 
-Well, this is a TODO item for now.
-
 Here is the environment this example is used to construct a user space
-`virtualenv` for running Falcon.
+python `virtualenv` for running Falcon.
 
 ```
 $ uname -a
@@ -84,46 +82,61 @@ $ cd installation_dir
 $ virtualenv --no-site-packages  --always-copy   $PWD/fc_env
 New python executable in /home/UNIXHOME/jchin/task2014/falcon_pb_github/fc_env/bin/python
 Installing setuptools, pip...done.
+```
 
+Activate the virtual environment,
+```
 $ . $PWD/fc_env/bin/activate
 (fc_env) $ which python
 installation_dir/fc_env/bin/python
-
-# clone pypeflow
-
-(fc_env) $ git clone https://github.com/cschin/pypeFLOW 
-(fc_env) $ cd pypeFLOW
-(fc_env) $ python setup.py install
-
-# clone falcon with a specific git version
-# this should install networkx too
-(fc_env) $ git clone https://github.com/PacificBiosciences/FALCON.git
-(fc_env) $ cd FALCON
-(fc_env) $ python setup.py install
-
-
-
-(fc_env) $ cd installation_dir
-(fc_env) $ git clone https://github.com/cschin/DAZZ_DB.git 
-
-# clone a fork version of Daligner  DAZZ_B: 18dd52091f03c8a8a3e814fb5b5516e5243b6d00
-
-(fc_env) $ git clone https://github.com/cschin/DAZZ_DB.git
-(fc_env) $ cd DAZZ_DB/
-(fc_env) $ make
-(fc_env) $ cp DBrm DBshow DBsplit DBstats fasta2DB ../fc_env/bin/ 
-
-(fc_env) $ cd ..
-(fc_env) $ git clone https://github.com/cschin/DALIGNER.git
-(fc_env) $ make
-(fc_env) $ cp daligner daligner_p DB2Falcon HPCdaligner LA4Falcon LAmerge LAsort ../fc_env/bin/
-
-(fc_env) $ cd ../
-(fc_env) $ mkdir ecoli_test
-(fc_env) $ cd ecoli_test
-
 ```
 
+We will need two python packges `pypeFLOW` and `FALCON` and we need compile the
+DALINGER code and put the binary executables into the virtual environment.
+
+Here is a simple shell script that creates the environment and installs the
+packages:
+``` 
+virtualenv --no-site-packages  --always-copy   $PWD/fc_env
+. $PWD/fc_env/bin/activate
+git clone https://github.com/cschin/pypeFLOW 
+cd pypeFLOW
+
+cd ..
+git clone https://github.com/PacificBiosciences/FALCON.git
+cd FALCON
+python setup.py install
+
+cd ..
+git clone https://github.com/cschin/DAZZ_DB.git
+cd DAZZ_DB/
+make
+cp DBrm DBshow DBsplit DBstats fasta2DB ../fc_env/bin/ 
+
+cd ..
+git clone https://github.com/cschin/DALIGNER.git
+cd DALIGNER
+make
+cp daligner daligner_p DB2Falcon HPCdaligner LA4Falcon LAmerge LAsort  ../fc_env/bin
+cd ..
+```
+
+Here is a quick testing to try it out for a simple E. coli assembly
+
+```
+. $PWD/fc_env/bin/activate
+cd ecoli_test/
+mkdir data
+cd data
+wget https://www.dropbox.com/s/tb78i5i3nrvm6rg/m140913_050931_42139_c100713652400000001823152404301535_s1_p0.1.subreads.fasta
+wget https://www.dropbox.com/s/v6wwpn40gedj470/m140913_050931_42139_c100713652400000001823152404301535_s1_p0.2.subreads.fasta
+wget https://www.dropbox.com/s/j61j2cvdxn4dx4g/m140913_050931_42139_c100713652400000001823152404301535_s1_p0.3.subreads.fasta
+cd ..
+find $PWD/data -name "*.fasta" > input.fofn
+cp ../FALCON/examples/fc_run_ecoli.cfg .
+cp ../../ecoli_test/input.fofn .
+fc_run.py fc_run_ecoli.cfg 
+```
 
 
 ## Running `fc_run.py` 
