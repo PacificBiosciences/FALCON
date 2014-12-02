@@ -58,6 +58,74 @@ In this manual, we will go over the hierarchical genome assembly process and the
 
 Well, this is a TODO item for now.
 
+Here is the environment this example is used to construct a user space
+`virtualenv` for running Falcon.
+
+```
+$ uname -a
+Linux login14-biofx 3.13.0-24-generic #47-Ubuntu SMP Fri May 2 23:30:00 UTC 2014 x86_64 GNU/Linux
+
+$ gcc --version
+gcc (Ubuntu 4.8.2-19ubuntu1) 4.8.2
+Copyright (C) 2013 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+$ python --version
+Python 2.7.6 
+
+# I do plan to move the Python 3 sometime.
+```
+
+Running `virtualenv` in a shared directory across the computational nodes:
+
+```
+$ cd installation_dir
+$ virtualenv --no-site-packages  --always-copy   $PWD/fc_env
+New python executable in /home/UNIXHOME/jchin/task2014/falcon_pb_github/fc_env/bin/python
+Installing setuptools, pip...done.
+
+$ . $PWD/fc_env/bin/activate
+(fc_env) $ which python
+installation_dir/fc_env/bin/python
+
+# clone pypeflow
+
+(fc_env) $ git clone https://github.com/cschin/pypeFLOW 
+(fc_env) $ cd pypeFLOW
+(fc_env) $ python setup.py install
+
+# clone falcon with a specific git version
+# this should install networkx too
+(fc_env) $ git clone https://github.com/PacificBiosciences/FALCON.git
+(fc_env) $ cd FALCON
+(fc_env) $ python setup.py install
+
+
+
+(fc_env) $ cd installation_dir
+(fc_env) $ git clone https://github.com/cschin/DAZZ_DB.git 
+
+# clone a fork version of Daligner  DAZZ_B: 18dd52091f03c8a8a3e814fb5b5516e5243b6d00
+
+(fc_env) $ git clone https://github.com/cschin/DAZZ_DB.git
+(fc_env) $ cd DAZZ_DB/
+(fc_env) $ make
+(fc_env) $ cp DBrm DBshow DBsplit DBstats fasta2DB ../fc_env/bin/ 
+
+(fc_env) $ cd ..
+(fc_env) $ git clone https://github.com/cschin/DALIGNER.git
+(fc_env) $ make
+(fc_env) $ cp daligner daligner_p DB2Falcon HPCdaligner LA4Falcon LAmerge LAsort ../fc_env/bin/
+
+(fc_env) $ cd ../
+(fc_env) $ mkdir ecoli_test
+(fc_env) $ cd ecoli_test
+
+```
+
+
+
 ## Running `fc_run.py` 
 
 It is easy to start the assembly process like this,
@@ -531,6 +599,25 @@ This command helps to calculate the user cpu time.
 TODO
 
 # Reproducibility and replicability 
+
+
+# C code for sequence alignment and consensus
+---------------------------------------------
+
+Several C code files for implementing sequence matching, alignment and consensus:
+
+```
+    kmer_lookup.c  # kmer match code for quickly identify potential hits
+    DW_banded.c    # function for detailed sequence alignment
+                   # It is based on Eugene Myers' Paper 
+                   # "AnO(ND) difference algorithm and its variations", 1986, 
+                   # http://dx.doi.org/10.1007/BF01840446
+    falcon.c       # functions for generating consensus sequences for a set of multiple sequence alginment
+    common.h       # header file for common declaration
+```
+
+A python wrapper library using Python's ctypes to call the C functions: falcon_kit.py
+
 
 TDOD
 

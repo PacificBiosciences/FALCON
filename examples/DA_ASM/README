@@ -1,8 +1,0 @@
-This is a work in progress. Just a quick example how to drive daligner and falcon assembler to get an assembly from 25X yeast PacBio data.
-There is no official support. Use this with your own risk.
-
-I use an environment documented here https://raw.githubusercontent.com/PacificBiosciences/FALCON/master/examples/install_note.sh
-and an modified verison of the Daligner https://github.com/cschin/DALIGNER.
-
-Sept. 19, 2014
-Jason CHin
