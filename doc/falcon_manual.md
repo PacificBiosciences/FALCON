@@ -72,7 +72,7 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 $ python --version
 Python 2.7.6 
 
-# I do plan to move the Python 3 sometime.
+# I do plan to move to Python 3 sometime.
 ```
 
 Running `virtualenv` in a shared directory across the computational nodes:
