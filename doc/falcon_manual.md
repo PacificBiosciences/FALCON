@@ -1,5 +1,5 @@
 
-![Falcon Logo](https://github.com/PacificBiosciences/FALCON/blob/master/doc/falcon_icon2.png =128x128)
+![Falcon Logo](https://github.com/PacificBiosciences/FALCON/blob/master/doc/falcon_icon2.png)
 
 # Falcon Genome Assembly Tool Kit Manual for v0.2 Branch
 
