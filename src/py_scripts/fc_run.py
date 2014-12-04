@@ -516,7 +516,8 @@ if __name__ == '__main__':
         wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
     
     if config["input_type"] == "preads":
-        os.system( "cp %s %s/input_preads.fofn" % (os.path.abspath( config["input_fofn_fn"] ), pread_dir) )
+        if not os.path.exists( "%s/input_preads.fofn" % pread_dir):
+            os.system( "cp %s %s/input_preads.fofn" % (os.path.abspath( config["input_fofn_fn"] ), pread_dir) )
         pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
 
     rdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "rdb_build_done") ) 
