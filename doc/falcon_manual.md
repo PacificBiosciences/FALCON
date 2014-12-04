@@ -101,6 +101,7 @@ virtualenv --no-site-packages  --always-copy   $PWD/fc_env
 . $PWD/fc_env/bin/activate
 git clone https://github.com/cschin/pypeFLOW 
 cd pypeFLOW
+python setup.py install
 
 cd ..
 git clone https://github.com/PacificBiosciences/FALCON.git
@@ -125,6 +126,7 @@ Here is a quick testing to try it out for a simple E. coli assembly
 
 ```
 . $PWD/fc_env/bin/activate
+mkdir ecoli_test
 cd ecoli_test/
 mkdir data
 cd data
@@ -134,7 +136,6 @@ wget https://www.dropbox.com/s/j61j2cvdxn4dx4g/m140913_050931_42139_c10071365240
 cd ..
 find $PWD/data -name "*.fasta" > input.fofn
 cp ../FALCON/examples/fc_run_ecoli.cfg .
-cp ../../ecoli_test/input.fofn .
 fc_run.py fc_run_ecoli.cfg 
 ```
 
