@@ -36,11 +36,20 @@
 #################################################################################$$
 
 import networkx as nx
+from FastaReader import FastaReader
+
+RCMAP = dict(zip("ACGTacgtNn-","TGCAtgcaNn-"))
+
+def reverse_end( node_id ):
+    node_id, end = node_id.split(":")
+    new_end = "B" if end == "E" else "E"
+    return node_id + ":" + new_end
 
 class AsmGraph(object):
 
     def __init__(self, sg_file, utg_file, ctg_file):
         self.sg_edges = {}
+        self.sg_edge_seqs = {}
         self.utg_data = {}
         self.ctg_data ={}
         self.utg_to_ctg = {}
@@ -60,11 +69,56 @@ class AsmGraph(object):
                 l = l.strip().split()
                 v, w = l[0:2]
                 seq_id, b, e = l[2:5]
-                b, e = int(b), int(b)
+                b, e = int(b), int(e)
                 score, idt = l[5:7]
-                scroe, idt = int(score), float(idt)
+                score, idt = int(score), float(idt)
                 type_ = l[7]
-                self.sg_edges[ (v, w) ] = ( (seq_id, b, e), scroe, idt, type_)
+                self.sg_edges[ (v, w) ] = ( (seq_id, b, e), score, idt, type_)
+
+    def load_sg_seq(self, fasta_fn): 
+
+        all_read_ids = set() # read ids in the graph
+
+        for v, w in self.sg_edges:
+            type_ = self.sg_edges[ (v, w) ][-1]
+            if type_ != "G":
+                continue
+            v = v.split(":")[0]
+            w = w.split(":")[0]
+            all_read_ids.add(v)
+            all_read_ids.add(w)
+
+        seqs = {}
+        # load all p-read name into memory
+        f = FastaReader(fasta_fn)
+        for r in f:
+            if r.name not in all_read_ids:
+                continue
+            seqs[r.name] = r.sequence.upper()
+
+        
+        for v, w in self.sg_edges:
+            seq_id, s, t = self.sg_edges[ (v, w) ][0]
+            type_ = self.sg_edges[ (v, w) ][-1]
+
+            if type_ != "G":
+                continue
+
+            if s < t:
+                e_seq = seqs[ seq_id ][ s:t ]
+            else:
+                e_seq = "".join([ RCMAP[c] for c in seqs[ seq_id ][ s:t:-1 ] ])
+            self.sg_edge_seqs[ (v, w) ] = e_seq
+
+    def get_seq_from_path(self, path):
+        if len(self.sg_edge_seqs) == 0:
+            return ""
+        v = path[0]
+        seqs = []
+        for w in path[1:]:
+            seqs.append( self.sg_edge_seqs[ (v, w) ] )
+            v = w
+        return "".join(seqs)
 
 
     def load_utg_data(self, utg_file):
@@ -80,6 +134,7 @@ class AsmGraph(object):
                 
 
     def load_ctg_data(self, ctg_file):
+
         with open(ctg_file) as f:
             for l in f:
                 l = l.strip().split()
@@ -88,7 +143,7 @@ class AsmGraph(object):
                 end_node = l[3]
                 length = int(l[4])
                 score = int(l[5])
-                path = list( ( e.split("~") for e in l[6].split("|") ) ) 
+                path = tuple( ( e.split("~") for e in l[6].split("|") ) ) 
                 self.ctg_data[ ctg_id ] = ( ctg_type, start_edge, end_node,  length, score, path )
                 for u in path:
                     s, v, t = u

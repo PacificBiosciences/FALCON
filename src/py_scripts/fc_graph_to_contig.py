@@ -164,7 +164,7 @@ if __name__ == "__main__":
                         for v2 in sub_path[1:]:
                             c_graph.add_edge( v1, v2, score = 10000000 - edge_data[ (v1, v2) ][2]  )
                             v1 = v2
-                    print s,v,t
+                    #print s,v,t
                     shortest_path = nx.shortest_path( c_graph, s, t, weight = "score" )
 
                     if len(one_path) != 0:
