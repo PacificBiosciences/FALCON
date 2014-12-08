@@ -533,6 +533,7 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
 
         tip_updated = False
         loop_detect = False
+        length_limit_reached = False
 
         for v in tips_list:
             if DEBUG_LOG_LEVEL > 1:
@@ -569,9 +570,11 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
                 score_to_node[v] = score_to_node[max_score_edge[0]] +  u_edge_data[ max_score_edge ][1]
 
                 if length_to_node[v] > length_cutoff:
+                    length_limit_reached = True
                     converage = False
                     break
 
+                v_udpated = False
                 for vv, ww, kk in local_graph.out_edges(v, keys=True):
 
                     if DEBUG_LOG_LEVEL > 1:
@@ -592,8 +595,9 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
                         tips.add(ww)
                         bundle_edges.add( (vv, ww, kk) )
                         tip_updated = True
+                        v_udpated = True
 
-                if tip_updated:
+                if v_updated:
 
                     if DEBUG_LOG_LEVEL > 1:
                         print "remove", v
@@ -607,6 +611,9 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
                 converage = False
                 break
 
+        if length_limit_reached:
+            converage = False
+            break
 
         if loop_detect:
             converage = False
