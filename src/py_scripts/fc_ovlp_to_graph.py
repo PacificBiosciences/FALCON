@@ -574,7 +574,7 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
                     converage = False
                     break
 
-                v_udpated = False
+                v_updated = False
                 for vv, ww, kk in local_graph.out_edges(v, keys=True):
 
                     if DEBUG_LOG_LEVEL > 1:
@@ -595,7 +595,7 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
                         tips.add(ww)
                         bundle_edges.add( (vv, ww, kk) )
                         tip_updated = True
-                        v_udpated = True
+                        v_updated = True
 
                 if v_updated:
 
