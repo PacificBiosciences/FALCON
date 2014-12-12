@@ -73,7 +73,7 @@ def get_aln_data(t_seq, q_seq):
 
         alignment = DWA.align(q_seq[s1:e1], e1-s1,
                               seq0[s2:e2], e2-s2,
-                              100,1)
+                              1500,1)
 
         if alignment[0].aln_str_size > 100:
             aln_data.append( ( q_id, 0, s1, e1, len(q_seq), s2, e2, len(seq0), alignment[0].aln_str_size, alignment[0].dist ) )
@@ -230,8 +230,8 @@ if __name__ == "__main__":
 
                         except nx.exception.NetworkXNoPath:
                             break
-                        if len(shortest_path) < 2:
-                            break
+                        #if len(shortest_path) < 2:
+                        #    break
 
                     all_alt_path.sort()
                     all_alt_path.reverse()
@@ -262,6 +262,10 @@ if __name__ == "__main__":
             a_id = 1
             for v, w, in a_ctg_group:
                 #get the base sequence used in the primary contig
+                #count = len( [x for x in a_ctg_group[ (v, w) ] if len(x[1]) > 3] )
+                #if count < 2:
+                #    continue
+
                 atig_output = []
 
                 score, atig_path = a_ctg_group[ (v, w) ][0]
