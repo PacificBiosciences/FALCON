@@ -353,6 +353,10 @@ def get_config(config_fn):
     pa_concurrent_jobs = 8
     if config.has_option('General', 'pa_concurrent_jobs'):
         pa_concurrent_jobs = config.getint('General', 'pa_concurrent_jobs')
+    
+    cns_concurrent_jobs = 8
+    if config.has_option('General', 'cns_concurrent_jobs'):
+        cns_concurrent_jobs = config.getint('General', 'cns_concurrent_jobs')
 
     ovlp_concurrent_jobs = 8
     if config.has_option('General', 'ovlp_concurrent_jobs'):
@@ -412,6 +416,7 @@ def get_config(config_fn):
                    "input_type": input_type,
                    "pa_concurrent_jobs" : pa_concurrent_jobs,
                    "ovlp_concurrent_jobs" : ovlp_concurrent_jobs,
+                   "cns_concurrent_jobs" : cns_concurrent_jobs,
                    "overlap_filtering_setting": overlap_filtering_setting,
                    "length_cutoff" : length_cutoff,
                    "length_cutoff_pr" : length_cutoff_pr,
@@ -493,6 +498,8 @@ if __name__ == '__main__':
         
         wf.addTask(check_r_da_task)
         
+        concurrent_jobs = config["cns_concurrent_jobs"]
+        PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
         merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( rawread_dir, "raw_reads", r_da_done, config )
         wf.addTasks( merge_tasks )
         wf.addTasks( consensus_tasks )
