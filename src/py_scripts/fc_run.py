@@ -294,7 +294,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
     with open(os.path.join(wd,  "run_jobs.sh")) as f :
         for l in f:
             l = l.strip().split()
-            if l[0] not in ( "LAsort", "LAmerge" ):
+            if l[0] not in ( "LAsort", "LAmerge", "mv" ):
                 continue
             if l[0] == "LAsort":
                 p_id = int( l[2].split(".")[1] )
@@ -308,6 +308,16 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
                     mjob_data[p_id].append(  " ".join(l) )
                 else:
                     p_id = int( l[2].split(".")[1] )
+                    mjob_data.setdefault( p_id, [] )
+                    mjob_data[p_id].append(  " ".join(l) )
+            if l[0] == "mv":
+                l2 = l[1].split(".")
+                if l2[1] == "L2":
+                    p_id = int(  l[1].split(".")[2] )
+                    mjob_data.setdefault( p_id, [] )
+                    mjob_data[p_id].append(  " ".join(l) )
+                else:
+                    p_id = int( l[1].split(".")[1] )
                     mjob_data.setdefault( p_id, [] )
                     mjob_data[p_id].append(  " ".join(l) )
 
@@ -331,8 +341,8 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
             print >> merge_script, """for f in `find .. -wholename "*job*/%s.%d.%s.*.*.las"`; do ln -sf $f .; done""" % (db_prefix, p_id, db_prefix)
             for l in s_data:
                 print >> merge_script, l
-            print >> merge_script, "mv %s.%d.las ../las_files" % (db_prefix, p_id) 
-            print >> merge_script, "ln -s ./las_files/%s.%d.las .. " % (db_prefix, p_id) 
+            print >> merge_script, "ln -sf ../m_%05d/%s.%d.las ../las_files" % (p_id, db_prefix, p_id) 
+            print >> merge_script, "ln -sf ./m_%05d/%s.%d.las .. " % (p_id, db_prefix, p_id) 
             
         merge_script_file = os.path.abspath( "%s/m_%05d/m_%05d.sh" % (wd, p_id, p_id) )
         job_done = makePypeLocalFile(os.path.abspath( "%s/m_%05d/m_%05d_done" % (wd, p_id, p_id)  ))
