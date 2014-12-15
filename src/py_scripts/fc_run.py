@@ -403,15 +403,16 @@ def get_config(config_fn):
 
     if config.has_option('General', 'target'):
         target = config.get('General', 'target')
-        if target not in ["mapping", "pre_assembly", "falcon_asm"]:
-            print """ Target has to be "mapping", "pre_assembly" or "falcon_asm" in this verison. You have an unknown target %s in the configuration file.  """ % target
+        if target not in ["overlapping", "pre-assembly", "assembly"]:
+            print """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target %s in the configuration file.  """ % target
             sys.exit(1)
     else:
-        print """ No target specified, assuming "falcon_asm" as target """
-        target = "falcon_asm"
+        print """ No target specified, assuming "assembly" as target """
+        target = "assembly"
 
 
     hgap_config = {"input_fofn_fn" : input_fofn_fn,
+                   "target" : target,
                    "job_type" : job_type,
                    "input_type": input_type,
                    "pa_concurrent_jobs" : pa_concurrent_jobs,
@@ -497,6 +498,9 @@ if __name__ == '__main__':
             os.system("touch %s" % fn(self.da_done))
         
         wf.addTask(check_r_da_task)
+        wf.refreshTargets(updateFreq = 30) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
+        if config["target"] == "overlapping":
+            exit(0)
         
         concurrent_jobs = config["cns_concurrent_jobs"]
         PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
@@ -521,6 +525,9 @@ if __name__ == '__main__':
 
         wf.addTask(check_r_cns_task)
         wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
+
+    if config["target"] == "pre-assembly":
+        exit(0)
     
     if config["input_type"] == "preads":
         if not os.path.exists( "%s/input_preads.fofn" % pread_dir):
