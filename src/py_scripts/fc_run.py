@@ -102,15 +102,38 @@ def build_rdb(self):
     length_cutoff = config["length_cutoff"]
     pa_HPCdaligner_option = config["pa_HPCdaligner_option"]
     pa_DBsplit_option = config["pa_DBsplit_option"]
+    openending = config["openending"]
+
 
 
     script_fn = os.path.join( work_dir, "prepare_db.sh" )
+    
+    last_block = 1
+    new_db = True
+    if os.path.exists( os.path.join(work_dir, "raw_reads.db") ):
+        with open(  os.path.join(work_dir, "raw_reads.db") ) as f:
+            for l in f:
+                l = l.strip().split()
+                if l[0] == "blocks" and l[1] == "=":
+                    last_block = int(l[2])
+                    new_db = False
+                    break
+
+
     with open(script_fn,"w") as script_file:
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
-        script_file.write("for f in `cat {input_fofn_fn}`; do fasta2DB raw_reads $f; done\n".format(input_fofn_fn = input_fofn_fn))
-        script_file.write("DBsplit %s raw_reads\n" % pa_DBsplit_option)
-        script_file.write("HPCdaligner %s -H%d raw_reads > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff))
+        script_file.write("hostname >> db_build.log\n")
+        script_file.write("date >> db_build.log\n")
+        script_file.write("for f in `cat {input_fofn_fn}`; do fasta2DB raw_reads $f; done >> db_build.log \n".format(input_fofn_fn = input_fofn_fn))
+        if new_db  == True:
+            script_file.write("DBsplit %s raw_reads\n" % pa_DBsplit_option)
+        if openending == True:
+            script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')\n""")
+        else:
+            script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
+        script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
+
         script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
 
     job_name = self.URL.split("/")[-1]
@@ -124,20 +147,22 @@ def build_rdb(self):
 
 def run_daligner(self):
     daligner_cmd = self.parameters["daligner_cmd"]
-    job_id = self.parameters["job_id"]
+    job_uid = self.parameters["job_uid"]
     cwd = self.parameters["cwd"]
     config = self.parameters["config"]
     sge_option_da = config["sge_option_da"]
     install_prefix = config["install_prefix"]
 
     script_dir = os.path.join( cwd )
-    script_fn =  os.path.join( script_dir , "rj_%05d.sh" % (job_id))
-    log_path = os.path.join( script_dir, "rj_%05d.log" % (job_id))
+    script_fn =  os.path.join( script_dir , "rj_%s.sh" % (job_uid))
+    log_path = os.path.join( script_dir, "rj_%s.log" % (job_uid))
 
     script = []
     script.append( "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
-    script.append( "/usr/bin/time "+ daligner_cmd + ( " >& %s " % log_path ) + ( " && touch %s" % fn( self.job_done ) ) )
+    script.append( "hostname >> %s" % log_path )
+    script.append( "date >> %s" % log_path )
+    script.append( "/usr/bin/time "+ daligner_cmd + ( " >> %s 2>&1 " % log_path ) + ( " && touch %s" % fn( self.job_done ) ) )
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
@@ -166,7 +191,9 @@ def run_merge_task(self):
     script = []
     script.append( "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
-    script.append( ("/usr/bin/time bash %s " % p_script_fn)  + ( " >& %s " % log_path ) + ( " && touch %s" % fn( self.job_done ) ) )
+    script.append( "hostname >> %s" % log_path )
+    script.append( "date >> %s" % log_path )
+    script.append( ("/usr/bin/time bash %s " % p_script_fn)  + ( " >> %s 2>&1" % log_path ) + ( " && touch %s" % fn( self.job_done ) ) )
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
@@ -204,7 +231,9 @@ def run_consensus_task(self):
     script = []
     script.append( "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
-    script.append( ("/usr/bin/time bash cp_%05d.sh " % job_id )  + ( " >& %s " % log_path ) + ( " && touch c_%05d_done" % job_id  ) )
+    script.append( "hostname >> %s" % log_path )
+    script.append( "date >> %s" % log_path )
+    script.append( ("/usr/bin/time bash cp_%05d.sh " % job_id )  + ( " >> %s 2>&1 " % log_path ) + ( " && touch c_%05d_done" % job_id  ) )
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
@@ -221,33 +250,37 @@ def run_consensus_task(self):
 
 def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
 
+    import hashlib
     job_id = 0
     tasks = []
     tasks_out = {}
     with open(os.path.join(wd,  "run_jobs.sh")) as f :
         for l in f :
-            l = l.strip().split()
+            l = l.strip()
+            job_uid = hashlib.md5(l).hexdigest()
+            job_uid = job_uid[:8]
+            l = l.split()
             if l[0] == "daligner":
                 try:
-                    os.makedirs(os.path.join( wd, "./job_%05d" % job_id))
+                    os.makedirs(os.path.join( wd, "./job_%s" % job_uid))
                 except OSError:
                     pass
-                os.system("cd %s/job_%05d;ln -sf ../.%s.bps .; ln -sf ../.%s.idx .; ln -sf ../%s.db ." % (wd, job_id, db_prefix, db_prefix, db_prefix) )
-                job_done = makePypeLocalFile(os.path.abspath( "%s/job_%05d/job_%05d_done" % (wd, job_id, job_id)  ))
+                os.system("cd %s/job_%s;ln -sf ../.%s.bps .; ln -sf ../.%s.idx .; ln -sf ../%s.db ." % (wd, job_uid, db_prefix, db_prefix, db_prefix) )
+                job_done = makePypeLocalFile(os.path.abspath( "%s/job_%s/job_%s_done" % (wd, job_uid, job_uid)  ))
                 if pread_aln == True:
                     l[0] = "daligner_p"
                 parameters =  {"daligner_cmd": " ".join(l),
-                               "cwd": os.path.join(wd, "job_%05d" % job_id),
-                               "job_id": job_id,
+                               "cwd": os.path.join(wd, "job_%s" % job_uid),
+                               "job_uid": job_uid,
                                "config": config}
                 make_daligner_task = PypeTask( inputs = {"rdb_build_done": rdb_build_done},
                                                outputs = {"job_done": job_done},
                                                parameters = parameters,
                                                TaskType = PypeThreadTaskBase,
-                                               URL = "task://localhost/d_%05d_%s" % (job_id, db_prefix) )
+                                               URL = "task://localhost/d_%s_%s" % (job_uid, db_prefix) )
                 daligner_task = make_daligner_task ( run_daligner )
                 tasks.append( daligner_task )
-                tasks_out[ "ajob_%d" % job_id ] = job_done
+                tasks_out[ "ajob_%s" % job_uid ] = job_done
                 job_id += 1
     return tasks, tasks_out
 
@@ -299,6 +332,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
             for l in s_data:
                 print >> merge_script, l
             print >> merge_script, "mv %s.%d.las ../las_files" % (db_prefix, p_id) 
+            print >> merge_script, "ln -s ./las_files/%s.%d.las .. " % (db_prefix, p_id) 
             
         merge_script_file = os.path.abspath( "%s/m_%05d/m_%05d.sh" % (wd, p_id, p_id) )
         job_done = makePypeLocalFile(os.path.abspath( "%s/m_%05d/m_%05d_done" % (wd, p_id, p_id)  ))
@@ -362,6 +396,18 @@ def get_config(config_fn):
     if config.has_option('General', 'ovlp_concurrent_jobs'):
         ovlp_concurrent_jobs = config.getint('General', 'ovlp_concurrent_jobs')
 
+    #appending = False
+    #if config.has_option('General', 'appending'):
+    #    appending = config.get('General', 'appending')
+    #    if appending == "True":
+    #        appending = True
+
+    openending = False
+    if config.has_option('General', 'openending'):
+        openending = config.get('General', 'openending')
+        if openending == "True":
+            openending = True
+
     input_type = "raw"
     if config.has_option('General', 'input_type'):
         input_type = config.get('General', 'input_type')
@@ -378,11 +424,11 @@ def get_config(config_fn):
     if config.has_option('General', 'ovlp_HPCdaligner_option'):
         ovlp_HPCdaligner_option = config.get('General', 'ovlp_HPCdaligner_option')
 
-    pa_DBsplit_option = """ -x500 -s400"""
+    pa_DBsplit_option = """ -x500 -s200"""
     if config.has_option('General', 'pa_DBsplit_option'):
         pa_DBsplit_option = config.get('General', 'pa_DBsplit_option')
 
-    ovlp_DBsplit_option = """ -x500 -s400"""
+    ovlp_DBsplit_option = """ -x500 -s200"""
     if config.has_option('General', 'ovlp_DBsplit_option'):
         ovlp_DBsplit_option = config.get('General', 'ovlp_DBsplit_option')
 
@@ -415,6 +461,7 @@ def get_config(config_fn):
                    "target" : target,
                    "job_type" : job_type,
                    "input_type": input_type,
+                   "openending": openending,
                    "pa_concurrent_jobs" : pa_concurrent_jobs,
                    "ovlp_concurrent_jobs" : ovlp_concurrent_jobs,
                    "cns_concurrent_jobs" : cns_concurrent_jobs,
@@ -499,13 +546,14 @@ if __name__ == '__main__':
         
         wf.addTask(check_r_da_task)
         wf.refreshTargets(updateFreq = 30) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
-        if config["target"] == "overlapping":
-            exit(0)
         
         concurrent_jobs = config["cns_concurrent_jobs"]
         PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
         merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( rawread_dir, "raw_reads", r_da_done, config )
         wf.addTasks( merge_tasks )
+        if config["target"] == "overlapping":
+            wf.refreshTargets(updateFreq = 30) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
+            exit(0)
         wf.addTasks( consensus_tasks )
 
         r_cns_done = makePypeLocalFile( os.path.join( rawread_dir, "cns_done") )
