@@ -51,6 +51,8 @@ import time
 import logging
 import uuid
 
+
+wait_time = 5
 log = 0
 if log:
     logger = logging.getLogger()
@@ -80,7 +82,7 @@ def run_script(job_data, job_type = "SGE" ):
 
 def wait_for_file(filename, task = None, job_name = ""):
     while 1:
-        time.sleep(30)
+        time.sleep(wait_time)
         if os.path.exists(filename):
             break
 
@@ -152,6 +154,8 @@ def run_daligner(self):
     config = self.parameters["config"]
     sge_option_da = config["sge_option_da"]
     install_prefix = config["install_prefix"]
+    db_prefix = self.parameters["db_prefix"]
+    nblock = self.parameters["nblock"]
 
     script_dir = os.path.join( cwd )
     script_fn =  os.path.join( script_dir , "rj_%s.sh" % (job_uid))
@@ -163,6 +167,9 @@ def run_daligner(self):
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
     script.append( "/usr/bin/time "+ daligner_cmd + ( " >> %s 2>&1 " % log_path ) + ( " && touch %s" % fn( self.job_done ) ) )
+
+    for p_id in xrange( 1, nblock+1 ):
+        script.append( """ for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do ln -sf $f ../m_%05d; done """  % (db_prefix, p_id, db_prefix, p_id) )
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
@@ -254,6 +261,25 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
     job_id = 0
     tasks = []
     tasks_out = {}
+
+    nblock = 1
+    new_db = True
+    if os.path.exists( os.path.join(wd, "%s.db" % db_prefix) ):
+        with open(  os.path.join(wd, "%s.db" % db_prefix) ) as f:
+            for l in f:
+                l = l.strip().split()
+                if l[0] == "blocks" and l[1] == "=":
+                    nblock = int(l[2])
+                    new_db = False
+                    break
+
+    for pid in xrange(1, nblock + 1):
+        try:
+            os.makedirs("%s/m_%05d" % (wd, pid))
+        except OSError:
+            pass
+
+
     with open(os.path.join(wd,  "run_jobs.sh")) as f :
         for l in f :
             l = l.strip()
@@ -272,7 +298,9 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
                 parameters =  {"daligner_cmd": " ".join(l),
                                "cwd": os.path.join(wd, "job_%s" % job_uid),
                                "job_uid": job_uid,
-                               "config": config}
+                               "config": config,
+                               "nblock": nblock,
+                               "db_prefix": db_prefix}
                 make_daligner_task = PypeTask( inputs = {"rdb_build_done": rdb_build_done},
                                                outputs = {"job_done": job_done},
                                                parameters = parameters,
@@ -338,7 +366,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
             pass
 
         with open("%s/m_%05d/m_%05d.sh" % (wd, p_id, p_id), "w") as merge_script:
-            print >> merge_script, """for f in `find .. -wholename "*job*/%s.%d.%s.*.*.las"`; do ln -sf $f .; done""" % (db_prefix, p_id, db_prefix)
+            #print >> merge_script, """for f in `find .. -wholename "*job*/%s.%d.%s.*.*.las"`; do ln -sf $f .; done""" % (db_prefix, p_id, db_prefix)
             for l in s_data:
                 print >> merge_script, l
             print >> merge_script, "ln -sf ../m_%05d/%s.%d.las ../las_files" % (p_id, db_prefix, p_id) 
@@ -525,7 +553,7 @@ if __name__ == '__main__':
         input_h5_fofn = makePypeLocalFile( os.path.abspath( config["input_fofn_fn"] ) )
         rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") ) 
         parameters = {"work_dir": rawread_dir,
-                      "config": config} 
+                      "config": config}
 
         make_buid_rdb_task = PypeTask(inputs = {"input_fofn": input_h5_fofn},
                                       outputs = {"rdb_build_done": rdb_build_done}, 
@@ -543,7 +571,7 @@ if __name__ == '__main__':
         daligner_tasks, daligner_out = create_daligner_tasks( rawread_dir, "raw_reads", db_file, rdb_build_done, config) 
 
         wf.addTasks(daligner_tasks)
-        #wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
+        #wf.refreshTargets(updateFreq = 60) # larger number better for more jobs
 
         r_da_done = makePypeLocalFile( os.path.join( rawread_dir, "da_done") )
 
@@ -555,14 +583,14 @@ if __name__ == '__main__':
             os.system("touch %s" % fn(self.da_done))
         
         wf.addTask(check_r_da_task)
-        wf.refreshTargets(updateFreq = 30) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
+        wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
         
         concurrent_jobs = config["cns_concurrent_jobs"]
         PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
         merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( rawread_dir, "raw_reads", r_da_done, config )
         wf.addTasks( merge_tasks )
         if config["target"] == "overlapping":
-            wf.refreshTargets(updateFreq = 30) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
+            wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
             exit(0)
         wf.addTasks( consensus_tasks )
 
@@ -582,7 +610,7 @@ if __name__ == '__main__':
             os.system("touch %s" % fn(self.cns_done))
 
         wf.addTask(check_r_cns_task)
-        wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
+        wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs
 
     if config["target"] == "pre-assembly":
         exit(0)
@@ -622,7 +650,7 @@ if __name__ == '__main__':
         os.system("cd %s; touch rdb_build_done" % pread_dir)
 
     wf.addTask(build_p_rdb_task)
-    wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
+    wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs
 
     db_file = makePypeLocalFile(os.path.join( pread_dir, "%s.db" % "preads" ))
     #### run daligner
@@ -659,7 +687,7 @@ if __name__ == '__main__':
         os.system("touch %s" % fn(self.p_merge_done))
     
     wf.addTask(check_p_merge_check_task)
-    wf.refreshTargets(updateFreq = 30) #all            
+    wf.refreshTargets(updateFreq = wait_time) #all            
 
     
     falcon_asm_done = makePypeLocalFile( os.path.join( falcon_asm_dir, "falcon_asm_done") )
@@ -707,4 +735,4 @@ if __name__ == '__main__':
         wait_for_file( fn(self.falcon_asm_done), task=self, job_name=job_name )
     
     wf.addTask( run_falcon_asm_task )
-    wf.refreshTargets(updateFreq = 1) #all            
+    wf.refreshTargets(updateFreq = wait_time) #all            
