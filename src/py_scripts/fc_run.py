@@ -302,7 +302,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
                 mjob_data[p_id].append(  " ".join(l) )
             if l[0] == "LAmerge":
                 l2 = l[2].split(".")
-                if l2[1] == "L2":
+                if l2[1][0] == "L":
                     p_id = int(  l[2].split(".")[2] )
                     mjob_data.setdefault( p_id, [] )
                     mjob_data[p_id].append(  " ".join(l) )
@@ -312,7 +312,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
                     mjob_data[p_id].append(  " ".join(l) )
             if l[0] == "mv":
                 l2 = l[1].split(".")
-                if l2[1] == "L2":
+                if l2[1][0] == "L":
                     p_id = int(  l[1].split(".")[2] )
                     mjob_data.setdefault( p_id, [] )
                     mjob_data[p_id].append(  " ".join(l) )
