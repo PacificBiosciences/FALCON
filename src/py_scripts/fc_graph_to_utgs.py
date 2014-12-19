@@ -187,12 +187,12 @@ for utg in G_asm.utg_data:
                 duplicated = False
                 atig_output.append( (s, t, atig_path, total_length, total_score, seq, atig_path_edges, 0, 0) )
 
-        if len(atig_output) == 1:
-            continue
+        #if len(atig_output) == 1:
+        #    continue
 
         sub_id = 0
         for data in atig_output:
             v0, w0, tig_path, total_length, total_score, seq, atig_path_edges, a_idt, cov = data
-            print >> utg_out, ">%s~%s~%s-%d %d %d" % (v0, "NA", w0, sub_id,  length, score ) 
+            print >> utg_out, ">%s~%s~%s-%d %d %d" % (v0, "NA", w0, sub_id,  total_length, total_score ) 
             print >> utg_out, seq
             sub_id += 1
