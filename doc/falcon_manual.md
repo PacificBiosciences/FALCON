@@ -6,6 +6,8 @@
 Author: Jason Chin
 Date: Dec 4, 2014
 
+Minor Update: Dec 17, 2014
+
 ## Overview of the Hierarchical Genome Assembly Process
 
 A "Hierarchical Genome Assembly Process" is constituted of the following steps
@@ -34,7 +36,7 @@ cpu-rich computational job queues
 
 With a file that contains a set of sub-reads, the script `fc_run.py` can drive
 the workflow managing checking the data dependency and submitting the jobs for
-each step and generating a draft assembly from the giving data. 
+each step and generating a draft assembly from the giving data.
 
 `fc_run.py` is the workflow driving script needs to be run on a machine which
 allow long last time through the period of time of the whole assembly process.
@@ -70,7 +72,7 @@ This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 $ python --version
-Python 2.7.6 
+Python 2.7.6
 
 # I do plan to move to Python 3 sometime.
 ```
@@ -96,10 +98,10 @@ DALINGER code and put the binary executables into the virtual environment.
 
 Here is a simple shell script that creates the environment and installs the
 packages:
-``` 
+```
 virtualenv --no-site-packages  --always-copy   $PWD/fc_env
 . $PWD/fc_env/bin/activate
-git clone https://github.com/cschin/pypeFLOW 
+git clone https://github.com/cschin/pypeFLOW
 cd pypeFLOW
 python setup.py install
 
@@ -109,13 +111,13 @@ cd FALCON
 python setup.py install
 
 cd ..
-git clone https://github.com/cschin/DAZZ_DB.git
+git clonehttps://github.com/pb-jchin/DAZZ_DB.git
 cd DAZZ_DB/
 make
-cp DBrm DBshow DBsplit DBstats fasta2DB ../fc_env/bin/ 
+cp DBrm DBshow DBsplit DBstats fasta2DB ../fc_env/bin/
 
 cd ..
-git clone https://github.com/cschin/DALIGNER.git
+git clone https://github.com/pb-jchin/DALIGNER.git
 cd DALIGNER
 make
 cp daligner daligner_p DB2Falcon HPCdaligner LA4Falcon LAmerge LAsort  ../fc_env/bin
@@ -136,11 +138,11 @@ wget https://www.dropbox.com/s/j61j2cvdxn4dx4g/m140913_050931_42139_c10071365240
 cd ..
 find $PWD/data -name "*.fasta" > input.fofn
 cp ../FALCON/examples/fc_run_ecoli.cfg .
-fc_run.py fc_run_ecoli.cfg 
+fc_run.py fc_run_ecoli.cfg
 ```
 
 
-## Running `fc_run.py` 
+## Running `fc_run.py`
 
 It is easy to start the assembly process like this,
 
@@ -171,18 +173,19 @@ Here is an example of `fc_run.cfg` for a small E. coli assembly,
     # Cluster queue setting
     sge_option_da = -pe smp 8 -q bigmem
     sge_option_la = -pe smp 2 -q bigmem
-    sge_option_pda = -pe smp 8 -q bigmem 
+    sge_option_pda = -pe smp 8 -q bigmem
     sge_option_pla = -pe smp 2 -q bigmem
     sge_option_fc = -pe smp 24 -q bigmem
     sge_option_cns = -pe smp 8 -q bigmem
 
     # concurrency settgin
     pa_concurrent_jobs = 32
+    cns_concurrent_jobs = 32
     ovlp_concurrent_jobs = 32
 
     # overlapping options for Daligner
-    pa_HPCdaligner_option =  -v -dal4 -t16 -e.70 -l1000 -s1000 
-    ovlp_HPCdaligner_option = -v -dal4 -t32 -h60 -e.96 -l500 -s1000 
+    pa_HPCdaligner_option =  -v -dal4 -t16 -e.70 -l1000 -s1000
+    ovlp_HPCdaligner_option = -v -dal4 -t32 -h60 -e.96 -l500 -s1000
 
     pa_DBsplit_option = -x500 -s50
     ovlp_DBsplit_option = -x500 -s50
@@ -191,7 +194,7 @@ Here is an example of `fc_run.cfg` for a small E. coli assembly,
     falcon_sense_option = --output_multi --min_idt 0.70 --min_cov 4 --local_match_count_threshold 2 --max_n_read 200 --n_core 6
 
     # overlap filtering options
-    overlap_filtering_setting = --max_diff 100 --max_cov 100 --min_cov 20 --bestn 10 
+    overlap_filtering_setting = --max_diff 100 --max_cov 100 --min_cov 20 --bestn 10
 ```
 
 ## Raw sub-reads overlapping for error correction
@@ -220,7 +223,7 @@ You will need to decide the length cutoff. Typically, it will be nice to chose
 the threshold at the point you can get longest 15x to 20x for genome assembly.
 However, if the computational resource is abundant and you might find other
 applications of error corrected reads, you can set lower length cutoff to get
-more error corrected reads for your applications. 
+more error corrected reads for your applications.
 
 The option `length_cutoff` controls the cutoff used during the error correction
 process and `length_cutoff_pr` controls the cutoff used for the later assembly
@@ -230,7 +233,7 @@ assembly graph. Sometimes, it might make sense to try different
 `length_cutoff_pr` as it is relative cheap for computation than the first
 overlapping step for error correction. One strategy is to chose smaller
 `length_cutoff` and do the computation once. Later, we can use different
-`length_cutoff_pr` for getting better assembly. 
+`length_cutoff_pr` for getting better assembly.
 
 The option `pa_concurrent_jobs` controls the number of concurrent jobs that can
 be submitted by `fc_run.py`.  `sge_option_da` and `sge_option_la` controls the
@@ -278,6 +281,9 @@ smaller `--max_n_read` to make sure the consensus code does not waste time
 aligning repeats. The longest proper overlaps are used for correction to reduce the
 probability of collapsed repeats.
 
+One can use `cns_concurrent_jobs` to control the maximum number of concurrent
+submitted to the job management system.
+
 ## Overlapping detection of the error corrected reads
 
 This part is pretty much the same as the first overlapping stage, although some
@@ -287,11 +293,11 @@ parse-able by `daligner`.  The following parameters control the computation
 process for this step:
 
 ```
-    sge_option_pda = -pe smp 8 -q bigmem 
+    sge_option_pda = -pe smp 8 -q bigmem
     sge_option_pla = -pe smp 2 -q bigmem
     ovlp_concurrent_jobs = 32
     ovlp_DBsplit_option = -x500 -s50
-    ovlp_HPCdaligner_option = -v -dal4 -t32 -h60 -e.96 -l500 -s1000 
+    ovlp_HPCdaligner_option = -v -dal4 -t32 -h60 -e.96 -l500 -s1000
 ```
 
 The setting is mostly parallel to the first overlapping step. The major
@@ -321,7 +327,7 @@ unique anchors on both ends.  Also, if the coverage is too low on one end of a
 read, it could be just too many errors or sequencing artifacts over there.  Such
 reads create "spurs" in the assembly graph which are typically filtered out
 anyway. The `--max_cov` and `--min_cov` are used for filtering reads that have
-too high or too low overlaps. 
+too high or too low overlaps.
 
 The filtering scripts also allows filtering out some "split" reads.  If a read
 have very unequal coverages between the 5' and 3' ends, it can be also the signal that
@@ -336,7 +342,7 @@ be three times of the average coverage and the `max_diff` to be twice of the
 average coverage.  However, in low coverage case, it might better to set
 `min_cov` to be one or two.  A helper script called `fc_ovlp_stats.py` can help
 to dump the number of the 3' and 5' overlap of a given length cutoff, you can
-plot the distribution of the number of overlaps to make a better decision. 
+plot the distribution of the number of overlaps to make a better decision.
 
 One can also set the `max_diff` and `max_cov` to be really high to avoid any
 filtering if that is preferred in some cases.  
@@ -351,7 +357,7 @@ separately. Including them in the assembly process typically does not help much
 for getting better contiguity and maybe messy for post-processing with current
 algorithms. I think it is a very interesting but also very challenging
 bioinformatics topic on how to process these repeats better for improving
-assembly beside understand the nature of these repeats. 
+assembly beside understand the nature of these repeats.
 
 
 ## Constructing graph from overlaps
@@ -367,7 +373,7 @@ By explicitly encoding such information in the graph output, we can examine the
 sequences again to classify them later.
 
 (TODO: write more details about the layout rule and how it is useful for
-polyploid assembly.) 
+polyploid assembly.)
 
 
 ## Constructing contig from graph
@@ -375,13 +381,13 @@ polyploid assembly.)
 The final step to create draft contigs is to find a single path of each contig
 graph and to generate sequences accordingly.  In the case that a contig graph is
 not a simple path, we find the end-to-end path that has the most overlapped
-bases. This is called as the `primary contig`.  For each compound path within 
+bases. This is called as the `primary contig`.  For each compound path within
 the graph, if an alternative path different from primary one is possible, we
 will construct the associated contig.  In the case which the associated contigs
 are induced by sequencing error, the identity of the alternative contig and the
 primary contig will be high ( > 99% identity most of time). In the case where
 there are true structure polymorphism, there are typically bigger difference
-between the associated contigs and the primary contigs.   
+between the associated contigs and the primary contigs.
 
 The script "fc_graph_to_contig.py" takes the sequence data and graph output to
 construct contigs. It generated all associated contigs at this moment. Some
@@ -468,7 +474,7 @@ The major output are the `*.las` files inside `1-preads_ovl/` directory.
 
 This is final output directory. It contains the information the assembly graph
 and the draft contigs.  The detail will be describe in the `Graph output format`
-section. 
+section.
 
 # Options for `fc_ovlp_to_graph.py` and assembly graph output format
 
@@ -509,7 +515,7 @@ classification. For example, 5 edges are shown in the five lines of the file
 below
 
 ```
-$ head -5 sg_edges_list 
+$ head -5 sg_edges_list
 000017363:B 000007817:E 000007817 10841 28901 10841 99.52 TR
 000015379:E 000004331:B 000004331 6891 0 18178 99.35 TR
 000006813:B 000000681:E 000000681 7609 23795 7616 99.72 TR
@@ -551,7 +557,7 @@ $ head -10 utg_data
 000010623:B NA 000014991:B compound 30148 163627 000010623:B~000015633:B~000014991:B|000010623:B~000001407:B~000014991:B
 000012028:B 000012765:B 000014184:B contained 19137 56928 000012028:B~000000382:E~000012765:B~000014184:B
 000016941:B 000003353:B 000008783:B simple 88381 615439 000016941:B~000003353:B~000010261:B~000011789:E~000017006:B~000016307:B~...
-000014991:B 000013790:E 000002926:B simple 392373 2274104 000014991:B~000013790:E~000004614:B~000003329:B~000004898:B~000000461:B~000017105:E~... 
+000014991:B 000013790:E 000002926:B simple 392373 2274104 000014991:B~000013790:E~000004614:B~000003329:B~000004898:B~000000461:B~000017105:E~...
 ```
 
 The forth field indicates the type of the unitigs, the fifth field is the
@@ -567,7 +573,7 @@ well defined in- and out- nodes and they are treated as a single unit when the
 contigs are constructed. The structure inside a "compound" unitig can be from
 biological nature or sequencing/alignment errors.  Each edge in the "compound"
 unitig subgraph are encoded explicitly as a collection of simple contained
-unitigs in the 7th column. The contained unitigs within a compound unitig 
+unitigs in the 7th column. The contained unitigs within a compound unitig
 are separated by the `|` character.
 
 The file `ctg_paths` encodes the graph for each contig after the unitigs are
@@ -581,7 +587,7 @@ the ending node are the same), then it will be marked as "`ctg_circular`".
 Everything else will be "`ctg_linear`".  In some case, even a contig is marked
 as "`ctg_linear`", it can be still a circular contig if the beginning node and
 the ending node are the same but it is not a "simple" path.  One can detect that
-by checking the beginning and ending nodes if necessary. 
+by checking the beginning and ending nodes if necessary.
 
 The third field indicates the first unitig in the contig in the form of
 `begin_node~via_node~end_node`. The fourth field is the ending node of the
@@ -612,7 +618,7 @@ This command helps to calculate the user cpu time.
 
 TODO
 
-# Reproducibility and replicability 
+# Reproducibility and replicability
 
 
 # C code for sequence alignment and consensus
@@ -623,8 +629,8 @@ Several C code files for implementing sequence matching, alignment and consensus
 ```
     kmer_lookup.c  # kmer match code for quickly identify potential hits
     DW_banded.c    # function for detailed sequence alignment
-                   # It is based on Eugene Myers' Paper 
-                   # "AnO(ND) difference algorithm and its variations", 1986, 
+                   # It is based on Eugene Myers' Paper
+                   # "AnO(ND) difference algorithm and its variations", 1986,
                    # http://dx.doi.org/10.1007/BF01840446
     falcon.c       # functions for generating consensus sequences for a set of multiple sequence alginment
     common.h       # header file for common declaration
@@ -643,7 +649,7 @@ TDOD
 Glossary
 ---------
 
-sub-read : 
+sub-read :
 
 pre-assembly:
 
@@ -661,7 +667,7 @@ primary contig:
 
 associated contig:
 
-p-read: Pre-assembled Reads, error corrected reads through the pre-assembly process. 
+p-read: Pre-assembled Reads, error corrected reads through the pre-assembly process.
 
 compound path:
 
