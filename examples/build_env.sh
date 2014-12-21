@@ -1,6 +1,6 @@
 virtualenv --no-site-packages  --always-copy   $PWD/fc_env
 . $PWD/fc_env/bin/activate
-git clone https://github.com/cschin/pypeFLOW
+git clone https://github.com/pb-jchin/pypeFLOW
 cd pypeFLOW
 python setup.py install
 
