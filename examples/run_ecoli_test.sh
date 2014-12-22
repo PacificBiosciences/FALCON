@@ -8,4 +8,4 @@ wget https://www.dropbox.com/s/j61j2cvdxn4dx4g/m140913_050931_42139_c10071365240
 cd ..
 find $PWD/data -name "*.fasta" > input.fofn
 cp ../FALCON/examples/fc_run_ecoli_2.cfg  .
-fc_run.py fc_run_ecoli_2.cfg 
+fc_run.py fc_run_ecoli_2.cfg
