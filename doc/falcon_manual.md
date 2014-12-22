@@ -171,12 +171,12 @@ Here is an example of `fc_run.cfg` for a small E. coli assembly,
     length_cutoff_pr = 12000
 
     # Cluster queue setting
-    sge_option_da = -pe smp 8 -q bigmem
-    sge_option_la = -pe smp 2 -q bigmem
-    sge_option_pda = -pe smp 8 -q bigmem
-    sge_option_pla = -pe smp 2 -q bigmem
-    sge_option_fc = -pe smp 24 -q bigmem
-    sge_option_cns = -pe smp 8 -q bigmem
+    sge_option_da = -pe smp 8 -q jobqueue
+    sge_option_la = -pe smp 2 -q jobqueue
+    sge_option_pda = -pe smp 8 -q jobqueue
+    sge_option_pla = -pe smp 2 -q jobqueue
+    sge_option_fc = -pe smp 24 -q jobqueue
+    sge_option_cns = -pe smp 8 -q jobqueue
 
     # concurrency settgin
     pa_concurrent_jobs = 32
@@ -293,8 +293,8 @@ parse-able by `daligner`.  The following parameters control the computation
 process for this step:
 
 ```
-    sge_option_pda = -pe smp 8 -q bigmem
-    sge_option_pla = -pe smp 2 -q bigmem
+    sge_option_pda = -pe smp 8 -q jobqueue
+    sge_option_pla = -pe smp 2 -q jobqueue
     ovlp_concurrent_jobs = 32
     ovlp_DBsplit_option = -x500 -s50
     ovlp_HPCdaligner_option = -v -dal4 -t32 -h60 -e.96 -l500 -s1000
