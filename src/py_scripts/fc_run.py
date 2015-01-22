@@ -718,7 +718,7 @@ if __name__ == '__main__':
                                  --n_core 24 --min_len %d > preads.ovl""" % (overlap_filtering_setting, length_cutoff_pr) )
 
         script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
-        script.append( """fc_ovlp_to_graph.py preads.ovl > fc.log""" )
+        script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc.log""" % length_cutoff_pr)
         script.append( """fc_graph_to_contig.py""" )
         script.append( """touch %s\n""" % fn(self.falcon_asm_done))
 
