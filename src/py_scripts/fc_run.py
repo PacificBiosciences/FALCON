@@ -180,7 +180,7 @@ def run_daligner(self):
                 "cwd": cwd,
                 "sge_option": sge_option_da,
                 "script_fn": script_fn }
-    run_script(job_data, job_type = "SGE")
+    run_script(job_data, job_type = config["job_type"])
     wait_for_file( fn( self.job_done ), task=self, job_name=job_name )
 
 def run_merge_task(self):
@@ -213,7 +213,7 @@ def run_merge_task(self):
                 "cwd": cwd,
                 "sge_option": sge_option_la,
                 "script_fn": script_fn }
-    run_script(job_data, job_type = "SGE")
+    run_script(job_data, job_type = config["job_type"])
     wait_for_file( fn( self.job_done ), task=self, job_name=job_name )
 
 def run_consensus_task(self):
@@ -251,7 +251,7 @@ def run_consensus_task(self):
                 "cwd": cwd,
                 "sge_option": sge_option_cns,
                 "script_fn": script_fn }
-    run_script(job_data, job_type = "SGE")
+    run_script(job_data, job_type = config["job_type"])
     wait_for_file( os.path.join(cwd,"c_%05d_done" % job_id) , task=self, job_name=job_name )
 
 
@@ -718,7 +718,7 @@ if __name__ == '__main__':
                                  --n_core 24 --min_len %d > preads.ovl""" % (overlap_filtering_setting, length_cutoff_pr) )
 
         script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
-        script.append( """fc_ovlp_to_graph.py preads.ovl > fc.log""" )
+        script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc.log""" % length_cutoff_pr)
         script.append( """fc_graph_to_contig.py""" )
         script.append( """touch %s\n""" % fn(self.falcon_asm_done))
 
@@ -731,7 +731,7 @@ if __name__ == '__main__':
                     "cwd": wd,
                     "sge_option": config["sge_option_fc"],
                     "script_fn": script_fn }
-        run_script(job_data, job_type = "SGE")
+        run_script(job_data, job_type = config["job_type"])
         wait_for_file( fn(self.falcon_asm_done), task=self, job_name=job_name )
     
     wf.addTask( run_falcon_asm_task )
