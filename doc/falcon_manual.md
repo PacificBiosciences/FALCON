@@ -640,7 +640,7 @@ Several C code files for implementing sequence matching, alignment and consensus
 A python wrapper library using Python's ctypes to call the C functions: falcon_kit.py
 
 
-TDOD
+TODO
 
 # Other TODOs
 
@@ -658,7 +658,21 @@ pre-assembly: Error correction process assembling raw sequences to generate high
 
 error correction: The process combining data from mutiple raw sequences with random error profile together to eliminate the errors.
 
-proper overlap: 
+proper overlap: read ovelaps without unaligned overhangs:
+
+```
+overlaps with overhangs
+             ^
+  \         /
+   \-------/
+----------------------->
+
+overlaps without overhangs
+            
+           
+     <-----------------
+---------------->
+```
 
 string graph: see http://bioinformatics.oxfordjournals.org/content/21/suppl_2/ii79.abstract
 
