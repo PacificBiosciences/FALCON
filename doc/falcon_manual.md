@@ -112,7 +112,7 @@ cd FALCON
 python setup.py install
 
 cd ..
-git clonehttps://github.com/pb-jchin/DAZZ_DB.git
+git clone https://github.com/pb-jchin/DAZZ_DB.git
 cd DAZZ_DB/
 make
 cp DBrm DBshow DBsplit DBstats fasta2DB ../fc_env/bin/
