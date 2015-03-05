@@ -53,6 +53,8 @@ def rc(seq):
 
 def get_aln_data(t_seq, q_seq):
     aln_data = []
+    x = []
+    y = []
     K = 8
     seq0 = t_seq
     lk_ptr = kup.allocate_kmer_lookup( 1 << (K * 2) )
@@ -63,25 +65,30 @@ def get_aln_data(t_seq, q_seq):
     
     kmer_match_ptr = kup.find_kmer_pos_for_seq(q_seq, len(q_seq), K, sda_ptr, lk_ptr)
     kmer_match = kmer_match_ptr[0]
-    aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K*5, 12)
-    aln_range = aln_range_ptr[0]
-    x,y = zip( * [ (kmer_match.query_pos[i], kmer_match.target_pos[i]) for i in range(kmer_match.count)] )
+
+    if kmer_match.count != 0:
+        aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K*5, 12)
+        aln_range = aln_range_ptr[0]
+        x,y = zip( * [ (kmer_match.query_pos[i], kmer_match.target_pos[i]) for i in range(kmer_match.count)] )
+
+        s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
+        
+        if e1 - s1 > 100:
+
+            alignment = DWA.align(q_seq[s1:e1], e1-s1,
+                                  seq0[s2:e2], e2-s2,
+                                  1500,1)
+
+            if alignment[0].aln_str_size > 100:
+                aln_data.append( ( q_id, 0, s1, e1, len(q_seq), s2, e2, len(seq0), alignment[0].aln_str_size, alignment[0].dist ) )
+                aln_str1 = alignment[0].q_aln_str
+                aln_str0 = alignment[0].t_aln_str
+
+            DWA.free_alignment(alignment)
+
+        kup.free_aln_range(aln_range_ptr) 
+
     kup.free_kmer_match(kmer_match_ptr)
-    s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
-    
-    if e1 - s1 > 100:
-
-        alignment = DWA.align(q_seq[s1:e1], e1-s1,
-                              seq0[s2:e2], e2-s2,
-                              1500,1)
-
-        if alignment[0].aln_str_size > 100:
-            aln_data.append( ( q_id, 0, s1, e1, len(q_seq), s2, e2, len(seq0), alignment[0].aln_str_size, alignment[0].dist ) )
-            aln_str1 = alignment[0].q_aln_str
-            aln_str0 = alignment[0].t_aln_str
-
-        DWA.free_alignment(alignment)
-
     kup.free_kmer_lookup(lk_ptr)
     kup.free_seq_array(sa_ptr)
     kup.free_seq_addr_array(sda_ptr)
