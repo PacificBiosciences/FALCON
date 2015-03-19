@@ -166,8 +166,8 @@ if __name__ == "__main__":
     p_ctg_out = open("p_ctg.fa","w")
     a_ctg_out = open("a_ctg.fa","w")
     a_ctg_base_out = open("a_ctg_base.fa","w")
-    p_ctg_t_out = open("p_ctg_titling_path","w")
-    a_ctg_t_out = open("a_ctg_titling_path","w")
+    p_ctg_t_out = open("p_ctg_tiling_path","w")
+    a_ctg_t_out = open("a_ctg_tiling_path","w")
     a_ctg_base_t_out = open("a_ctg_base_titling_path","w")
     layout_ctg = set()
 
