@@ -1,6 +1,8 @@
 Falcon
 ===========
 
+[![Join the chat at https://gitter.im/PacificBiosciences/FALCON](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/PacificBiosciences/FALCON?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Falcon: a set of tools for fast aligning long reads for consensus and assembly
 
 The Falcon tool kit is a set of simple code collection which I use for studying
