@@ -1,0 +1,9 @@
+[submodule "pypeFLOW"]
+	path = pypeFLOW
+	url = git://github.com/pb-jchin/pypeFLOW.git
+[submodule "DALIGNER"]
+	path = DALIGNER
+	url = git://github.com/pb-jchin/DALIGNER.git
+[submodule "DAZZ_DB"]
+	path = DAZZ_DB
+	url = git://github.com/pb-jchin/DAZZ_DB.git
