@@ -715,7 +715,7 @@ if __name__ == '__main__':
         overlap_filtering_setting = config["overlap_filtering_setting"]
         length_cutoff_pr = config["length_cutoff_pr"]
         script.append( """fc_ovlp_filter.py --fofn las.fofn %s \
-                                 --n_core 24 --min_len %d > preads.ovl""" % (overlap_filtering_setting, length_cutoff_pr) )
+                                 --min_len %d > preads.ovl""" % (overlap_filtering_setting, length_cutoff_pr) )
 
         script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
         script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc.log""" % length_cutoff_pr)
