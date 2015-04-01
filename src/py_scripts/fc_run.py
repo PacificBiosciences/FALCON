@@ -528,7 +528,7 @@ if __name__ == '__main__':
 
     if len(sys.argv) < 2:
         print "you need to specify a configuration file"
-        print "example: HGAP.py HGAP_run.cfg"
+        print "usage: fc_run.py fc_run.cfg"
         sys.exit(1)
     
     rawread_dir = os.path.abspath("./0-rawreads")
