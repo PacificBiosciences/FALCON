@@ -135,17 +135,6 @@ falcon.generate_consensus.restype = POINTER(ConsensusData)
 falcon.free_consensus_data.argtypes = [ POINTER(ConsensusData) ]
 
 
-def get_consensus( c_input ):
-    seqs, seed_id = c_input
-    seqs_ptr = (c_char_p * len(seqs))()
-    seqs_ptr[:] = seqs
-    consensus_ptr = falcon.generate_consensus( seqs_ptr, len(seqs) )
-    consensus = string_at(consensus_ptr)[:]
-    falcon.free_consensus( consensus_ptr )
-    del seqs_ptr
-    return consensus, seed_id
-
-
 def get_alignment(seq1, seq0):
     K = 8
     lk_ptr = kup.allocate_kmer_lookup( 1 << (K * 2) )
