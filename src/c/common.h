@@ -122,7 +122,7 @@ typedef struct {
 
 typedef struct {
     char * sequence;
-    unsigned int * eff_cov;
+    int * eqv;
 } consensus_data;
 
 kmer_lookup * allocate_kmer_lookup (seq_coor_t);

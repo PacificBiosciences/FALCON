@@ -231,7 +231,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
     
     consensus = calloc( 1, sizeof(consensus_data) );
     consensus->sequence = calloc( t_len * 2 + 1, sizeof(char) );
-    consensus->eff_cov = calloc( t_len * 2 + 1, sizeof(unsigned int) );
+    consensus->eqv = calloc( t_len * 2 + 1, sizeof(unsigned int) );
 
     for (i = 0; i < t_len; i++) {
         qsort(tag_seq_index[i], local_nbase[i], sizeof(align_tag_t), compare_tags);
@@ -257,7 +257,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
                             } else {
                                 consensus->sequence[consensus_index] = 'A';
                             }
-                            consensus->eff_cov[consensus_index] = coverage[i] ;
+                            consensus->eqv[consensus_index] = coverage[i] ;
                             consensus_index ++;
                             break;
                         case 1:
@@ -266,7 +266,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
                             } else {
                                 consensus->sequence[consensus_index] = 'C';
                             }
-                            consensus->eff_cov[consensus_index] = coverage[i] ;
+                            consensus->eqv[consensus_index] = coverage[i] ;
                             consensus_index ++;
                             break;
                         case 2:
@@ -275,7 +275,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
                             } else {
                                 consensus->sequence[consensus_index] = 'G';
                             }
-                            consensus->eff_cov[consensus_index] = coverage[i] ;
+                            consensus->eqv[consensus_index] = coverage[i] ;
                             consensus_index ++;
                             break;
                         case 3:
@@ -284,7 +284,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
                             } else {
                                 consensus->sequence[consensus_index] = 'T';
                             }
-                            consensus->eff_cov[consensus_index] = coverage[i] ;
+                            consensus->eqv[consensus_index] = coverage[i] ;
                             consensus_index ++;
                             break;
                         default:
@@ -548,7 +548,7 @@ consensus_data * generate_utg_consensus( char ** input_seq,
 
 void free_consensus_data( consensus_data * consensus ){
     free(consensus->sequence);
-    free(consensus->eff_cov);
+    free(consensus->eqv);
     free(consensus);
 }
 
