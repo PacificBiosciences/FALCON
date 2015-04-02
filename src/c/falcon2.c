@@ -307,7 +307,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
 
         msa_array[i] = calloc( max_delta[i] + 1, sizeof(msa_delta_t *) );
         int kk;
-        printf("t_pos:%d max_delta:%d\n", i, max_delta[i]);
+        //printf("t_pos:%d max_delta:%d\n", i, max_delta[i]);
 
         for (kk=0; kk < max_delta[i] + 1; kk++) {
             msa_array[i][kk] = calloc( 5, sizeof(msa_base_t *));
@@ -345,16 +345,15 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
 
         for (j = 0; j <= local_nbase[i]; j++) {
             if (j == local_nbase[i] || tag_seq_index[i][j].delta != cur_delta) {
-                cur_delta = tag_seq_index[i][j].delta;
                 for (jj = j-1; jj >= 0 && tag_seq_index[i][jj].delta == cur_delta; jj--) {
-
+                    /* 
                     printf("%d %d %c %d %d %c\n", tag_seq_index[i][jj].t_pos,
                                                   tag_seq_index[i][jj].delta,
                                                   tag_seq_index[i][jj].q_base,
                                                   tag_seq_index[i][jj].p_t_pos,
                                                   tag_seq_index[i][jj].p_delta,
                                                   tag_seq_index[i][jj].p_q_base);
-
+                    */
                     int delta = tag_seq_index[i][jj].delta;
                     int kk;
                     switch (tag_seq_index[i][jj].q_base) {
@@ -385,12 +384,49 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
                             break;
                     }
                 }
+                cur_delta = tag_seq_index[i][j].delta;
 
-            if (j == local_nbase[i]) break;
+            }
+            //if (j == local_nbase[i]) break;
+        }
+    }
+
+
+
+    int kk; 
+    for (i = 0; i < t_len; i++) {
+        //printf("max delta: %d\n", max_delta[i]);
+        for (j = 0; j < max_delta[i]+1; j++) {
+            for (kk = 0; kk < 5; kk++) {
+                switch (kk) {
+                    case 0:
+                        if (msa_array[i][j][0]->count > 0)
+                            printf("X %d %d A %d\n", i, j, msa_array[i][j][0]->count);
+                        break;
+                    case 1:
+                        if (msa_array[i][j][1]->count > 0)
+                            printf("X %d %d C %d\n", i, j, msa_array[i][j][1]->count);
+                        break;
+                    case 2:
+                        if (msa_array[i][j][2]->count > 0)
+                            printf("X %d %d G %d\n", i, j, msa_array[i][j][2]->count);
+                        break;
+                    case 3:
+                        if (msa_array[i][j][3]->count > 0)
+                            printf("X %d %d T %d\n", i, j, msa_array[i][j][3]->count);
+                        break;
+                    case 4:
+                        if (msa_array[i][j][4]->count > 0)
+                            printf("X %d %d - %d\n", i, j, msa_array[i][j][4]->count);
+                        break;
+                }
             }
         }
     }
-   
+
+
+
+
     //printf("%s\n", consensus);
 
     for (i = 0; i < t_len; i++) {
