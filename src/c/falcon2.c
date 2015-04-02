@@ -94,21 +94,18 @@ typedef struct {
     unsigned int count;
     int score;
 } align_tag_col_t;
-/*
+
 typedef struct {
-    align_tag_col_t base[5];
-} mas_base_groups_t;
+    align_tag_col_t * base;
+} msa_base_group_t;
 
 typedef struct {
     unsigned int size;
-    unsigned int n_delta;
-    msa_base_t * delta;
+    unsigned int max_delta;
+    msa_base_group_t * delta;
 } msa_delta_group_t;
-*/
 
-typedef align_tag_col_t * msa_base_t;
-typedef msa_base_t * msa_delta_t;
-typedef msa_delta_t * msa_pos_t;
+typedef msa_delta_group_t * msa_pos_t;
 
 align_tags_t * get_align_tags( char * aln_q_seq, 
                                char * aln_t_seq, 
@@ -190,7 +187,6 @@ int compare_tags(const void * a, const void * b)
     if (arg1->p_delta > arg2->p_delta) return 1;
     if (arg1->p_q_base < arg2->p_q_base) return -1;
     if (arg1->p_q_base > arg2->p_q_base) return 1;
-
 }
 
 void allocate_aln_col( align_tag_col_t * col) {
@@ -214,6 +210,40 @@ void free_aln_col( align_tag_col_t * col) {
     free(col->link_count);
 }
 
+
+void allocate_delta_group( msa_delta_group_t * g) {
+    int i,j;
+    g->max_delta = 0;
+    g->delta = (msa_base_group_t *) calloc( g->size, sizeof(msa_base_group_t));
+    for (i = 0; i< g->size; i++) {
+        g->delta[i].base = ( align_tag_col_t * ) calloc( 5, sizeof(align_tag_col_t ) );
+        for (j = 0; j < 5; j++ ) {
+             g->delta[i].base[j].size = 12;
+             allocate_aln_col(&(g->delta[i].base[j]));
+        }
+    }
+}
+
+void realloc_delta_group( msa_delta_group_t * g, unsigned int new_size ) {
+    int i, j, bs, es;
+    bs = g->size;
+    es = new_size;
+    g->delta = (msa_base_group_t *) realloc(g->delta, new_size * sizeof(msa_base_group_t));
+    for (i=bs; i < es; i++) {
+        g->delta[i].base = ( align_tag_col_t *) calloc( 5, sizeof(align_tag_col_t ) );
+        for (j = 0; j < 5; j++ ) {
+             g->delta[i].base[j].size = 12;
+             allocate_aln_col(&(g->delta[i].base[j]));
+        }
+    }
+    g->size = new_size;
+}
+
+void free_delta_group( msa_delta_group_t * g) {
+    //manything to do here 
+    free(g->delta);
+}
+
 void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, unsigned int p_delta, char p_q_base) {
     int updated = 0;
     int kk;
@@ -228,7 +258,7 @@ void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, unsigned int p_delta
         }
     }
     if (updated == 0) {
-        if (col->n_link == col->size) {
+        if (col->n_link + 1 > col->size) {
             col->size *= 2;
             realloc_aln_col(col);
         }
@@ -246,243 +276,133 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
     seq_coor_t i, j, jj, t_pos, tmp_pos;
     unsigned int * coverage;
     unsigned int * local_nbase;
-    unsigned int * aux_index;
     unsigned int * max_delta;
 
     unsigned int cur_delta;
     unsigned int delta_allocated;
-    unsigned int counter[5] = {0, 0, 0, 0, 0};
     unsigned int k;
-    unsigned int max_count;
-    unsigned int max_count_index;
     seq_coor_t consensus_index;
     seq_coor_t c_start, c_end, max_start;
     unsigned int cov_score, max_cov_score;
     consensus_data * consensus;
     //char * consensus;
-
-
-
-    align_tag_t ** tag_seq_index;
+    
     msa_pos_t * msa_array;
 
     coverage = calloc( t_len, sizeof(unsigned int) );
     local_nbase = calloc( t_len, sizeof(unsigned int) );
-    aux_index = calloc( t_len, sizeof(unsigned int) );
     max_delta = calloc( t_len, sizeof(unsigned int) );
-    tag_seq_index = calloc( t_len, sizeof(align_tag_t *) );
     msa_array = calloc(t_len, sizeof(msa_pos_t *));
 
+    for (i = 0; i < t_len; i++) {
+        msa_array[i] = calloc(1, sizeof(msa_delta_group_t));
+        msa_array[i]->size = 16;
+        allocate_delta_group(msa_array[i]);
+    }
+    
     for (i = 0; i < n_tag_seqs; i++) {
+
         for (j = 0; j < tag_seqs[i]->len; j++) {
-            if (tag_seqs[i]->align_tags[j].delta == 0 && tag_seqs[i]->align_tags[j].q_base != '*') {
+            if (tag_seqs[i]->align_tags[j].delta == 0) {
                 t_pos = tag_seqs[i]->align_tags[j].t_pos;
                 coverage[ t_pos ] ++;
             }
-            local_nbase[ tag_seqs[i]->align_tags[j].t_pos ] ++;
-        }
-    }
 
-
-    for (i = 0; i < t_len; i++) {
-        tag_seq_index[i] = calloc( local_nbase[i] + 1, sizeof(align_tag_t) );
-    }
-  
-    { 
-        for (i = 0; i < n_tag_seqs; i++) {
-            for (j = 0; j < tag_seqs[i]->len; j++) {
-                t_pos = tag_seqs[i]->align_tags[j].t_pos;
-                tag_seq_index[ t_pos ][ aux_index[ t_pos ] ] = tag_seqs[i]->align_tags[j];
-                aux_index[ t_pos ] ++;
-                //printf("%d %d\n", t_pos, tag_seqs[i]->align_tags[j].delta);
-                if (tag_seqs[i]->align_tags[j].delta > max_delta[t_pos]) {
-                    max_delta[t_pos] = tag_seqs[i]->align_tags[j].delta;
+            unsigned int delta; 
+            delta = tag_seqs[i]->align_tags[j].delta;
+            if (delta > msa_array[t_pos]->max_delta) {
+                msa_array[t_pos]->max_delta = delta;
+                if (msa_array[t_pos]->max_delta + 8 > msa_array[t_pos]->size ) {
+                    realloc_delta_group(msa_array[t_pos], msa_array[t_pos]->max_delta + 32);
                 }
             }
+            
+            unsigned int base;
+            switch (tag_seqs[i]->align_tags[j].q_base) {
+                case 'A': base = 0; break;
+                case 'C': base = 1; break;
+                case 'G': base = 2; break;
+                case 'T': base = 3; break;
+                case '-': base = 4; break;
+            }
+            update_col( &(msa_array[t_pos]->delta[delta].base[base]), tag_seqs[i]->align_tags[j].p_t_pos,
+                                                                    tag_seqs[i]->align_tags[j].p_delta,
+                                                                    tag_seqs[i]->align_tags[j].p_q_base);
+            local_nbase[ t_pos ] ++;
         }
     }
 
-
-    consensus_index = 0;
-
-    
-    consensus = calloc( 1, sizeof(consensus_data) );
-    consensus->sequence = calloc( t_len * 2 + 1, sizeof(char) );
-    consensus->eff_cov = calloc( t_len * 2 + 1, sizeof(unsigned int) );
-
-    for (i = 0; i < t_len; i++) {
-        qsort(tag_seq_index[i], local_nbase[i], sizeof(align_tag_t), compare_tags);
-        cur_delta = 0;
-
-        msa_array[i] = calloc( max_delta[i] + 1, sizeof(msa_delta_t *) );
-        int kk;
-        //printf("t_pos:%d max_delta:%d\n", i, max_delta[i]);
-
-        for (kk=0; kk < max_delta[i] + 1; kk++) {
-            msa_array[i][kk] = calloc( 5, sizeof(msa_base_t *));
-
-            msa_array[i][kk][0] = calloc(1, sizeof(align_tag_col_t));
-            msa_array[i][kk][0]->size = 16;
-            msa_array[i][kk][0]->n_link = 0;
-            msa_array[i][kk][0]->count = 0;
-            allocate_aln_col( msa_array[i][kk][0] );
-
-            msa_array[i][kk][1] = calloc(1, sizeof(align_tag_col_t));
-            msa_array[i][kk][1]->size = 16;
-            msa_array[i][kk][1]->n_link = 0;
-            msa_array[i][kk][1]->count = 0;
-            allocate_aln_col( msa_array[i][kk][1] );
-
-            msa_array[i][kk][2] = calloc(1, sizeof(align_tag_col_t));
-            msa_array[i][kk][2]->size = 16;
-            msa_array[i][kk][2]->n_link = 0;
-            msa_array[i][kk][2]->count = 0;
-            allocate_aln_col( msa_array[i][kk][2] );
-
-            msa_array[i][kk][3] = calloc(1, sizeof(align_tag_col_t));
-            msa_array[i][kk][3]->size = 16;
-            msa_array[i][kk][3]->n_link = 0;
-            msa_array[i][kk][3]->count = 0;
-            allocate_aln_col( msa_array[i][kk][3] );
-
-            msa_array[i][kk][4] = calloc(1, sizeof(align_tag_col_t));
-            msa_array[i][kk][4]->size = 16;
-            msa_array[i][kk][4]->n_link = 0;
-            msa_array[i][kk][4]->count = 0;
-            allocate_aln_col( msa_array[i][kk][4] );
-        }
-
-        for (j = 0; j <= local_nbase[i]; j++) {
-            if (j == local_nbase[i] || tag_seq_index[i][j].delta != cur_delta) {
-                for (jj = j-1; jj >= 0 && tag_seq_index[i][jj].delta == cur_delta; jj--) {
-                    /* 
-                    printf("%d %d %c %d %d %c\n", tag_seq_index[i][jj].t_pos,
-                                                  tag_seq_index[i][jj].delta,
-                                                  tag_seq_index[i][jj].q_base,
-                                                  tag_seq_index[i][jj].p_t_pos,
-                                                  tag_seq_index[i][jj].p_delta,
-                                                  tag_seq_index[i][jj].p_q_base);
-                    */
-                    int delta = tag_seq_index[i][jj].delta;
-                    int kk;
-                    switch (tag_seq_index[i][jj].q_base) {
-                        case 'A':
-                            update_col( msa_array[i][delta][0], tag_seq_index[i][jj].p_t_pos,
-                                                                tag_seq_index[i][jj].p_delta,
-                                                                tag_seq_index[i][jj].p_q_base);
-                            break;
-                        case 'C':
-                            update_col( msa_array[i][delta][1], tag_seq_index[i][jj].p_t_pos,
-                                                                tag_seq_index[i][jj].p_delta,
-                                                                tag_seq_index[i][jj].p_q_base);
-                            break;
-                        case 'G':
-                            update_col( msa_array[i][delta][2], tag_seq_index[i][jj].p_t_pos,
-                                                                tag_seq_index[i][jj].p_delta,
-                                                                tag_seq_index[i][jj].p_q_base);
-                            break;
-                        case 'T':
-                            update_col( msa_array[i][delta][3], tag_seq_index[i][jj].p_t_pos,
-                                                                tag_seq_index[i][jj].p_delta,
-                                                                tag_seq_index[i][jj].p_q_base);
-                            break;
-                        case '-':
-                            update_col( msa_array[i][delta][4], tag_seq_index[i][jj].p_t_pos,
-                                                                tag_seq_index[i][jj].p_delta,
-                                                                tag_seq_index[i][jj].p_q_base);
-                            break;
+    {
+        int kk; 
+        int ck;
+        char base;
+        int best_i;
+        int best_j;
+        int best_b;
+        int score;
+        int best_score;
+        for (i = 0; i < t_len; i++) {
+            //printf("max delta: %d\n", max_delta[i]);
+            
+            for (j = 0; j < msa_array[i]->max_delta; j++) {
+                for (kk = 0; kk < 5; kk++) {
+                    switch (kk) {
+                        case 0: base = 'A'; break;
+                        case 1: base = 'C'; break;
+                        case 2: base = 'G'; break;
+                        case 3: base = 'T'; break;
+                        case 4: base = '-'; break;
                     }
-                }
-                cur_delta = tag_seq_index[i][j].delta;
+                    if (msa_array[i]->delta[j].base[kk].count > 0) {
+                        best_score = -1;
+                        best_i = -1;
+                        best_j = -1;
+                        best_b = -1;
 
-            }
-            //if (j == local_nbase[i]) break;
-        }
-    }
+                        for (ck = 0; ck < msa_array[i]->delta[j].base[kk].n_link; ck++) {
+                            if (msa_array[i]->delta[j].base[kk].p_t_pos[ck] == -1) {
+                                msa_array[i]->delta[j].base[kk].score = 0;
+                            } else {
+                                int pi;
+                                int pj;
+                                int pkk;
+                                pi = msa_array[i]->delta[j].base[kk].p_t_pos[ck];
+                                pj = msa_array[i]->delta[j].base[kk].p_delta[ck];
+                                switch (msa_array[i]->delta[j].base[kk].p_q_base[ck]) {
+                                    case 'A': pkk = 0; break;
+                                    case 'C': pkk = 1; break;
+                                    case 'G': pkk = 2; break;
+                                    case 'T': pkk = 3; break;
+                                    case '-': pkk = 4; break;
+                                }
 
-
-
-    int kk; 
-    int ck;
-    char base;
-    int best_i;
-    int best_j;
-    int best_b;
-    int score;
-    int best_score;
-    for (i = 0; i < t_len; i++) {
-        //printf("max delta: %d\n", max_delta[i]);
-        for (j = 0; j < max_delta[i]+1; j++) {
-            for (kk = 0; kk < 5; kk++) {
-                switch (kk) {
-                    case 0:
-                        base = 'A';
-                        break;
-                    case 1:
-                        base = 'C';
-                        break;
-                    case 2:
-                        base = 'G';
-                        break;
-                    case 3:
-                        base = 'T';
-                        break;
-                    case 4:
-                        base = '-';
-                        break;
-                }
-                if (msa_array[i][j][kk]->count > 0) {
-                    best_score = -1;
-                    best_i = -1;
-                    best_j = -1;
-                    best_b = -1;
-
-                    for (ck = 0; ck < msa_array[i][j][kk]->n_link; ck++) {
-                        if (msa_array[i][j][kk]->p_t_pos[ck] == -1) {
-                            msa_array[i][j][kk]->score = 0;
-                        } else {
-                            int pi;
-                            int pj;
-                            int pkk;
-                            pi = msa_array[i][j][kk]->p_t_pos[ck];
-                            pj = msa_array[i][j][kk]->p_delta[ck];
-                            switch (msa_array[i][j][kk]->p_q_base[ck]) {
-                                case 'A': pkk = 0; break;
-                                case 'C': pkk = 1; break;
-                                case 'G': pkk = 2; break;
-                                case 'T': pkk = 3; break;
-                                case '-': pkk = 4; break;
+                                score = msa_array[pi]->delta[pj].base[pkk].score + msa_array[i]->delta[j].base[kk].link_count[ck] - coverage[i] * 1 / 2;
+                                if (score > best_score) {
+                                    best_score = score;
+                                    best_i = pi;
+                                    best_j = pj;
+                                    best_b = pkk;
+                                }
+                                printf("X %d %d %d %c %d %d %d %c %d %d\n", coverage[i], i, j, base, msa_array[i]->delta[j].base[kk].count, 
+                                                                      msa_array[i]->delta[j].base[kk].p_t_pos[ck], 
+                                                                      msa_array[i]->delta[j].base[kk].p_delta[ck], 
+                                                                      msa_array[i]->delta[j].base[kk].p_q_base[ck], 
+                                                                      msa_array[i]->delta[j].base[kk].link_count[ck],
+                                                                      score);
                             }
-
-                            score = msa_array[pi][pj][pkk]->score + msa_array[i][j][kk]->link_count[ck] - coverage[i] * 3 / 4;
-                            if (score > best_score) {
-                                best_score = score;
-                                best_i = pi;
-                                best_j = pj;
-                                best_b = pkk;
-                            }
-                            printf("X %d %d %d %c %d %d %d %c %d %d\n", coverage[i], i, j, base, msa_array[i][j][kk]->count, 
-                                                                  msa_array[i][j][kk]->p_t_pos[ck], msa_array[i][j][kk]->p_delta[ck], msa_array[i][j][kk]->p_q_base[ck], msa_array[i][j][kk]->link_count[ck],
-                                                                  score);
                         }
+                        msa_array[i]->delta[j].base[kk].score = best_score;
                     }
-                    msa_array[i][j][kk]->score = best_score;
                 }
+                printf("\n");
             }
-            printf("\n");
         }
+
     }
-
-
 
 
     //printf("%s\n", consensus);
 
-    for (i = 0; i < t_len; i++) {
-        free(tag_seq_index[i]);
-    }
-    free(tag_seq_index);
-    free(aux_index);
     free(coverage);
     free(local_nbase);
     return consensus;
