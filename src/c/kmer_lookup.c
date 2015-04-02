@@ -102,7 +102,7 @@ seq_array allocate_seq(seq_coor_t size) {
 
 void init_seq_array( seq_array sa, seq_coor_t size) {
     seq_coor_t i;
-    for (i=0; i++; i<size) {
+    for (i=0; i<size; i++) {
         sa[i] = 0xff;
     }
 }

@@ -94,6 +94,17 @@ typedef struct {
     unsigned int count;
     int score;
 } align_tag_col_t;
+/*
+typedef struct {
+    align_tag_col_t base[5];
+} mas_base_groups_t;
+
+typedef struct {
+    unsigned int size;
+    unsigned int n_delta;
+    msa_base_t * delta;
+} msa_delta_group_t;
+*/
 
 typedef align_tag_col_t * msa_base_t;
 typedef msa_base_t * msa_delta_t;
@@ -218,9 +229,7 @@ void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, unsigned int p_delta
     }
     if (updated == 0) {
         if (col->n_link == col->size) {
-            printf("col->size: %d\n",  col->size);
             col->size *= 2;
-            printf("col->size: %d\n",  col->size);
             realloc_aln_col(col);
         }
         kk = col->n_link;
@@ -313,31 +322,31 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
             msa_array[i][kk] = calloc( 5, sizeof(msa_base_t *));
 
             msa_array[i][kk][0] = calloc(1, sizeof(align_tag_col_t));
-            msa_array[i][kk][0]->size = 10;
+            msa_array[i][kk][0]->size = 16;
             msa_array[i][kk][0]->n_link = 0;
             msa_array[i][kk][0]->count = 0;
             allocate_aln_col( msa_array[i][kk][0] );
 
             msa_array[i][kk][1] = calloc(1, sizeof(align_tag_col_t));
-            msa_array[i][kk][1]->size = 10;
+            msa_array[i][kk][1]->size = 16;
             msa_array[i][kk][1]->n_link = 0;
             msa_array[i][kk][1]->count = 0;
             allocate_aln_col( msa_array[i][kk][1] );
 
             msa_array[i][kk][2] = calloc(1, sizeof(align_tag_col_t));
-            msa_array[i][kk][2]->size = 10;
+            msa_array[i][kk][2]->size = 16;
             msa_array[i][kk][2]->n_link = 0;
             msa_array[i][kk][2]->count = 0;
             allocate_aln_col( msa_array[i][kk][2] );
 
             msa_array[i][kk][3] = calloc(1, sizeof(align_tag_col_t));
-            msa_array[i][kk][3]->size = 10;
+            msa_array[i][kk][3]->size = 16;
             msa_array[i][kk][3]->n_link = 0;
             msa_array[i][kk][3]->count = 0;
             allocate_aln_col( msa_array[i][kk][3] );
 
             msa_array[i][kk][4] = calloc(1, sizeof(align_tag_col_t));
-            msa_array[i][kk][4]->size = 10;
+            msa_array[i][kk][4]->size = 16;
             msa_array[i][kk][4]->n_link = 0;
             msa_array[i][kk][4]->count = 0;
             allocate_aln_col( msa_array[i][kk][4] );
@@ -394,33 +403,73 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
 
 
     int kk; 
+    int ck;
+    char base;
+    int best_i;
+    int best_j;
+    int best_b;
+    int score;
+    int best_score;
     for (i = 0; i < t_len; i++) {
         //printf("max delta: %d\n", max_delta[i]);
         for (j = 0; j < max_delta[i]+1; j++) {
             for (kk = 0; kk < 5; kk++) {
                 switch (kk) {
                     case 0:
-                        if (msa_array[i][j][0]->count > 0)
-                            printf("X %d %d A %d\n", i, j, msa_array[i][j][0]->count);
+                        base = 'A';
                         break;
                     case 1:
-                        if (msa_array[i][j][1]->count > 0)
-                            printf("X %d %d C %d\n", i, j, msa_array[i][j][1]->count);
+                        base = 'C';
                         break;
                     case 2:
-                        if (msa_array[i][j][2]->count > 0)
-                            printf("X %d %d G %d\n", i, j, msa_array[i][j][2]->count);
+                        base = 'G';
                         break;
                     case 3:
-                        if (msa_array[i][j][3]->count > 0)
-                            printf("X %d %d T %d\n", i, j, msa_array[i][j][3]->count);
+                        base = 'T';
                         break;
                     case 4:
-                        if (msa_array[i][j][4]->count > 0)
-                            printf("X %d %d - %d\n", i, j, msa_array[i][j][4]->count);
+                        base = '-';
                         break;
                 }
+                if (msa_array[i][j][kk]->count > 0) {
+                    best_score = -1;
+                    best_i = -1;
+                    best_j = -1;
+                    best_b = -1;
+
+                    for (ck = 0; ck < msa_array[i][j][kk]->n_link; ck++) {
+                        if (msa_array[i][j][kk]->p_t_pos[ck] == -1) {
+                            msa_array[i][j][kk]->score = 0;
+                        } else {
+                            int pi;
+                            int pj;
+                            int pkk;
+                            pi = msa_array[i][j][kk]->p_t_pos[ck];
+                            pj = msa_array[i][j][kk]->p_delta[ck];
+                            switch (msa_array[i][j][kk]->p_q_base[ck]) {
+                                case 'A': pkk = 0; break;
+                                case 'C': pkk = 1; break;
+                                case 'G': pkk = 2; break;
+                                case 'T': pkk = 3; break;
+                                case '-': pkk = 4; break;
+                            }
+
+                            score = msa_array[pi][pj][pkk]->score + msa_array[i][j][kk]->link_count[ck] - coverage[i] * 3 / 4;
+                            if (score > best_score) {
+                                best_score = score;
+                                best_i = pi;
+                                best_j = pj;
+                                best_b = pkk;
+                            }
+                            printf("X %d %d %d %c %d %d %d %c %d %d\n", coverage[i], i, j, base, msa_array[i][j][kk]->count, 
+                                                                  msa_array[i][j][kk]->p_t_pos[ck], msa_array[i][j][kk]->p_delta[ck], msa_array[i][j][kk]->p_q_base[ck], msa_array[i][j][kk]->link_count[ck],
+                                                                  score);
+                        }
+                    }
+                    msa_array[i][j][kk]->score = best_score;
+                }
             }
+            printf("\n");
         }
     }
 
