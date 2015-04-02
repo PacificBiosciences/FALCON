@@ -241,6 +241,13 @@ void realloc_delta_group( msa_delta_group_t * g, unsigned int new_size ) {
 
 void free_delta_group( msa_delta_group_t * g) {
     //manything to do here 
+    int i, j, k;
+    for (i = 0; i <= g->max_delta; i++) {
+        for (j = 0; j < 5; j++) {
+            free_aln_col( &(g->delta[i].base[j]) );
+        }
+        free(g->delta[i].base);
+    }
     free(g->delta);
 }
 
@@ -441,6 +448,10 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
 
 
     //printf("%s\n", consensus);
+    for (i = 0; i < t_len; i++) {
+        free_delta_group(msa_array[i]);
+    }
+    
 
     free(coverage);
     free(local_nbase);
