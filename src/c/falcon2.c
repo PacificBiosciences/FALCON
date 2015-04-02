@@ -286,6 +286,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
     unsigned int cov_score, max_cov_score;
     consensus_data * consensus;
     //char * consensus;
+    align_tag_t * c_tag;
     
     msa_pos_t * msa_array;
 
@@ -303,13 +304,14 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
     for (i = 0; i < n_tag_seqs; i++) {
 
         for (j = 0; j < tag_seqs[i]->len; j++) {
-            if (tag_seqs[i]->align_tags[j].delta == 0) {
-                t_pos = tag_seqs[i]->align_tags[j].t_pos;
+            c_tag = tag_seqs[i]->align_tags + j;
+            if (c_tag->delta == 0) {
+                t_pos = c_tag->t_pos;
                 coverage[ t_pos ] ++;
             }
 
             unsigned int delta; 
-            delta = tag_seqs[i]->align_tags[j].delta;
+            delta = c_tag->delta;
             if (delta > msa_array[t_pos]->max_delta) {
                 msa_array[t_pos]->max_delta = delta;
                 if (msa_array[t_pos]->max_delta + 8 > msa_array[t_pos]->size ) {
@@ -318,16 +320,14 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
             }
             
             unsigned int base;
-            switch (tag_seqs[i]->align_tags[j].q_base) {
+            switch (c_tag->q_base) {
                 case 'A': base = 0; break;
                 case 'C': base = 1; break;
                 case 'G': base = 2; break;
                 case 'T': base = 3; break;
                 case '-': base = 4; break;
             }
-            update_col( &(msa_array[t_pos]->delta[delta].base[base]), tag_seqs[i]->align_tags[j].p_t_pos,
-                                                                    tag_seqs[i]->align_tags[j].p_delta,
-                                                                    tag_seqs[i]->align_tags[j].p_q_base);
+            update_col( &(msa_array[t_pos]->delta[delta].base[base]), c_tag->p_t_pos, c_tag->p_delta, c_tag->p_q_base);
             local_nbase[ t_pos ] ++;
         }
     }
@@ -341,6 +341,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
         int best_b;
         int score;
         int best_score;
+        align_tag_col_t * aln_col;
         for (i = 0; i < t_len; i++) {
             //printf("max delta: %d\n", max_delta[i]);
             
@@ -353,22 +354,23 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
                         case 3: base = 'T'; break;
                         case 4: base = '-'; break;
                     }
-                    if (msa_array[i]->delta[j].base[kk].count > 0) {
+                    aln_col = msa_array[i]->delta[j].base + kk;
+                    if (aln_col->count >= 0) {
                         best_score = -1;
                         best_i = -1;
                         best_j = -1;
                         best_b = -1;
 
-                        for (ck = 0; ck < msa_array[i]->delta[j].base[kk].n_link; ck++) {
-                            if (msa_array[i]->delta[j].base[kk].p_t_pos[ck] == -1) {
-                                msa_array[i]->delta[j].base[kk].score = 0;
+                        for (ck = 0; ck < aln_col->n_link; ck++) {
+                            if (aln_col->p_t_pos[ck] == -1) {
+                                aln_col->score = 0;
                             } else {
                                 int pi;
                                 int pj;
                                 int pkk;
-                                pi = msa_array[i]->delta[j].base[kk].p_t_pos[ck];
-                                pj = msa_array[i]->delta[j].base[kk].p_delta[ck];
-                                switch (msa_array[i]->delta[j].base[kk].p_q_base[ck]) {
+                                pi = aln_col->p_t_pos[ck];
+                                pj = aln_col->p_delta[ck];
+                                switch (aln_col->p_q_base[ck]) {
                                     case 'A': pkk = 0; break;
                                     case 'C': pkk = 1; break;
                                     case 'G': pkk = 2; break;
@@ -376,22 +378,22 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned lon
                                     case '-': pkk = 4; break;
                                 }
 
-                                score = msa_array[pi]->delta[pj].base[pkk].score + msa_array[i]->delta[j].base[kk].link_count[ck] - coverage[i] * 1 / 2;
+                                score = msa_array[pi]->delta[pj].base[pkk].score + aln_col->link_count[ck] - coverage[i] * 1 / 2;
                                 if (score > best_score) {
                                     best_score = score;
                                     best_i = pi;
                                     best_j = pj;
                                     best_b = pkk;
                                 }
-                                printf("X %d %d %d %c %d %d %d %c %d %d\n", coverage[i], i, j, base, msa_array[i]->delta[j].base[kk].count, 
-                                                                      msa_array[i]->delta[j].base[kk].p_t_pos[ck], 
-                                                                      msa_array[i]->delta[j].base[kk].p_delta[ck], 
-                                                                      msa_array[i]->delta[j].base[kk].p_q_base[ck], 
-                                                                      msa_array[i]->delta[j].base[kk].link_count[ck],
+                                printf("X %d %d %d %c %d %d %d %c %d %d\n", coverage[i], i, j, base, aln_col->count, 
+                                                                      aln_col->p_t_pos[ck], 
+                                                                      aln_col->p_delta[ck], 
+                                                                      aln_col->p_q_base[ck], 
+                                                                      aln_col->link_count[ck],
                                                                       score);
                             }
                         }
-                        msa_array[i]->delta[j].base[kk].score = best_score;
+                        aln_col->score = best_score;
                     }
                 }
                 printf("\n");
