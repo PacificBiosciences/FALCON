@@ -64,6 +64,9 @@ typedef struct {
     seq_coor_t t_pos;
     unsigned int delta;
     char q_base;
+    seq_coor_t p_t_pos;   // the tag position of the previous base
+    unsigned int p_delta; // the tag delta of the previous base
+    char p_q_base;        // the previous base
     unsigned int q_id;
 } align_tag_t;
 
@@ -74,28 +77,42 @@ typedef struct {
 
 
 typedef struct {
-    seq_coor_t len;
-    char * name;
-    char * seq;
+    unsigned int size;
+    unsigned int n_link;
+    seq_coor_t * p_t_pos;   // the tag position of the previous base
+    unsigned int * p_delta; // the tag delta of the previous base
+    char * p_q_base;        // the previous base
+    unsigned int * link_count;
+    unsigned int count;
+    seq_coor_t best_p_t_pos;
+    unsigned int best_p_delta;
+    unsigned int best_p_q_base; // encoded base
+    double score;
+} align_tag_col_t;
 
-} consensusn_seq_t;
+typedef struct {
+    align_tag_col_t * base;
+} msa_base_group_t;
 
+typedef struct {
+    unsigned int size;
+    unsigned int max_delta;
+    msa_base_group_t * delta;
+} msa_delta_group_t;
+
+typedef msa_delta_group_t * msa_pos_t;
 
 align_tags_t * get_align_tags( char * aln_q_seq, 
                                char * aln_t_seq, 
                                seq_coor_t aln_seq_len,
                                aln_range * range,
                                unsigned long q_id,
-                               unsigned long local_match_count_window,
-                               unsigned long local_match_count_threshold,
                                seq_coor_t t_offset) {
-
-#define LONGEST_INDEL_ALLOWED 6 
-
     char q_base;
+    char p_q_base;
     char t_base;
     align_tags_t * tags;
-    seq_coor_t i, j, jj, k;
+    seq_coor_t i, j, jj, k, p_j, p_jj;
     seq_coor_t match_count;
 
     tags = calloc( 1, sizeof(align_tags_t) );
@@ -105,11 +122,10 @@ align_tags_t * get_align_tags( char * aln_q_seq,
     j = range->s2 - 1;
     match_count = 0;
     jj = 0;
-    for (k = 0; k< local_match_count_window && k < aln_seq_len; k++) {
-        if (aln_q_seq[k]  == aln_t_seq[k] ) {
-            match_count ++;
-        }
-    }
+    p_j = -1;
+    p_jj = 0;
+    p_q_base = '.';
+
     for (k = 0; k < aln_seq_len; k++) {
         if (aln_q_seq[k] != '-') {
             i ++;
@@ -119,41 +135,29 @@ align_tags_t * get_align_tags( char * aln_q_seq,
             j ++;
             jj = 0;
         }
+        //printf("t %d %d %d %c %c\n", q_id, j, jj, aln_t_seq[k], aln_q_seq[k]);
        
-        if (local_match_count_threshold > 0) {
-            if (k < aln_seq_len - local_match_count_window && aln_q_seq[k + local_match_count_window]  == aln_t_seq[k + local_match_count_window] ) {
-                match_count ++;
-            }
-
-            if (k > local_match_count_window && aln_q_seq[k - local_match_count_window] == aln_t_seq[k - local_match_count_window] ) {
-                match_count --;
-            }
-
-            if (match_count < 0) {
-                match_count = 0;
-            }
-        }
        
         if ( j + t_offset >= 0) {
             (tags->align_tags[k]).t_pos = j + t_offset;
             (tags->align_tags[k]).delta = jj;
-            if (local_match_count_threshold > 0 && jj == 0 && match_count < local_match_count_threshold) {
-                (tags->align_tags[k]).q_base = '*';
-            } else {
-                (tags->align_tags[k]).q_base = aln_q_seq[k];
-            }
+            (tags->align_tags[k]).p_t_pos = p_j + t_offset;
+            (tags->align_tags[k]).p_delta = p_jj;
+            (tags->align_tags[k]).p_q_base = p_q_base;
+            (tags->align_tags[k]).q_base = aln_q_seq[k];
             (tags->align_tags[k]).q_id = q_id;
+            
+            p_j = j;
+            p_jj = jj;
+            p_q_base = aln_q_seq[k];
         }
-        //if (jj > LONGEST_INDEL_ALLOWED) {
-        //   break;
-        //}
     }
     // sentinal at the end
     //k = aln_seq_len;
     tags->len = k; 
     (tags->align_tags[k]).t_pos = -1;
     (tags->align_tags[k]).delta = -1;
-    (tags->align_tags[k]).q_base = ' ';
+    (tags->align_tags[k]).q_base = '.';
     (tags->align_tags[k]).q_id = UINT_MAX;
     return tags;
 }
@@ -164,174 +168,323 @@ void free_align_tags( align_tags_t * tags) {
 }
 
 
-int compare_tags(const void * a, const void * b)
-{
-    const align_tag_t * arg1 = a;
-    const align_tag_t * arg2 = b;
-    if (arg1->delta - arg2->delta == 0) {
-        return  arg1->q_base - arg2->q_base;
-    } else {
-        return arg1->delta - arg2->delta;
+void allocate_aln_col( align_tag_col_t * col) {
+    col->p_t_pos = ( seq_coor_t * ) calloc(col->size, sizeof( seq_coor_t ));
+    col->p_delta = ( unsigned int * ) calloc(col->size, sizeof( unsigned int ));
+    col->p_q_base = ( char * )calloc(col->size, sizeof( char ));
+    col->link_count = ( unsigned int * ) calloc(col->size, sizeof( unsigned int));
+}
+
+void realloc_aln_col( align_tag_col_t * col ) {
+    col->p_t_pos = (seq_coor_t *) realloc( col->p_t_pos, (col->size) * sizeof( seq_coor_t ));
+    col->p_delta = (unsigned int *)  realloc( col->p_delta, (col->size) * sizeof( unsigned int ));
+    col->p_q_base = (char *) realloc( col->p_q_base, (col->size) * sizeof( char ));
+    col->link_count = (unsigned int *) realloc( col->link_count, (col->size) * sizeof( unsigned int));
+}
+
+void free_aln_col( align_tag_col_t * col) {
+    free(col->p_t_pos);
+    free(col->p_delta);
+    free(col->p_q_base);
+    free(col->link_count);
+}
+
+
+void allocate_delta_group( msa_delta_group_t * g) {
+    int i,j;
+    g->max_delta = 0;
+    g->delta = (msa_base_group_t *) calloc( g->size, sizeof(msa_base_group_t));
+    for (i = 0; i< g->size; i++) {
+        g->delta[i].base = ( align_tag_col_t * ) calloc( 5, sizeof(align_tag_col_t ) );
+        for (j = 0; j < 5; j++ ) {
+             g->delta[i].base[j].size = 12;
+             allocate_aln_col(&(g->delta[i].base[j]));
+        }
     }
 }
 
-consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, unsigned long n_tag_seqs, unsigned t_len, unsigned min_cov ) {
+void realloc_delta_group( msa_delta_group_t * g, unsigned int new_size ) {
+    int i, j, bs, es;
+    bs = g->size;
+    es = new_size;
+    g->delta = (msa_base_group_t *) realloc(g->delta, new_size * sizeof(msa_base_group_t));
+    for (i=bs; i < es; i++) {
+        g->delta[i].base = ( align_tag_col_t *) calloc( 5, sizeof(align_tag_col_t ) );
+        for (j = 0; j < 5; j++ ) {
+             g->delta[i].base[j].size = 12;
+             allocate_aln_col(&(g->delta[i].base[j]));
+        }
+    }
+    g->size = new_size;
+}
 
-    seq_coor_t i, j, t_pos, tmp_pos;
+void free_delta_group( msa_delta_group_t * g) {
+    //manything to do here 
+    int i, j, k;
+    for (i = 0; i <= g->max_delta; i++) {
+        for (j = 0; j < 5; j++) {
+            free_aln_col( &(g->delta[i].base[j]) );
+        }
+        free(g->delta[i].base);
+    }
+    free(g->delta);
+}
+
+void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, unsigned int p_delta, char p_q_base) {
+    int updated = 0;
+    int kk;
+    col->count += 1;
+    for (kk = 0; kk < col->n_link; kk++) {
+        if ( p_t_pos == col->p_t_pos[kk] &&
+             p_delta == col->p_delta[kk] &&
+             p_q_base == col->p_q_base[kk] ) {
+            col->link_count[kk] ++;
+            updated = 1;
+            break;
+        }
+    }
+    if (updated == 0) {
+        if (col->n_link + 1 > col->size) {
+            col->size *= 2;
+            realloc_aln_col(col);
+        }
+        kk = col->n_link;
+        col->p_t_pos[kk] = p_t_pos;
+        col->p_delta[kk] = p_delta;
+        col->p_q_base[kk] = p_q_base;
+        col->link_count[kk] ++;
+        col->n_link++;
+    }
+}
+
+consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, 
+                                          unsigned long n_tag_seqs, 
+                                          unsigned t_len, 
+                                          unsigned min_cov ) {
+
+    seq_coor_t i, j, jj, t_pos, tmp_pos;
     unsigned int * coverage;
     unsigned int * local_nbase;
-    unsigned int * aux_index;
+    unsigned int * max_delta;
 
     unsigned int cur_delta;
-    unsigned int counter[5] = {0, 0, 0, 0, 0};
+    unsigned int delta_allocated;
     unsigned int k;
-    unsigned int max_count;
-    unsigned int max_count_index;
-    seq_coor_t consensus_index;
-    seq_coor_t c_start, c_end, max_start;
-    unsigned int cov_score, max_cov_score;
     consensus_data * consensus;
     //char * consensus;
-
-
-
-    align_tag_t ** tag_seq_index;
+    align_tag_t * c_tag;
+    
+    msa_pos_t * msa_array;
 
     coverage = calloc( t_len, sizeof(unsigned int) );
     local_nbase = calloc( t_len, sizeof(unsigned int) );
-    aux_index = calloc( t_len, sizeof(unsigned int) );
-    tag_seq_index = calloc( t_len, sizeof(align_tag_t *) );
-
-    for (i = 0; i < n_tag_seqs; i++) {
-        for (j = 0; j < tag_seqs[i]->len; j++) {
-            if (tag_seqs[i]->align_tags[j].delta == 0 && tag_seqs[i]->align_tags[j].q_base != '*') {
-                t_pos = tag_seqs[i]->align_tags[j].t_pos;
-                coverage[ t_pos ] ++;
-            }
-            local_nbase[ tag_seqs[i]->align_tags[j].t_pos ] ++;
-        }
-    }
-
+    max_delta = calloc( t_len, sizeof(unsigned int) );
+    msa_array = calloc(t_len, sizeof(msa_pos_t *));
 
     for (i = 0; i < t_len; i++) {
-        tag_seq_index[i] = calloc( local_nbase[i] + 1, sizeof(align_tag_t) );
+        msa_array[i] = calloc(1, sizeof(msa_delta_group_t));
+        msa_array[i]->size = 16;
+        allocate_delta_group(msa_array[i]);
     }
-
+    
+    // loop through very alignment
     for (i = 0; i < n_tag_seqs; i++) {
+
+        // for each alignment position, insert the alignment tag to msa_array
         for (j = 0; j < tag_seqs[i]->len; j++) {
-            t_pos = tag_seqs[i]->align_tags[j].t_pos;
-            tag_seq_index[ t_pos ][ aux_index[ t_pos ] ] = tag_seqs[i]->align_tags[j];
-            aux_index[ t_pos ] ++;
+            c_tag = tag_seqs[i]->align_tags + j;
+            if (c_tag->delta == 0) {
+                t_pos = c_tag->t_pos;
+                coverage[ t_pos ] ++;
+            }
+
+            unsigned int delta; 
+            delta = c_tag->delta;
+            if (delta > msa_array[t_pos]->max_delta) {
+                msa_array[t_pos]->max_delta = delta;
+                if (msa_array[t_pos]->max_delta + 8 > msa_array[t_pos]->size ) {
+                    realloc_delta_group(msa_array[t_pos], msa_array[t_pos]->max_delta + 32);
+                }
+            }
+            
+            unsigned int base;
+            switch (c_tag->q_base) {
+                case 'A': base = 0; break;
+                case 'C': base = 1; break;
+                case 'G': base = 2; break;
+                case 'T': base = 3; break;
+                case '-': base = 4; break;
+            }
+            update_col( &(msa_array[t_pos]->delta[delta].base[base]), c_tag->p_t_pos, c_tag->p_delta, c_tag->p_q_base);
+            local_nbase[ t_pos ] ++;
         }
     }
 
+    // propogate score throught the alignment links, setup backtracking information
+    align_tag_col_t * g_best_aln_col;
+    unsigned int g_best_ck;
+    seq_coor_t g_best_t_pos;
+    {
+        int kk; 
+        int ck;
+        char base;
+        int best_i;
+        int best_j;
+        int best_b;
+        int best_ck;
+        double score;
+        double best_score;
+        double g_best_score;
+        char best_mark;
 
-    consensus_index = 0;
+        align_tag_col_t * aln_col;
+        
+        g_best_score = -1;
 
+        for (i = 0; i < t_len; i++) {  //loop through every template base
+            //printf("max delta: %d %d\n", i, msa_array[i]->max_delta);
+            for (j = 0; j <= msa_array[i]->max_delta; j++) { // loop through every delta position
+                for (kk = 0; kk < 5; kk++) {  // loop through diff bases of the same delta posiiton
+                    switch (kk) {
+                        case 0: base = 'A'; break;
+                        case 1: base = 'C'; break;
+                        case 2: base = 'G'; break;
+                        case 3: base = 'T'; break;
+                        case 4: base = '-'; break;
+                    }
+                    aln_col = msa_array[i]->delta[j].base + kk;
+                    if (aln_col->count >= 0) {
+                        best_score = -1;
+                        best_i = -1;
+                        best_j = -1;
+                        best_b = -1;
+
+                        for (ck = 0; ck < aln_col->n_link; ck++) { // loop through differnt link to previous column
+                            int pi;
+                            int pj;
+                            int pkk;
+                            pi = aln_col->p_t_pos[ck];
+                            pj = aln_col->p_delta[ck];
+                            switch (aln_col->p_q_base[ck]) {
+                                case 'A': pkk = 0; break;
+                                case 'C': pkk = 1; break;
+                                case 'G': pkk = 2; break;
+                                case 'T': pkk = 3; break;
+                                case '-': pkk = 4; break;
+                                default: pkk = 4;
+                            }
+
+                            if (aln_col->p_t_pos[ck] == -1) {
+                                score =  (double) aln_col->link_count[ck] - (double) coverage[i] * 0.5;
+                            } else {
+                                score = msa_array[pi]->delta[pj].base[pkk].score + 
+                                        (double) aln_col->link_count[ck] - (double) coverage[i] * 0.5;
+                            }
+                            best_mark = ' ';
+                            if (score > best_score) {
+                                best_score = score;
+                                aln_col->best_p_t_pos = best_i = pi;
+                                aln_col->best_p_delta = best_j = pj;
+                                aln_col->best_p_q_base = best_b = pkk;
+                                best_ck = ck;
+                                best_mark = '*';
+                            }
+                            /*
+                            printf("X %d %d %d %c %d %d %d %c %d %lf %c\n", coverage[i], i, j, base, aln_col->count, 
+                                                                  aln_col->p_t_pos[ck], 
+                                                                  aln_col->p_delta[ck], 
+                                                                  aln_col->p_q_base[ck], 
+                                                                  aln_col->link_count[ck],
+                                                                  score, best_mark);
+                            */
+                        }
+                        aln_col->score = best_score;
+                        if (best_score > g_best_score) {
+                            g_best_score = best_score;
+                            g_best_aln_col = aln_col;
+                            g_best_ck = best_ck;
+                            g_best_t_pos = i;
+                            //printf("GB %d %d %d %d\n", i, j, ck, g_best_aln_col);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // reconstruct the sequences
+    unsigned int index;
+    unsigned int b;
+    char bb;
+    int ck;
+    char * cns_str;
+    int * eqv;
+    char xa, xb;
+    double score0;
     
     consensus = calloc( 1, sizeof(consensus_data) );
     consensus->sequence = calloc( t_len * 2 + 1, sizeof(char) );
     consensus->eqv = calloc( t_len * 2 + 1, sizeof(unsigned int) );
+    cns_str = consensus->sequence;
+    eqv =  consensus->eqv;
 
-    for (i = 0; i < t_len; i++) {
-        qsort(tag_seq_index[i], local_nbase[i], sizeof(align_tag_t), compare_tags);
-        cur_delta = 0;
-        for (j = 0; j <= local_nbase[i]; j++) {
-            max_count = 0;
-            max_count_index = 0;
-            if (j == local_nbase[i] || tag_seq_index[i][j].delta != cur_delta) {
-                for (k = 0; k < 5; k ++) {
-                    if (counter[k] > max_count) {
-                        max_count = counter[k];
-                        max_count_index = k;
-                    }
-                    //reset counter
-                    counter[k] = 0;
-                    cur_delta = tag_seq_index[i][j].delta;
-                }
-                if (max_count > coverage[i] * 0.5) { 
-                    switch (max_count_index) {
-                        case 0:
-                            if (coverage[i] < min_cov + 1) {
-                                consensus->sequence[consensus_index] = 'a';
-                            } else {
-                                consensus->sequence[consensus_index] = 'A';
-                            }
-                            consensus->eqv[consensus_index] = coverage[i] ;
-                            consensus_index ++;
-                            break;
-                        case 1:
-                            if (coverage[i] < min_cov + 1) {
-                                consensus->sequence[consensus_index] = 'c';
-                            } else {
-                                consensus->sequence[consensus_index] = 'C';
-                            }
-                            consensus->eqv[consensus_index] = coverage[i] ;
-                            consensus_index ++;
-                            break;
-                        case 2:
-                            if (coverage[i] < min_cov + 1) {
-                                consensus->sequence[consensus_index] = 'g';
-                            } else {
-                                consensus->sequence[consensus_index] = 'G';
-                            }
-                            consensus->eqv[consensus_index] = coverage[i] ;
-                            consensus_index ++;
-                            break;
-                        case 3:
-                            if (coverage[i] < min_cov + 1) {
-                                consensus->sequence[consensus_index] = 't';
-                            } else {
-                                consensus->sequence[consensus_index] = 'T';
-                            }
-                            consensus->eqv[consensus_index] = coverage[i] ;
-                            consensus_index ++;
-                            break;
-                        default:
-                            break;
-                    }
-                    //printf("c:%c\n", consensus[consensus_index-1]);
-                }
+    index = 0;
+    ck = g_best_ck;
+    align_tag_col_t * aln_col;
+    aln_col = g_best_aln_col;
+    i = g_best_t_pos;
 
-            } 
-
-            if (j == local_nbase[i]) break;
-
-            switch (tag_seq_index[i][j].q_base) {
-                case 'A':
-                    counter[0] ++;
-                    break;
-                case 'C':
-                    counter[1] ++;
-                    break;
-                case 'G':
-                    counter[2] ++;
-                    break;
-                case 'T':
-                    counter[3] ++;
-                    break;
-                case '-':
-                    counter[4] ++;
-                    break;
-                default:
-                    break;
+    while (1) {
+        if (coverage[i] > min_cov) {
+            switch (ck) {
+                case 0: bb = 'A'; break;
+                case 1: bb = 'C'; break;
+                case 2: bb = 'G'; break;
+                case 3: bb = 'T'; break;
+                case 4: bb = '-'; break;
             }
-            /*
-            printf("%ld %ld %ld %u %c %u\n", i, j, tag_seq_index[i][j].t_pos,
-                                                   tag_seq_index[i][j].delta,
-                                                   tag_seq_index[i][j].q_base,
-                                                   tag_seq_index[i][j].q_id);
-            */
+        } else {
+            switch (ck) {
+                case 0: bb = 'a'; break;
+                case 1: bb = 'c'; break;
+                case 2: bb = 'g'; break;
+                case 3: bb = 't'; break;
+                case 4: bb = '-'; break;
+            }
+        }
+        
+        score0 = g_best_aln_col->score;
+        i = g_best_aln_col->best_p_t_pos;
+        if (i == -1 || index >= t_len * 2) break;
+        j = g_best_aln_col->best_p_delta;
+        ck = g_best_aln_col->best_p_q_base;
+        g_best_aln_col = msa_array[i]->delta[j].base + ck;
+
+        if (bb != '-') {
+            cns_str[index] = bb;
+            eqv[index] = (int) score0 - (int) g_best_aln_col->score;
+            //printf("C %d %d %c %lf %d %d\n", i, index, bb, g_best_aln_col->score, coverage[i], eqv[index] );
+            index ++;
         }
     }
-   
-    //printf("%s\n", consensus);
-
-    for (i = 0; i < t_len; i++) {
-        free(tag_seq_index[i]);
+    
+    // reverse the sequence
+    for (i = 0; i < index/2; i++) {
+        cns_str[i] = cns_str[i] ^ cns_str[index-i-1];
+        cns_str[index-i-1] = cns_str[i] ^ cns_str[index-i-1];
+        cns_str[i] = cns_str[i] ^ cns_str[index-i-1];
+        eqv[i] = eqv[i] ^ eqv[index-i-1];
+        eqv[index-i-1] = eqv[i] ^ eqv[index-i-1];
+        eqv[i] = eqv[i] ^ eqv[index-i-1];
     }
-    free(tag_seq_index);
-    free(aux_index);
+
+    cns_str[index] = 0;
+    //printf("%s\n", cns_str);
+    for (i = 0; i < t_len; i++) {
+        free_delta_group(msa_array[i]);
+    }
+    
+    free(max_delta);
     free(coverage);
     free(local_nbase);
     return consensus;
@@ -414,8 +567,6 @@ consensus_data * generate_consensus( char ** input_seq,
                                                            aln->t_aln_str, 
                                                            aln->aln_str_size, 
                                                            arange, j, 
-                                                           local_match_count_window,
-                                                           local_match_count_threshold,
                                                            0); 
             aligned_seq_count ++;
         }
@@ -482,8 +633,7 @@ consensus_data * generate_utg_consensus( char ** input_seq,
     arange->s2 = 0;
     arange->e2 = strlen(input_seq[0]); 
     tags_list[aligned_seq_count] = get_align_tags( input_seq[0], input_seq[0], 
-                                                   strlen(input_seq[0]), arange, 0, 
-                                                   12, 0, 0); 
+                                                   strlen(input_seq[0]), arange, 0, 0); 
     aligned_seq_count += 1;
     for (j=1; j < seq_count; j++) {
         arange->s1 = 0;
@@ -530,7 +680,7 @@ consensus_data * generate_utg_consensus( char ** input_seq,
         if (aln->aln_str_size > 500 && ((double) aln->dist / (double) aln->aln_str_size) < max_diff) {
             tags_list[aligned_seq_count] = get_align_tags( aln->q_aln_str, aln->t_aln_str, 
                                                            aln->aln_str_size, arange, j, 
-                                                           12, 0, offset[j]); 
+                                                           offset[j]); 
             aligned_seq_count ++;
         }
         free_alignment(aln);
