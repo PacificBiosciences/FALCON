@@ -175,7 +175,7 @@ def get_seq_data(config):
                         seqs.append(l[1])
             elif l[0] == "+":
                 if len(seqs) > 10:
-                    seqs.sort( key=lambda x: -len(x) )
+                    seqs[1:].sort( key=lambda x: -len(x) )
                     yield (seqs[:max_n_read], seed_id, config) 
                 #seqs_data.append( (seqs, seed_id) ) 
                 seqs = []
@@ -193,9 +193,9 @@ if __name__ == "__main__":
     parser.add_argument('--n_core', type=int, default=24,
                         help='number of processes used for generating consensus')
     parser.add_argument('--local_match_count_window', type=int, default=12,
-                        help='local match window size')
+                        help='local match window size (obsoleted, no effect)')
     parser.add_argument('--local_match_count_threshold', type=int, default=6,
-                        help='local match count threshold')
+                        help='local match count threshold (obsoleted, no effect)')
     parser.add_argument('--min_cov', type=int, default=6,
                         help='minimum coverage to break the consensus')
     parser.add_argument('--max_n_read', type=int, default=500,
