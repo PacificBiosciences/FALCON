@@ -175,7 +175,7 @@ def get_seq_data(config):
                         seqs.append(l[1])
             elif l[0] == "+":
                 if len(seqs) > 10:
-                    seqs.sort( key=lambda x: -len(x) )
+                    seqs[1:].sort( key=lambda x: -len(x) )
                     yield (seqs[:max_n_read], seed_id, config) 
                 #seqs_data.append( (seqs, seed_id) ) 
                 seqs = []
