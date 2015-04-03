@@ -221,7 +221,7 @@ void realloc_delta_group( msa_delta_group_t * g, unsigned int new_size ) {
 void free_delta_group( msa_delta_group_t * g) {
     //manything to do here 
     int i, j, k;
-    for (i = 0; i <= g->max_delta; i++) {
+    for (i = 0; i < g->size; i++) {
         for (j = 0; j < 5; j++) {
             free_aln_col( &(g->delta[i].base[j]) );
         }
@@ -265,10 +265,8 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
     seq_coor_t i, j, jj, t_pos, tmp_pos;
     unsigned int * coverage;
     unsigned int * local_nbase;
-    unsigned int * max_delta;
 
     unsigned int cur_delta;
-    unsigned int delta_allocated;
     unsigned int k;
     consensus_data * consensus;
     //char * consensus;
@@ -278,7 +276,6 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
 
     coverage = calloc( t_len, sizeof(unsigned int) );
     local_nbase = calloc( t_len, sizeof(unsigned int) );
-    max_delta = calloc( t_len, sizeof(unsigned int) );
     msa_array = calloc(t_len, sizeof(msa_pos_t *));
 
     for (i = 0; i < t_len; i++) {
@@ -482,9 +479,10 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
     //printf("%s\n", cns_str);
     for (i = 0; i < t_len; i++) {
         free_delta_group(msa_array[i]);
+        free(msa_array[i]);
     }
     
-    free(max_delta);
+    free(msa_array);
     free(coverage);
     free(local_nbase);
     return consensus;
@@ -499,6 +497,7 @@ consensus_data * generate_consensus( char ** input_seq,
                            unsigned long local_match_count_window,
                            unsigned long local_match_count_threshold,
                            double min_idt) {
+    // local_match_count_window, local_match_count_threshold obsoleted, keep the interface for a while
 
     unsigned int i, j, k;
     unsigned int seq_count;
