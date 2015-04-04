@@ -249,11 +249,48 @@ void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, unsigned int p_delta
             realloc_aln_col(col);
         }
         kk = col->n_link;
+
         col->p_t_pos[kk] = p_t_pos;
         col->p_delta[kk] = p_delta;
         col->p_q_base[kk] = p_q_base;
         col->link_count[kk] ++;
         col->n_link++;
+    }
+}
+
+
+msa_pos_t * get_msa_working_sapce(unsigned int max_t_len) {
+    msa_pos_t * msa_array;
+    unsigned int i;
+    msa_array = calloc(max_t_len, sizeof(msa_pos_t *));
+    for (i = 0; i < max_t_len; i++) {
+        msa_array[i] = calloc(1, sizeof(msa_delta_group_t));
+        msa_array[i]->size = 32;
+        allocate_delta_group(msa_array[i]);
+    }
+    return msa_array;
+}
+
+void clean_msa_working_space( msa_pos_t * msa_array, unsigned int max_t_len) {
+    unsigned int i,j,k,c;
+    for (i = 0; i < max_t_len; i++) {
+        for (j =0; j < msa_array[i]->size; j++) {
+            for (k = 0; k < 5; k++ ) {
+                for (c =0; c < msa_array[i]->delta[j].base[k].size; c++) {
+                    msa_array[i]->delta[j].base[k].p_t_pos[c] = 0;
+                    msa_array[i]->delta[j].base[k].p_delta[c] = 0;
+                    msa_array[i]->delta[j].base[k].p_q_base[c] = 0;
+                    msa_array[i]->delta[j].base[k].link_count[c] =0;
+                }
+                msa_array[i]->delta[j].base[k].n_link = 0;
+                msa_array[i]->delta[j].base[k].count = 0;
+                msa_array[i]->delta[j].base[k].best_p_t_pos = 0;
+                msa_array[i]->delta[j].base[k].best_p_delta = 0;
+                msa_array[i]->delta[j].base[k].best_p_q_base = 0;
+                msa_array[i]->delta[j].base[k].score = 0;
+            }
+        }
+        msa_array[i]->max_delta = 0;
     }
 }
 
@@ -271,20 +308,27 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
     consensus_data * consensus;
     //char * consensus;
     align_tag_t * c_tag;
-    
-    msa_pos_t * msa_array;
+    static msa_pos_t * msa_array = NULL;
 
     coverage = calloc( t_len, sizeof(unsigned int) );
     local_nbase = calloc( t_len, sizeof(unsigned int) );
-    msa_array = calloc(t_len, sizeof(msa_pos_t *));
+    //msa_array = calloc(t_len, sizeof(msa_pos_t *));
+    
+    if ( msa_array == NULL) {
+        msa_array = get_msa_working_sapce(65536);
+    } else {
+        clean_msa_working_space(msa_array, 65536);
+    }
 
+    /*  
     for (i = 0; i < t_len; i++) {
         msa_array[i] = calloc(1, sizeof(msa_delta_group_t));
-        msa_array[i]->size = 16;
+        msa_array[i]->size = 32;
         allocate_delta_group(msa_array[i]);
     }
+    */
     
-    // loop through very alignment
+    // loop through every alignment
     for (i = 0; i < n_tag_seqs; i++) {
 
         // for each alignment position, insert the alignment tag to msa_array
@@ -299,7 +343,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
             delta = c_tag->delta;
             if (delta > msa_array[t_pos]->max_delta) {
                 msa_array[t_pos]->max_delta = delta;
-                if (msa_array[t_pos]->max_delta + 8 > msa_array[t_pos]->size ) {
+                if (msa_array[t_pos]->max_delta + 4 > msa_array[t_pos]->size ) {
                     realloc_delta_group(msa_array[t_pos], msa_array[t_pos]->max_delta + 32);
                 }
             }
@@ -477,12 +521,14 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
 
     cns_str[index] = 0;
     //printf("%s\n", cns_str);
+    /*
     for (i = 0; i < t_len; i++) {
         free_delta_group(msa_array[i]);
         free(msa_array[i]);
     }
     
     free(msa_array);
+    */
     free(coverage);
     free(local_nbase);
     return consensus;
