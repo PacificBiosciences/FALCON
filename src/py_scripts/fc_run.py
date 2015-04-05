@@ -232,7 +232,10 @@ def run_consensus_task(self):
     with open( os.path.join(cwd, "cp_%05d.sh" % job_id), "w") as c_script:
         print >> c_script, "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix)
         print >> c_script, "cd .."
-        print >> c_script, """LA4Falcon -H%d -o -f:%s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
+        if config["falcon_sense_skip_contained"] == True:
+            print >> c_script, """LA4Falcon -H%d -so -f:%s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
+        else:
+            print >> c_script, """LA4Falcon -H%d -o -f:%s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
         print >> c_script, """fc_consensus.py %s > %s""" % (falcon_sense_option, fn(self.out_file))
 
     script = []
@@ -390,7 +393,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
         merge_tasks.append(merge_task)
 
 
-        out_file = makePypeLocalFile(os.path.abspath( "%s/preads/out.%04d.fa" % (wd, p_id)  ))
+        out_file = makePypeLocalFile(os.path.abspath( "%s/preads/out.%05d.fa" % (wd, p_id)  ))
         out_done = makePypeLocalFile(os.path.abspath( "%s/preads/c_%05d_done" % (wd, p_id)  ))
         parameters =  {"cwd": os.path.join(wd, "preads" ),
                        "job_id": p_id, 
@@ -474,6 +477,14 @@ def get_config(config_fn):
     if config.has_option('General', 'falcon_sense_option'):
         falcon_sense_option = config.get('General', 'falcon_sense_option')
 
+    falcon_sense_skip_contained = "False"
+    if config.has_option('General', 'falcon_sense_skip_contained'):
+        falcon_sense_skip_contained = config.get('General', 'falcon_sense_skip_contained')
+        if falcon_sense_skip_contained in ["True", "true", "1"]:
+            falcon_sense_skip_contained = True
+        else:
+            falcon_sense_skip_contained = False
+
     length_cutoff = config.getint('General', 'length_cutoff')
     input_fofn_fn = config.get('General', 'input_fofn')
     
@@ -516,7 +527,8 @@ def get_config(config_fn):
                    "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
                    "pa_DBsplit_option": pa_DBsplit_option,
                    "ovlp_DBsplit_option": ovlp_DBsplit_option,
-                   "falcon_sense_option": falcon_sense_option
+                   "falcon_sense_option": falcon_sense_option,
+                   "falcon_sense_skip_contained": falcon_sense_skip_contained
                    }
 
     hgap_config["install_prefix"] = sys.prefix
@@ -714,8 +726,8 @@ if __name__ == '__main__':
         script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
         overlap_filtering_setting = config["overlap_filtering_setting"]
         length_cutoff_pr = config["length_cutoff_pr"]
-        script.append( """fc_ovlp_filter.py --fofn las.fofn %s \
-                                 --min_len %d > preads.ovl""" % (overlap_filtering_setting, length_cutoff_pr) )
+        script.append( """fc_ovlp_filter.py --fofn las.fofn %s --min_len %d > preads.ovl""" %\
+                (overlap_filtering_setting, length_cutoff_pr) )
 
         script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
         script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc.log""" % length_cutoff_pr)
