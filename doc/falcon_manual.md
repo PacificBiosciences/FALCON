@@ -120,6 +120,7 @@ cp DBrm DBshow DBsplit DBstats fasta2DB ../fc_env/bin/
 cd ..
 git clone https://github.com/pb-jchin/DALIGNER.git
 cd DALIGNER
+git checkout 4fe0d39a02e849f52ad9e22a75fcf8b7f97c2082
 make
 cp daligner daligner_p DB2Falcon HPCdaligner LA4Falcon LAmerge LAsort  ../fc_env/bin
 cd ..
