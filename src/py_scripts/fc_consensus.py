@@ -166,7 +166,7 @@ def get_seq_data(config):
             l = l.strip().split()
             if len(l) != 2:
                 continue
-            if l[0] not in ("+", "-"):
+            if l[0] not in ("+", "-", "*"):
                 if len(l[1]) > 100:
                     if len(seqs) == 0:
                         seqs.append(l[1]) #the "seed"
@@ -178,6 +178,10 @@ def get_seq_data(config):
                     seqs[1:].sort( key=lambda x: -len(x) )
                     yield (seqs[:max_n_read], seed_id, config) 
                 #seqs_data.append( (seqs, seed_id) ) 
+                seqs = []
+                read_id = set()
+                seed_id = None
+            elif l[0] == "*":
                 seqs = []
                 read_id = set()
                 seed_id = None
