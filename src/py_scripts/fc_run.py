@@ -53,16 +53,27 @@ import uuid
 
 
 wait_time = 5
-log = 0
-if log:
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    logger.setLevel(logging.DEBUG)
+pypeflow_log = 0
+if pypeflow_log:
+    pypeflow_logger = logging.getLogger("pypeflow.common")
+    #pypeflow_logger.setLevel(logging.INFO)
+    pypeflow_logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+    fh = logging.FileHandler('pypeflow.log')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    pypeflow_logger.addHandler(fh)
+
+fc_run_log = 1
+if fc_run_log:
+    fc_run_logger = logging.getLogger("fc_run")
+    #fc_run_logger.setLevel(logging.INFO)
+    fc_run_logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh = logging.FileHandler('fc_run.log')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    fc_run_logger.addHandler(fh)
 
 def run_script(job_data, job_type = "SGE" ):
     if job_type == "SGE":
@@ -76,18 +87,22 @@ def run_script(job_data, job_type = "SGE" ):
                                                sge_option=sge_option, 
                                                script=script_fn)
 
+        fc_run_logger.info( "submitting %s for SGE, start job: %s " % (script_fn, job_name) )
         os.system( sge_cmd )
     elif job_type == "local":
+        fc_run_logger.info( "executing %s locally, start job: %s " % (script_fn, job_name) )
         os.system( "bash %s" % job_data["script_fn"] )
 
 def wait_for_file(filename, task = None, job_name = ""):
     while 1:
         time.sleep(wait_time)
         if os.path.exists(filename):
+            fc_run_logger.info( "%s generated. job: %s finished." % (filename, job_name) )
             break
 
         if task != None:
             if task.shutdown_event != None and task.shutdown_event.is_set(): 
+                fc_run_logger.info( "Keyborad Interrupt Detect, %s not finished, deleting the job by `qdel` now " % (job_name) )
                 os.system("qdel %s" % job_name)
                 break
 
@@ -139,7 +154,7 @@ def build_rdb(self):
         script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
 
     job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid1())[:8]
+    job_name += "-"+str(uuid.uuid4())[:8]
     job_data = {"job_name": job_name,
                 "cwd": os.getcwd(),
                 "sge_option": sge_option_da,
@@ -175,7 +190,7 @@ def run_daligner(self):
         script_file.write("\n".join(script))
 
     job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid1())[:8]
+    job_name += "-"+str(uuid.uuid4())[:8]
     job_data = {"job_name": job_name,
                 "cwd": cwd,
                 "sge_option": sge_option_da,
@@ -208,7 +223,7 @@ def run_merge_task(self):
 
 
     job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid1())[:8]
+    job_name += "-"+str(uuid.uuid4())[:8]
     job_data = {"job_name": job_name,
                 "cwd": cwd,
                 "sge_option": sge_option_la,
@@ -232,7 +247,10 @@ def run_consensus_task(self):
     with open( os.path.join(cwd, "cp_%05d.sh" % job_id), "w") as c_script:
         print >> c_script, "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix)
         print >> c_script, "cd .."
-        print >> c_script, """LA4Falcon -H%d -o -f:%s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
+        if config["falcon_sense_skip_contained"] == True:
+            print >> c_script, """LA4Falcon -H%d -so -f:%s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
+        else:
+            print >> c_script, """LA4Falcon -H%d -o -f:%s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
         print >> c_script, """fc_consensus.py %s > %s""" % (falcon_sense_option, fn(self.out_file))
 
     script = []
@@ -246,7 +264,7 @@ def run_consensus_task(self):
         script_file.write("\n".join(script))
 
     job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid1())[:8]
+    job_name += "-"+str(uuid.uuid4())[:8]
     job_data = {"job_name": job_name,
                 "cwd": cwd,
                 "sge_option": sge_option_cns,
@@ -390,7 +408,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
         merge_tasks.append(merge_task)
 
 
-        out_file = makePypeLocalFile(os.path.abspath( "%s/preads/out.%04d.fa" % (wd, p_id)  ))
+        out_file = makePypeLocalFile(os.path.abspath( "%s/preads/out.%05d.fa" % (wd, p_id)  ))
         out_done = makePypeLocalFile(os.path.abspath( "%s/preads/c_%05d_done" % (wd, p_id)  ))
         parameters =  {"cwd": os.path.join(wd, "preads" ),
                        "job_id": p_id, 
@@ -474,6 +492,14 @@ def get_config(config_fn):
     if config.has_option('General', 'falcon_sense_option'):
         falcon_sense_option = config.get('General', 'falcon_sense_option')
 
+    falcon_sense_skip_contained = "False"
+    if config.has_option('General', 'falcon_sense_skip_contained'):
+        falcon_sense_skip_contained = config.get('General', 'falcon_sense_skip_contained')
+        if falcon_sense_skip_contained in ["True", "true", "1"]:
+            falcon_sense_skip_contained = True
+        else:
+            falcon_sense_skip_contained = False
+
     length_cutoff = config.getint('General', 'length_cutoff')
     input_fofn_fn = config.get('General', 'input_fofn')
     
@@ -516,7 +542,8 @@ def get_config(config_fn):
                    "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
                    "pa_DBsplit_option": pa_DBsplit_option,
                    "ovlp_DBsplit_option": ovlp_DBsplit_option,
-                   "falcon_sense_option": falcon_sense_option
+                   "falcon_sense_option": falcon_sense_option,
+                   "falcon_sense_skip_contained": falcon_sense_skip_contained
                    }
 
     hgap_config["install_prefix"] = sys.prefix
@@ -531,6 +558,7 @@ if __name__ == '__main__':
         print "usage: fc_run.py fc_run.cfg"
         sys.exit(1)
     
+    fc_run_logger.info( "fc_run started with configuration %s", sys.argv[1] ) 
     rawread_dir = os.path.abspath("./0-rawreads")
     pread_dir = os.path.abspath("./1-preads_ovl")
     falcon_asm_dir  = os.path.abspath("./2-asm-falcon")
@@ -714,11 +742,11 @@ if __name__ == '__main__':
         script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
         overlap_filtering_setting = config["overlap_filtering_setting"]
         length_cutoff_pr = config["length_cutoff_pr"]
-        script.append( """fc_ovlp_filter.py --fofn las.fofn %s \
-                                 --n_core 24 --min_len %d > preads.ovl""" % (overlap_filtering_setting, length_cutoff_pr) )
+        script.append( """fc_ovlp_filter.py --fofn las.fofn %s --min_len %d > preads.ovl""" %\
+                (overlap_filtering_setting, length_cutoff_pr) )
 
         script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
-        script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc.log""" % length_cutoff_pr)
+        script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr)
         script.append( """fc_graph_to_contig.py""" )
         script.append( """touch %s\n""" % fn(self.falcon_asm_done))
 
@@ -726,7 +754,7 @@ if __name__ == '__main__':
             script_file.write("\n".join(script))
 
         job_name = self.URL.split("/")[-1]
-        job_name += "-"+str(uuid.uuid1())[:8]
+        job_name += "-"+str(uuid.uuid4())[:8]
         job_data = {"job_name": job_name,
                     "cwd": wd,
                     "sge_option": config["sge_option_fc"],
