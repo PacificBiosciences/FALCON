@@ -344,6 +344,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
 
     
     // loop through every alignment
+    //printf("XX %d\n", n_tag_seqs);
     for (i = 0; i < n_tag_seqs; i++) {
 
         // for each alignment position, insert the alignment tag to msa_array
@@ -583,6 +584,7 @@ consensus_data * generate_consensus( char ** input_seq,
     max_diff = 1.0 - min_idt;
 
     seq_count = n_seq;
+    //printf("XX n_seq %d\n", n_seq);
     //for (j=0; j < seq_count; j++) {
     //    printf("seq_len: %u %u\n", j, strlen(input_seq[j]));
     //};
@@ -611,9 +613,10 @@ consensus_data * generate_consensus( char ** input_seq,
 
         //printf("2:%ld %ld %ld %ld\n\n", arange->s1, arange->e1, arange->s2, arange->e2);
         
-#define INDEL_ALLOWENCE_1 400
+#define INDEL_ALLOWENCE_1 0.10
         if (arange->e1 - arange->s1 < 100 || arange->e2 - arange->s2 < 100 ||
-            abs( (arange->e1 - arange->s1 ) - (arange->e2 - arange->s2) ) > INDEL_ALLOWENCE_1) {
+            abs( (arange->e1 - arange->s1 ) - (arange->e2 - arange->s2) ) > 
+                   (int) (0.5 * INDEL_ALLOWENCE_1 * (arange->e1 - arange->s1 + arange->e2 - arange->s2))) {
             free_kmer_match( kmer_match_ptr);
             free_aln_range(arange);
             continue;
