@@ -53,16 +53,27 @@ import uuid
 
 
 wait_time = 5
-log = 0
-if log:
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    logger.setLevel(logging.DEBUG)
+pypeflow_log = 0
+if pypeflow_log:
+    pypeflow_logger = logging.getLogger("pypeflow.common")
+    #pypeflow_logger.setLevel(logging.INFO)
+    pypeflow_logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+    fh = logging.FileHandler('pypeflow.log')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    pypeflow_logger.addHandler(fh)
+
+fc_run_log = 1
+if fc_run_log:
+    fc_run_logger = logging.getLogger("fc_run")
+    #fc_run_logger.setLevel(logging.INFO)
+    fc_run_logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh = logging.FileHandler('fc_run.log')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    fc_run_logger.addHandler(fh)
 
 def run_script(job_data, job_type = "SGE" ):
     if job_type == "SGE":
@@ -76,18 +87,22 @@ def run_script(job_data, job_type = "SGE" ):
                                                sge_option=sge_option, 
                                                script=script_fn)
 
+        fc_run_logger.info( "submitting %s for SGE, start job: %s " % (script_fn, job_name) )
         os.system( sge_cmd )
     elif job_type == "local":
+        fc_run_logger.info( "executing %s locally, start job: %s " % (script_fn, job_name) )
         os.system( "bash %s" % job_data["script_fn"] )
 
 def wait_for_file(filename, task = None, job_name = ""):
     while 1:
         time.sleep(wait_time)
         if os.path.exists(filename):
+            fc_run_logger.info( "%s generated. job: %s finished." % (filename, job_name) )
             break
 
         if task != None:
             if task.shutdown_event != None and task.shutdown_event.is_set(): 
+                fc_run_logger.info( "Keyborad Interrupt Detect, %s not finished, deleting the job by `qdel` now " % (job_name) )
                 os.system("qdel %s" % job_name)
                 break
 
@@ -139,7 +154,7 @@ def build_rdb(self):
         script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
 
     job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid1())[:8]
+    job_name += "-"+str(uuid.uuid4())[:8]
     job_data = {"job_name": job_name,
                 "cwd": os.getcwd(),
                 "sge_option": sge_option_da,
@@ -175,7 +190,7 @@ def run_daligner(self):
         script_file.write("\n".join(script))
 
     job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid1())[:8]
+    job_name += "-"+str(uuid.uuid4())[:8]
     job_data = {"job_name": job_name,
                 "cwd": cwd,
                 "sge_option": sge_option_da,
@@ -208,7 +223,7 @@ def run_merge_task(self):
 
 
     job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid1())[:8]
+    job_name += "-"+str(uuid.uuid4())[:8]
     job_data = {"job_name": job_name,
                 "cwd": cwd,
                 "sge_option": sge_option_la,
@@ -249,7 +264,7 @@ def run_consensus_task(self):
         script_file.write("\n".join(script))
 
     job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid1())[:8]
+    job_name += "-"+str(uuid.uuid4())[:8]
     job_data = {"job_name": job_name,
                 "cwd": cwd,
                 "sge_option": sge_option_cns,
@@ -543,6 +558,7 @@ if __name__ == '__main__':
         print "usage: fc_run.py fc_run.cfg"
         sys.exit(1)
     
+    fc_run_logger.info( "fc_run started with configuration %s", sys.argv[1] ) 
     rawread_dir = os.path.abspath("./0-rawreads")
     pread_dir = os.path.abspath("./1-preads_ovl")
     falcon_asm_dir  = os.path.abspath("./2-asm-falcon")
@@ -730,7 +746,7 @@ if __name__ == '__main__':
                 (overlap_filtering_setting, length_cutoff_pr) )
 
         script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
-        script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc.log""" % length_cutoff_pr)
+        script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr)
         script.append( """fc_graph_to_contig.py""" )
         script.append( """touch %s\n""" % fn(self.falcon_asm_done))
 
@@ -738,7 +754,7 @@ if __name__ == '__main__':
             script_file.write("\n".join(script))
 
         job_name = self.URL.split("/")[-1]
-        job_name += "-"+str(uuid.uuid1())[:8]
+        job_name += "-"+str(uuid.uuid4())[:8]
         job_data = {"job_name": job_name,
                     "cwd": wd,
                     "sge_option": config["sge_option_fc"],
