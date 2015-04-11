@@ -20,7 +20,7 @@ ABOUT THE LICENSE
 Standard PacBio Open Source License that is associated with this package:
 
     #################################################################################$$
-    # Copyright (c) 2011-2014, Pacific Biosciences of California, Inc.
+    # Copyright (c) 2011-2015, Pacific Biosciences of California, Inc.
     #
     # All rights reserved.
     #
