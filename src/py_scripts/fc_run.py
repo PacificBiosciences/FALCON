@@ -90,8 +90,9 @@ def run_script(job_data, job_type = "SGE" ):
         fc_run_logger.info( "submitting %s for SGE, start job: %s " % (script_fn, job_name) )
         os.system( sge_cmd )
     elif job_type == "local":
+        script_fn = job_data["script_fn"]
         fc_run_logger.info( "executing %s locally, start job: %s " % (script_fn, job_name) )
-        os.system( "bash %s" % job_data["script_fn"] )
+        os.system( "bash %s" % script_fn )
 
 def wait_for_file(filename, task = None, job_name = ""):
     while 1:
