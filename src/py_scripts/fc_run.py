@@ -248,9 +248,9 @@ def run_consensus_task(self):
         print >> c_script, "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix)
         print >> c_script, "cd .."
         if config["falcon_sense_skip_contained"] == True:
-            print >> c_script, """LA4Falcon -H%d -so -f:%s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
+            print >> c_script, """LA4Falcon -H%d -fso %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
         else:
-            print >> c_script, """LA4Falcon -H%d -o -f:%s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
+            print >> c_script, """LA4Falcon -H%d -fo %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
         print >> c_script, """fc_consensus.py %s > %s""" % (falcon_sense_option, fn(self.out_file))
 
     script = []
@@ -282,8 +282,8 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
 
     nblock = 1
     new_db = True
-    if os.path.exists( os.path.join(wd, "%s.db" % db_prefix) ):
-        with open(  os.path.join(wd, "%s.db" % db_prefix) ) as f:
+    if os.path.exists( fn(db_file) ):
+        with open( fn(db_file) ) as f:
             for l in f:
                 l = l.strip().split()
                 if l[0] == "blocks" and l[1] == "=":
@@ -719,7 +719,7 @@ if __name__ == '__main__':
 
     
     falcon_asm_done = makePypeLocalFile( os.path.join( falcon_asm_dir, "falcon_asm_done") )
-    @PypeTask( inputs = {"p_merge_done": p_merge_done}, 
+    @PypeTask( inputs = {"p_merge_done": p_merge_done, "db_file":db_file}, 
                outputs =  {"falcon_asm_done":falcon_asm_done},
                parameters = {"wd": falcon_asm_dir,
                              "config": config,
@@ -742,8 +742,8 @@ if __name__ == '__main__':
         script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
         overlap_filtering_setting = config["overlap_filtering_setting"]
         length_cutoff_pr = config["length_cutoff_pr"]
-        script.append( """fc_ovlp_filter.py --fofn las.fofn %s --min_len %d > preads.ovl""" %\
-                (overlap_filtering_setting, length_cutoff_pr) )
+        script.append( """fc_ovlp_filter.py --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
+                (fn(db_file), overlap_filtering_setting, length_cutoff_pr) )
 
         script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
         script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr)
