@@ -90,6 +90,7 @@ def run_script(job_data, job_type = "SGE" ):
         fc_run_logger.info( "submitting %s for SGE, start job: %s " % (script_fn, job_name) )
         os.system( sge_cmd )
     elif job_type == "local":
+        job_name = job_data["job_name"]
         script_fn = job_data["script_fn"]
         fc_run_logger.info( "executing %s locally, start job: %s " % (script_fn, job_name) )
         os.system( "bash %s" % script_fn )
