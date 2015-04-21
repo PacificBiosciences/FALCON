@@ -67,7 +67,7 @@ typedef struct {
     seq_coor_t p_t_pos;   // the tag position of the previous base
     unsigned int p_delta; // the tag delta of the previous base
     char p_q_base;        // the previous base
-    unsigned int q_id;
+    unsigned q_id;
 } align_tag_t;
 
 typedef struct {
@@ -106,7 +106,7 @@ align_tags_t * get_align_tags( char * aln_q_seq,
                                char * aln_t_seq, 
                                seq_coor_t aln_seq_len,
                                aln_range * range,
-                               unsigned long q_id,
+                               unsigned q_id,
                                seq_coor_t t_offset) {
     char q_base;
     char p_q_base;
@@ -138,7 +138,7 @@ align_tags_t * get_align_tags( char * aln_q_seq,
         //printf("t %d %d %d %c %c\n", q_id, j, jj, aln_t_seq[k], aln_q_seq[k]);
        
        
-        if ( j + t_offset >= 0) {
+        if ( j + t_offset >= 0 && jj < UINT8_MAX && p_jj < UINT8_MAX) {
             (tags->align_tags[k]).t_pos = j + t_offset;
             (tags->align_tags[k]).delta = jj;
             (tags->align_tags[k]).p_t_pos = p_j + t_offset;
@@ -155,8 +155,8 @@ align_tags_t * get_align_tags( char * aln_q_seq,
     // sentinal at the end
     //k = aln_seq_len;
     tags->len = k; 
-    (tags->align_tags[k]).t_pos = -1;
-    (tags->align_tags[k]).delta = -1;
+    (tags->align_tags[k]).t_pos = UINT_MAX;
+    (tags->align_tags[k]).delta = UINT8_MAX;
     (tags->align_tags[k]).q_base = '.';
     (tags->align_tags[k]).q_id = UINT_MAX;
     return tags;
@@ -197,7 +197,7 @@ void allocate_delta_group( msa_delta_group_t * g) {
     for (i = 0; i< g->size; i++) {
         g->delta[i].base = ( align_tag_col_t * ) calloc( 5, sizeof(align_tag_col_t ) );
         for (j = 0; j < 5; j++ ) {
-             g->delta[i].base[j].size = 12;
+             g->delta[i].base[j].size = 8;
              allocate_aln_col(&(g->delta[i].base[j]));
         }
     }
@@ -211,7 +211,7 @@ void realloc_delta_group( msa_delta_group_t * g, unsigned int new_size ) {
     for (i=bs; i < es; i++) {
         g->delta[i].base = ( align_tag_col_t *) calloc( 5, sizeof(align_tag_col_t ) );
         for (j = 0; j < 5; j++ ) {
-             g->delta[i].base[j].size = 12;
+             g->delta[i].base[j].size = 8;
              allocate_aln_col(&(g->delta[i].base[j]));
         }
     }
@@ -265,7 +265,7 @@ msa_pos_t * get_msa_working_sapce(unsigned int max_t_len) {
     msa_array = calloc(max_t_len, sizeof(msa_pos_t *));
     for (i = 0; i < max_t_len; i++) {
         msa_array[i] = calloc(1, sizeof(msa_delta_group_t));
-        msa_array[i]->size = 32;
+        msa_array[i]->size = 8;
         allocate_delta_group(msa_array[i]);
     }
     return msa_array;
@@ -302,7 +302,7 @@ void clean_msa_working_space( msa_pos_t * msa_array, unsigned int max_t_len) {
 //#undef STATIC_ALLOCATE
 
 consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs, 
-                                          unsigned long n_tag_seqs, 
+                                          unsigned n_tag_seqs, 
                                           unsigned t_len, 
                                           unsigned min_cov ) {
 
@@ -326,7 +326,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
 
     for (i = 0; i < t_len; i++) {
         msa_array[i] = calloc(1, sizeof(msa_delta_group_t));
-        msa_array[i]->size = 32;
+        msa_array[i]->size = 8;
         allocate_delta_group(msa_array[i]);
     }
 
@@ -360,7 +360,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
             if (delta > msa_array[t_pos]->max_delta) {
                 msa_array[t_pos]->max_delta = delta;
                 if (msa_array[t_pos]->max_delta + 4 > msa_array[t_pos]->size ) {
-                    realloc_delta_group(msa_array[t_pos], msa_array[t_pos]->max_delta + 32);
+                    realloc_delta_group(msa_array[t_pos], msa_array[t_pos]->max_delta + 8);
                 }
             }
             

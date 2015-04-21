@@ -14,7 +14,7 @@ falcon.so: falcon.c common.h DW_banded.c kmer_lookup.c
 #	gcc DW_banded_2.c kmer_lookup.c falcon.c -O3 -shared -fPIC -o falcon2.so 
 
 clean:
-	rm falcon *.so
+	rm  *.so
 
 all: DW_align.so kmer_lookup.so falcon.so
 

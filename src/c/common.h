@@ -54,7 +54,7 @@
  #################################################################################$$
  */
 
-typedef long int seq_coor_t; 
+typedef int seq_coor_t; 
 
 typedef struct {    
     seq_coor_t aln_str_size ;
