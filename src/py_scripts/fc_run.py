@@ -144,7 +144,8 @@ def build_rdb(self):
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname >> db_build.log\n")
         script_file.write("date >> db_build.log\n")
-        script_file.write("for f in `cat {input_fofn_fn}`; do fasta2DB raw_reads $f; done >> db_build.log \n".format(input_fofn_fn = input_fofn_fn))
+        #script_file.write("for f in `cat {input_fofn_fn}`; do fasta2DB raw_reads $f; done >> db_build.log \n".format(input_fofn_fn = input_fofn_fn))
+        script_file.write("fasta2DB -v raw_reads -f{input_fofn_fn} >> db_build.log \n".format(input_fofn_fn = input_fofn_fn))
         if new_db  == True:
             script_file.write("DBsplit %s raw_reads\n" % pa_DBsplit_option)
         if openending == True:
