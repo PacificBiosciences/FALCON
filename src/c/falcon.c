@@ -335,10 +335,10 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
 #ifdef STATIC_ALLOCATE
 
     if ( msa_array == NULL) {
-        msa_array = get_msa_working_sapce(65536);
+        msa_array = get_msa_working_sapce( 100000 );
     } 
 
-    assert(t_len < 65536);
+    assert(t_len < 100000);
 
 #endif    
 
