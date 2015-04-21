@@ -58,14 +58,15 @@
 #include <limits.h>
 #include <string.h>
 #include <assert.h>
+#include <stdint.h>
 #include "common.h"
 
 typedef struct {
     seq_coor_t t_pos;
-    unsigned int delta;
+    uint8_t delta;
     char q_base;
     seq_coor_t p_t_pos;   // the tag position of the previous base
-    unsigned int p_delta; // the tag delta of the previous base
+    uint8_t p_delta; // the tag delta of the previous base
     char p_q_base;        // the previous base
     unsigned q_id;
 } align_tag_t;
@@ -77,16 +78,16 @@ typedef struct {
 
 
 typedef struct {
-    unsigned int size;
-    unsigned int n_link;
+    uint16_t size;
+    uint16_t n_link;
     seq_coor_t * p_t_pos;   // the tag position of the previous base
-    unsigned int * p_delta; // the tag delta of the previous base
+    uint8_t * p_delta; // the tag delta of the previous base
     char * p_q_base;        // the previous base
-    unsigned int * link_count;
-    unsigned int count;
+    uint16_t * link_count;
+    uint16_t count;
     seq_coor_t best_p_t_pos;
-    unsigned int best_p_delta;
-    unsigned int best_p_q_base; // encoded base
+    uint8_t best_p_delta;
+    uint8_t best_p_q_base; // encoded base
     double score;
 } align_tag_col_t;
 
@@ -95,8 +96,8 @@ typedef struct {
 } msa_base_group_t;
 
 typedef struct {
-    unsigned int size;
-    unsigned int max_delta;
+    uint8_t size;
+    uint8_t max_delta;
     msa_base_group_t * delta;
 } msa_delta_group_t;
 
@@ -170,16 +171,16 @@ void free_align_tags( align_tags_t * tags) {
 
 void allocate_aln_col( align_tag_col_t * col) {
     col->p_t_pos = ( seq_coor_t * ) calloc(col->size, sizeof( seq_coor_t ));
-    col->p_delta = ( unsigned int * ) calloc(col->size, sizeof( unsigned int ));
+    col->p_delta = ( uint8_t * ) calloc(col->size, sizeof( uint8_t ));
     col->p_q_base = ( char * )calloc(col->size, sizeof( char ));
-    col->link_count = ( unsigned int * ) calloc(col->size, sizeof( unsigned int));
+    col->link_count = ( uint16_t * ) calloc(col->size, sizeof( uint16_t ));
 }
 
 void realloc_aln_col( align_tag_col_t * col ) {
     col->p_t_pos = (seq_coor_t *) realloc( col->p_t_pos, (col->size) * sizeof( seq_coor_t ));
-    col->p_delta = (unsigned int *)  realloc( col->p_delta, (col->size) * sizeof( unsigned int ));
+    col->p_delta = ( uint8_t *)  realloc( col->p_delta, (col->size) * sizeof( uint8_t ));
     col->p_q_base = (char *) realloc( col->p_q_base, (col->size) * sizeof( char ));
-    col->link_count = (unsigned int *) realloc( col->link_count, (col->size) * sizeof( unsigned int));
+    col->link_count = ( uint16_t *) realloc( col->link_count, (col->size) * sizeof( uint16_t ));
 }
 
 void free_aln_col( align_tag_col_t * col) {
@@ -203,7 +204,7 @@ void allocate_delta_group( msa_delta_group_t * g) {
     }
 }
 
-void realloc_delta_group( msa_delta_group_t * g, unsigned int new_size ) {
+void realloc_delta_group( msa_delta_group_t * g, uint16_t new_size ) {
     int i, j, bs, es;
     bs = g->size;
     es = new_size;
@@ -230,7 +231,7 @@ void free_delta_group( msa_delta_group_t * g) {
     free(g->delta);
 }
 
-void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, unsigned int p_delta, char p_q_base) {
+void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, uint8_t p_delta, char p_q_base) {
     int updated = 0;
     int kk;
     col->count += 1;
@@ -245,7 +246,12 @@ void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, unsigned int p_delta
     }
     if (updated == 0) {
         if (col->n_link + 1 > col->size) {
-            col->size *= 2;
+            if (col->size < (UINT16_MAX > 1)-1) {
+                col->size *= 2;
+            } else {
+                col->size += 256;
+            }
+            assert( col->size < UINT16_MAX-1 );
             realloc_aln_col(col);
         }
         kk = col->n_link;
