@@ -42,7 +42,7 @@ import os
 module_path = os.path.split(__file__)[0]
 
 
-seq_coor_t = c_long
+seq_coor_t = c_int
 base_t = c_uint8
 
 class KmerLookup(Structure):
