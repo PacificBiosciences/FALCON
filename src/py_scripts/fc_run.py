@@ -109,7 +109,8 @@ def wait_for_file(filename, task = None, job_name = ""):
                 break
 
 
-def build_rdb(self):
+
+def build_rdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
 
     input_fofn = self.input_fofn
     input_fofn_fn = fn(input_fofn)
@@ -153,7 +154,7 @@ def build_rdb(self):
         else:
             script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
         script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
-
+        
         script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
 
     job_name = self.URL.split("/")[-1]
@@ -164,6 +165,42 @@ def build_rdb(self):
                 "script_fn": script_fn }
     run_script(job_data, job_type = config["job_type"])
     wait_for_file( fn(rdb_build_done), task=self, job_name=job_name )
+
+def build_pdb(self):
+
+    input_fofn = self.pread_fofn
+    input_fofn_fn = fn(input_fofn)
+    pdb_build_done = self.pdb_build_done
+    work_dir = self.parameters["work_dir"]
+    config = self.parameters["config"]
+    sge_option_pda = config["sge_option_pda"]
+    install_prefix = config["install_prefix"]
+    length_cutoff = config["length_cutoff_pr"]
+    ovlp_HPCdaligner_option = config["ovlp_HPCdaligner_option"]
+    ovlp_DBsplit_option = config["ovlp_DBsplit_option"]
+
+
+    script_fn = os.path.join( work_dir, "prepare_db.sh" )
+
+    with open(script_fn,"w") as script_file:
+        script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
+        script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
+        script_file.write("hostname >> db_build.log\n")
+        script_file.write("date >> db_build.log\n")
+        script_file.write("fasta2DB -v preads -f{input_fofn_fn} >> db_build.log \n".format(input_fofn_fn = input_fofn_fn))
+        script_file.write("DBsplit -x%d %s preads\n" % (length_cutoff, ovlp_DBsplit_option))
+        script_file.write("HPCdaligner %s -H%d preads > run_jobs.sh\n" % (ovlp_HPCdaligner_option, length_cutoff))
+        script_file.write("touch {pdb_build_done}\n".format(pdb_build_done = fn(pdb_build_done)))
+
+    job_name = self.URL.split("/")[-1]
+    job_name += "-"+str(uuid.uuid4())[:8]
+    job_data = {"job_name": job_name,
+                "cwd": os.getcwd(),
+                "sge_option": sge_option_pda,
+                "script_fn": script_fn }
+    run_script(job_data, job_type = config["job_type"])
+    wait_for_file( fn(pdb_build_done), task=self, job_name=job_name )
+    
 
 def run_daligner(self):
     daligner_cmd = self.parameters["daligner_cmd"]
@@ -222,8 +259,6 @@ def run_merge_task(self):
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
-
-
 
     job_name = self.URL.split("/")[-1]
     job_name += "-"+str(uuid.uuid4())[:8]
@@ -411,7 +446,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
         merge_tasks.append(merge_task)
 
 
-        out_file = makePypeLocalFile(os.path.abspath( "%s/preads/out.%05d.fa" % (wd, p_id)  ))
+        out_file = makePypeLocalFile(os.path.abspath( "%s/preads/out.%05d.fasta" % (wd, p_id)  ))
         out_done = makePypeLocalFile(os.path.abspath( "%s/preads/c_%05d_done" % (wd, p_id)  ))
         parameters =  {"cwd": os.path.join(wd, "preads" ),
                        "job_id": p_id, 
@@ -475,7 +510,7 @@ def get_config(config_fn):
     if config.has_option('General', 'overlap_filtering_setting'):
         overlap_filtering_setting = config.get('General', 'overlap_filtering_setting')
 
-    pa_HPCdaligner_option = """-v -dal4 -t16 -e.70 -l1000 -s1000"""
+    pa_HPCdaligner_option = """-v -dal4 -t16 -e.70 -l1000 -s100"""
     if config.has_option('General', 'pa_HPCdaligner_option'):
         pa_HPCdaligner_option = config.get('General', 'pa_HPCdaligner_option')
 
@@ -586,14 +621,14 @@ if __name__ == '__main__':
         parameters = {"work_dir": rawread_dir,
                       "config": config}
 
-        make_buid_rdb_task = PypeTask(inputs = {"input_fofn": input_h5_fofn},
+        make_build_rdb_task = PypeTask(inputs = {"input_fofn": input_h5_fofn},
                                       outputs = {"rdb_build_done": rdb_build_done}, 
                                       parameters = parameters,
                                       TaskType = PypeThreadTaskBase)
 
-        buid_rdb_task = make_buid_rdb_task(build_rdb)
+        build_rdb_task = make_build_rdb_task(build_rdb)
 
-        wf.addTasks([buid_rdb_task])
+        wf.addTasks([build_rdb_task])
         wf.refreshTargets([rdb_build_done]) 
         
 
@@ -634,7 +669,7 @@ if __name__ == '__main__':
                    URL = "task://localhost/cns_check" )
         def check_r_cns_task(self):
             with open(fn(self.pread_fofn),  "w") as f:
-                fn_list =  glob.glob("%s/preads/out*.fa" % rawread_dir)
+                fn_list =  glob.glob("%s/preads/out*.fasta" % rawread_dir)
                 fn_list.sort()
                 for fa_fn in fn_list:
                     print >>f, fa_fn
@@ -645,43 +680,28 @@ if __name__ == '__main__':
 
     if config["target"] == "pre-assembly":
         exit(0)
-    
+
+    # build pread database
     if config["input_type"] == "preads":
         if not os.path.exists( "%s/input_preads.fofn" % pread_dir):
             os.system( "cp %s %s/input_preads.fofn" % (os.path.abspath( config["input_fofn_fn"] ), pread_dir) )
         pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
 
-    rdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "rdb_build_done") ) 
-    @PypeTask( inputs = { "pread_fofn": pread_fofn },
-               outputs = { "rdb_build_done": rdb_build_done },
-               parameters = {"config": config, "pread_dir": pread_dir},
-               TaskType = PypeThreadTaskBase,
-               URL = "task://localhost/build_p_rdb")
-    def build_p_rdb_task(self):
-        config = self.parameters["config"]
-        pread_dir = self.parameters["pread_dir"]
-        with open("%s/preads_norm.fasta" % pread_dir, "w") as p_norm:
-            c = 0
-            for fa_fn in open(fn(self.pread_fofn)).readlines():
-                fa_fn = fa_fn.strip()
-                f = FastaReader(fa_fn)
-                for r in f:
-                    if len(r.sequence) < config["length_cutoff_pr"]:
-                        continue
-                    name = r.name
-                    name = name.replace("_","")
-                    print >> p_norm, ">prolog/%d/%d_%d" % ( c, 0, len(r.sequence) )
-                    for i in range(0, len(r.sequence)/80):
-                        print >> p_norm, r.sequence[ i *80 : (i + 1) * 80]
-                    print >> p_norm, r.sequence[(i+1)*80:]
-                    c += 1
-        os.system("cd %s; fasta2DB preads preads_norm.fasta" % pread_dir)
-        os.system("cd %s; DBsplit %s preads" % (pread_dir, config["ovlp_DBsplit_option"]))
-        os.system("cd %s; HPCdaligner %s preads > run_jobs.sh" % (pread_dir, config["ovlp_HPCdaligner_option"]))
-        os.system("cd %s; touch rdb_build_done" % pread_dir)
+    pdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "pdb_build_done") ) 
+    parameters = {"work_dir": pread_dir,
+                  "config": config}
 
-    wf.addTask(build_p_rdb_task)
-    wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs
+    make_build_pdb_task  = PypeTask( inputs = { "pread_fofn": pread_fofn },
+                                    outputs = { "pdb_build_done": pdb_build_done },
+                                    parameters = parameters,
+                                    TaskType = PypeThreadTaskBase,
+                                    URL = "task://localhost/build_pdb")
+    build_pdb_task = make_build_pdb_task(build_pdb)
+
+    wf.addTasks([build_pdb_task])
+    wf.refreshTargets([pdb_build_done]) 
+
+
 
     db_file = makePypeLocalFile(os.path.join( pread_dir, "%s.db" % "preads" ))
     #### run daligner
@@ -689,7 +709,7 @@ if __name__ == '__main__':
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     config["sge_option_da"] = config["sge_option_pda"]
     config["sge_option_la"] = config["sge_option_pla"]
-    daligner_tasks, daligner_out = create_daligner_tasks( pread_dir, "preads", db_file, rdb_build_done, config, pread_aln= True) 
+    daligner_tasks, daligner_out = create_daligner_tasks( pread_dir, "preads", db_file, pdb_build_done, config, pread_aln= True) 
     wf.addTasks(daligner_tasks)
     #wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
 
@@ -729,6 +749,7 @@ if __name__ == '__main__':
                              "pread_dir": pread_dir},
                TaskType = PypeThreadTaskBase,
                URL = "task://localhost/falcon" )
+
     def run_falcon_asm_task(self):
         wd = self.parameters["wd"]
         config = self.parameters["config"]
