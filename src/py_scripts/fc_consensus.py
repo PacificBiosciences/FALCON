@@ -197,6 +197,8 @@ def get_seq_data(config):
                 #yield (seqs, seed_id)
                 #seqs_data.append( (seqs, seed_id) )
                 break
+def format_seq(seq, col):
+    return "\n".join( [ seq[i:(i+col)] for i in xrange(0, len(seq), col) ] )
 
 if __name__ == "__main__":
     import argparse
@@ -218,6 +220,8 @@ if __name__ == "__main__":
                         help='output uncorrected regions too')
     parser.add_argument('--output_multi', action="store_true", default=False,
                         help='output multi correct regions')
+    parser.add_argument('--output_dformat', action="store_true", default=False,
+                        help='output daligner compatible header, only work with --output_multi')
     parser.add_argument('--min_idt', type=float, default=0.70,
                         help='minimum identity of the alignments used for correction')
     parser.add_argument('--edge_tolerance', type=int, default=1000,
@@ -237,6 +241,8 @@ if __name__ == "__main__":
              args.max_n_read, args.min_idt, args.edge_tolerance, args.trim_size
     for res in exe_pool.imap(get_consensus, get_seq_data(config)):  
         cns, seed_id = res
+
+
         if args.output_full == True:
             if len(cns) > 500:
                 print ">"+seed_id+"_f"
@@ -249,8 +255,14 @@ if __name__ == "__main__":
                 seq_i = 0
                 for cns_seq in cns:
                     if len(cns_seq) > 500:
-                        print ">"+seed_id+"_%d" % seq_i
-                        print cns_seq
+                        if args.output_dformat:
+                            if seq_i >= 10:
+                                break
+                            print ">prolog/%s%01d/%d_%d" % (seed_id, seq_i, 0, len(cns_seq))
+                            print format_seq(cns_seq, 80)
+                        else:
+                            print ">"+seed_id+"_%d" % seq_i
+                            print cns_seq
                     seq_i += 1
             else:
                 cns.sort(key = lambda x: len(x))
