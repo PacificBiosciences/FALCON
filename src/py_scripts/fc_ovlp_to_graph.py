@@ -430,10 +430,6 @@ def generate_seq_from_path(sg, seqs, path):
 
     return "".join(subseqs)
 
-def reverse_end( node_id ):
-    node_id, end = node_id.split(":")
-    new_end = "B" if end == "E" else "E"
-    return node_id + ":" + new_end
 
 def reverse_edge( e ):
     e1, e2 = e
