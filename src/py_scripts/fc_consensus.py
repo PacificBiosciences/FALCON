@@ -241,12 +241,13 @@ if __name__ == "__main__":
              args.max_n_read, args.min_idt, args.edge_tolerance, args.trim_size
     for res in exe_pool.imap(get_consensus, get_seq_data(config)):  
         cns, seed_id = res
+        if len(cns) < 500:
+            continue
 
 
         if args.output_full == True:
-            if len(cns) > 500:
-                print ">"+seed_id+"_f"
-                print cns
+            print ">"+seed_id+"_f"
+            print cns
         else:
             cns = good_region.findall(cns)
             if len(cns) == 0:
@@ -254,19 +255,17 @@ if __name__ == "__main__":
             if args.output_multi == True:
                 seq_i = 0
                 for cns_seq in cns:
-                    if len(cns_seq) > 500:
-                        if args.output_dformat:
-                            if seq_i >= 10:
-                                break
-                            print ">prolog/%s%01d/%d_%d" % (seed_id, seq_i, 0, len(cns_seq))
-                            print format_seq(cns_seq, 80)
-                        else:
-                            print ">"+seed_id+"_%d" % seq_i
-                            print cns_seq
+                    if args.output_dformat:
+                        if seq_i >= 10:
+                            break
+                        print ">prolog/%s%01d/%d_%d" % (seed_id, seq_i, 0, len(cns_seq))
+                        print format_seq(cns_seq, 80)
+                    else:
+                        print ">"+seed_id+"_%d" % seq_i
+                        print cns_seq
                     seq_i += 1
             else:
                 cns.sort(key = lambda x: len(x))
-                if len(cns[-1]) > 500:
-                    print ">"+seed_id
-                    print cns[-1]
+                print ">"+seed_id
+                print cns[-1]
 

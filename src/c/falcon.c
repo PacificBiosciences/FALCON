@@ -656,7 +656,14 @@ consensus_data * generate_consensus( char ** input_seq,
         free_kmer_match( kmer_match_ptr);
     }
 
-    consensus = get_cns_from_align_tags( tags_list, aligned_seq_count, strlen(input_seq[0]), min_cov );
+    if (aligned_seq_count > 0) {
+        consensus = get_cns_from_align_tags( tags_list, aligned_seq_count, strlen(input_seq[0]), min_cov );
+    } else {
+        // allocate an empty consensus sequence
+        consensus = calloc( 1, sizeof(consensus_data) );
+        consensus->sequence = calloc( 1, sizeof(char) );
+        consensus->eqv = calloc( 1, sizeof(unsigned int) );
+    }
     //free(consensus);
     free_seq_addr_array(sda_ptr);
     free_seq_array(sa_ptr);
@@ -760,7 +767,14 @@ consensus_data * generate_utg_consensus( char ** input_seq,
         free_alignment(aln);
     }
     free_aln_range(arange);
-    consensus = get_cns_from_align_tags( tags_list, aligned_seq_count, utg_len, 0 );
+    if (aligned_seq_count > 0) {
+        consensus = get_cns_from_align_tags( tags_list, aligned_seq_count, utg_len, 0 );
+    } else {
+        // allocate an empty consensus sequence
+        consensus = calloc( 1, sizeof(consensus_data) );
+        consensus->sequence = calloc( 1, sizeof(char) );
+        consensus->eqv = calloc( 1, sizeof(unsigned int) );
+    }
     //free(consensus);
     for (j=0; j < aligned_seq_count; j++) {
         free_align_tags(tags_list[j]);
