@@ -687,7 +687,7 @@ if __name__ == '__main__':
             os.system( "cp %s %s/input_preads.fofn" % (os.path.abspath( config["input_fofn_fn"] ), pread_dir) )
         pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
 
-    pdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "pdb_build_done") ) 
+    pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "pdb_build_done") ) 
     parameters = {"work_dir": pread_dir,
                   "config": config}
 
