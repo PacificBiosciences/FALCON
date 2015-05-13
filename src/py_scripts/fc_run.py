@@ -140,6 +140,7 @@ def build_rdb(self):
 
 
     with open(script_fn,"w") as script_file:
+        script_file.write("set -e")
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname >> db_build.log\n")
@@ -179,7 +180,8 @@ def run_daligner(self):
     log_path = os.path.join( script_dir, "rj_%s.log" % (job_uid))
 
     script = []
-    script.append( "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix) )
+    script.append( "set -e" )
+    script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
@@ -213,7 +215,8 @@ def run_merge_task(self):
     log_path = os.path.join( script_dir, "rp_%05d.log" % (job_id))
 
     script = []
-    script.append( "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix) )
+    script.append( "set -e" )
+    script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
@@ -256,7 +259,8 @@ def run_consensus_task(self):
         print >> c_script, """fc_consensus.py %s > %s""" % (falcon_sense_option, fn(self.out_file))
 
     script = []
-    script.append( "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix) )
+    script.append( "set -e" )
+    script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
@@ -737,6 +741,7 @@ if __name__ == '__main__':
         script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
         
         script = []
+        script.append( "set -e" )
         script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
         script.append( "cd %s" % pread_dir )
         script.append( "DB2Falcon preads")
