@@ -53,8 +53,8 @@ class AsmGraph(object):
         self.utg_data = {}
         self.ctg_data ={}
         self.utg_to_ctg = {}
-        self.node_to_ctg = set()
-        self.node_to_utg = set()
+        self.node_to_ctg = {}
+        self.node_to_utg = {}
 
         self.load_sg_data(sg_file)
         self.load_utg_data(utg_file)
