@@ -41,6 +41,7 @@ from falcon_kit.multiproc import Pool
 import argparse
 import subprocess as sp
 import shlex
+import argparse
 
 
 def filter_stage1(input_):
@@ -227,30 +228,26 @@ def filter_stage3(input_):
     except (KeyboardInterrupt, SystemExit):
         return
 
-if __name__ == "__main__":
+def parse_args():
     parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')
     parser.add_argument('--n_core', type=int, default=4,
                         help='number of processes used for generating consensus; '
                         '0 for main process only (default=%(default)s)')
     parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
-    parser.add_argument('--db', type=str, help='read db file path')
+    parser.add_argument('--db', type=str, dest='db_fn', help='read db file path')
     parser.add_argument('--max_diff', type=int, help="max difference of 5' and 3' coverage")
     parser.add_argument('--max_cov', type=int, help="max coverage of 5' or 3' coverage")
     parser.add_argument('--min_cov', type=int, help="min coverage of 5' or 3' coverage")
-    parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
-    parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible")
+    parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads (default=%(default)s)")
+    parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible (default=%(default)s)")
+    parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
     args = parser.parse_args()
+    return args
 
-    exe_pool = Pool(args.n_core)
+def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug):
+    exe_pool = Pool(n_core)
 
-    max_diff = args.max_diff
-    max_cov = args.max_cov
-    min_cov = args.min_cov
-    min_len = args.min_len
-    bestn = args.bestn
-    db_fn = args.db
-
-    file_list = open(args.fofn).read().split("\n")
+    file_list = open(fofn).read().split("\n")
     inputs = []
     for fn in file_list:
         if len(fn) != 0:
@@ -280,3 +277,9 @@ if __name__ == "__main__":
         for l in res[1]:
             print " ".join(l)
 
+def main():
+    args = parse_args()
+    fc_ovlp_filter(**vars(args))
+
+if __name__ == "__main__":
+    main()
