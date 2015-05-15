@@ -141,7 +141,7 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
 
 
     with open(script_fn,"w") as script_file:
-        script_file.write("set -e")
+        script_file.write("set -e\n")
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname >> db_build.log\n")
@@ -184,6 +184,7 @@ def build_pdb(self):
     script_fn = os.path.join( work_dir, "prepare_db.sh" )
 
     with open(script_fn,"w") as script_file:
+        script_file.write("set -e\n")
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname >> db_build.log\n")
