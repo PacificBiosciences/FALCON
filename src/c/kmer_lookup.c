@@ -70,7 +70,6 @@ int compare_seq_coor(const void * a, const void * b) {
 
 kmer_lookup * allocate_kmer_lookup ( seq_coor_t size ) {
     kmer_lookup * kl;
-    seq_coor_t i;
 
     //printf("%lu is allocated for kmer lookup\n", size);
     kl = (kmer_lookup *)  malloc( size * sizeof(kmer_lookup) );
@@ -310,10 +309,6 @@ aln_range* find_best_aln_range(kmer_match * km_ptr,
     long int max_k_mer_count;
     long int max_k_mer_bin;
     seq_coor_t cur_start;
-    seq_coor_t cur_pos;
-    seq_coor_t max_start;
-    seq_coor_t max_end;
-    seq_coor_t kmer_dist;
 
     arange = calloc(1 , sizeof(aln_range));
 
