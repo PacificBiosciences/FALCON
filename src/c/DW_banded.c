@@ -93,7 +93,7 @@ d_path_data2 * get_dpath_idx( seq_coor_t d, seq_coor_t k, unsigned long max_idx,
 void print_d_path(  d_path_data2 * base, unsigned long max_idx) {
     unsigned long idx;
     for (idx = 0; idx < max_idx; idx++){
-        printf("dp %ld %ld %ld %ld %ld %ld %ld %ld\n",idx, (base+idx)->d, (base+idx)->k, (base+idx)->x1, (base+idx)->y1, (base+idx)->x2, (base+idx)->y2, (base+idx)->pre_k);
+        printf("dp %ld %d %d %d %d %d %d %d\n",idx, (base+idx)->d, (base+idx)->k, (base+idx)->x1, (base+idx)->y1, (base+idx)->x2, (base+idx)->y2, (base+idx)->pre_k);
     }
 }
 
@@ -169,7 +169,7 @@ alignment * align(char * query_seq, seq_coor_t q_len,
  
         for (k = min_k; k <= max_k;  k += 2) {
 
-            if ( k == min_k || k != max_k && V[ k - 1 + k_offset ] < V[ k + 1 + k_offset] ) {
+            if ( k == min_k || (k != max_k && V[ k - 1 + k_offset ]) < V[ k + 1 + k_offset] ) {
                 pre_k = k + 1;
                 x = V[ k + 1 + k_offset];
             } else {
