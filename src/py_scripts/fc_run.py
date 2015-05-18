@@ -113,6 +113,9 @@ def wait_for_file(filename, task = None, job_name = ""):
         time.sleep(wait_time)
         if os.path.exists(filename):
             fc_run_logger.info( "%s generated. job: %s finished." % (filename, job_name) )
+            if os.path.exists(filename + '.incomplete'):
+                os.unlink(filename) # Tell __call__() that we actually failed.
+                fc_run_logger.info( "%s generated. job: %s is incomplete!" % (filename, job_name) )
             break
 
         if task != None:
@@ -155,6 +158,8 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
 
     with open(script_fn,"w") as script_file:
         script_file.write("set -e\n")
+        script_file.write("touch {rdb_build_done}.incomplete\n".format(rdb_build_done = fn(rdb_build_done)))
+        script_file.write("trap 'touch {rdb_build_done}' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname >> db_build.log\n")
@@ -169,7 +174,7 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
             script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
         script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
         
-        script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
+        script_file.write("\\rm -f {rdb_build_done}.incomplete\n".format(rdb_build_done = fn(rdb_build_done)))
 
     job_name = self.URL.split("/")[-1]
     job_name += "-"+str(uuid.uuid4())[:8]
