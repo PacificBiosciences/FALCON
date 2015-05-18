@@ -88,12 +88,25 @@ def run_script(job_data, job_type = "SGE" ):
                                                script=script_fn)
 
         fc_run_logger.info( "submitting %s for SGE, start job: %s " % (script_fn, job_name) )
-        os.system( sge_cmd )
+        cmd = sge_cmd
+        rc = os.system(cmd)
     elif job_type == "local":
         script_fn = job_data["script_fn"]
         job_name = job_data["job_name"]
-        fc_run_logger.info( "executing %s locally, start job: %s " % (script_fn, job_name) )
-        os.system( "bash %s" % script_fn )
+        fc_run_logger.info( "executing %r locally, start job: %r " % (script_fn, job_name) )
+        cmd = "bash %s" % script_fn
+        rc = os.system(cmd)
+    if rc:
+        msg = "Cmd %r (job %r) returned %d." % (cmd, job_name, rc)
+        fc_run_logger.info(msg)
+        # For non-qsub, this might still help with debugging. But technically
+        # we should not raise here, as a failure should be noticed later.
+        # When we are confident that script failures are handled well,
+        # we can make this optional.
+        raise Exception(msg)
+    else:
+        msg = "Cmd %r (job %r) returned %d" % (cmd, job_name, rc)
+        fc_run_logger.debug(msg)
 
 def wait_for_file(filename, task = None, job_name = ""):
     while 1:
