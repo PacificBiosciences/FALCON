@@ -88,18 +88,34 @@ def run_script(job_data, job_type = "SGE" ):
                                                script=script_fn)
 
         fc_run_logger.info( "submitting %s for SGE, start job: %s " % (script_fn, job_name) )
-        os.system( sge_cmd )
+        cmd = sge_cmd
+        rc = os.system(cmd)
     elif job_type == "local":
         script_fn = job_data["script_fn"]
         job_name = job_data["job_name"]
-        fc_run_logger.info( "executing %s locally, start job: %s " % (script_fn, job_name) )
-        os.system( "bash %s" % script_fn )
+        fc_run_logger.info( "executing %r locally, start job: %r " % (script_fn, job_name) )
+        cmd = "bash %s" % script_fn
+        rc = os.system(cmd)
+    if rc:
+        msg = "Cmd %r (job %r) returned %d." % (cmd, job_name, rc)
+        fc_run_logger.info(msg)
+        # For non-qsub, this might still help with debugging. But technically
+        # we should not raise here, as a failure should be noticed later.
+        # When we are confident that script failures are handled well,
+        # we can make this optional.
+        raise Exception(msg)
+    else:
+        msg = "Cmd %r (job %r) returned %d" % (cmd, job_name, rc)
+        fc_run_logger.debug(msg)
 
 def wait_for_file(filename, task = None, job_name = ""):
     while 1:
         time.sleep(wait_time)
         if os.path.exists(filename):
             fc_run_logger.info( "%s generated. job: %s finished." % (filename, job_name) )
+            if os.path.exists(filename + '.incomplete'):
+                os.unlink(filename) # Tell __call__() that we actually failed.
+                fc_run_logger.info( "%s generated. job: %s is incomplete!" % (filename, job_name) )
             break
 
         if task != None:
@@ -142,6 +158,8 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
 
     with open(script_fn,"w") as script_file:
         script_file.write("set -e\n")
+        script_file.write("touch {rdb_build_done}.incomplete\n".format(rdb_build_done = fn(rdb_build_done)))
+        script_file.write("trap 'touch {rdb_build_done}' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname >> db_build.log\n")
@@ -156,7 +174,7 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
             script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
         script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
         
-        script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
+        script_file.write("\\rm -f {rdb_build_done}.incomplete\n".format(rdb_build_done = fn(rdb_build_done)))
 
     job_name = self.URL.split("/")[-1]
     job_name += "-"+str(uuid.uuid4())[:8]
