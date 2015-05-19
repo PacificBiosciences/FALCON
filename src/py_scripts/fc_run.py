@@ -51,6 +51,7 @@ import time
 import logging
 import logging.config
 import uuid
+import hashlib
 import ConfigParser
 import StringIO
 
@@ -90,23 +91,28 @@ def run_script(job_data, job_type = "SGE" ):
         msg = "Cmd %r (job %r) returned %d" % (cmd, job_name, rc)
         fc_run_logger.debug(msg)
 
-def wait_for_file(filename, task = None, job_name = ""):
+def wait_for_file(filename, task, job_name = ""):
+    """We could be in the thread or sub-process which spawned a qsub job,
+    so we must check for the shutdown_event.
+    """
     while 1:
         time.sleep(wait_time)
-        if os.path.exists(filename):
-            fc_run_logger.info( "%s generated. job: %s finished." % (filename, job_name) )
-            if os.path.exists(filename + '.incomplete'):
-                os.unlink(filename) # Tell __call__() that we actually failed.
-                fc_run_logger.info( "%s generated. job: %s is incomplete!" % (filename, job_name) )
+        # We prefer all jobs to rely on `*done.exit`, but not all do yet. So we check that 1st.
+        exit_fn = filename + '.exit'
+        if os.path.exists(exit_fn):
+            fc_run_logger.info( "%r generated. job: %r exited." % (exit_fn, job_name) )
+            os.unlink(exit_fn) # to allow a restart later, if not done
+            if not os.path.exists(filename):
+                fc_run_logger.warning( "%r is missing. job: %r failed!" % (filename, job_name) )
             break
-
-        if task != None:
-            if task.shutdown_event != None and task.shutdown_event.is_set(): 
-                fc_run_logger.info( "Keyborad Interrupt Detect, %s not finished, deleting the job by `qdel` now " % (job_name) )
-                os.system("qdel %s" % job_name)
-                break
-
-
+        if os.path.exists(filename) and not os.path.exists(exit_fn):
+            # (rechecked exit_fn to avoid race condition)
+            fc_run_logger.info( "%r generated. job: %r finished." % (filename, job_name) )
+            break
+        if task.shutdown_event is not None and task.shutdown_event.is_set():
+            fc_run_logger.warning( "shutdown_event received (Keyborad Interrupt maybe?), %r not finished, deleting the job by `qdel` now..." % (job_name) )
+            os.system("qdel %s" % job_name) # Failure is ok.
+            break
 
 def build_rdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
 
@@ -140,8 +146,7 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
 
     with open(script_fn,"w") as script_file:
         script_file.write("set -e\n")
-        script_file.write("touch {rdb_build_done}.incomplete\n".format(rdb_build_done = fn(rdb_build_done)))
-        script_file.write("trap 'touch {rdb_build_done}' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
+        script_file.write("trap 'touch {rdb_build_done}.exit' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname >> db_build.log\n")
@@ -155,8 +160,7 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
         else:
             script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
         script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
-        
-        script_file.write("\\rm -f {rdb_build_done}.incomplete\n".format(rdb_build_done = fn(rdb_build_done)))
+        script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
 
     job_name = self.URL.split("/")[-1]
     job_name += "-"+str(uuid.uuid4())[:8]
@@ -185,6 +189,7 @@ def build_pdb(self):
 
     with open(script_fn,"w") as script_file:
         script_file.write("set -e\n")
+        script_file.write("trap 'touch {pdb_build_done}.exit' EXIT\n".format(pdb_build_done = fn(pdb_build_done)))
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname >> db_build.log\n")
@@ -208,6 +213,7 @@ def run_daligner(self):
     daligner_cmd = self.parameters["daligner_cmd"]
     job_uid = self.parameters["job_uid"]
     cwd = self.parameters["cwd"]
+    job_done = self.job_done
     config = self.parameters["config"]
     sge_option_da = config["sge_option_da"]
     install_prefix = config["install_prefix"]
@@ -220,14 +226,17 @@ def run_daligner(self):
 
     script = []
     script.append( "set -e" )
+    script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
     script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
-    script.append( "/usr/bin/time "+ daligner_cmd + ( " >> %s 2>&1 " % log_path ) + ( " && touch %s" % fn( self.job_done ) ) )
+    script.append( "/usr/bin/time "+ daligner_cmd + ( " >> %s 2>&1 " % log_path ) )
 
     for p_id in xrange( 1, nblock+1 ):
         script.append( """ for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do ln -sf $f ../m_%05d; done """  % (db_prefix, p_id, db_prefix, p_id) )
+
+    script.append( "touch {job_done}".format(job_done = fn(job_done)) )
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
@@ -239,12 +248,13 @@ def run_daligner(self):
                 "sge_option": sge_option_da,
                 "script_fn": script_fn }
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file( fn( self.job_done ), task=self, job_name=job_name )
+    wait_for_file( fn( job_done ), task=self, job_name=job_name )
 
 def run_merge_task(self):
     p_script_fn = self.parameters["merge_script"]
     job_id = self.parameters["job_id"]
     cwd = self.parameters["cwd"]
+    job_done = self.job_done
     config = self.parameters["config"]
     sge_option_la = config["sge_option_la"]
     install_prefix = config["install_prefix"]
@@ -255,11 +265,13 @@ def run_merge_task(self):
 
     script = []
     script.append( "set -e" )
+    script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
     script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
     script.append( ("/usr/bin/time bash %s " % p_script_fn)  + ( " >> %s 2>&1" % log_path ) + ( " && touch %s" % fn( self.job_done ) ) )
+    script.append( "touch {job_done}".format(job_done = fn(job_done)) )
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
@@ -271,7 +283,7 @@ def run_merge_task(self):
                 "sge_option": sge_option_la,
                 "script_fn": script_fn }
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file( fn( self.job_done ), task=self, job_name=job_name )
+    wait_for_file( fn( job_done ), task=self, job_name=job_name )
 
 def run_consensus_task(self):
     job_id = self.parameters["job_id"]
@@ -280,6 +292,7 @@ def run_consensus_task(self):
     sge_option_cns = config["sge_option_cns"]
     install_prefix = config["install_prefix"]
     script_dir = os.path.join( cwd )
+    job_done_fn = os.path.join( cwd, "c_%05d_done" % job_id )
     script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
     log_path = os.path.join( script_dir, "c_%05d.log" % (job_id))
     prefix = self.parameters["prefix"]
@@ -287,6 +300,8 @@ def run_consensus_task(self):
     length_cutoff = config["length_cutoff"]
 
     with open( os.path.join(cwd, "cp_%05d.sh" % job_id), "w") as c_script:
+        print >> c_script, "set -e"
+        print >> c_script, "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done_fn)
         print >> c_script, "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix)
         print >> c_script, "cd .."
         if config["falcon_sense_skip_contained"] == True:
@@ -294,6 +309,7 @@ def run_consensus_task(self):
         else:
             print >> c_script, """LA4Falcon -H%d -fo %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
         print >> c_script, """fc_consensus.py %s > %s""" % (falcon_sense_option, fn(self.out_file))
+        print >> c_script, "touch {job_done}".format(job_done = job_done_fn)
 
     script = []
     script.append( "set -e" )
@@ -301,7 +317,7 @@ def run_consensus_task(self):
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
-    script.append( ("/usr/bin/time bash cp_%05d.sh " % job_id )  + ( " >> %s 2>&1 " % log_path ) + ( " && touch c_%05d_done" % job_id  ) )
+    script.append( ("/usr/bin/time bash cp_%05d.sh " % job_id )  + ( " >> %s 2>&1 " % log_path ) )
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
@@ -313,12 +329,10 @@ def run_consensus_task(self):
                 "sge_option": sge_option_cns,
                 "script_fn": script_fn }
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file( os.path.join(cwd,"c_%05d_done" % job_id) , task=self, job_name=job_name )
+    wait_for_file( job_done_fn, task=self, job_name=job_name )
 
 
 def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
-
-    import hashlib
     job_id = 0
     tasks = []
     tasks_out = {}
@@ -352,7 +366,10 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
                     os.makedirs(os.path.join( wd, "./job_%s" % job_uid))
                 except OSError:
                     pass
-                os.system("cd %s/job_%s;ln -sf ../.%s.bps .; ln -sf ../.%s.idx .; ln -sf ../%s.db ." % (wd, job_uid, db_prefix, db_prefix, db_prefix) )
+                call = "cd %s/job_%s;ln -sf ../.%s.bps .; ln -sf ../.%s.idx .; ln -sf ../%s.db ." % (wd, job_uid, db_prefix, db_prefix, db_prefix)
+                rc = os.system(call)
+                if rc:
+                    raise Exception("Failure in system call: %r -> %d" %(call, rc))
                 job_done = makePypeLocalFile(os.path.abspath( "%s/job_%s/job_%s_done" % (wd, job_uid, job_uid)  ))
                 if pread_aln == True:
                     l[0] = "daligner_p"
@@ -367,7 +384,7 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
                                                parameters = parameters,
                                                TaskType = PypeThreadTaskBase,
                                                URL = "task://localhost/d_%s_%s" % (job_uid, db_prefix) )
-                daligner_task = make_daligner_task ( run_daligner )
+                daligner_task = make_daligner_task( run_daligner )
                 tasks.append( daligner_task )
                 tasks_out[ "ajob_%s" % job_uid ] = job_done
                 job_id += 1
@@ -426,14 +443,14 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
         except OSError:
             pass
 
-        with open("%s/m_%05d/m_%05d.sh" % (wd, p_id, p_id), "w") as merge_script:
+        merge_script_file = os.path.abspath( "%s/m_%05d/m_%05d.sh" % (wd, p_id, p_id) )
+        with open(merge_script_file, "w") as merge_script:
             #print >> merge_script, """for f in `find .. -wholename "*job*/%s.%d.%s.*.*.las"`; do ln -sf $f .; done""" % (db_prefix, p_id, db_prefix)
             for l in s_data:
                 print >> merge_script, l
             print >> merge_script, "ln -sf ../m_%05d/%s.%d.las ../las_files" % (p_id, db_prefix, p_id) 
             print >> merge_script, "ln -sf ./m_%05d/%s.%d.las .. " % (p_id, db_prefix, p_id) 
             
-        merge_script_file = os.path.abspath( "%s/m_%05d/m_%05d.sh" % (wd, p_id, p_id) )
         job_done = makePypeLocalFile(os.path.abspath( "%s/m_%05d/m_%05d_done" % (wd, p_id, p_id)  ))
         parameters =  {"merge_script": merge_script_file, 
                        "cwd": os.path.join(wd, "m_%05d" % p_id),
@@ -821,6 +838,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
         
         script = []
         script.append( "set -e" )
+        script.append("trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done))
         script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
         script.append( "cd %s" % pread_dir )
         script.append( "DB2Falcon preads")
@@ -834,7 +852,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
         script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
         script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr)
         script.append( """fc_graph_to_contig.py""" )
-        script.append( """touch %s\n""" % fn(self.falcon_asm_done))
+        script.append( """touch %s""" % fn(self.falcon_asm_done))
 
         with open(script_fn, "w") as script_file:
             script_file.write("\n".join(script))
