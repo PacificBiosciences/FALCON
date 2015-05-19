@@ -133,7 +133,7 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
 
 
 
-    script_fn = os.path.join( work_dir, "prepare_db.sh" )
+    script_fn = os.path.join( work_dir, "prepare_rdb.sh" )
     
     last_block = 1
     new_db = True
@@ -188,7 +188,7 @@ def build_pdb(self):
     ovlp_DBsplit_option = config["ovlp_DBsplit_option"]
 
 
-    script_fn = os.path.join( work_dir, "prepare_db.sh" )
+    script_fn = os.path.join( work_dir, "prepare_pdb.sh" )
 
     with open(script_fn,"w") as script_file:
         script_file.write("set -e\n")
