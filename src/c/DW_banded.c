@@ -169,7 +169,7 @@ alignment * align(char * query_seq, seq_coor_t q_len,
  
         for (k = min_k; k <= max_k;  k += 2) {
 
-            if ( k == min_k || k != max_k && (V[ k - 1 + k_offset ] < V[ k + 1 + k_offset]) ) {
+            if ( (k == min_k) || (k != max_k) && (V[ k - 1 + k_offset ] < V[ k + 1 + k_offset]) ) {
                 pre_k = k + 1;
                 x = V[ k + 1 + k_offset];
             } else {
