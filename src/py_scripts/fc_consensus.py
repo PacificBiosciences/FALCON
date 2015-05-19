@@ -255,6 +255,8 @@ if __name__ == "__main__":
             if args.output_multi == True:
                 seq_i = 0
                 for cns_seq in cns:
+                    if len(cns_seq) < 500:
+                        continue
                     if args.output_dformat:
                         if seq_i >= 10:
                             break
