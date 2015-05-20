@@ -110,8 +110,11 @@ def wait_for_file(filename, task, job_name = ""):
             fc_run_logger.info( "%r generated. job: %r finished." % (filename, job_name) )
             break
         if task.shutdown_event is not None and task.shutdown_event.is_set():
-            fc_run_logger.warning( "shutdown_event received (Keyborad Interrupt maybe?), %r not finished, deleting the job by `qdel` now..." % (job_name) )
-            os.system("qdel %s" % job_name) # Failure is ok.
+            fc_run_logger.warning( "shutdown_event received (Keyboard Interrupt maybe?), %r not finished."
+                % (job_name) )
+            if job_type == "SGE":
+                fc_run_logger.info( "deleting the job by `qdel` now..." )
+                os.system("qdel %s" % job_name) # Failure is ok.
             break
 
 def build_rdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
@@ -478,6 +481,7 @@ def parse_config(config_fn):
     return config
     
 def get_config(config):
+    global job_type  # TODO: Stop using global for wait_for_file().
     job_type = "SGE"
     if config.has_option('General', 'job_type'):
         job_type = config.get('General', 'job_type')
