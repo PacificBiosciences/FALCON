@@ -14,7 +14,7 @@ def filter_stats(input_):
         q_id = None
         rtn_data = []
         q_l = 0
-        for l in sp.check_output(shlex.split("LA4Falcon -mo %s" % fn)).splitlines():
+        for l in sp.check_output(shlex.split("LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn)).splitlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
