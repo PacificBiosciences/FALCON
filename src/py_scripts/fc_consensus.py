@@ -38,9 +38,11 @@
 #################################################################################$$
 
 from ctypes import *
-import sys
-from multiprocessing import Pool
+from falcon_kit.multiproc import Pool
+import argparse
 import os
+import re
+import sys
 import falcon_kit
 
 module_path = falcon_kit.__path__[0]
@@ -201,11 +203,10 @@ def format_seq(seq, col):
     return "\n".join( [ seq[i:(i+col)] for i in xrange(0, len(seq), col) ] )
 
 if __name__ == "__main__":
-    import argparse
-    import re
     parser = argparse.ArgumentParser(description='a simple multi-processor consensus sequence generator')
     parser.add_argument('--n_core', type=int, default=24,
-                        help='number of processes used for generating consensus')
+                        help='number of processes used for generating consensus; '
+                        '0 for main process only (default=%(default)s)')
     parser.add_argument('--local_match_count_window', type=int, default=12,
                         help='local match window size (obsoleted, no effect)')
     parser.add_argument('--local_match_count_threshold', type=int, default=6,
