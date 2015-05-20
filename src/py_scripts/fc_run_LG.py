@@ -418,7 +418,7 @@ def get_config(config_fn):
 
     import ConfigParser
 
-    config = ConfigParser.RawConfigParser()
+    config = ConfigParser.ConfigParser()
 
     config.read(config_fn)
     
