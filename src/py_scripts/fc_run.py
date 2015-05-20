@@ -55,7 +55,7 @@ import uuid
 wait_time = 5
 pypeflow_log = 0
 if pypeflow_log:
-    pypeflow_logger = logging.getLogger("pypeflow.common")
+    pypeflow_logger = logging.getLogger("pypeflow")
     #pypeflow_logger.setLevel(logging.INFO)
     pypeflow_logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
