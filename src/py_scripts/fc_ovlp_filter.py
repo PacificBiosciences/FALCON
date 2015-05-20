@@ -37,7 +37,8 @@
 # SUCH DAMAGE.
 #################################################################################$$
 
-from multiprocessing import Pool
+from falcon_kit.multiproc import Pool
+import argparse
 import subprocess as sp
 import shlex
 
@@ -227,11 +228,10 @@ def filter_stage3(input_):
         return
 
 if __name__ == "__main__":
-    import argparse
-    import re
     parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')
     parser.add_argument('--n_core', type=int, default=4,
-                        help='number of processes used for generating consensus')
+                        help='number of processes used for generating consensus; '
+                        '0 for main process only (default=%(default)s)')
     parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
     parser.add_argument('--db', type=str, help='read db file path')
     parser.add_argument('--max_diff', type=int, help="max difference of 5' and 3' coverage")
@@ -240,6 +240,7 @@ if __name__ == "__main__":
     parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
     parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible")
     args = parser.parse_args()
+
     exe_pool = Pool(args.n_core)
 
     max_diff = args.max_diff
