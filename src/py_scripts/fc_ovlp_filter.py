@@ -42,7 +42,27 @@ import argparse
 import subprocess as sp
 import shlex
 import argparse
+import sys
 
+LOG = sys.stderr.write
+
+def write_nothing(*args):
+    """
+    To use,
+      LOG = noop
+    """
+
+def syscall(cmd):
+    """Return stdout.
+    Raise if empty.
+    Raise on non-zero exit-code.
+    """
+    LOG('$ %s\n' %cmd)
+    output = sp.check_output(shlex.split(cmd))
+    if not output:
+        msg = '%r failed to produce any output.' %cmd
+        LOG('WARNING: %s\n' %msg)
+    return output
 
 def filter_stage1(input_):
     db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len = input_
@@ -54,7 +74,8 @@ def filter_stage1(input_):
         all_over_len = 0.0
         overlap_data = {"5p":0, "3p":0}
         q_id = None
-        for l in sp.check_output(shlex.split("LA4Falcon -mo %s %s" % (db_fn, fn) ) ).splitlines():
+        cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
+        for l in syscall(cmd).splitlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -115,7 +136,8 @@ def filter_stage2(input_):
     db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set = input_
     try:
         contained_id = set()
-        for l in sp.check_output(shlex.split("LA4Falcon -mo %s %s" % (db_fn, fn))).splitlines():
+        cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
+        for l in syscall(cmd).splitlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -147,7 +169,8 @@ def filter_stage3(input_):
     try:
         ovlp_output = []
         current_q_id = None
-        for l in sp.check_output(shlex.split("LA4Falcon -mo %s %s" % (db_fn, fn) )).splitlines():
+        cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
+        for l in syscall(cmd).splitlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -241,10 +264,14 @@ def parse_args():
     parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads (default=%(default)s)")
     parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible (default=%(default)s)")
     parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
+    parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
     args = parser.parse_args()
     return args
 
-def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug):
+def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent):
+    global LOG
+    if silent:
+        LOG = write_nothing
     exe_pool = Pool(n_core)
 
     file_list = open(fofn).read().split("\n")
