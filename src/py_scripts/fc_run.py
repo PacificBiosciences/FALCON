@@ -77,7 +77,7 @@ def run_script(job_data, job_type = "SGE" ):
         script_fn = job_data["script_fn"]
         job_name = job_data["job_name"]
         fc_run_logger.info( "executing %r locally, start job: %r " % (script_fn, job_name) )
-        cmd = "bash %s" % script_fn
+        cmd = "bash {script_fn} 1> {script_fn}.log 2>&1".format(script_fn=script_fn)
         rc = os.system(cmd)
     if rc:
         msg = "Cmd %r (job %r) returned %d." % (cmd, job_name, rc)
