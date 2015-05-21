@@ -148,7 +148,7 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
 
 
     with open(script_fn,"w") as script_file:
-        script_file.write("set -e\n")
+        script_file.write("set -ex\n")
         script_file.write("trap 'touch {rdb_build_done}.exit' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
@@ -191,7 +191,7 @@ def build_pdb(self):
     script_fn = os.path.join( work_dir, "prepare_pdb.sh" )
 
     with open(script_fn,"w") as script_file:
-        script_file.write("set -e\n")
+        script_file.write("set -ex\n")
         script_file.write("trap 'touch {pdb_build_done}.exit' EXIT\n".format(pdb_build_done = fn(pdb_build_done)))
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
@@ -228,7 +228,7 @@ def run_daligner(self):
     log_path = os.path.join( script_dir, "rj_%s.log" % (job_uid))
 
     script = []
-    script.append( "set -e" )
+    script.append( "set -ex" )
     script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
     script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
@@ -267,7 +267,7 @@ def run_merge_task(self):
     log_path = os.path.join( script_dir, "rp_%05d.log" % (job_id))
 
     script = []
-    script.append( "set -e" )
+    script.append( "set -ex" )
     script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
     script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
@@ -303,7 +303,7 @@ def run_consensus_task(self):
     length_cutoff = config["length_cutoff"]
 
     with open( os.path.join(cwd, "cp_%05d.sh" % job_id), "w") as c_script:
-        print >> c_script, "set -e"
+        print >> c_script, "set -ex"
         print >> c_script, "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done_fn)
         print >> c_script, "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix)
         print >> c_script, "cd .."
@@ -315,7 +315,7 @@ def run_consensus_task(self):
         print >> c_script, "touch {job_done}".format(job_done = job_done_fn)
 
     script = []
-    script.append( "set -e" )
+    script.append( "set -ex" )
     script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
@@ -842,7 +842,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
         script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
         
         script = []
-        script.append( "set -e" )
+        script.append( "set -ex" )
         script.append("trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done))
         script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
         script.append( "cd %s" % pread_dir )
