@@ -49,31 +49,13 @@ import os
 import re
 import time
 import logging
+import logging.config
 import uuid
+import ConfigParser
+import StringIO
 
 
 wait_time = 5
-pypeflow_log = 0
-if pypeflow_log:
-    pypeflow_logger = logging.getLogger("pypeflow")
-    #pypeflow_logger.setLevel(logging.INFO)
-    pypeflow_logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh = logging.FileHandler('pypeflow.log')
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(formatter)
-    pypeflow_logger.addHandler(fh)
-
-fc_run_log = 1
-if fc_run_log:
-    fc_run_logger = logging.getLogger("fc_run")
-    #fc_run_logger.setLevel(logging.INFO)
-    fc_run_logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh = logging.FileHandler('fc_run.log')
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(formatter)
-    fc_run_logger.addHandler(fh)
 
 def run_script(job_data, job_type = "SGE" ):
     if job_type == "SGE":
@@ -489,14 +471,12 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
 
 
 
-def get_config(config_fn):
-
-    import ConfigParser
-
+def parse_config(config_fn):
     config = ConfigParser.ConfigParser()
-
     config.read(config_fn)
+    return config
     
+def get_config(config):
     job_type = "SGE"
     if config.has_option('General', 'job_type'):
         job_type = config.get('General', 'job_type')
@@ -612,14 +592,73 @@ def get_config(config_fn):
     return hgap_config
 
 
-if __name__ == '__main__':
+default_logging_config = """
+[loggers]
+keys=root,pypeflow
 
-    if len(sys.argv) < 2:
-        print "you need to specify a configuration file"
-        print "usage: fc_run.py fc_run.cfg"
-        sys.exit(1)
-    
-    fc_run_logger.info( "fc_run started with configuration %s", sys.argv[1] ) 
+[handlers]
+keys=stream,file_pypeflow,file_fc
+
+[formatters]
+keys=form01
+
+[logger_root]
+level=NOTSET
+handlers=stream
+
+[logger_pypeflow]
+level=WARNING
+handlers=stream
+qualname=pypeflow
+propagate=0
+
+[logger_fc_run]
+level=INFO
+handlers=stream
+qualname=fc_run
+propagate=0
+
+[handler_stream]
+class=StreamHandler
+level=NOTSET
+formatter=form01
+args=(sys.stderr,)
+
+[handler_file_pypeflow]
+class=FileHandler
+level=NOTSET
+formatter=form01
+args=('pypeflow.log',)
+
+[handler_file_fc]
+class=FileHandler
+level=NOTSET
+formatter=form01
+args=('fc_run.log',)
+
+[formatter_form01]
+format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+"""
+
+def setup_logger(logging_config_fn):
+    """See https://docs.python.org/2/library/logging.config.html
+    """
+    if logging_config_fn:
+        logger_fileobj = open(logging_config_fn)
+    else:
+        logger_fileobj = StringIO.StringIO(default_logging_config)
+    defaults = {
+    }
+    logging.config.fileConfig(logger_fileobj, defaults=defaults, disable_existing_loggers=False)
+
+    global fc_run_logger
+    fc_run_logger = logging.getLogger("fc_run")
+
+def main(prog_name, input_config_fn, logger_config_fn=None):
+    setup_logger(logger_config_fn)
+
+    fc_run_logger.info( "fc_run started with configuration %s", input_config_fn ) 
+    config = get_config(parse_config(input_config_fn))
     rawread_dir = os.path.abspath("./0-rawreads")
     pread_dir = os.path.abspath("./1-preads_ovl")
     falcon_asm_dir  = os.path.abspath("./2-asm-falcon")
@@ -632,7 +671,6 @@ if __name__ == '__main__':
         except:
             pass
 
-    config = get_config(sys.argv[1])
     concurrent_jobs = config["pa_concurrent_jobs"]
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     wf = PypeThreadWorkflow()
@@ -812,3 +850,13 @@ if __name__ == '__main__':
     
     wf.addTask( run_falcon_asm_task )
     wf.refreshTargets(updateFreq = wait_time) #all            
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        sys.stderr.write( """
+you need to specify a configuration file"
+usage: fc_run.py fc_run.cfg [logging.cfg]
+""")
+        sys.exit(2)
+    main(*sys.argv)
