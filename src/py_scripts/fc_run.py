@@ -270,7 +270,7 @@ def run_merge_task(self):
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
-    script.append( ("/usr/bin/time bash %s " % p_script_fn)  + ( " >> %s 2>&1" % log_path ) + ( " && touch %s" % fn( self.job_done ) ) )
+    script.append( ("/usr/bin/time bash %s " % p_script_fn)  + ( " >> %s 2>&1" % log_path ) )
     script.append( "touch {job_done}".format(job_done = fn(job_done)) )
 
     with open(script_fn,"w") as script_file:
@@ -735,7 +735,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
         wf.addTasks( merge_tasks )
         if config["target"] == "overlapping":
             wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
-            exit(0)
+            sys.exit(0)
         wf.addTasks( consensus_tasks )
 
         r_cns_done = makePypeLocalFile( os.path.join( rawread_dir, "cns_done") )
@@ -757,7 +757,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
         wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs
 
     if config["target"] == "pre-assembly":
-        exit(0)
+        sys.exit(0)
 
     # build pread database
     if config["input_type"] == "preads":
