@@ -611,7 +611,7 @@ def get_config(config):
 
 default_logging_config = """
 [loggers]
-keys=root,pypeflow
+keys=root,pypeflow,fc_run
 
 [handlers]
 keys=stream,file_pypeflow,file_fc
@@ -624,32 +624,32 @@ level=NOTSET
 handlers=stream
 
 [logger_pypeflow]
-level=WARNING
+level=NOTSET
 handlers=stream
 qualname=pypeflow
-propagate=0
+propagate=1
 
 [logger_fc_run]
-level=INFO
+level=NOTSET
 handlers=stream
 qualname=fc_run
-propagate=0
+propagate=1
 
 [handler_stream]
 class=StreamHandler
-level=NOTSET
+level=INFO
 formatter=form01
 args=(sys.stderr,)
 
 [handler_file_pypeflow]
 class=FileHandler
-level=NOTSET
+level=DEBUG
 formatter=form01
 args=('pypeflow.log',)
 
 [handler_file_fc]
 class=FileHandler
-level=NOTSET
+level=DEBUG
 formatter=form01
 args=('fc_run.log',)
 
