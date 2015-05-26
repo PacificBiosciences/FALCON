@@ -655,6 +655,21 @@ def setup_logger(logging_config_fn):
     global fc_run_logger
     fc_run_logger = logging.getLogger("fc_run")
 
+def make_fofn_abs(i_fofn_fn, new_dir, new_base_fn=None):
+    """Copy i_fofn_fn to new_dir, but with relative filenames expanded for
+    CWD (*not* new_dir).
+    """
+    o_fofn_fn = os.path.join(new_dir, (new_base_fn if new_base_fn else os.path.basename(i_fofn_fn)))
+    assert os.path.abspath(o_fofn_fn) != os.path.abspath(i_fofn_fn)
+    make_dirs(new_dir)
+    with open(i_fofn_fn) as ifs, open(o_fofn_fn, 'w') as ofs:
+        for line in ifs:
+            fn = line.strip()
+            if not fn: continue
+            abs_fn = os.path.abspath(fn)
+            ofs.write('%s\n' %abs_fn)
+    return o_fofn_fn
+
 def make_dirs(d):
     if not os.path.isdir(d):
         os.makedirs(d)
@@ -672,6 +687,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
 
     for d in (rawread_dir, pread_dir, falcon_asm_dir, script_dir, sge_log_dir):
         make_dirs(d)
+    input_fofn_fn = make_fofn_abs(config["input_fofn_fn"], rawread_dir)
 
     concurrent_jobs = config["pa_concurrent_jobs"]
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
@@ -679,7 +695,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
 
     if config["input_type"] == "raw":
         #### import sequences into daligner DB
-        input_h5_fofn = makePypeLocalFile( os.path.abspath( config["input_fofn_fn"] ) )
+        input_h5_fofn = makePypeLocalFile(input_fofn_fn)
         rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") ) 
         parameters = {"work_dir": rawread_dir,
                       "config": config}
@@ -747,7 +763,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
     # build pread database
     if config["input_type"] == "preads":
         if not os.path.exists( "%s/input_preads.fofn" % pread_dir):
-            os.system( "cp %s %s/input_preads.fofn" % (os.path.abspath( config["input_fofn_fn"] ), pread_dir) )
+            make_fofn_abs(input_fofn_fn, pread_dir, 'input_preads.fofn')
         pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
 
     pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "pdb_build_done") ) 
