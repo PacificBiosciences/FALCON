@@ -349,11 +349,7 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
                     break
 
     for pid in xrange(1, nblock + 1):
-        try:
-            os.makedirs("%s/m_%05d" % (wd, pid))
-        except OSError:
-            pass
-
+        make_dirs("%s/m_%05d" % (wd, pid))
 
     with open(os.path.join(wd,  "run_jobs.sh")) as f :
         for l in f :
@@ -362,10 +358,7 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
             job_uid = job_uid[:8]
             l = l.split()
             if l[0] == "daligner":
-                try:
-                    os.makedirs(os.path.join( wd, "./job_%s" % job_uid))
-                except OSError:
-                    pass
+                make_dirs(os.path.join( wd, "./job_%s" % job_uid))
                 call = "cd %s/job_%s;ln -sf ../.%s.bps .; ln -sf ../.%s.idx .; ln -sf ../%s.db ." % (wd, job_uid, db_prefix, db_prefix, db_prefix)
                 rc = os.system(call)
                 if rc:
@@ -430,18 +423,9 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
     for p_id in mjob_data:
         s_data = mjob_data[p_id]
 
-        try:
-            os.makedirs("%s/m_%05d" % (wd, p_id))
-        except OSError:
-            pass
-        try:
-            os.makedirs("%s/preads" % (wd) )
-        except OSError:
-            pass
-        try:
-            os.makedirs("%s/las_files" % (wd) )
-        except OSError:
-            pass
+        make_dirs("%s/m_%05d" % (wd, p_id))
+        make_dirs("%s/preads" % (wd) )
+        make_dirs("%s/las_files" % (wd) )
 
         merge_script_file = os.path.abspath( "%s/m_%05d/m_%05d.sh" % (wd, p_id, p_id) )
         with open(merge_script_file, "w") as merge_script:
@@ -671,6 +655,10 @@ def setup_logger(logging_config_fn):
     global fc_run_logger
     fc_run_logger = logging.getLogger("fc_run")
 
+def make_dirs(d):
+    if not os.path.isdir(d):
+        os.makedirs(d)
+
 def main(prog_name, input_config_fn, logger_config_fn=None):
     setup_logger(logger_config_fn)
 
@@ -683,10 +671,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
     sge_log_dir = os.path.abspath("./sge_log")
 
     for d in (rawread_dir, pread_dir, falcon_asm_dir, script_dir, sge_log_dir):
-        try:
-            os.makedirs(d)
-        except:
-            pass
+        make_dirs(d)
 
     concurrent_jobs = config["pa_concurrent_jobs"]
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
