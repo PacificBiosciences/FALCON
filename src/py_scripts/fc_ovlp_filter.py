@@ -41,7 +41,28 @@ from falcon_kit.multiproc import Pool
 import argparse
 import subprocess as sp
 import shlex
+import argparse
+import sys
 
+LOG = sys.stderr.write
+
+def write_nothing(*args):
+    """
+    To use,
+      LOG = noop
+    """
+
+def syscall(cmd):
+    """Return stdout.
+    Raise if empty.
+    Raise on non-zero exit-code.
+    """
+    LOG('$ %s\n' %cmd)
+    output = sp.check_output(shlex.split(cmd))
+    if not output:
+        msg = '%r failed to produce any output.' %cmd
+        LOG('WARNING: %s\n' %msg)
+    return output
 
 def filter_stage1(input_):
     db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len = input_
@@ -53,7 +74,8 @@ def filter_stage1(input_):
         all_over_len = 0.0
         overlap_data = {"5p":0, "3p":0}
         q_id = None
-        for l in sp.check_output(shlex.split("LA4Falcon -mo %s %s" % (db_fn, fn) ) ).splitlines():
+        cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
+        for l in syscall(cmd).splitlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -114,7 +136,8 @@ def filter_stage2(input_):
     db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set = input_
     try:
         contained_id = set()
-        for l in sp.check_output(shlex.split("LA4Falcon -mo %s %s" % (db_fn, fn))).splitlines():
+        cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
+        for l in syscall(cmd).splitlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -146,7 +169,8 @@ def filter_stage3(input_):
     try:
         ovlp_output = []
         current_q_id = None
-        for l in sp.check_output(shlex.split("LA4Falcon -mo %s %s" % (db_fn, fn) )).splitlines():
+        cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
+        for l in syscall(cmd).splitlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -227,30 +251,30 @@ def filter_stage3(input_):
     except (KeyboardInterrupt, SystemExit):
         return
 
-if __name__ == "__main__":
+def parse_args():
     parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')
     parser.add_argument('--n_core', type=int, default=4,
                         help='number of processes used for generating consensus; '
                         '0 for main process only (default=%(default)s)')
     parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
-    parser.add_argument('--db', type=str, help='read db file path')
+    parser.add_argument('--db', type=str, dest='db_fn', help='read db file path')
     parser.add_argument('--max_diff', type=int, help="max difference of 5' and 3' coverage")
     parser.add_argument('--max_cov', type=int, help="max coverage of 5' or 3' coverage")
     parser.add_argument('--min_cov', type=int, help="min coverage of 5' or 3' coverage")
-    parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
-    parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible")
+    parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads (default=%(default)s)")
+    parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible (default=%(default)s)")
+    parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
+    parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
     args = parser.parse_args()
+    return args
 
-    exe_pool = Pool(args.n_core)
+def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent):
+    global LOG
+    if silent:
+        LOG = write_nothing
+    exe_pool = Pool(n_core)
 
-    max_diff = args.max_diff
-    max_cov = args.max_cov
-    min_cov = args.min_cov
-    min_len = args.min_len
-    bestn = args.bestn
-    db_fn = args.db
-
-    file_list = open(args.fofn).read().split("\n")
+    file_list = open(fofn).read().split("\n")
     inputs = []
     for fn in file_list:
         if len(fn) != 0:
@@ -280,3 +304,9 @@ if __name__ == "__main__":
         for l in res[1]:
             print " ".join(l)
 
+def main():
+    args = parse_args()
+    fc_ovlp_filter(**vars(args))
+
+if __name__ == "__main__":
+    main()
