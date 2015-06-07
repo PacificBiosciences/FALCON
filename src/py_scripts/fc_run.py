@@ -659,20 +659,21 @@ def setup_logger(logging_config_fn):
     global fc_run_logger
     fc_run_logger = logging.getLogger("fc_run")
 
-def make_fofn_abs(i_fofn_fn, new_dir, new_base_fn=None):
-    """Copy i_fofn_fn to new_dir, but with relative filenames expanded for
-    CWD (*not* new_dir).
+def make_fofn_abs(self):
+    """Copy i_fofn to o_fofn, but with relative filenames expanded for CWD.
     """
-    o_fofn_fn = os.path.join(new_dir, (new_base_fn if new_base_fn else os.path.basename(i_fofn_fn)))
+    i_fofn_fn = fn(self.i_fofn)
+    o_fofn_fn = fn(self.o_fofn)
+    #cwd = self.parameters["cwd"]
+
     assert os.path.abspath(o_fofn_fn) != os.path.abspath(i_fofn_fn)
-    make_dirs(new_dir)
     with open(i_fofn_fn) as ifs, open(o_fofn_fn, 'w') as ofs:
         for line in ifs:
-            fn = line.strip()
-            if not fn: continue
-            abs_fn = os.path.abspath(fn)
-            ofs.write('%s\n' %abs_fn)
-    return o_fofn_fn
+            ifn = line.strip()
+            if not ifn: continue
+            abs_ifn = os.path.abspath(ifn)
+            ofs.write('%s\n' %abs_ifn)
+    #return o_fofn_fn
 
 def make_dirs(d):
     if not os.path.isdir(d):
@@ -691,20 +692,29 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
 
     for d in (rawread_dir, pread_dir, falcon_asm_dir, script_dir, sge_log_dir):
         make_dirs(d)
-    input_fofn_fn = make_fofn_abs(config["input_fofn_fn"], rawread_dir)
 
     concurrent_jobs = config["pa_concurrent_jobs"]
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     wf = PypeThreadWorkflow()
 
+    input_fofn_plf = makePypeLocalFile(os.path.basename(config["input_fofn_fn"]))
+    rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, os.path.basename(config["input_fofn_fn"])))
+    make_fofn_abs_task = PypeTask(inputs = {"i_fofn": input_fofn_plf},
+                                  outputs = {"o_fofn": rawread_fofn_plf},
+                                  parameters = {},
+                                  TaskType = PypeThreadTaskBase)
+    fofn_abs_task = make_fofn_abs_task(make_fofn_abs)
+    wf.addTasks([fofn_abs_task])
+    wf.refreshTargets([fofn_abs_task])
+
     if config["input_type"] == "raw":
         #### import sequences into daligner DB
-        input_h5_fofn = makePypeLocalFile(input_fofn_fn)
+        sleep_done = makePypeLocalFile( os.path.join( rawread_dir, "sleep_done") )
         rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") ) 
         parameters = {"work_dir": rawread_dir,
                       "config": config}
 
-        make_build_rdb_task = PypeTask(inputs = {"input_fofn": input_h5_fofn},
+        make_build_rdb_task = PypeTask(inputs = {"input_fofn": rawread_fofn_plf},
                                       outputs = {"rdb_build_done": rdb_build_done}, 
                                       parameters = parameters,
                                       TaskType = PypeThreadTaskBase)
@@ -766,9 +776,14 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
 
     # build pread database
     if config["input_type"] == "preads":
-        if not os.path.exists( "%s/input_preads.fofn" % pread_dir):
-            make_fofn_abs(input_fofn_fn, pread_dir, 'input_preads.fofn')
-        pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
+        pread_fofn = makePypeLocalFile(os.path.join(rawread_dir, os.path.basename(config["input_fofn_fn"])))
+        make_fofn_abs_task = PypeTask(inputs = {"i_fofn": rawread_fofn_plf},
+                                     outputs = {"o_fofn": pread_fofn},
+                                     parameters = {},
+                                     TaskType = PypeThreadTaskBase)
+        fofn_abs_task = make_fofn_abs_task(make_fofn_abs)
+        wf.addTasks([fofn_abs_task])
+        wf.refreshTargets([fofn_abs_task])
 
     pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "pdb_build_done") ) 
     parameters = {"work_dir": pread_dir,
