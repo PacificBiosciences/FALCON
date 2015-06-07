@@ -1,6 +1,6 @@
 [submodule "pypeFLOW"]
 	path = pypeFLOW
-	url = git://github.com/pb-jchin/pypeFLOW.git
+    url = git@github.com:PacificBiosciences/pypeFLOW.git
 [submodule "DALIGNER"]
 	path = DALIGNER
 	url = git://github.com/pb-jchin/DALIGNER.git
