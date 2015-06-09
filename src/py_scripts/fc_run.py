@@ -648,6 +648,8 @@ format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
 def setup_logger(logging_config_fn):
     """See https://docs.python.org/2/library/logging.config.html
     """
+    logging.Formatter.converter = time.gmtime # cannot be done in .ini
+
     if logging_config_fn:
         logger_fileobj = open(logging_config_fn)
     else:
