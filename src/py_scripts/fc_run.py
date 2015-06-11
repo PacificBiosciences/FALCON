@@ -778,7 +778,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
 
     # build pread database
     if config["input_type"] == "preads":
-        pread_fofn = makePypeLocalFile(os.path.join(rawread_dir, os.path.basename(config["input_fofn_fn"])))
+        pread_fofn = makePypeLocalFile(os.path.join(pread_dir, os.path.basename(config["input_fofn_fn"])))
         make_fofn_abs_task = PypeTask(inputs = {"i_fofn": rawread_fofn_plf},
                                      outputs = {"o_fofn": pread_fofn},
                                      parameters = {},
