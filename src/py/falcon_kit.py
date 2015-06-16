@@ -35,11 +35,15 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #################################################################################$$
-
+__all__ = [
+    'kup', 'DWA', 'falcon',
+    'KmerLookup', 'KmerMatch', 'AlnRange', 'ConsensusData',
+    'Alignment', 'get_alignment',
+    ]
 
 from ctypes import *
-import os
-module_path = os.path.split(__file__)[0]
+from . import ext_falcon
+#module_path = os.path.split(__file__)[0]
 
 
 seq_coor_t = c_int
@@ -66,7 +70,10 @@ class ConsensusData(Structure):
     _fields_ = [ ("sequence", c_char_p),
                  ("eff_cov", POINTER(c_uint)) ]
 
-kup = CDLL(os.path.join(module_path, "kmer_lookup.so"))
+
+falcon_dll = CDLL(ext_falcon.__file__)
+
+kup = falcon_dll
 
 kup.allocate_kmer_lookup.argtypes =  [seq_coor_t] 
 kup.allocate_kmer_lookup.restype = POINTER(KmerLookup)
@@ -121,14 +128,15 @@ class Alignment(Structure):
                  ("t_aln_str", c_char_p)]
 
 
-DWA = CDLL(os.path.join(module_path, "DW_align.so"))
+DWA = falcon_dll
+
 DWA.align.argtypes = [ POINTER(c_char), c_long, POINTER(c_char), c_long, c_long, c_int ] 
 DWA.align.restype = POINTER(Alignment)
 DWA.free_alignment.argtypes = [POINTER(Alignment)]
 
 
 
-falcon = CDLL(os.path.join(module_path,"falcon.so"))
+falcon = falcon_dll
 
 falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint, c_uint, c_double  ]
 falcon.generate_consensus.restype = POINTER(ConsensusData)
