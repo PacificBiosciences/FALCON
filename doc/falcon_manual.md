@@ -57,7 +57,7 @@ overall coverage and adjust the options accordingly.
 In this manual, we will go over the hierarchical genome assembly process and the
 `fc_run.py` option choice side-by-side.
 
-## Installation
+## Environment
 
 Here is the environment this example is used to construct a user space
 python `virtualenv` for running Falcon.
@@ -78,52 +78,21 @@ Python 2.7.6
 # I do plan to move to Python 3 sometime.
 ```
 
-Running `virtualenv` in a shared directory across the computational nodes:
+## Installation
+See [FALCON-integrate](://github.com/pb-cdunn/FALCON-integrate/wiki).
+```sh
+# Use FALCON-integrate to retrieve all dependencies.
+git clone git://github.com/pb-cdunn/FALCON-integrate.git
+cd FALCON-integrate
 
-```
-$ cd installation_dir
-$ virtualenv --no-site-packages  --always-copy   $PWD/fc_env
-New python executable in /home/UNIXHOME/jchin/task2014/falcon_pb_github/fc_env/bin/python
-Installing setuptools, pip...done.
-```
+# Use the 0.2.2 tag of FALCON-integrate for version 0.2.2 of FALCON.
+git checkout 0.2.2
 
-Activate the virtual environment,
-```
-$ . $PWD/fc_env/bin/activate
-(fc_env) $ which python
-installation_dir/fc_env/bin/python
-```
+# Create the virtualenv
+make pre
 
-We will need two python packges `pypeFLOW` and `FALCON` and we need compile the
-DALINGER code and put the binary executables into the virtual environment.
-
-Here is a simple shell script that creates the environment and installs the
-packages:
-```
-virtualenv --no-site-packages  --always-copy   $PWD/fc_env
-. $PWD/fc_env/bin/activate
-git clone https://github.com/pb-jchin/pypeFLOW.git
-cd pypeFLOW
-python setup.py install
-
-cd ..
-git clone https://github.com/PacificBiosciences/FALCON.git
-cd FALCON
-python setup.py install
-
-cd ..
-git clone https://github.com/pb-jchin/DAZZ_DB.git
-cd DAZZ_DB/
-make
-cp DBrm DBshow DBsplit DBstats fasta2DB ../fc_env/bin/
-
-cd ..
-git clone https://github.com/pb-jchin/DALIGNER.git
-cd DALIGNER
-git checkout 97b0c27a26164dbdd6dc52923855501ca3d14d45
-make
-cp daligner daligner_p DB2Falcon HPCdaligner LA4Falcon LAmerge LAsort  ../fc_env/bin
-cd ..
+# Build all dependencies
+make -j
 ```
 
 Here is a quick testing to try it out for a simple E. coli assembly
