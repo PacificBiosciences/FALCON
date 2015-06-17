@@ -157,7 +157,7 @@ def get_consensus_with_trim( c_input ):
     return consensus, seed_id
 
 
-def get_seq_data(config):
+def get_seq_data(config, min_cov_aln):
     max_len = 100000
     min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size = config
     seqs = []
@@ -184,7 +184,7 @@ def get_seq_data(config):
                         seqs.append(seq)
                         read_ids.add(read_id)
             elif l[0] == "+":
-                if len(seqs) > 10:
+                if len(seqs) >= min_cov_aln:
                     seqs = seqs[:1] + sorted(seqs[1:], key=lambda x: -len(x))
                     yield (seqs[:max_n_read], seed_id, config) 
                 #seqs_data.append( (seqs, seed_id) ) 
@@ -213,6 +213,8 @@ if __name__ == "__main__":
                         help='local match count threshold (obsoleted, no effect)')
     parser.add_argument('--min_cov', type=int, default=6,
                         help='minimum coverage to break the consensus')
+    parser.add_argument('--min_cov_aln', type=int, default=10,
+                        help='minimum coverage of alignment data; an alignment with fewer reads will be completely ignored')
     parser.add_argument('--max_n_read', type=int, default=500,
                         help='minimum number of reads used in generating the consensus')
     parser.add_argument('--trim', action="store_true", default=False,
@@ -240,7 +242,8 @@ if __name__ == "__main__":
     K = 8
     config = args.min_cov, K, args.local_match_count_window, args.local_match_count_threshold,\
              args.max_n_read, args.min_idt, args.edge_tolerance, args.trim_size
-    for res in exe_pool.imap(get_consensus, get_seq_data(config)):  
+    # TODO: pass config object, not tuple, so we can add fields
+    for res in exe_pool.imap(get_consensus, get_seq_data(config, args.min_cov_aln)):
         cns, seed_id = res
         if len(cns) < 500:
             continue
