@@ -648,6 +648,8 @@ format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
 def setup_logger(logging_config_fn):
     """See https://docs.python.org/2/library/logging.config.html
     """
+    logging.Formatter.converter = time.gmtime # cannot be done in .ini
+
     if logging_config_fn:
         logger_fileobj = open(logging_config_fn)
     else:
@@ -674,6 +676,10 @@ def make_fofn_abs(self):
             abs_ifn = os.path.abspath(ifn)
             ofs.write('%s\n' %abs_ifn)
     #return o_fofn_fn
+def make_fofn_abs_raw(self):
+    return make_fofn_abs(self)
+def make_fofn_abs_preads(self):
+    return make_fofn_abs(self)
 
 def make_dirs(d):
     if not os.path.isdir(d):
@@ -703,7 +709,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
                                   outputs = {"o_fofn": rawread_fofn_plf},
                                   parameters = {},
                                   TaskType = PypeThreadTaskBase)
-    fofn_abs_task = make_fofn_abs_task(make_fofn_abs)
+    fofn_abs_task = make_fofn_abs_task(make_fofn_abs_raw)
     wf.addTasks([fofn_abs_task])
     wf.refreshTargets([fofn_abs_task])
 
@@ -776,12 +782,12 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
 
     # build pread database
     if config["input_type"] == "preads":
-        pread_fofn = makePypeLocalFile(os.path.join(rawread_dir, os.path.basename(config["input_fofn_fn"])))
+        pread_fofn = makePypeLocalFile(os.path.join(pread_dir, os.path.basename(config["input_fofn_fn"])))
         make_fofn_abs_task = PypeTask(inputs = {"i_fofn": rawread_fofn_plf},
                                      outputs = {"o_fofn": pread_fofn},
                                      parameters = {},
                                      TaskType = PypeThreadTaskBase)
-        fofn_abs_task = make_fofn_abs_task(make_fofn_abs)
+        fofn_abs_task = make_fofn_abs_task(make_fofn_abs_preads)
         wf.addTasks([fofn_abs_task])
         wf.refreshTargets([fofn_abs_task])
 
