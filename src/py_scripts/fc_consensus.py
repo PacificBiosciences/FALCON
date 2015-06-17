@@ -37,17 +37,15 @@
 # SUCH DAMAGE.
 #################################################################################$$
 
-from ctypes import *
+from ctypes import (POINTER, c_char_p, c_uint, c_uint, c_uint, c_uint, c_uint, c_double, string_at)
 from falcon_kit.multiproc import Pool
+from falcon_kit import falcon
 import argparse
 import os
 import re
 import sys
 import falcon_kit
 
-module_path = falcon_kit.__path__[0]
-
-falcon = CDLL(os.path.join(module_path, "falcon.so"))
 
 falcon.generate_consensus.argtypes = [ POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint, c_uint, c_double ]
 falcon.generate_consensus.restype = POINTER(falcon_kit.ConsensusData)
