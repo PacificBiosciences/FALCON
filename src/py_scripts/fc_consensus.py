@@ -157,7 +157,7 @@ def get_consensus_with_trim( c_input ):
     return consensus, seed_id
 
 
-def get_seq_data(config, min_cov_aln):
+def get_seq_data(config, min_cov_aln, min_len_aln):
     max_len = 100000
     min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size = config
     seqs = []
@@ -176,7 +176,7 @@ def get_seq_data(config, min_cov_aln):
                 seq = seq[:max_len-1]
 
             if read_id not in ("+", "-", "*"):
-                if len(seq) > 100:
+                if len(seq) >= min_len_aln:
                     if len(seqs) == 0:
                         seqs.append(seq) #the "seed"
                         seed_id = l[0]
@@ -215,8 +215,10 @@ if __name__ == "__main__":
                         help='minimum coverage to break the consensus')
     parser.add_argument('--min_cov_aln', type=int, default=10,
                         help='minimum coverage of alignment data; an alignment with fewer reads will be completely ignored')
+    parser.add_argument('--min_len_aln', type=int, default=100,
+                        help='minimum length of a sequence in an alignment to be used in consensus; any shorter sequence will be completely ignored')
     parser.add_argument('--max_n_read', type=int, default=500,
-                        help='minimum number of reads used in generating the consensus')
+                        help='maximum number of reads used in generating the consensus')
     parser.add_argument('--trim', action="store_true", default=False,
                         help='trim the input sequence with k-mer spare dynamic programming to find the mapped range')
     parser.add_argument('--output_full', action="store_true", default=False,
@@ -243,7 +245,7 @@ if __name__ == "__main__":
     config = args.min_cov, K, args.local_match_count_window, args.local_match_count_threshold,\
              args.max_n_read, args.min_idt, args.edge_tolerance, args.trim_size
     # TODO: pass config object, not tuple, so we can add fields
-    for res in exe_pool.imap(get_consensus, get_seq_data(config, args.min_cov_aln)):
+    for res in exe_pool.imap(get_consensus, get_seq_data(config, args.min_cov_aln, args.min_len_aln)):
         cns, seed_id = res
         if len(cns) < 500:
             continue
