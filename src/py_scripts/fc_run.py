@@ -867,6 +867,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
         script.append("trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done))
         script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
         script.append( "cd %s" % pread_dir )
+        # Write preads4falcon.fasta, in 1-preads_ovl:
         script.append( "DB2Falcon preads")
         script.append( "cd %s" % wd )
         script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
@@ -874,9 +875,9 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
         length_cutoff_pr = config["length_cutoff_pr"]
         script.append( """fc_ovlp_filter.py --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
                 (fn(db_file), overlap_filtering_setting, length_cutoff_pr) )
-
         script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
         script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr)
+        # Write 'p_ctg.fa' and 'a_ctg.fa':
         script.append( """fc_graph_to_contig.py""" )
         script.append( """touch %s""" % fn(self.falcon_asm_done))
 

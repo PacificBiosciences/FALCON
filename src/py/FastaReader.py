@@ -235,11 +235,11 @@ class FastaReader(ReaderBase):
     over FastaRecord objects.  Agnostic about line wrapping.
     Example:
     .. doctest::
-        >>> from pbcore.io import FastaReader
-        >>> from pbcore import data
-        >>> filename = data.getTinyFasta()
-        >>> r = FastaReader(filename)
-        >>> for record in r:
+        TODO: Get data.
+        > from pbcore import data
+        > filename = data.getTinyFasta()
+        > r = FastaReader(filename)
+        > for record in r:
         ...     print record.name, len(record.sequence), record.md5
         ref000001|EGFR_Exon_2 183 e3912e9ceacd6538ede8c1b2adda7423
         ref000002|EGFR_Exon_3 203 4bf218da37175a91869033024ac8f9e9
