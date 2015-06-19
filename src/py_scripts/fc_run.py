@@ -238,7 +238,7 @@ def run_daligner(self):
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
-    script.append( "/usr/bin/time "+ daligner_cmd + ( " >> %s 2>&1 " % log_path ) )
+    script.append( "time "+ daligner_cmd + ( " >> %s 2>&1 " % log_path ) )
 
     for p_id in xrange( 1, nblock+1 ):
         script.append( """ for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do ln -sf $f ../m_%05d; done """  % (db_prefix, p_id, db_prefix, p_id) )
@@ -277,7 +277,7 @@ def run_merge_task(self):
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
-    script.append( ("/usr/bin/time bash %s " % p_script_fn)  + ( " >> %s 2>&1" % log_path ) )
+    script.append( ("time bash %s " % p_script_fn)  + ( " >> %s 2>&1" % log_path ) )
     script.append( "touch {job_done}".format(job_done = fn(job_done)) )
 
     with open(script_fn,"w") as script_file:
@@ -324,7 +324,7 @@ def run_consensus_task(self):
     script.append( "cd %s" % cwd )
     script.append( "hostname >> %s" % log_path )
     script.append( "date >> %s" % log_path )
-    script.append( ("/usr/bin/time bash cp_%05d.sh " % job_id )  + ( " >> %s 2>&1 " % log_path ) )
+    script.append( ("time bash cp_%05d.sh " % job_id )  + ( " >> %s 2>&1 " % log_path ) )
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
