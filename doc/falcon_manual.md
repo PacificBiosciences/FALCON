@@ -85,8 +85,8 @@ See [FALCON-integrate](://github.com/pb-cdunn/FALCON-integrate/wiki).
 git clone git://github.com/pb-jchin/FALCON-integrate.git
 cd FALCON-integrate
 
-# Use the 0.2.2 tag of FALCON-integrate for version 0.2.2 of FALCON.
-git checkout 0.2.2-p1
+# For versions 0.2.* of FALCON, use the v0.2 branch of FALCON-integrate, or a specific tag.
+git checkout v0.2
 
 # Create the virtualenv
 make pre
