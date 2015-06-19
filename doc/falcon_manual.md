@@ -86,7 +86,7 @@ git clone git://github.com/pb-cdunn/FALCON-integrate.git
 cd FALCON-integrate
 
 # Use the 0.2.2 tag of FALCON-integrate for version 0.2.2 of FALCON.
-git checkout 0.2.2
+git checkout 0.2.2-p1
 
 # Create the virtualenv
 make pre
