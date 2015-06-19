@@ -82,7 +82,7 @@ Python 2.7.6
 See [FALCON-integrate](://github.com/pb-cdunn/FALCON-integrate/wiki).
 ```sh
 # Use FALCON-integrate to retrieve all dependencies.
-git clone git://github.com/pb-cdunn/FALCON-integrate.git
+git clone git://github.com/pb-jchin/FALCON-integrate.git
 cd FALCON-integrate
 
 # Use the 0.2.2 tag of FALCON-integrate for version 0.2.2 of FALCON.
