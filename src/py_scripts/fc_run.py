@@ -77,8 +77,12 @@ def run_script(job_data, job_type = "SGE" ):
         script_fn = job_data["script_fn"]
         job_name = job_data["job_name"]
         fc_run_logger.info( "executing %r locally, start job: %r " % (script_fn, job_name) )
-        cmd = "bash {script_fn} 1> {script_fn}.log 2>&1".format(script_fn=script_fn)
+        log_fn = '{0}.log'.format(script_fn)
+        cmd = "bash {0} 1> {1} 2>&1".format(script_fn, log_fn)
         rc = os.system(cmd)
+        if rc:
+            out = open(log_fn).read()
+            fc_run_logger.warning('Contents of %r:\n%s' %(log_fn, out))
     if rc:
         msg = "Cmd %r (job %r) returned %d." % (cmd, job_name, rc)
         fc_run_logger.info(msg)
@@ -868,7 +872,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
         script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
         script.append( "cd %s" % pread_dir )
         # Write preads4falcon.fasta, in 1-preads_ovl:
-        script.append( "DB2Falcon preads")
+        script.append( "DB2Falcon -U preads")
         script.append( "cd %s" % wd )
         script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
         overlap_filtering_setting = config["overlap_filtering_setting"]
