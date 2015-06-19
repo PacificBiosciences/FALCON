@@ -12,7 +12,7 @@ convenience.
 DOCUMENTATION
 -------------
 
-[Documentation is here.](https://github.com/PacificBiosciences/FALCON/blob/v0.2.2/doc/falcon_manual.md)
+[Documentation is here.](doc/falcon_manual.md)
 
 ABOUT THE LICENSE
 ------------------
