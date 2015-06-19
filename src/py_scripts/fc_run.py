@@ -156,10 +156,10 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
         script_file.write("trap 'touch {rdb_build_done}.exit' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
-        script_file.write("hostname >> db_build.log\n")
-        script_file.write("date >> db_build.log\n")
-        #script_file.write("for f in `cat {input_fofn_fn}`; do fasta2DB raw_reads $f; done >> db_build.log \n".format(input_fofn_fn = input_fofn_fn))
-        script_file.write("fasta2DB -v raw_reads -f{input_fofn_fn} >> db_build.log \n".format(input_fofn_fn = input_fofn_fn))
+        script_file.write("hostname\n")
+        script_file.write("date\n")
+        #script_file.write("for f in `cat {input_fofn_fn}`; do fasta2DB raw_reads $f; done\n".format(input_fofn_fn = input_fofn_fn))
+        script_file.write("fasta2DB -v raw_reads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
         if new_db  == True:
             script_file.write("DBsplit %s raw_reads\n" % pa_DBsplit_option)
         if openending == True:
@@ -199,9 +199,9 @@ def build_pdb(self):
         script_file.write("trap 'touch {pdb_build_done}.exit' EXIT\n".format(pdb_build_done = fn(pdb_build_done)))
         script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
-        script_file.write("hostname >> db_build.log\n")
-        script_file.write("date >> db_build.log\n")
-        script_file.write("fasta2DB -v preads -f{input_fofn_fn} >> db_build.log \n".format(input_fofn_fn = input_fofn_fn))
+        script_file.write("hostname\n")
+        script_file.write("date\n")
+        script_file.write("fasta2DB -v preads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
         script_file.write("DBsplit -x%d %s preads\n" % (length_cutoff, ovlp_DBsplit_option))
         script_file.write("HPCdaligner %s -H%d preads > run_jobs.sh\n" % (ovlp_HPCdaligner_option, length_cutoff))
         script_file.write("touch {pdb_build_done}\n".format(pdb_build_done = fn(pdb_build_done)))
@@ -229,16 +229,15 @@ def run_daligner(self):
 
     script_dir = os.path.join( cwd )
     script_fn =  os.path.join( script_dir , "rj_%s.sh" % (job_uid))
-    log_path = os.path.join( script_dir, "rj_%s.log" % (job_uid))
 
     script = []
     script.append( "set -vex" )
     script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
     script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
-    script.append( "hostname >> %s" % log_path )
-    script.append( "date >> %s" % log_path )
-    script.append( "time "+ daligner_cmd + ( " >> %s 2>&1 " % log_path ) )
+    script.append( "hostname" )
+    script.append( "date" )
+    script.append( "time "+ daligner_cmd )
 
     for p_id in xrange( 1, nblock+1 ):
         script.append( """ for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do ln -sf $f ../m_%05d; done """  % (db_prefix, p_id, db_prefix, p_id) )
@@ -268,16 +267,15 @@ def run_merge_task(self):
 
     script_dir = os.path.join( cwd )
     script_fn =  os.path.join( script_dir , "rp_%05d.sh" % (job_id))
-    log_path = os.path.join( script_dir, "rp_%05d.log" % (job_id))
 
     script = []
     script.append( "set -vex" )
     script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
     script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
-    script.append( "hostname >> %s" % log_path )
-    script.append( "date >> %s" % log_path )
-    script.append( ("time bash %s " % p_script_fn)  + ( " >> %s 2>&1" % log_path ) )
+    script.append( "hostname" )
+    script.append( "date" )
+    script.append( "time bash %s" % p_script_fn )
     script.append( "touch {job_done}".format(job_done = fn(job_done)) )
 
     with open(script_fn,"w") as script_file:
@@ -301,7 +299,6 @@ def run_consensus_task(self):
     script_dir = os.path.join( cwd )
     job_done_fn = os.path.join( cwd, "c_%05d_done" % job_id )
     script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
-    log_path = os.path.join( script_dir, "c_%05d.log" % (job_id))
     prefix = self.parameters["prefix"]
     falcon_sense_option = config["falcon_sense_option"]
     length_cutoff = config["length_cutoff"]
@@ -322,9 +319,9 @@ def run_consensus_task(self):
     script.append( "set -vex" )
     script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
-    script.append( "hostname >> %s" % log_path )
-    script.append( "date >> %s" % log_path )
-    script.append( ("time bash cp_%05d.sh " % job_id )  + ( " >> %s 2>&1 " % log_path ) )
+    script.append( "hostname" )
+    script.append( "date" )
+    script.append( "time bash cp_%05d.sh" % job_id )
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
@@ -868,7 +865,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
         
         script = []
         script.append( "set -vex" )
-        script.append("trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done))
+        script.append( "trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done) )
         script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
         script.append( "cd %s" % pread_dir )
         # Write preads4falcon.fasta, in 1-preads_ovl:
@@ -880,7 +877,7 @@ def main(prog_name, input_config_fn, logger_config_fn=None):
         script.append( """fc_ovlp_filter.py --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
                 (fn(db_file), overlap_filtering_setting, length_cutoff_pr) )
         script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
-        script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr)
+        script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
         # Write 'p_ctg.fa' and 'a_ctg.fa':
         script.append( """fc_graph_to_contig.py""" )
         script.append( """touch %s""" % fn(self.falcon_asm_done))
