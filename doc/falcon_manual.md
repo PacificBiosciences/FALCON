@@ -91,6 +91,8 @@ git checkout 0.2.2
 # Create the virtualenv
 make pre
 
+make virtualenv
+
 # Build all dependencies
 make -j
 ```
