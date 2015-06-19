@@ -79,10 +79,10 @@ Python 2.7.6
 ```
 
 ## Installation
-See [FALCON-integrate](://github.com/pb-cdunn/FALCON-integrate/wiki).
+See [FALCON-integrate](://github.com/PacificBiosciences/FALCON-integrate/wiki).
 ```sh
 # Use FALCON-integrate to retrieve all dependencies.
-git clone git://github.com/pb-jchin/FALCON-integrate.git
+git clone git://github.com/PacificBiosciences/FALCON-integrate.git
 cd FALCON-integrate
 
 # For versions 0.2.* of FALCON, use the v0.2 branch of FALCON-integrate, or a specific tag.
