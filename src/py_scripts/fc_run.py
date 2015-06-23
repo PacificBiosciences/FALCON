@@ -80,7 +80,7 @@ def run_script(job_data, job_type = "SGE" ):
         cwd = job_data["cwd"]
         sge_option = job_data["sge_option"]
         script_fn = job_data["script_fn"]
-        sge_cmd="srun -J {job_name} {sge_option} {script}".format(job_name=job_name, cwd=os.getcwd(),sge_option=sge_option, script=script_fn)
+        sge_cmd="sbatch -J {job_name} {sge_option} {script}".format(job_name=job_name, cwd=os.getcwd(),sge_option=sge_option, script=script_fn)
         os.system( sge_cmd )
         
     elif job_type == "local":
