@@ -75,8 +75,18 @@ def run_script(job_data, job_type = "SGE" ):
                                                cwd=os.getcwd(), 
                                                sge_option=sge_option, 
                                                script=script_fn)
-
+    elif job_type == "SLURM":
+        job_name = job_data["job_name"]
+        cwd = job_data["cwd"]
+        sge_option = job_data["sge_option"]
+        script_fn = job_data["script_fn"]
+        sge_cmd="sbatch -J {job_name} {sge_option} -oe {cwd}/%J.log 
+                 {script}".format(job_name=job_name,  
+                                               cwd=os.getcwd(), 
+                                               sge_option=sge_option, 
+                                               script=script_fn)
         os.system( sge_cmd )
+        
     elif job_type == "local":
         os.system( "bash %s" % job_data["script_fn"] )
 
