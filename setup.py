@@ -14,7 +14,7 @@ setup(name='falcon_kit',
       description='a small toolkit for DNA seqeucne alignment, overlapping, and assembly',
       author='Jason Chin',
       author_email='jchin@pacificbiosciences.com',
-      packages=['falcon_kit'],
+      packages=['falcon_kit', 'falcon_kit.mains'],
       package_dir={'falcon_kit':'src/py/'},
       ext_modules=[
                    Extension('falcon_kit.ext_falcon', ['src/c/ext_falcon.c', 'src/c/DW_banded.c', 'src/c/kmer_lookup.c', 'src/c/falcon.c'],
