@@ -54,17 +54,14 @@ def filter_stats(lines, min_len):
             right_count = overlap_data["3p"]
             if (left_count > 0 or right_count > 0):
                 rtn_data.append( (q_id, q_l, left_count, right_count  ) )
-            
+
         return rtn_data
 
 
-def try_filter_stats(input_):
+def run_filter_stats(input_):
     fn, min_len = input_
-    try:
-        lines = sp.check_output(shlex.split("LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn)).splitlines()
-        return fn, filter_stats(lines, min_len)
-    except (KeyboardInterrupt, SystemExit):
-        return
+    lines = sp.check_output(shlex.split("LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn)).splitlines()
+    return fn, filter_stats(lines, min_len)
 
 
 def main(*argv):
@@ -83,6 +80,6 @@ def main(*argv):
     for fn in file_list:
         if len(fn) != 0:
             inputs.append( (fn, args.min_len ) )
-    for res in exe_pool.imap(try_filter_stats, inputs):  
+    for res in exe_pool.imap(run_filter_stats, inputs):
         for l in res[1]:
             print " ".join([str(c) for c in l])
