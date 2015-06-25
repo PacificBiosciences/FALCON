@@ -19,12 +19,12 @@ def filter_stats(input_):
             l = l.strip().split()
             q_id, t_id = l[:2]
 
-            if q_id != None and current_q_id != None and q_id != current_q_id and q_l > 0:
+            if q_id != None and q_id != current_q_id and q_l > 0:
 
                 left_count = overlap_data["5p"]
                 right_count = overlap_data["3p"]
-
-                rtn_data.append( (current_q_id, q_l, left_count, right_count  ) )
+                if current_q_id != None:
+                    rtn_data.append( (current_q_id, q_l, left_count, right_count  ) )
                 overlap_data = {"5p":0, "3p":0}
                 current_q_id = q_id
                 contained = False
@@ -51,7 +51,7 @@ def filter_stats(input_):
                 elif q_e == q_l:
                     overlap_data["3p"] += 1
 
-        if q_id !=  None and current_q_id != None and q_l > 0:
+        if q_id != None and q_l > 0:
             left_count = overlap_data["5p"]
             right_count = overlap_data["3p"]
             rtn_data.append( (q_id, q_l, left_count, right_count  ) )
