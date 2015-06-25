@@ -1,42 +1,3 @@
-#!/usr/bin/env python
-
-#################################################################################$$
-# Copyright (c) 2011-2014, Pacific Biosciences of California, Inc.
-#
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted (subject to the limitations in the
-# disclaimer below) provided that the following conditions are met:
-#
-#  * Redistributions of source code must retain the above copyright
-#  notice, this list of conditions and the following disclaimer.
-#
-#  * Redistributions in binary form must reproduce the above
-#  copyright notice, this list of conditions and the following
-#  disclaimer in the documentation and/or other materials provided
-#  with the distribution.
-#
-#  * Neither the name of Pacific Biosciences nor the names of its
-#  contributors may be used to endorse or promote products derived
-#  from this software without specific prior written permission.
-#
-# NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
-# GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY PACIFIC
-# BIOSCIENCES AND ITS CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
-# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL PACIFIC BIOSCIENCES OR ITS
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#################################################################################$$
-
 from falcon_kit.multiproc import Pool
 import argparse
 import subprocess as sp
@@ -251,7 +212,7 @@ def filter_stage3(input_):
     except (KeyboardInterrupt, SystemExit):
         return
 
-def parse_args():
+def parse_args(argv):
     parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')
     parser.add_argument('--n_core', type=int, default=4,
                         help='number of processes used for generating consensus; '
@@ -265,7 +226,7 @@ def parse_args():
     parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible (default=%(default)s)")
     parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
     parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     return args
 
 def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent):
@@ -304,9 +265,6 @@ def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_
         for l in res[1]:
             print " ".join(l)
 
-def main():
-    args = parse_args()
+def main(*argv):
+    args = parse_args(argv)
     fc_ovlp_filter(**vars(args))
-
-if __name__ == "__main__":
-    main()
