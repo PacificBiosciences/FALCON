@@ -13,5 +13,6 @@ python setup.py -v install
 python -c 'import falcon_kit; print falcon_kit.falcon'
 
 # When doctests are passing, add this:
-#pip install nose
+pip install nose
+nosetests -v test/
 #nosetests -v --with-doctest fc-env/lib/python2.7/site-packages/falcon_kit
