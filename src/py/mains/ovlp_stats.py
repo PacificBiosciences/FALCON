@@ -71,7 +71,7 @@ def main(*argv):
                         '0 for main process only (default=%(default)s)')
     parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
     parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv[1:])
     exe_pool = Pool(args.n_core)
 
     file_list = open(args.fofn).read().split("\n")

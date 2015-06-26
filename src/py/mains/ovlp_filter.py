@@ -226,7 +226,7 @@ def parse_args(argv):
     parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible (default=%(default)s)")
     parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
     parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv[1:])
     return args
 
 def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent):

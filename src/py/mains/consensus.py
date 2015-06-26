@@ -193,7 +193,7 @@ def main(*argv):
     parser.add_argument('--trim_size', type=int, default=50,
                         help='the size for triming both ends from initial sparse aligned region')
     good_region = re.compile("[ACGT]+")
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv[1:])
     exe_pool = Pool(args.n_core)
     if args.trim:
         get_consensus = get_consensus_with_trim

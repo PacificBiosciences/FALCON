@@ -978,7 +978,7 @@ def main(*argv):
     parser.add_argument('--lfc', action="store_true", default=False,
                         help='use local flow constraint method rather than best overlap method to resolve knots in string graph')
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv[1:])
 
 
     # transitivity reduction, remove spurs, remove putative edges caused by repeats
