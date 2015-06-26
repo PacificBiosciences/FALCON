@@ -90,6 +90,22 @@ def wait_for_file(filename, task, job_name = ""):
                 os.system("qdel %s" % job_name) # Failure is ok.
             break
 
+def make_job_data(url, script_fn):
+    """Choose defaults.
+    Run in same directory as script_fn.
+    Base job_name on script_fn.
+    """
+    wd = os.path.dirname(script_fn)
+    job_name = '{0}-{1}-{1}'.format(
+            os.path.basename(script_fn),
+            url.split("/")[-1],
+            str(uuid.uuid4())[:8],
+            )
+    job_data = {"job_name": job_name,
+                "cwd": wd,
+                "script_fn": script_fn }
+    return job_data
+
 def build_rdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
 
     input_fofn = self.input_fofn
@@ -138,14 +154,10 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
         script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
         script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
 
-    job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid4())[:8]
-    job_data = {"job_name": job_name,
-                "cwd": os.getcwd(),
-                "sge_option": sge_option_da,
-                "script_fn": script_fn }
+    job_data = make_job_data(self.URL, script_fn)
+    job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file( fn(rdb_build_done), task=self, job_name=job_name )
+    wait_for_file(fn(rdb_build_done), task=self, job_name=job_data['job_name'])
 
 def build_pdb(self):
 
@@ -175,14 +187,10 @@ def build_pdb(self):
         script_file.write("HPCdaligner %s -H%d preads > run_jobs.sh\n" % (ovlp_HPCdaligner_option, length_cutoff))
         script_file.write("touch {pdb_build_done}\n".format(pdb_build_done = fn(pdb_build_done)))
 
-    job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid4())[:8]
-    job_data = {"job_name": job_name,
-                "cwd": os.getcwd(),
-                "sge_option": sge_option_pda,
-                "script_fn": script_fn }
+    job_data = make_job_data(self.URL, script_fn)
+    job_data["sge_option"] = sge_option_pda
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file( fn(pdb_build_done), task=self, job_name=job_name )
+    wait_for_file(fn(pdb_build_done), task=self, job_name=job_data['job_name'])
     
 
 def run_daligner(self):
@@ -216,14 +224,10 @@ def run_daligner(self):
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
 
-    job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid4())[:8]
-    job_data = {"job_name": job_name,
-                "cwd": cwd,
-                "sge_option": sge_option_da,
-                "script_fn": script_fn }
+    job_data = make_job_data(self.URL, script_fn)
+    job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file( fn( job_done ), task=self, job_name=job_name )
+    wait_for_file(fn(job_done), task=self, job_name=job_data['job_name'])
 
 def run_merge_task(self):
     p_script_fn = self.parameters["merge_script"]
@@ -250,14 +254,10 @@ def run_merge_task(self):
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
 
-    job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid4())[:8]
-    job_data = {"job_name": job_name,
-                "cwd": cwd,
-                "sge_option": sge_option_la,
-                "script_fn": script_fn }
+    job_data = make_job_data(self.URL, script_fn)
+    job_data["sge_option"] = sge_option_la
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file( fn( job_done ), task=self, job_name=job_name )
+    wait_for_file(fn(job_done), task=self, job_name=job_data['job_name'])
 
 def run_consensus_task(self):
     job_id = self.parameters["job_id"]
@@ -295,14 +295,10 @@ def run_consensus_task(self):
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script))
 
-    job_name = self.URL.split("/")[-1]
-    job_name += "-"+str(uuid.uuid4())[:8]
-    job_data = {"job_name": job_name,
-                "cwd": cwd,
-                "sge_option": sge_option_cns,
-                "script_fn": script_fn }
+    job_data = make_job_data(self.URL, script_fn)
+    job_data["sge_option"] = sge_option_cns
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file( job_done_fn, task=self, job_name=job_name )
+    wait_for_file(job_done_fn, task=self, job_name=job_data['job_name'])
 
 
 def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
@@ -854,14 +850,10 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         with open(script_fn, "w") as script_file:
             script_file.write("\n".join(script))
 
-        job_name = self.URL.split("/")[-1]
-        job_name += "-"+str(uuid.uuid4())[:8]
-        job_data = {"job_name": job_name,
-                    "cwd": wd,
-                    "sge_option": config["sge_option_fc"],
-                    "script_fn": script_fn }
+        job_data = make_job_data(self.URL, script_fn)
+        job_data["sge_option"] = config["sge_option_fc"]
         run_script(job_data, job_type = config["job_type"])
-        wait_for_file( fn(self.falcon_asm_done), task=self, job_name=job_name )
+        wait_for_file(fn(self.falcon_asm_done), task=self, job_name=job_data['job_name'])
     
     wf.addTask( run_falcon_asm_task )
     wf.refreshTargets(updateFreq = wait_time) #all            
