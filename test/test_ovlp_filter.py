@@ -1,7 +1,30 @@
 import falcon_kit.mains.ovlp_filter as mod
+from nose.tools import assert_equal
 
 def test_help():
     try:
         mod.main(*['prog', '--help'])
     except SystemExit:
         pass
+def test():
+    readlines = data.strip().splitlines
+    max_diff, max_ovlp, min_ovlp, min_len = 1000, 1000, 1, 1
+    stage1 = mod.filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len)
+    print stage1
+    assert_equal(expected1,  stage1)
+expected1 = ['000000000', '000000001', '000000002', '000000003', '000000017', '000000028']
+expected1 = [None, '000000001', '000000002', '000000003', '000000017', '000000028'] # BUGGY!
+data = """
+000000000 000000001 -1807 100.00 0 181 1988 1988 0 0 1807 1989 overlap
+000000000 000000002 -823 99.88 0 0 823 1988 0 1166 1989 1989 overlap
+000000000 000000003 -50 99.94 0 0 50 1988 0 0 50 50 overlap
+000000000 000000017 -61 98.36 0 0 61 1988 0 1928 1989 1989 overlap
+000000000 000000028 -1952 79.95 0 0 1952 1988 0 37 1989 1989 overlap
+000000001 000000000 -1807 100.00 0 0 1807 1989 0 181 1988 1988 overlap
+000000001 000000002 -642 99.84 0 0 642 1989 0 1347 1989 1989 overlap
+000000002 000000000 -823 99.88 0 1166 1989 1989 0 0 823 1988 overlap
+000000002 000000001 -642 99.84 0 1347 1989 1989 0 0 642 1989 overlap
+000000003 000000000 -50 99.94 0 0 50 50 0 0 50 1988 overlap
+000000017 000000000 -61 98.36 0 1928 1989 1989 0 0 61 1988 overlap
+000000028 000000000 -1952 79.95 0 37 1989 1989 0 0 1952 1988 overlap
+"""
