@@ -2,10 +2,16 @@ from falcon_kit.multiproc import Pool
 import falcon_kit.util.io as io
 import argparse
 
-readlines = io.slurplines
+Reader = io.CapturedProcessReaderContext
 
 
-def filter_stage1(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len):
+def run_filter_stage1(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len):
+    cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
+    reader = Reader(cmd)
+    return filter_stage1(reader, db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len)
+def filter_stage1(reader, db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len):
+    with reader:
+        readlines = reader.readlines
         ignore_rtn = []
         current_q_id = None
         contained = False
@@ -13,8 +19,7 @@ def filter_stage1(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len):
         all_over_len = 0.0
         overlap_data = {"5p":0, "3p":0}
         q_id = None
-        cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
-        for l in readlines(cmd):
+        for l in readlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -68,10 +73,15 @@ def filter_stage1(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len):
             
         return fn, ignore_rtn
 
-def filter_stage2(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):
+def run_filter_stage2(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):
+    cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
+    reader = Reader(cmd)
+    return filter_stage2(reader, db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set)
+def filter_stage2(reader, db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):
+    with reader:
+        readlines = reader.readlines
         contained_id = set()
-        cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
-        for l in readlines(cmd):
+        for l in readlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -95,12 +105,17 @@ def filter_stage2(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):
                 contained_id.add(t_id)
         return fn, contained_id 
 
-def filter_stage3(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set, bestn):
+def run_filter_stage3(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set, bestn):
+    cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
+    reader = Reader(cmd)
+    return filter_stage3(reader, db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set, bestn)
+def filter_stage3(reader, db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set, bestn):
+    with reader:
+        readlines = reader.readlines
         ovlp_output = []
         overlap_data = {"5p":[], "3p":[]}
         current_q_id = None
-        cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
-        for l in readlines(cmd):
+        for l in readlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -185,7 +200,7 @@ def run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, be
     inputs = []
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (filter_stage1, db_fn, fn, max_diff, max_cov, min_cov, min_len) )
+            inputs.append( (run_filter_stage1, db_fn, fn, max_diff, max_cov, min_cov, min_len) )
     
     ignore_all = []
     for res in exe_pool.imap(io.run_func, inputs):  
@@ -197,7 +212,7 @@ def run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, be
     ignore_all = set(ignore_all)
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (filter_stage2, db_fn, fn, max_diff, max_cov, min_cov, min_len, ignore_all) )
+            inputs.append( (run_filter_stage2, db_fn, fn, max_diff, max_cov, min_cov, min_len, ignore_all) )
     contained = set()
     for res in exe_pool.imap(io.run_func, inputs):  
         contained.update(res[1])
@@ -210,7 +225,7 @@ def run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, be
     ignore_all = set(ignore_all)
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (filter_stage3, db_fn, fn, max_diff, max_cov, min_cov, min_len, ignore_all, contained, bestn) )
+            inputs.append( (run_filter_stage3, db_fn, fn, max_diff, max_cov, min_cov, min_len, ignore_all, contained, bestn) )
     for res in exe_pool.imap(io.run_func, inputs):  
         for l in res[1]:
             print " ".join(l)
@@ -236,8 +251,8 @@ def ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn,
     if silent:
         io.LOG = io.write_nothing
     if stream:
-        global readlines
-        readlines = io.streamlines
+        global Reader
+        Reader = io.StreamedProcessReaderContext
     try_run_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn)
 
 def parse_args(argv):
