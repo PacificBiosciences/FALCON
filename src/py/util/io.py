@@ -6,6 +6,7 @@ import resource
 import shlex
 import subprocess as sp
 import sys
+import traceback
 
 def write_nothing(*args):
     """
@@ -42,7 +43,12 @@ def run_func(args):
         logstats()
         LOG('finished %s(%s)' %(func_name, ', '.join(repr(a) for a in args)))
         return ret
-    except KeyboardInterrupt: # and SystemExit?
+    except Exception:
+        LOG(traceback.format_exc())
+        LOG('failed %s(%s)' %(func_name, ', '.join(repr(a) for a in args)))
+        return
+    except: # KeyboardInterrupt, SystemExit
+        LOG('interrupted %s(%s)' %(func_name, ', '.join(repr(a) for a in args)))
         return
 
 def syscall(cmd):
