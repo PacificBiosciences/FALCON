@@ -73,3 +73,21 @@ def streamlines(cmd):
     LOG('$ %s |' %cmd)
     proc = sp.Popen(shlex.split(cmd), stdout=sp.PIPE)
     return proc.stdout
+
+def filesize(fn):
+    """In bytes.
+    Raise if fn does not exist.
+    """
+    statinfo = os.stat(fn)
+    return statinfo.st_size
+
+def validated_fns(fofn):
+    """Return list of filenames from fofn.
+    Assert none are empty or non-existent.
+    """
+    fns = open(fofn).read().strip().split("\n")
+    for fn in fns:
+        assert fn
+        assert os.path.isfile(fn)
+        assert filesize(fn)
+    return fns

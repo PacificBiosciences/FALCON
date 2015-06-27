@@ -77,7 +77,7 @@ def run_ovlp_stats(exe_pool, file_list, min_len):
 
 def try_run_ovlp_stats(n_core, fofn, min_len):
     io.LOG('starting ovlp_stats')
-    file_list = open(fofn).read().strip().split("\n")
+    file_list = io.validated_fns(fofn)
     io.LOG('fofn %r: %r' %(fofn, file_list))
     n_core = min(n_core, len(file_list))
     exe_pool = Pool(n_core)

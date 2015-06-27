@@ -218,7 +218,7 @@ def run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, be
 
 def try_run_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn):
     io.LOG('starting ovlp_filter')
-    file_list = open(fofn).read().strip().split("\n")
+    file_list = io.validated_fns(fofn)
     io.LOG('fofn %r: %r' %(fofn, file_list))
     n_core = min(n_core, len(file_list))
     exe_pool = Pool(n_core)
