@@ -7,8 +7,7 @@ import shlex
 Reader = io.CapturedProcessReaderContext
 
 
-def filter_stats(reader, min_len):
-    with reader:
+def filter_stats(readlines, min_len):
         current_q_id = None
         contained = False
         ave_idt = 0.0
@@ -17,7 +16,7 @@ def filter_stats(reader, min_len):
         q_id = None
         rtn_data = []
         q_l = 0
-        for l in reader.readlines():
+        for l in readlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -65,7 +64,8 @@ def filter_stats(reader, min_len):
 def run_filter_stats(fn, min_len):
     cmd = "LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn
     reader = Reader(cmd)
-    return fn, filter_stats(reader, min_len)
+    with reader:
+        return fn, filter_stats(reader.readlines, min_len)
 
 def run_ovlp_stats(exe_pool, file_list, min_len):
     inputs = []
