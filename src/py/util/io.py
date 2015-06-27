@@ -44,9 +44,7 @@ def run_func(args):
         LOG('finished %s(%s)' %(func_name, ', '.join(repr(a) for a in args)))
         return ret
     except Exception:
-        LOG(traceback.format_exc())
-        LOG('failed %s(%s)' %(func_name, ', '.join(repr(a) for a in args)))
-        return
+        raise Exception(traceback.format_exc())
     except: # KeyboardInterrupt, SystemExit
         LOG('interrupted %s(%s)' %(func_name, ', '.join(repr(a) for a in args)))
         return

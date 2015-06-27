@@ -66,9 +66,7 @@ def run_filter_stats(fn, min_len):
     lines = readlines(cmd)
     return fn, filter_stats(lines, min_len)
 
-def run_ovlp_stats(exe_pool, fofn, min_len):
-    file_list = open(fofn).read().split("\n")
-    #print "all", len(contained)
+def run_ovlp_stats(exe_pool, file_list, min_len):
     inputs = []
     for fn in file_list:
         if len(fn) != 0:
@@ -76,6 +74,19 @@ def run_ovlp_stats(exe_pool, fofn, min_len):
     for res in exe_pool.imap(io.run_func, inputs):
         for l in res[1]:
             print " ".join([str(c) for c in l])
+
+def try_run_ovlp_stats(n_core, fofn, min_len):
+    io.LOG('starting ovlp_stats')
+    file_list = open(fofn).read().strip().split("\n")
+    io.LOG('fofn %r: %r' %(fofn, file_list))
+    n_core = min(n_core, len(file_list))
+    exe_pool = Pool(n_core)
+    try:
+        run_ovlp_stats(exe_pool, file_list, min_len)
+        io.LOG('finished ovlp_stats')
+    except KeyboardInterrupt:
+        io.LOG('terminating ovlp_stats workers...')
+        exe_pool.terminate()
 
 def ovlp_stats(fofn, min_len, n_core, stream, debug, silent):
     if debug:
@@ -86,14 +97,7 @@ def ovlp_stats(fofn, min_len, n_core, stream, debug, silent):
     if stream:
         global readlines
         readlines = io.streamlines
-    exe_pool = Pool(n_core)
-    io.LOG('starting ovlp_stats')
-    try:
-        run_ovlp_stats(exe_pool, fofn, min_len)
-        io.LOG('finished ovlp_stats')
-    except KeyboardInterrupt:
-        io.LOG('interrupting ovlp_stats')
-        exe_pool.terminate()
+    try_run_ovlp_stats(n_core, fofn, min_len)
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')

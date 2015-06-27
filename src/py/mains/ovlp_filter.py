@@ -178,28 +178,9 @@ def filter_stage3(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, 
 
         return fn, ovlp_output
 
-def parse_args(argv):
-    parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')
-    parser.add_argument('--n_core', type=int, default=4,
-                        help='number of processes used for generating consensus; '
-                        '0 for main process only (default=%(default)s)')
-    parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
-    parser.add_argument('--db', type=str, dest='db_fn', help='read db file path')
-    parser.add_argument('--max_diff', type=int, help="max difference of 5' and 3' coverage")
-    parser.add_argument('--max_cov', type=int, help="max coverage of 5' or 3' coverage")
-    parser.add_argument('--min_cov', type=int, help="min coverage of 5' or 3' coverage")
-    parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads (default=%(default)s)")
-    parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible (default=%(default)s)")
-    parser.add_argument('--stream', action='store_true', help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
-    parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
-    parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
-    args = parser.parse_args(argv[1:])
-    return args
-
-def run_ovlp_filter(exe_pool, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn):
+def run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, bestn, db_fn):
     io.LOG('preparing filter_stage1')
     io.logstats()
-    file_list = open(fofn).read().split("\n")
     inputs = []
     for fn in file_list:
         if len(fn) != 0:
@@ -234,7 +215,20 @@ def run_ovlp_filter(exe_pool, fofn, max_diff, max_cov, min_cov, min_len, bestn, 
             print " ".join(l)
     io.logstats()
 
-def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
+def try_run_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn):
+    io.LOG('starting ovlp_filter')
+    file_list = open(fofn).read().strip().split("\n")
+    io.LOG('fofn %r: %r' %(fofn, file_list))
+    n_core = min(n_core, len(file_list))
+    exe_pool = Pool(n_core)
+    try:
+        run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, bestn, db_fn)
+        io.LOG('finished ovlp_filter')
+    except KeyboardInterrupt:
+        io.LOG('terminating ovlp_filter workers...')
+        exe_pool.terminate()
+
+def ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
     if debug:
         n_core = 0
         silent = False
@@ -243,15 +237,26 @@ def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_
     if stream:
         global readlines
         readlines = io.streamlines
-    exe_pool = Pool(n_core)
-    io.LOG('starting ovlp_filter')
-    try:
-        run_ovlp_filter(exe_pool, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn)
-        io.LOG('finished ovlp_filter')
-    except KeyboardInterrupt:
-        io.LOG('interrupting ovlp_filter')
-        exe_pool.terminate()
+    try_run_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn)
+
+def parse_args(argv):
+    parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')
+    parser.add_argument('--n_core', type=int, default=4,
+                        help='number of processes used for generating consensus; '
+                        '0 for main process only (default=%(default)s)')
+    parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
+    parser.add_argument('--db', type=str, dest='db_fn', help='read db file path')
+    parser.add_argument('--max_diff', type=int, help="max difference of 5' and 3' coverage")
+    parser.add_argument('--max_cov', type=int, help="max coverage of 5' or 3' coverage")
+    parser.add_argument('--min_cov', type=int, help="min coverage of 5' or 3' coverage")
+    parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads (default=%(default)s)")
+    parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible (default=%(default)s)")
+    parser.add_argument('--stream', action='store_true', help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
+    parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
+    parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
+    args = parser.parse_args(argv[1:])
+    return args
 
 def main(*argv):
     args = parse_args(argv)
-    fc_ovlp_filter(**vars(args))
+    ovlp_filter(**vars(args))
