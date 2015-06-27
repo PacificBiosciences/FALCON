@@ -25,6 +25,12 @@ def logstats():
     """
     LOG('maxrss:%9d' %(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
+def reprarg(arg):
+    if (isinstance(arg, set) or isinstance(arg, list)
+            or isinstance(arg, tuple) or isinstance(arg, dict)):
+        if len(arg) > 9:
+            return '%s(%d elem)' %(type(arg).__name__, len(arg))
+    return repr(arg) 
 def run_func(args):
     """Wrap multiprocessing.Pool calls.
     Usage:
@@ -37,16 +43,16 @@ def run_func(args):
         func_name = repr(func) # but since it must be pickle-able, this should never happen.
     args = args[1:]
     try:
-        LOG('starting %s(%s)' %(func_name, ', '.join(repr(a) for a in args)))
+        LOG('starting %s(%s)' %(func_name, ', '.join(reprarg(a) for a in args)))
         logstats()
         ret = func(*args)
         logstats()
-        LOG('finished %s(%s)' %(func_name, ', '.join(repr(a) for a in args)))
+        LOG('finished %s(%s)' %(func_name, ', '.join(reprarg(a) for a in args)))
         return ret
     except Exception:
         raise Exception(traceback.format_exc())
     except: # KeyboardInterrupt, SystemExit
-        LOG('interrupted %s(%s)' %(func_name, ', '.join(repr(a) for a in args)))
+        LOG('interrupted %s(%s)' %(func_name, ', '.join(reprarg(a) for a in args)))
         return
 
 def syscall(cmd):
@@ -74,6 +80,7 @@ def streamlines(cmd):
     LOG('$ %s |' %cmd)
     proc = sp.Popen(shlex.split(cmd), stdout=sp.PIPE)
     return proc.stdout
+
 class DataReaderContext(object):
     def readlines(self):
         output = self.data.strip()
@@ -86,6 +93,8 @@ class DataReaderContext(object):
     def __init__(self, data):
         self.data = data
 class ProcessReaderContext(object):
+    """Prefer this to slurplines() or streamlines().
+    """
     def __enter__(self):
         self.proc = sp.Popen(shlex.split(self.cmd), stdout=sp.PIPE)
     def __exit__(self, etype, evalue, etb):
@@ -104,22 +113,33 @@ class ProcessReaderContext(object):
         self.cmd = cmd
 class CapturedProcessReaderContext(ProcessReaderContext):
     def readlines(self):
+        """Usage:
+
+            cmd = 'ls -l'
+            reader = CapturedProcessReaderContext(cmd)
+            with reader:
+                for line in reader.readlines():
+                    print line
+
+        Any exception within the 'with-block' is propagated.
+        Otherwise, after all lines are read, if 'cmd' failed, Exception is raised.
+        """
         output, _ = self.proc.communicate()
         for line in output.splitlines():
             yield line
 class StreamedProcessReaderContext(ProcessReaderContext):
-    """Usage:
-
-        cmd = 'ls -l'
-        reader = StreamedProcessReaderContext(cmd)
-        with reader:
-            for line in reader.readlines():
-                print line
-
-    Any exception within the 'with-block' is propagated.
-    Otherwise, after all lines are read, if 'cmd' failed, Exception is raised.
-    """
     def readlines(self):
+        """Usage:
+
+            cmd = 'ls -l'
+            reader = StreamedProcessReaderContext(cmd)
+            with reader:
+                for line in reader.readlines():
+                    print line
+
+        Any exception within the 'with-block' is propagated.
+        Otherwise, after all lines are read, if 'cmd' failed, Exception is raised.
+        """
         for line in self.proc.stdout:
             yield line
 
