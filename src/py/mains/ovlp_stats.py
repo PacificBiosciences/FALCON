@@ -1,7 +1,10 @@
 from falcon_kit.multiproc import Pool
+import falcon_kit.util.io as io
 import argparse
 import subprocess as sp
 import shlex
+
+readlines = io.slurplines
 
 
 def filter_stats(lines, min_len):
@@ -58,23 +61,27 @@ def filter_stats(lines, min_len):
         return rtn_data
 
 
-def run_filter_stats(input_):
-    fn, min_len = input_
+def run_filter_stats(fn, min_len):
     lines = sp.check_output(shlex.split("LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn)).splitlines()
     return fn, filter_stats(lines, min_len)
 
-def ovlp_stats(fofn, min_len, n_core):
-    exe_pool = Pool(n_core)
-
+def run_ovlp_stats(exe_pool, fofn, min_len):
     file_list = open(fofn).read().split("\n")
     #print "all", len(contained)
     inputs = []
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (fn, min_len ) )
-    for res in exe_pool.imap(run_filter_stats, inputs):
+            inputs.append( (run_filter_stats, fn, min_len ) )
+    for res in exe_pool.imap(io.run_func, inputs):
         for l in res[1]:
             print " ".join([str(c) for c in l])
+
+def ovlp_stats(fofn, min_len, n_core):
+    exe_pool = Pool(n_core)
+    try:
+        run_ovlp_stats(exe_pool, fofn, min_len)
+    except KeyboardInterrupt:
+        exe_pool.terminate()
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')
