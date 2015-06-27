@@ -97,6 +97,7 @@ def filter_stage2(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):
 
 def filter_stage3(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set, bestn):
         ovlp_output = []
+        overlap_data = {"5p":[], "3p":[]}
         current_q_id = None
         cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
         for l in readlines(cmd):
