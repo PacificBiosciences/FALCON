@@ -197,8 +197,11 @@ def parse_args(argv):
     return args
 
 def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
+    if debug:
+        n_core = 0
+        silent = False
     if silent:
-        io.LOG = write_nothing
+        io.LOG = io.write_nothing
     if stream:
         global readlines
         readlines = io.streamlines

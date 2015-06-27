@@ -77,7 +77,12 @@ def run_ovlp_stats(exe_pool, fofn, min_len):
         for l in res[1]:
             print " ".join([str(c) for c in l])
 
-def ovlp_stats(fofn, min_len, n_core, stream):
+def ovlp_stats(fofn, min_len, n_core, stream, debug, silent):
+    if debug:
+        n_core = 0
+        silent = False
+    if silent:
+        io.LOG = io.write_nothing
     if stream:
         global readlines
         readlines = io.streamlines
@@ -95,6 +100,8 @@ def parse_args(argv):
     parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
     parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
     parser.add_argument('--stream', action='store_true', help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
+    parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
+    parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
     return parser.parse_args(argv[1:])
 
 def main(*argv):
