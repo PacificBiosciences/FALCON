@@ -63,15 +63,7 @@ def run_filter_stats(input_):
     lines = sp.check_output(shlex.split("LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn)).splitlines()
     return fn, filter_stats(lines, min_len)
 
-
-def main(*argv):
-    parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')
-    parser.add_argument('--n_core', type=int, default=4,
-                        help='number of processes used for generating consensus; '
-                        '0 for main process only (default=%(default)s)')
-    parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
-    parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
-    args = parser.parse_args(argv[1:])
+def ovlp_stats(args):
     exe_pool = Pool(args.n_core)
 
     file_list = open(args.fofn).read().split("\n")
@@ -83,3 +75,17 @@ def main(*argv):
     for res in exe_pool.imap(run_filter_stats, inputs):
         for l in res[1]:
             print " ".join([str(c) for c in l])
+
+def parse_args(argv):
+    parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')
+    parser.add_argument('--n_core', type=int, default=4,
+                        help='number of processes used for generating consensus; '
+                        '0 for main process only (default=%(default)s)')
+    parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
+    parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
+    return parser.parse_args(argv[1:])
+
+def main(*argv):
+    args = parse_args(argv)
+    ovlp_stats(args)
+    #ovlp_stats(**vars(args))
