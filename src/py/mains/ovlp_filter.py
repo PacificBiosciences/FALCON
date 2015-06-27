@@ -196,6 +196,44 @@ def parse_args(argv):
     args = parser.parse_args(argv[1:])
     return args
 
+def run_ovlp_filter(exe_pool, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn):
+    io.LOG('preparing filter_stage1')
+    io.logstats()
+    file_list = open(fofn).read().split("\n")
+    inputs = []
+    for fn in file_list:
+        if len(fn) != 0:
+            inputs.append( (filter_stage1, db_fn, fn, max_diff, max_cov, min_cov, min_len) )
+    
+    ignore_all = []
+    for res in exe_pool.imap(io.run_func, inputs):  
+        ignore_all.extend( res[1] )
+
+    io.LOG('preparing filter_stage2')
+    io.logstats()
+    inputs = []
+    ignore_all = set(ignore_all)
+    for fn in file_list:
+        if len(fn) != 0:
+            inputs.append( (filter_stage2, db_fn, fn, max_diff, max_cov, min_cov, min_len, ignore_all) )
+    contained = set()
+    for res in exe_pool.imap(io.run_func, inputs):  
+        contained.update(res[1])
+        #print res[0], len(res[1]), len(contained)
+
+    #print "all", len(contained)
+    io.LOG('preparing filter_stage3')
+    io.logstats()
+    inputs = []
+    ignore_all = set(ignore_all)
+    for fn in file_list:
+        if len(fn) != 0:
+            inputs.append( (filter_stage3, db_fn, fn, max_diff, max_cov, min_cov, min_len, ignore_all, contained, bestn) )
+    for res in exe_pool.imap(io.run_func, inputs):  
+        for l in res[1]:
+            print " ".join(l)
+    io.logstats()
+
 def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
     if debug:
         n_core = 0
@@ -206,45 +244,13 @@ def fc_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_
         global readlines
         readlines = io.streamlines
     exe_pool = Pool(n_core)
+    io.LOG('starting ovlp_filter')
     try:
         run_ovlp_filter(exe_pool, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn)
+        io.LOG('finished ovlp_filter')
     except KeyboardInterrupt:
+        io.LOG('interrupting ovlp_filter')
         exe_pool.terminate()
-
-def run_ovlp_filter(exe_pool, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn):
-    file_list = open(fofn).read().split("\n")
-    inputs = []
-    for fn in file_list:
-        if len(fn) != 0:
-            inputs.append( (filter_stage1, db_fn, fn, max_diff, max_cov, min_cov, min_len) )
-    
-    ignore_all = []
-    io.logstats()
-    for res in exe_pool.imap(io.run_func, inputs):  
-        ignore_all.extend( res[1] )
-
-    inputs = []
-    ignore_all = set(ignore_all)
-    for fn in file_list:
-        if len(fn) != 0:
-            inputs.append( (filter_stage2, db_fn, fn, max_diff, max_cov, min_cov, min_len, ignore_all) )
-    contained = set()
-    io.logstats()
-    for res in exe_pool.imap(io.run_func, inputs):  
-        contained.update(res[1])
-        #print res[0], len(res[1]), len(contained)
-
-    #print "all", len(contained)
-    inputs = []
-    ignore_all = set(ignore_all)
-    for fn in file_list:
-        if len(fn) != 0:
-            inputs.append( (filter_stage3, db_fn, fn, max_diff, max_cov, min_cov, min_len, ignore_all, contained, bestn) )
-    io.logstats()
-    for res in exe_pool.imap(io.run_func, inputs):  
-        for l in res[1]:
-            print " ".join(l)
-    io.logstats()
 
 def main(*argv):
     args = parse_args(argv)

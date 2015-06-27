@@ -87,9 +87,12 @@ def ovlp_stats(fofn, min_len, n_core, stream, debug, silent):
         global readlines
         readlines = io.streamlines
     exe_pool = Pool(n_core)
+    io.LOG('starting ovlp_stats')
     try:
         run_ovlp_stats(exe_pool, fofn, min_len)
+        io.LOG('finished ovlp_stats')
     except KeyboardInterrupt:
+        io.LOG('interrupting ovlp_stats')
         exe_pool.terminate()
 
 def parse_args(argv):
