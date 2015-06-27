@@ -69,10 +69,59 @@ def streamlines(cmd):
     """Stream stdout from cmd.
     Let stderr fall through.
     The returned reader will stop yielding when the subproc exits.
+    Note: We do not detect a failure in the underlying process.
     """
     LOG('$ %s |' %cmd)
     proc = sp.Popen(shlex.split(cmd), stdout=sp.PIPE)
     return proc.stdout
+class DataReaderContext(object):
+    def readlines(self):
+        output = self.data.strip()
+        for line in output.splitlines():
+            yield line
+    def __enter__(self):
+        pass
+    def __exit__(self, *args):
+        self.returncode = 0
+    def __init__(self, data):
+        self.data = data
+class ProcessReaderContext(object):
+    def __enter__(self):
+        self.proc = sp.Popen(shlex.split(self.cmd), stdout=sp.PIPE)
+    def __exit__(self, etype, evalue, etb):
+        if etype is None:
+            self.proc.wait()
+        else:
+            # Exception was raised in "with-block".
+            # We cannot wait on proc b/c it might never finish!
+            pass
+        self.returncode = self.proc.returncode
+        if self.returncode:
+            msg = "%r <- %r" %(self.returncode, self.cmd)
+            raise Exception(msg)
+        del self.proc
+    def __init__(self, cmd):
+        self.cmd = cmd
+class CapturedProcessReaderContext(ProcessReaderContext):
+    def readlines(self):
+        output, _ = self.proc.communicate()
+        for line in output.splitlines():
+            yield line
+class StreamedProcessReaderContext(ProcessReaderContext):
+    """Usage:
+
+        cmd = 'ls -l'
+        reader = StreamedProcessReaderContext(cmd)
+        with reader:
+            for line in reader.readlines():
+                print line
+
+    Any exception within the 'with-block' is propagated.
+    Otherwise, after all lines are read, if 'cmd' failed, Exception is raised.
+    """
+    def readlines(self):
+        for line in self.proc.stdout:
+            yield line
 
 def filesize(fn):
     """In bytes.

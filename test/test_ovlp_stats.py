@@ -1,4 +1,5 @@
 import falcon_kit.mains.ovlp_stats as mod
+import falcon_kit.util.io as io
 from nose.tools import assert_equal
 
 def test_help():
@@ -7,8 +8,8 @@ def test_help():
     except SystemExit:
         pass
 def test():
-    lines = data.strip().splitlines()
-    stats = mod.filter_stats(lines, min_len=62)
+    reader = io.DataReaderContext(data)
+    stats = mod.filter_stats(reader, min_len=62)
     #print stats
     assert_equal(expected,  stats)
 

@@ -4,10 +4,11 @@ import argparse
 import subprocess as sp
 import shlex
 
-readlines = io.slurplines
+Reader = io.CapturedProcessReaderContext
 
 
-def filter_stats(lines, min_len):
+def filter_stats(reader, min_len):
+    with reader:
         current_q_id = None
         contained = False
         ave_idt = 0.0
@@ -16,7 +17,7 @@ def filter_stats(lines, min_len):
         q_id = None
         rtn_data = []
         q_l = 0
-        for l in lines:
+        for l in reader.readlines():
             l = l.strip().split()
             q_id, t_id = l[:2]
 
@@ -63,8 +64,8 @@ def filter_stats(lines, min_len):
 
 def run_filter_stats(fn, min_len):
     cmd = "LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn
-    lines = readlines(cmd)
-    return fn, filter_stats(lines, min_len)
+    reader = Reader(cmd)
+    return fn, filter_stats(reader, min_len)
 
 def run_ovlp_stats(exe_pool, file_list, min_len):
     inputs = []
@@ -95,8 +96,8 @@ def ovlp_stats(fofn, min_len, n_core, stream, debug, silent):
     if silent:
         io.LOG = io.write_nothing
     if stream:
-        global readlines
-        readlines = io.streamlines
+        global Reader
+        Reader = io.StreamedProcessReaderContext
     try_run_ovlp_stats(n_core, fofn, min_len)
 
 def parse_args(argv):
