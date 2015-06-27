@@ -63,15 +63,15 @@ def run_filter_stats(input_):
     lines = sp.check_output(shlex.split("LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn)).splitlines()
     return fn, filter_stats(lines, min_len)
 
-def ovlp_stats(args):
-    exe_pool = Pool(args.n_core)
+def ovlp_stats(fofn, min_len, n_core):
+    exe_pool = Pool(n_core)
 
-    file_list = open(args.fofn).read().split("\n")
+    file_list = open(fofn).read().split("\n")
     #print "all", len(contained)
     inputs = []
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append( (fn, args.min_len ) )
+            inputs.append( (fn, min_len ) )
     for res in exe_pool.imap(run_filter_stats, inputs):
         for l in res[1]:
             print " ".join([str(c) for c in l])
@@ -87,5 +87,4 @@ def parse_args(argv):
 
 def main(*argv):
     args = parse_args(argv)
-    ovlp_stats(args)
-    #ovlp_stats(**vars(args))
+    ovlp_stats(**vars(args))
