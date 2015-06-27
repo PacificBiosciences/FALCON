@@ -62,7 +62,8 @@ def filter_stats(lines, min_len):
 
 
 def run_filter_stats(fn, min_len):
-    lines = sp.check_output(shlex.split("LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn)).splitlines()
+    cmd = "LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn
+    lines = readlines(cmd)
     return fn, filter_stats(lines, min_len)
 
 def run_ovlp_stats(exe_pool, fofn, min_len):
@@ -76,7 +77,10 @@ def run_ovlp_stats(exe_pool, fofn, min_len):
         for l in res[1]:
             print " ".join([str(c) for c in l])
 
-def ovlp_stats(fofn, min_len, n_core):
+def ovlp_stats(fofn, min_len, n_core, stream):
+    if stream:
+        global readlines
+        readlines = io.streamlines
     exe_pool = Pool(n_core)
     try:
         run_ovlp_stats(exe_pool, fofn, min_len)
@@ -90,6 +94,7 @@ def parse_args(argv):
                         '0 for main process only (default=%(default)s)')
     parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
     parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
+    parser.add_argument('--stream', action='store_true', help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
     return parser.parse_args(argv[1:])
 
 def main(*argv):
