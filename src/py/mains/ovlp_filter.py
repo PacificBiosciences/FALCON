@@ -26,12 +26,12 @@ def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
 
                 left_count = overlap_data["5p"]
                 right_count = overlap_data["3p"]
-            
+
                 if abs(left_count - right_count) > max_diff:
                     ignore_rtn.append( current_q_id )
                 elif left_count > max_ovlp or right_count > max_ovlp:
                     ignore_rtn.append( current_q_id )
-                elif left_count < min_ovlp or right_count < min_ovlp: 
+                elif left_count < min_ovlp or right_count < min_ovlp:
                     ignore_rtn.append( current_q_id )
 
                 overlap_data = {"5p":0, "3p":0}
@@ -67,9 +67,9 @@ def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
                 ignore_rtn.append( current_q_id )
             elif left_count > max_ovlp or right_count > max_ovlp:
                 ignore_rtn.append( current_q_id )
-            elif left_count < min_ovlp or right_count < min_ovlp: 
+            elif left_count < min_ovlp or right_count < min_ovlp:
                 ignore_rtn.append( current_q_id )
-            
+
         return ignore_rtn
 
 def run_filter_stage2(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):
@@ -101,7 +101,7 @@ def filter_stage2(readlines, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):
                 contained_id.add(q_id)
             if l[-1] == "contains":
                 contained_id.add(t_id)
-        return contained_id 
+        return contained_id
 
 def run_filter_stage3(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set, bestn):
     cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
@@ -131,10 +131,10 @@ def filter_stage3(readlines, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, 
                 for i in xrange(len(left)):
                     score, m_range, ovlp = left[i]
                     ovlp_output.append(ovlp)
-                    #print " ".join(ovlp), read_end_data[current_q_id] 
+                    #print " ".join(ovlp), read_end_data[current_q_id]
                     if i >= bestn and m_range > 1000:
                         break
-                
+
                 for i in xrange(len(right)):
                     score, m_range, ovlp = right[i]
                     ovlp_output.append(ovlp)
@@ -178,7 +178,7 @@ def filter_stage3(readlines, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, 
         for i in xrange(len(left)):
             score, m_range, ovlp = left[i]
             ovlp_output.append(ovlp)
-            #print " ".join(ovlp), read_end_data[current_q_id] 
+            #print " ".join(ovlp), read_end_data[current_q_id]
             if i >= bestn and m_range > 1000:
                 break
 
@@ -198,9 +198,9 @@ def run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, be
     for fn in file_list:
         if len(fn) != 0:
             inputs.append( (run_filter_stage1, db_fn, fn, max_diff, max_cov, min_cov, min_len) )
-    
+
     ignore_all = []
-    for res in exe_pool.imap(io.run_func, inputs):  
+    for res in exe_pool.imap(io.run_func, inputs):
         ignore_all.extend( res[1] )
 
     io.LOG('preparing filter_stage2')
@@ -211,7 +211,7 @@ def run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, be
         if len(fn) != 0:
             inputs.append( (run_filter_stage2, db_fn, fn, max_diff, max_cov, min_cov, min_len, ignore_all) )
     contained = set()
-    for res in exe_pool.imap(io.run_func, inputs):  
+    for res in exe_pool.imap(io.run_func, inputs):
         contained.update(res[1])
         #print res[0], len(res[1]), len(contained)
 
@@ -223,7 +223,7 @@ def run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, be
     for fn in file_list:
         if len(fn) != 0:
             inputs.append( (run_filter_stage3, db_fn, fn, max_diff, max_cov, min_cov, min_len, ignore_all, contained, bestn) )
-    for res in exe_pool.imap(io.run_func, inputs):  
+    for res in exe_pool.imap(io.run_func, inputs):
         for l in res[1]:
             print " ".join(l)
     io.logstats()

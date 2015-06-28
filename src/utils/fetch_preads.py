@@ -10,7 +10,7 @@ with open("./unit_edges.dat") as f:
         u_edges.setdefault( (v, w), [] )
         u_edges[ (v, w) ].append( (path, seq) )
         u_graph.add_edge(v, w)
-        
+
 len(u_edges)
 u_graph_r = u_graph.reverse()
 
@@ -46,7 +46,7 @@ for id_ in a_tig_path:
             p_ugraph.add_path(a_path)
             for pp in a_path:
                 all_nodes.add(pp)
-        
+
 for v, w in u_edges:
     if v in all_nodes and w in all_nodes:
         for p, s in u_edges[(v,w)]:

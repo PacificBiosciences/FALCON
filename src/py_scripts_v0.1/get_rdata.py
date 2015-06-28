@@ -84,7 +84,7 @@ with open(m4_fofn) as fofn:
             for l in m4_f:
                 d = l.strip().split()
                 id1, id2 = d[:2]
-                #if -noSplitSubread not used, we will need the following line    
+                #if -noSplitSubread not used, we will need the following line
                 #id1 = id1.split("/")[0]
                 if id1 == id2:
                     continue
@@ -144,26 +144,26 @@ for id2 in target_to_query:
     if id2 not in target_data:
         continue
 
-    ref_data = (id2, target_data[id2]) 
+    ref_data = (id2, target_data[id2])
     ref_len = len(target_data[id2])
     base_count.clear()
     base_count.update( target_data[id2] )
     if 1.0*base_count.most_common(1)[0][1]/ref_len > 0.8:  # don't do preassmbly if a read is of >80% of the same base
         continue
     read_data = []
-    
+
     query_alignment = target_to_query[id2]
     query_alignment.sort() # get better alignment
     total_bases = 0
     max_cov_bases = max_cov * ref_len * 1.2
     #min_cov_bases = min_cov * ref_len * 3
-    
+
     for rank_score, l in query_alignment:
         rank, score = rank_score
         #score = rank_score
         l = l.split()
         id1 = l[0]
-        #if -noSplitSubread not used, we will need the following line    
+        #if -noSplitSubread not used, we will need the following line
         #id1 = id1.split("/")[0]
         q_s = int(l[5]) + trim_align
         q_e = int(l[6]) - trim_align
@@ -186,7 +186,7 @@ for id2 in target_to_query:
 
     if len(read_data) > 5:
         r_count += 1
-        t_id, t_seq = ref_data 
+        t_id, t_seq = ref_data
         t_len = len(t_seq)
         print t_id, t_seq
         for r in read_data:

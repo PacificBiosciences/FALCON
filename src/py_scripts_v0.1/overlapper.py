@@ -52,7 +52,7 @@ def get_alignment(seq1, seq0):
         #s2 = 0 if s2 < 14 else s2 - 14
         e1 = len(seq1) if e1 >= len(seq1)-2*K else e1 + K*2
         e2 = len(seq0) if e2 >= len(seq0)-2*K else e2 + K*2
-        
+
         alignment = DWA.align(seq1[s1:e1], e1-s1,
                               seq0[s2:e2], e2-s2,
                               100, 0)
@@ -71,7 +71,7 @@ def get_alignment(seq1, seq0):
         assert aln_q_e- aln_q_s <= alignment[0].aln_str_size or aln_t_e- aln_t_s <= alignment[0].aln_str_size
         #print aln_str1
         #print aln_str0
-    
+
         DWA.free_alignment(alignment)
 
     kup.free_seq_addr_array(sda_ptr)
@@ -96,11 +96,11 @@ def get_ovelap_alignment(seq1, seq0):
     aln_range = kup.find_best_aln_range(kmer_match_ptr, K, K*5, 50)
     #x,y = zip( * [ (kmer_match.query_pos[i], kmer_match.target_pos[i]) for i in range(kmer_match.count )] )
     kup.free_kmer_match(kmer_match_ptr)
-    s1, e1, s0, e0 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2  
+    s1, e1, s0, e0 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
     len_1 = len(seq1)
     len_0 = len(seq0)
     do_aln = False
-    contain_status = "none" 
+    contain_status = "none"
     if e1 - s1 > 500:
         if s1 < 100 and len_1 - e1 < 100:
             do_aln = False
@@ -118,7 +118,7 @@ def get_ovelap_alignment(seq1, seq0):
                 if e0 == len_0:
                     do_aln = False
                     contain_status = "contained"
-                
+
             if s1 <= s0:
                 s0 -= s1 #assert s1 > 0
                 s1 = 0
@@ -136,7 +136,7 @@ def get_ovelap_alignment(seq1, seq0):
             #print seq1[s1:e1]
             #print seq0[s2:e2]
             #if alignment[0].aln_str_size > 500:
-    
+
             #aln_str1 = alignment[0].q_aln_str
             #aln_str0 = alignment[0].t_aln_str
             aln_size = alignment[0].aln_str_size
@@ -148,10 +148,10 @@ def get_ovelap_alignment(seq1, seq0):
             assert aln_q_e- aln_q_s <= alignment[0].aln_str_size or aln_t_e- aln_t_s <= alignment[0].aln_str_size
             #print aln_str1
             #print aln_str0
-            if aln_size > 500: 
-                contain_status = "overlap"            
+            if aln_size > 500:
+                contain_status = "overlap"
             DWA.free_alignment(alignment)
-        
+
     kup.free_seq_addr_array(sda_ptr)
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
@@ -160,7 +160,7 @@ def get_ovelap_alignment(seq1, seq0):
         #return s1, s1+aln_q_e-aln_q_s, s2, s2+aln_t_e-aln_t_s, aln_size, aln_dist, x, y
         return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_dist, contain_status
     else:
-        return 0, 0, 0, 0, 0, 0, contain_status 
+        return 0, 0, 0, 0, 0, 0, contain_status
 
 rc_map = dict( zip("ACGTacgtNn-", "TGCAtgcaNn-") )
 with open("test_ovlp.dat","w") as f:
@@ -170,7 +170,7 @@ with open("test_ovlp.dat","w") as f:
         count = kmer_match.count
         hit_index = np.array(kmer_match.target_pos[0:count])/500
         kup.free_kmer_match(kmer_match_ptr)
-        
+
         c = collections.Counter(hit_index)
         s = [c[0] for c in c.items() if c[1] >50]
         #s.sort()
@@ -184,19 +184,19 @@ with open("test_ovlp.dat","w") as f:
             rtn = get_ovelap_alignment(seq1, seq0)
             #rtn = get_alignment(seq1, seq0)
             if rtn != None:
-                
+
                 s1, e1, s2, e2, aln_size, aln_dist, c_status = rtn
                 #print >>f, name, 0, s1, e1, len(seq1), hit_id, 0, s2, e2, len(seq0),  aln_size, aln_dist
                 print >>f, hit_id, name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 0, s2, e2, len(seq0), 0, s1, e1, len(seq1), c_status
-                
+
         r_q_seq = "".join([rc_map[c] for c in q_seq[::-1]])
-        
+
         kmer_match_ptr = kup.find_kmer_pos_for_seq(r_q_seq, len(r_q_seq), K, sda_ptr, lk_ptr)
         kmer_match = kmer_match_ptr[0]
         count = kmer_match.count
         hit_index = np.array(kmer_match.target_pos[0:count])/500
         kup.free_kmer_match(kmer_match_ptr)
-        
+
         c = collections.Counter(hit_index)
         s = [c[0] for c in c.items() if c[1] >50]
         #s.sort()

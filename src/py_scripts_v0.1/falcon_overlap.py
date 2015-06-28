@@ -37,7 +37,7 @@
 # SUCH DAMAGE.
 #################################################################################$$
 
-from falcon_kit import * 
+from falcon_kit import *
 from pbcore.io import FastaReader
 import numpy as np
 import collections
@@ -64,19 +64,19 @@ def get_ovelap_alignment(seq1, seq0):
     #x,y = zip( * [ (kmer_match.query_pos[i], kmer_match.target_pos[i]) for i in range(kmer_match.count )] )
     aln_range = aln_range_ptr[0]
     kup.free_kmer_match(kmer_match_ptr)
-    s1, e1, s0, e0 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2  
+    s1, e1, s0, e0 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
     e1 += K + K/2
     e0 += K + K/2
     kup.free_aln_range(aln_range)
     len_1 = len(seq1)
     len_0 = len(seq0)
-    if e1 > len_1: 
+    if e1 > len_1:
         e1 = len_1
     if e0 > len_0:
         e0 = len_0
     do_aln = False
-    contain_status = "none" 
-    #print s0, e0, s1, e1 
+    contain_status = "none"
+    #print s0, e0, s1, e1
     if e1 - s1 > 500:
         if s0 < s1 and s0 > 24:
             do_aln = False
@@ -101,7 +101,7 @@ def get_ovelap_alignment(seq1, seq0):
                 #    contain_status = "contains"
                 #    print "X3", s0, e0, len_0, s1, e1, len_1
 
-                
+
             elif s1 <= s0:
                 s0 -= s1 #assert s1 > 0
                 s1 = 0
@@ -121,7 +121,7 @@ def get_ovelap_alignment(seq1, seq0):
             #print seq1[s1:e1]
             #print seq0[s2:e2]
             #if alignment[0].aln_str_size > 500:
-    
+
             #aln_str1 = alignment[0].q_aln_str
             #aln_str0 = alignment[0].t_aln_str
             aln_size = alignment[0].aln_str_size
@@ -133,10 +133,10 @@ def get_ovelap_alignment(seq1, seq0):
             assert aln_q_e- aln_q_s <= alignment[0].aln_str_size or aln_t_e- aln_t_s <= alignment[0].aln_str_size
             #print aln_str1
             #print aln_str0
-            if aln_size > 500 and contain_status == "none": 
-                contain_status = "overlap"            
+            if aln_size > 500 and contain_status == "none":
+                contain_status = "overlap"
             DWA.free_alignment(alignment)
-        
+
     kup.free_seq_addr_array(sda_ptr)
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
@@ -154,7 +154,7 @@ def get_ovelap_alignment(seq1, seq0):
         #return s1, s1+aln_q_e-aln_q_s, s2, s2+aln_t_e-aln_t_s, aln_size, aln_dist, x, y
         return s1, s1+aln_q_e-aln_q_s, s0, s0+aln_t_e-aln_t_s, aln_size, aln_dist, contain_status
     else:
-        return 0, 0, 0, 0, 0, 0, contain_status 
+        return 0, 0, 0, 0, 0, 0, contain_status
 
 def get_candidate_aln(hit_input):
 
@@ -164,7 +164,7 @@ def get_candidate_aln(hit_input):
 
     rtn = []
 
-    hit_index = hit_index_f 
+    hit_index = hit_index_f
     c = collections.Counter(hit_index)
     s = [c[0] for c in c.items() if c[1] >50]
     #s.sort()
@@ -178,16 +178,16 @@ def get_candidate_aln(hit_input):
         aln_data = get_ovelap_alignment(seq1, seq0)
         #rtn = get_alignment(seq1, seq0)
         if rtn != None:
-            
+
             s1, e1, s2, e2, aln_size, aln_dist, c_status = aln_data
             #print >>f, name, 0, s1, e1, len(seq1), hit_id, 0, s2, e2, len(seq0),  aln_size, aln_dist
-            rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
-                          0, s2, e2, len(seq0), 
+            rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)),
+                          0, s2, e2, len(seq0),
                           0, s1, e1, len(seq1), c_status ) )
 
     r_q_seq = "".join([RC_MAP[c] for c in q_seq[::-1]])
-    
-    hit_index = hit_index_r 
+
+    hit_index = hit_index_r
     c = collections.Counter(hit_index)
     s = [c[0] for c in c.items() if c[1] >50]
     #s.sort()
@@ -203,8 +203,8 @@ def get_candidate_aln(hit_input):
         if rtn != None:
             s1, e1, s2, e2, aln_size, aln_dist, c_status = aln_data
             #print >>f, name, 1, s1, e1, len(seq1), hit_id, 0, s2, e2, len(seq0),  aln_size, aln_dist
-            rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)), 
-                          0, s2, e2, len(seq0), 
+            rtn.append( ( hit_id, q_name, aln_dist - aln_size, "%0.2f" % (100 - 100.0*aln_dist/(aln_size+1)),
+                          0, s2, e2, len(seq0),
                           1, len(seq1) - e1, len(seq1)- s1, len(seq1), c_status ) )
 
     return rtn
@@ -230,7 +230,7 @@ def build_look_up(seqs, K):
         start += 1000
 
     kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 512)
-    
+
     #return sda_ptr, sa_ptr, lk_ptr
 
 
@@ -256,7 +256,7 @@ def get_candidate_hits(q_name):
     kup.free_kmer_match(kmer_match_ptr)
 
     r_q_seq = "".join([RC_MAP[c] for c in q_seq[::-1]])
-    
+
     kmer_match_ptr = kup.find_kmer_pos_for_seq(r_q_seq, len(r_q_seq), K, c_sda_ptr, c_lk_ptr)
     kmer_match = kmer_match_ptr[0]
     count = kmer_match.count
@@ -279,11 +279,11 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='a simple multi-processor overlapper for sequence reads')
     parser.add_argument('fasta_file', help='a fasta file for all pairwise overlapping of the reads within')
-    parser.add_argument('--min_len', type=int, default=4000, 
+    parser.add_argument('--min_len', type=int, default=4000,
                         help='minimum length of the reads to be considered for overlapping')
     parser.add_argument('--n_core', type=int, default=1,
                         help='number of processes used for detailed overlapping evalution')
-    parser.add_argument('--d_core', type=int, default=1, 
+    parser.add_argument('--d_core', type=int, default=1,
                         help='number of processes used for k-mer matching')
 
 
@@ -306,7 +306,7 @@ if __name__ == "__main__":
                 break
             seqs.append( (r.name, seq[start: start+1000]) )
             idx += 1
-        
+
         #seqs.append( (r.name, seq[:1000]) )
         seqs.append( (r.name, seq[-1000:]) )
         idx += 1
@@ -320,9 +320,9 @@ if __name__ == "__main__":
     build_look_up(seqs, K)
     m_pool = mp.Pool(args.d_core)
 
-    
+
     #for r in pool.imap(get_candidate_aln, lookup_data_iterator( q_seqs)):
     for r in pool.imap(get_candidate_aln, lookup_data_iterator( q_seqs, m_pool)):
         for h in r:
-            print " ".join([str(x) for x in h]) 
+            print " ".join([str(x) for x in h])
 

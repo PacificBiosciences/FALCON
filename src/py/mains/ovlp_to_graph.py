@@ -46,25 +46,25 @@ class StringGraph(object):
         self.n_mark = {}
         self.e_reduce = {}
         self.repeat_overlap = {}
-        
+
     def add_node(self, node_name):
-        """ 
+        """
         add a node into the graph by given a node name
         """
         if node_name not in self.nodes:
             self.nodes[node_name] = SGNode(node_name)
-    
+
     def add_edge(self, in_node_name, out_node_name, **attributes):
-        """ 
+        """
         add an edge into the graph by given a pair of nodes
         """
         if (in_node_name, out_node_name) not in self.edges:
-        
+
             self.add_node(in_node_name)
             self.add_node(out_node_name)
             in_node = self.nodes[in_node_name]
-            out_node = self.nodes[out_node_name]    
-            
+            out_node = self.nodes[out_node_name]
+
             edge = SGEdge(in_node, out_node)
             self.edges[ (in_node_name, out_node_name) ] = edge
             in_node.add_out_edge(edge)
@@ -81,9 +81,9 @@ class StringGraph(object):
 
         for n_name in self.nodes:
             n = self.nodes[n_name]
-            
+
             out_nodes = set( [ e.out_node for e in n.out_edges ] )
-            in_nodes = [e.in_node for e in n.in_edges ] 
+            in_nodes = [e.in_node for e in n.in_edges ]
             is_chimer = True
             for in_node in in_nodes:
                 for v in [e.out_node for e in in_node.out_edges]:
@@ -110,7 +110,7 @@ class StringGraph(object):
             if len(self.nodes[v].out_edges) > 1:
                 for out_edge in self.nodes[v].out_edges:
                     w = out_edge.out_node.name
-                    
+
                     if len(self.nodes[w].out_edges) == 0 and self.e_reduce[ (v, w) ] != True:
                         self.e_reduce[(v, w)] = True
                         removed_edges.add( (v, w) )
@@ -138,23 +138,23 @@ class StringGraph(object):
         FUZZ = 500
         for n in self.nodes:
             n_mark[n] = "vacant"
-    
+
         for n_name, node in self.nodes.items():
 
             out_edges = node.out_edges
             if len(out_edges) == 0:
                 continue
-            
+
             out_edges.sort(key=lambda x: x.attr["length"])
-            
+
             for e in out_edges:
                 w = e.out_node
                 n_mark[ w.name ] = "inplay"
-            
+
             max_len = out_edges[-1].attr["length"]
-                
+
             max_len += FUZZ
-            
+
             for e in out_edges:
                 e_len = e.attr["length"]
                 w = e.out_node
@@ -165,7 +165,7 @@ class StringGraph(object):
                             x = e2.out_node
                             if n_mark[x.name] == "inplay":
                                 n_mark[x.name] = "eliminated"
-            
+
             for e in out_edges:
                 e_len = e.attr["length"]
                 w = e.out_node
@@ -179,7 +179,7 @@ class StringGraph(object):
                         x = e2.out_node
                         if n_mark[x.name] == "inplay":
                             n_mark[x.name] = "eliminated"
-                            
+
             for out_edge in out_edges:
                 v = out_edge.in_node
                 w = out_edge.out_node
@@ -188,7 +188,7 @@ class StringGraph(object):
                     v_name, w_name = reverse_end(w.name), reverse_end(v.name)
                     e_reduce[(v_name, w_name)] = True
                 n_mark[w.name] = "vacant"
-                
+
 
     def mark_best_overlap(self):
         """
@@ -225,7 +225,7 @@ class StringGraph(object):
                     v2, w2 = reverse_end(w), reverse_end(v)
                     self.e_reduce[(v2, w2)] = True
                     removed_edges.add( (v2, w2) )
-                
+
         return removed_edges
 
     def resolve_repeat_edges(self):
@@ -239,7 +239,7 @@ class StringGraph(object):
         edges_to_reduce = []
         nodes_to_test = set()
         for v_n, v in self.nodes.items():
-            
+
             out_nodes = []
             for e in v.out_edges:
                 if self.e_reduce[(e.in_node.name, e.out_node.name)] == False:
@@ -252,9 +252,9 @@ class StringGraph(object):
 
             if len(out_nodes) == 1 and len(in_nodes)  == 1:
                 nodes_to_test.add(v_n)
-        
+
         for v_n in list( nodes_to_test ):
-            
+
             v = self.nodes[v_n]
 
             out_nodes = []
@@ -267,7 +267,7 @@ class StringGraph(object):
                 if self.e_reduce[(e.in_node.name, e.out_node.name)] == False:
                     in_nodes.append( e.in_node.name )
 
-            in_node_name = in_nodes[0] 
+            in_node_name = in_nodes[0]
 
             for out_edge in self.nodes[in_node_name].out_edges:
                 vv = out_edge.in_node.name
@@ -283,7 +283,7 @@ class StringGraph(object):
                 for e in self.nodes[ww].in_edges:
                     if self.e_reduce[ ( e.in_node.name, e.out_node.name ) ] == False:
                         ww_in_count += 1
-                #print ww, ww_in_count 
+                #print ww, ww_in_count
                 #G1 = nx.ego_graph( nxsg,  ww, 3, undirected=False)
                 #G2 = nx.ego_graph( nxsg,  v_n, 3, undirected=False)
                 #o_overlap = len( set(G1.nodes()) & set(G2.nodes()) )
@@ -311,7 +311,7 @@ class StringGraph(object):
                 for e in self.nodes[vv].out_edges:
                     if self.e_reduce[ ( e.in_node.name, e.out_node.name )] == False:
                         vv_out_count += 1
-                #print vv, vv_out_count 
+                #print vv, vv_out_count
                 #G1 = nx.ego_graph( nxsg_r,  vv, 3, undirected=False)
                 #G2 = nx.ego_graph( nxsg_r,  v_n, 3, undirected=False)
                 #i_overlap = len( set(G1.nodes()) & set(G2.nodes()) )
@@ -338,8 +338,8 @@ class StringGraph(object):
             if self.e_reduce[ (v.name, w.name) ] == False:
                 rtn.append(e)
         return rtn
-        
-        
+
+
     def get_in_edges_for_node(self, name, mask=True):
         rtn = []
         for e in self.nodes[name].in_edges:
@@ -369,13 +369,13 @@ class StringGraph(object):
                 rtn.append(e)
         rtn.sort(key=lambda e: e.attr["score"])
         return rtn[-1]
-        
+
 
 RCMAP = dict(zip("ACGTacgtNn-","TGCAtgcaNn-"))
 def generate_seq_from_path(sg, seqs, path):
     subseqs = []
     r_id, end = path[0].split(":")
-    
+
     count = 0
     for i in range( len( path ) -1 ):
         w_n, v_n = path[i:i+2]
@@ -400,7 +400,7 @@ def reverse_path( p ):
     p = p[::-1]
     return [reverse_end(n) for n in p]
 
-    
+
 def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_cutoff):
 
     tips = set()
@@ -414,9 +414,9 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
     v = start_node
     end_node = start_node
 
-    if DEBUG_LOG_LEVEL > 1: 
+    if DEBUG_LOG_LEVEL > 1:
         print
-        print 
+        print
         print "start", start_node
 
     bundle_nodes.add(v)
@@ -469,11 +469,11 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
 
                 length_to_node[v] = length_to_node[max_score_edge[0]] +  u_edge_data[ max_score_edge ][0]
                 score_to_node[v] = score_to_node[max_score_edge[0]] +  u_edge_data[ max_score_edge ][1]
-                
+
 
             converage = True
             break
-        
+
 
         depth += 1
         width = 1.0 * len(bundle_edges) / depth
@@ -485,7 +485,7 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
         if depth > depth_cutoff:
             converage = False
             break
-        
+
         tips_list = list(tips)
 
         tip_updated = False
@@ -506,7 +506,7 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
             extend_tip = True
 
             for uu, vv, kk in local_graph.in_edges(v, keys=True):
-                if DEBUG_LOG_LEVEL > 1: 
+                if DEBUG_LOG_LEVEL > 1:
                     print "in_edges", uu, vv, kk
                     print uu, "in length_to_node",  uu in length_to_node
 
@@ -520,9 +520,9 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
 
                     max_score = score
                     max_score_edge = (uu, vv, kk)
-            
+
             if extend_tip:
-            
+
                 length_to_node[v] = length_to_node[max_score_edge[0]] +  u_edge_data[ max_score_edge ][0]
                 score_to_node[v] = score_to_node[max_score_edge[0]] +  u_edge_data[ max_score_edge ][1]
 
@@ -583,13 +583,13 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
         for v in list(tips):
             bundle_nodes.add(v)
 
-        
+
 
     data = start_node, end_node, bundle_edges, length_to_node[end_node], score_to_node[end_node], depth
-    
+
     """
     start_node_r, end_node_r = reverse_end(end_node), reverse_end(start_node)
-    
+
     bundle_edge_r = set()
     for v, w, k in list(bundle_edges):
         vv, ww, kk = reverse_end(w), reverse_end(v), reverse_end(k)
@@ -611,7 +611,7 @@ def generate_string_graph(args):
     chimer_ids = set()
 
     filter_reads = False
-    
+
     seqs = set()
 
     G=nx.Graph()
@@ -622,7 +622,7 @@ def generate_string_graph(args):
 
 
     # loop through the overlapping data to load the data in the a python array
-    # contained reads are identified 
+    # contained reads are identified
 
     with open(overlap_file) as f:
         for l in f:
@@ -631,15 +631,15 @@ def generate_string_graph(args):
             #work around for some ill formed data recored
             #if len(l) != 13:
             #    continue
-            
+
             f_id, g_id, score, identity = l[:4]
 
             if f_id == g_id:  # don't need self-self overlapping
                 continue
-            
+
             if filter_reads:
 
-                if g_id not in seqs: 
+                if g_id not in seqs:
                     continue
 
                 if f_id not in seqs:
@@ -667,15 +667,15 @@ def generate_string_graph(args):
             # only used reads longer than the 4kb for assembly
             if f_len < args.min_len: continue
             if g_len < args.min_len: continue
-            
+
             # double check for proper overlap
             """
             if f_start > 24 and f_len - f_end > 24:  # allow 24 base tolerance on both sides of the overlapping
                 continue
-            
+
             if g_start > 24 and g_len - g_end > 24:
                 continue
-            
+
             if g_strain == 0:
                 if f_start < 24 and g_len - g_end > 24:
                     continue
@@ -694,7 +694,7 @@ def generate_string_graph(args):
 
             overlap_count[f_id] = overlap_count.get(f_id,0)+1
             overlap_count[g_id] = overlap_count.get(g_id,0)+1
-            
+
     #print "###", len(overlap_data), len(contained_reads)
     overlap_set = set()
     sg = StringGraph()
@@ -714,10 +714,10 @@ def generate_string_graph(args):
         else:
             overlap_set.add(overlap_pair)
 
-        
+
         if g_s == 1: # revered alignment, swapping the begin and end coordinates
             g_b, g_e = g_e, g_b
-        
+
         # build the string graph edges for each overlap
         if f_b > 1:
             if g_b < g_e:
@@ -729,11 +729,11 @@ def generate_string_graph(args):
                 """
                 if f_b == 0 or g_e - g_l == 0:
                     continue
-                sg.add_edge( "%s:B" % g_id, "%s:B" % f_id, label = (f_id, f_b, 0), 
+                sg.add_edge( "%s:B" % g_id, "%s:B" % f_id, label = (f_id, f_b, 0),
                                                            length = abs(f_b-0),
-                                                           score = -score, 
+                                                           score = -score,
                                                            identity = identity )
-                sg.add_edge( "%s:E" % f_id, "%s:E" % g_id, label = (g_id, g_e, g_l), 
+                sg.add_edge( "%s:E" % f_id, "%s:E" % g_id, label = (g_id, g_e, g_l),
                                                            length = abs(g_e-g_l),
                                                            score = -score,
                                                            identity = identity)
@@ -742,15 +742,15 @@ def generate_string_graph(args):
                      f.B         f.E
                   f  ----------->
                   g         <-------------
-                            g.E           g.B           
+                            g.E           g.B
                 """
                 if f_b == 0 or g_e == 0:
                     continue
-                sg.add_edge( "%s:E" % g_id, "%s:B" % f_id, label = (f_id, f_b, 0), 
+                sg.add_edge( "%s:E" % g_id, "%s:B" % f_id, label = (f_id, f_b, 0),
                                                            length = abs(f_b -0),
                                                            score = -score,
                                                            identity = identity)
-                sg.add_edge( "%s:E" % f_id, "%s:B" % g_id, label = (g_id, g_e, 0), 
+                sg.add_edge( "%s:E" % f_id, "%s:B" % g_id, label = (g_id, g_e, 0),
                                                            length = abs(g_e- 0),
                                                            score = -score,
                                                            identity = identity)
@@ -764,11 +764,11 @@ def generate_string_graph(args):
                 """
                 if g_b == 0 or f_e - f_l == 0:
                     continue
-                sg.add_edge( "%s:B" % f_id, "%s:B" % g_id, label = (g_id, g_b, 0), 
+                sg.add_edge( "%s:B" % f_id, "%s:B" % g_id, label = (g_id, g_b, 0),
                                                            length = abs(g_b - 0),
                                                            score = -score,
                                                            identity = identity)
-                sg.add_edge( "%s:E" % g_id, "%s:E" % f_id, label = (f_id, f_e, f_l), 
+                sg.add_edge( "%s:E" % g_id, "%s:E" % f_id, label = (f_id, f_e, f_l),
                                                            length = abs(f_e-f_l),
                                                            score = -score,
                                                            identity = identity)
@@ -777,15 +777,15 @@ def generate_string_graph(args):
                                     f.B         f.E
                   f                 ----------->
                   g         <-------------
-                            g.E           g.B           
+                            g.E           g.B
                 """
                 if g_b - g_l == 0 or f_e - f_l ==0:
                     continue
-                sg.add_edge( "%s:B" % f_id, "%s:E" % g_id, label = (g_id, g_b, g_l), 
+                sg.add_edge( "%s:B" % f_id, "%s:E" % g_id, label = (g_id, g_b, g_l),
                                                            length = abs(g_b - g_l),
                                                            score = -score,
                                                            identity = identity)
-                sg.add_edge( "%s:B" % g_id, "%s:E" % f_id, label = (f_id, f_e, f_l), 
+                sg.add_edge( "%s:B" % g_id, "%s:E" % f_id, label = (f_id, f_e, f_l),
                                                            length = abs(f_e - f_l),
                                                            score = -score,
                                                            identity = identity)
@@ -796,7 +796,7 @@ def generate_string_graph(args):
     #if not args.disable_chimer_prediction:
     #    sg.mark_chimer_edges()
     #sg.mark_spur_edge()
-    
+
 
     sg.mark_tr_edges() # mark those edges that transitive redundant
 
@@ -807,7 +807,7 @@ def generate_string_graph(args):
 
     removed_edges = set()
     if args.lfc == True:
-        removed_edges = sg.resolve_repeat_edges()  
+        removed_edges = sg.resolve_repeat_edges()
     else:
         removed_edges = sg.mark_best_overlap() # mark those edges that are best overlap edges
 
@@ -843,9 +843,9 @@ def generate_string_graph(args):
         print >>out_f, v, w, rid, sp, tp, score, identity, type_
 
 
-        
+
     out_f.close()
-    nxsg_r = nxsg.reverse()    
+    nxsg_r = nxsg.reverse()
 
     return nxsg, nxsg_r, edge_data
 
@@ -897,7 +897,7 @@ def construct_compound_paths(ug, u_edge_data):
             if (vv, ww, kk) in edge_to_cpath:
                 overlapped = True
                 break
-            
+
 
         if not overlapped:
             if DEBUG_LOG_LEVEL > 1:
@@ -916,11 +916,11 @@ def construct_compound_paths(ug, u_edge_data):
                 edge_to_cpath.setdefault( (rvv, rww, rkk), set() )
                 edge_to_cpath[ (rvv, rww, rkk) ].add( (rs, rt, v) ) #assert v == "NA"
                 bundle_edges_r.append(  (rvv, rww, rkk) )
-            
+
             compound_paths_1[ ( s, v, t) ] = width, length, score, bundle_edges
             compound_paths_1[ ( rs, v, rt) ] = width, length, score, bundle_edges_r
 
-             
+
     compound_paths_2 = {}
     edge_to_cpath = {}
     for s, v, t in compound_paths_1:
@@ -939,21 +939,21 @@ def construct_compound_paths(ug, u_edge_data):
 
     compound_paths_3 = {}
     for k, val in compound_paths_2.items():
-        
+
         start_node, NA, end_node = k
         rs = reverse_end(end_node)
         rt = reverse_end(start_node)
         assert (rs, "NA", rt) in compound_paths_2
-        
+
         contained = False
         for vv, ww, kk in ug.out_edges(start_node, keys=True):
-            if len(edge_to_cpath.get( (vv, ww, kk), [] )) > 1: 
+            if len(edge_to_cpath.get( (vv, ww, kk), [] )) > 1:
                 contained = True
 
         if not contained:
             compound_paths_3[k] = val
             if DEBUG_LOG_LEVEL > 1:
-                print "compound", k 
+                print "compound", k
 
     compound_paths = {}
     for s, v, t in compound_paths_3:
@@ -967,11 +967,11 @@ def construct_compound_paths(ug, u_edge_data):
 
 def main(*argv):
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes')
     parser.add_argument('overlap_file', help='a file that contains the overlap information.')
 
-    parser.add_argument('--min_len', type=int, default=4000, 
+    parser.add_argument('--min_len', type=int, default=4000,
                         help='minimum length of the reads to be considered for assembling')
     parser.add_argument('--min_idt', type=float, default=96,
                         help='minimum alignment identity of the reads to be considered for assembling')
@@ -994,7 +994,7 @@ def main(*argv):
     for v, w in edge_data:
 
         assert (reverse_end(w), reverse_end(v)) in edge_data
-        
+
         #if (v, w) in masked_edges:
         #    continue
 
@@ -1005,7 +1005,7 @@ def main(*argv):
         label = "%s:%d-%d" % (rid, sp, tp)
         sg2.add_edge( v, w, label = label, length = length, score = score)
 
-        
+
     # utg construction phase 1, identify all simple paths
     s_nodes = set()
     t_nodes = set()
@@ -1026,7 +1026,7 @@ def main(*argv):
 
     free_edges = set(sg2.edges())
 
-    if DEBUG_LOG_LEVEL > 1: 
+    if DEBUG_LOG_LEVEL > 1:
         for s in list(simple_nodes):
             print "simple_node", s
         for s in list(s_nodes):
@@ -1053,7 +1053,7 @@ def main(*argv):
 
         path = []
         path_length =0
-        path_score = 0 
+        path_score = 0
         for v, w in sg2.out_edges(n):
             #print "test",v,w,path
             if (v, w) not in free_edges:
@@ -1099,13 +1099,13 @@ def main(*argv):
                 path_length += edge_data[ (w, w_) ][3]
                 path_score += edge_data[ (w, w_) ][4]
                 free_edges.remove( (w, w_) )
-                
+
                 r_path.append(rw_)
                 r_path_edges.add( (rw_, rw) )
                 r_path_length += edge_data[ (rw_, rw) ][3]
                 r_path_score += edge_data[ (rw_, rw) ][4]
                 free_edges.remove( (rw_, rw) )
-                
+
 
                 w = w_
 
@@ -1143,7 +1143,7 @@ def main(*argv):
                 rv = reverse_end(v)
                 assert (rs, rt, rv) in u_edge_data
                 length, score, path_or_edges, type_ = u_edge_data[ (s, t, v) ]
-                
+
                 if type_ == "compound":
                     path_or_edges = "|".join( [ ss+"~"+vv+"~"+tt for ss, tt, vv in path_or_edges ] )
                 else:
@@ -1269,13 +1269,13 @@ def main(*argv):
     ug2_edges = set(ug2.edges(keys = True))
     edges_to_remove  = set()
     for s, v, t in compound_paths:
-        width, length, score, bundle_edges =  compound_paths[ (s, v, t) ] 
+        width, length, score, bundle_edges =  compound_paths[ (s, v, t) ]
         print >> compound_path_file, s,v,t, width, length, score, "|".join( [e[0]+"~"+e[2]+"~"+e[1] for e in bundle_edges] )
         for ss, tt, vv in bundle_edges:
             if (ss, tt, vv) in ug2_edges:
                 edges_to_remove.add( (ss, tt, vv) )
 
-    
+
     for s, t, v in edges_to_remove:
         ug2.remove_edge( s, t ,v )
         length, score, edges, type_ = u_edge_data[ (s, t, v) ]
@@ -1284,7 +1284,7 @@ def main(*argv):
 
 
     for s, v, t in compound_paths:
-        width, length, score, bundle_edges =  compound_paths[ (s, v, t) ] 
+        width, length, score, bundle_edges =  compound_paths[ (s, v, t) ]
         u_edge_data[ (s, t, v) ] = (length, score, bundle_edges, "compound")
         ug2.add_edge( s, t, key = v, via = v, type_="compound", length = length, score = score)
 
@@ -1301,13 +1301,13 @@ def main(*argv):
 
     # identify spurs in the utg graph
     # Currently, we use ad-hoc logic filtering out shorter utg, but we ca
-    # add proper alignment comparison later to remove redundant utgs 
+    # add proper alignment comparison later to remove redundant utgs
 
 
     with open("utg_data","w") as f:
         for s, t, v in u_edge_data:
             length, score, path_or_edges, type_ = u_edge_data[ (s, t, v) ]
-            
+
             if v == "NA":
                 path_or_edges = "|".join( [ ss+"~"+vv+"~"+tt for ss, tt, vv in path_or_edges ] )
             else:
@@ -1342,7 +1342,7 @@ def main(*argv):
 
     all_nodes = set(all_nodes)
     c_path = []
-    
+
     free_edges = set()
     for s, t, v in ug.edges(keys=True):
         free_edges.add( (s, t, v) )
@@ -1354,7 +1354,7 @@ def main(*argv):
         else:
             e = free_edges.pop()
             n = e[0]
-        
+
         for s, t, v in ug.out_edges(n, keys=True):
             path_start = n
             path_end = None
@@ -1381,7 +1381,7 @@ def main(*argv):
                 path_length += length
                 path_score += score
                 assert len( ug.out_edges( t, keys=True ) ) == 1 # t is "simple_out" node
-                t0, t, v = ug.out_edges( t, keys=True )[0] 
+                t0, t, v = ug.out_edges( t, keys=True )[0]
 
             path.append( (t0, t, v) )
             length, score, path_or_edges, type_ = u_edge_data[ (t0, t, v) ]
@@ -1390,13 +1390,13 @@ def main(*argv):
             path_nodes.add(t)
             path_end = t
 
-            c_path.append( (path_start, path_key, path_end, path_length, path_score, path, len(path)) ) 
+            c_path.append( (path_start, path_key, path_end, path_length, path_score, path, len(path)) )
             if DEBUG_LOG_LEVEL > 1:
                 print "c_path", path_start, path_key, path_end, path_length, path_score, len(path)
             for e in path:
                 if e in free_edges:
                     free_edges.remove( e )
- 
+
     if DEBUG_LOG_LEVEL > 1:
         print "left over edges:", len(free_edges)
 
@@ -1413,7 +1413,7 @@ def main(*argv):
 
     c_path.sort( key=lambda x: -x[3] )
 
-    
+
     for path_start, path_key, path_end, p_len, p_score, path, n_edges in c_path:
         length = 0
         score = 0
@@ -1423,7 +1423,7 @@ def main(*argv):
         non_overlapped_path = []
         non_overlapped_path_r = []
         for s, t, v in path:
-            if v != "NA": 
+            if v != "NA":
                 rs, rt, rv = reverse_end(t), reverse_end(s), reverse_end(v)
             else:
                 rs, rt, rv = reverse_end(t), reverse_end(s), "NA"

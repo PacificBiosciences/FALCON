@@ -18,15 +18,15 @@ def get_matches(seq0, seq1):
             continue
         if l[0] == ">":
             seq_id = l[1]
-            
+
             if len(cluster) != 0:
                 matches.append(cluster)
-            
+
             cluster = []
             continue
         if l[0] == "#":
             if len(cluster) != 0:
-                matches.append(cluster)            
+                matches.append(cluster)
             cluster = []
             continue
         len_ = int(l[2])
@@ -46,7 +46,7 @@ with open("./unit_edges.dat") as f:
         v, w, path, seq = l.strip().split()
         u_edges.setdefault( (v, w), [] )
         u_edges[ (v, w) ].append( (path, seq) )
-        
+
 
 p_tig_path = {}
 a_tig_path = {}
@@ -95,13 +95,13 @@ with open("a_nodup.fa","w") as out_f:
                 continue
             if id_.split("-")[1] == "0000":
                 continue
-            
+
             a_path = a_tig_path[id_]
             if a_path[0] in main_path_nodes and a_path[-1] in main_path_nodes:
                 #print p_tig_id, id_, a_path[0], a_path[-1]
                 s, e = node_to_pos[a_path[0]], node_to_pos[a_path[-1]]
                 p_seq = p_tig_seq[s:e]
-                a_seq = a_tig_seqs[id_] 
+                a_seq = a_tig_seqs[id_]
                 seq_match = get_matches(p_seq, a_seq)
                 if len(seq_match) > 1:
                     print >>out_f, ">"+id_
