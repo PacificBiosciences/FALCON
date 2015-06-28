@@ -30,7 +30,7 @@ def reprarg(arg):
             or isinstance(arg, tuple) or isinstance(arg, dict)):
         if len(arg) > 9:
             return '%s(%d elem)' %(type(arg).__name__, len(arg))
-    return repr(arg) 
+    return repr(arg)
 def run_func(args):
     """Wrap multiprocessing.Pool calls.
     Usage:

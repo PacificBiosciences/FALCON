@@ -1,4 +1,4 @@
-from falcon_kit import fc_asm_graph 
+from falcon_kit import fc_asm_graph
 
 def main(*argv):
   AsmGraph = fc_asm_graph.AsmGraph
@@ -20,9 +20,9 @@ def main(*argv):
                 if ctg1 == ctg2:
                     continue
                 ctg_pair_links.setdefault((ctg1, ctg2), set())
-                ctg_pair_links[ (ctg1, ctg2) ].add( (v,w) )    
+                ctg_pair_links[ (ctg1, ctg2) ].add( (v,w) )
 
-                    
+
   utg_pair_links = {}
   for v, w in sg_edges.keys():
     if v in node_to_utg and w in node_to_utg:
@@ -59,7 +59,7 @@ def main(*argv):
                     ss, vv, tt = u.split("~")
                     utg2.append( (ss, tt, vv) )
             else:
-               utg2.append(u2) 
+               utg2.append(u2)
         #print path1
         #print path2
         #print len(utg1), len(utg2)
@@ -75,6 +75,5 @@ def main(*argv):
                 len_1 = ctg_data[ ctg1 ][ 3 ]
                 len_2 = ctg_data[ ctg2 ][ 3 ]
                 print ctg1, ctg2, len_1, len_2, len(utg1), len(utg2), len(links), "~".join( (s1,v1,t1) ),  "~".join( (s2,v2,t2) ), len(c)
-        
 
 

@@ -16,7 +16,7 @@ def main(*argv):
             continue
         else:
             coor += abs(int(b) - int(e))
-            p_ctg_coor_map[ctg_id][w] = coor 
+            p_ctg_coor_map[ctg_id][w] = coor
 
 
   a_ctg_fasta = FastaReader("a_ctg.fa")

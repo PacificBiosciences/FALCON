@@ -50,7 +50,7 @@ def neighbor_bound(G, v, w, radius):
         return True
     else:
         return False
-    
+
 def is_branch_node(G, n):
     out_edges = G.out_edges([n])
     n2 = [ e[1] for e in out_edges ]
@@ -70,8 +70,8 @@ def is_branch_node(G, n):
 def get_r_path(r_edges, u_path):
     tiling_path = []
     pos = 0
-     
-    for i in range( len(u_path) - 1): 
+
+    for i in range( len(u_path) - 1):
         v, w = u_path[i:i+2]
         r_edge_label, overlap = r_edges[ (v, w) ]
         r_edge_seq_id, range_ = r_edge_label.split(":")
@@ -97,7 +97,7 @@ def get_seq(u_edges, r_edges, path):
         r_path = [ ( x[0] + cur_pos, x[1], x[2], x[3]) for x in r_path ]
         full_tiling_path.extend( r_path )
         cur_pos += len( uedges[-1][1] )
-    pos.append( (w, cur_pos) ) 
+    pos.append( (w, cur_pos) )
     return "".join(subseqs), pos, full_tiling_path
 
 
@@ -114,7 +114,7 @@ r_edges = {}
 with open("edges_list") as f:
     for l in f:
         v, w, edge_label, overlap = l.strip().split()
-        r_edges[ (v, w) ] = (edge_label, int(overlap) ) 
+        r_edges[ (v, w) ] = (edge_label, int(overlap) )
 
 
 primary_tigs_path = {}
@@ -152,7 +152,7 @@ with open("primary_tigs_c.fa","w") as out_f:
         c_path = [ primary_tigs_path[name][0] ]
         for v in primary_tigs_path[name][1:]:
             break_path = False
-            
+
             vn = v.split(":")[0]
 
             if primary_path_graph.out_degree(vn) > 1:
@@ -176,7 +176,7 @@ with open("primary_tigs_c.fa","w") as out_f:
                 sub_idx += 1
             else:
                 c_path.append(v)
-                
+
         if len(c_path) > 1:
             seq, pos, full_tiling_path = get_seq(u_edges, r_edges, c_path)
             for p, w, s, e in full_tiling_path:
@@ -207,7 +207,7 @@ with open("all_tigs_paths") as f:
             for p, w, s, e in full_tiling_path:
                 print >> tiling_path_f, "%s" % ("-".join(name)), p, w, s, e
 
-            
+
 path_f.close()
 tiling_path_f.close()
 pos_f.close()

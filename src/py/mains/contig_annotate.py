@@ -24,6 +24,6 @@ def main(*argv):
             continue
         else:
             coor += abs(int(b) - int(e))
-            p_ctg_coor_map[ctg_id][w] = coor 
+            p_ctg_coor_map[ctg_id][w] = coor
             print ctg_id, w, coor, " ".join(list(G_asm.node_to_ctg[w]))
     f.close()

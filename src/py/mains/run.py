@@ -1,4 +1,4 @@
-from pypeflow.common import * 
+from pypeflow.common import *
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
 from pypeflow.controller import PypeWorkflow, PypeThreadWorkflow
@@ -25,9 +25,9 @@ def run_script(job_data, job_type = "SGE" ):
         sge_option = job_data["sge_option"]
         script_fn = job_data["script_fn"]
         sge_cmd="qsub -N {job_name} {sge_option} -o {cwd}/sge_log -j y\
-                 -S /bin/bash {script}".format(job_name=job_name,  
-                                               cwd=os.getcwd(), 
-                                               sge_option=sge_option, 
+                 -S /bin/bash {script}".format(job_name=job_name,
+                                               cwd=os.getcwd(),
+                                               sge_option=sge_option,
                                                script=script_fn)
 
         fc_run_logger.info( "submitting %s for SGE, start job: %s " % (script_fn, job_name) )
@@ -123,7 +123,7 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
 
 
     script_fn = os.path.join( work_dir, "prepare_rdb.sh" )
-    
+
     last_block = 1
     new_db = True
     if os.path.exists( os.path.join(work_dir, "raw_reads.db") ):
@@ -191,7 +191,7 @@ def build_pdb(self):
     job_data["sge_option"] = sge_option_pda
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(fn(pdb_build_done), task=self, job_name=job_data['job_name'])
-    
+
 
 def run_daligner(self):
     daligner_cmd = self.parameters["daligner_cmd"]
@@ -401,11 +401,11 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
             #print >> merge_script, """for f in `find .. -wholename "*job*/%s.%d.%s.*.*.las"`; do ln -sf $f .; done""" % (db_prefix, p_id, db_prefix)
             for l in s_data:
                 print >> merge_script, l
-            print >> merge_script, "ln -sf ../m_%05d/%s.%d.las ../las_files" % (p_id, db_prefix, p_id) 
-            print >> merge_script, "ln -sf ./m_%05d/%s.%d.las .. " % (p_id, db_prefix, p_id) 
-            
+            print >> merge_script, "ln -sf ../m_%05d/%s.%d.las ../las_files" % (p_id, db_prefix, p_id)
+            print >> merge_script, "ln -sf ./m_%05d/%s.%d.las .. " % (p_id, db_prefix, p_id)
+
         job_done = makePypeLocalFile(os.path.abspath( "%s/m_%05d/m_%05d_done" % (wd, p_id, p_id)  ))
-        parameters =  {"merge_script": merge_script_file, 
+        parameters =  {"merge_script": merge_script_file,
                        "cwd": os.path.join(wd, "m_%05d" % p_id),
                        "job_id": p_id,
                        "config": config}
@@ -424,7 +424,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
         out_file = makePypeLocalFile(os.path.abspath( "%s/preads/out.%05d.fasta" % (wd, p_id)  ))
         out_done = makePypeLocalFile(os.path.abspath( "%s/preads/c_%05d_done" % (wd, p_id)  ))
         parameters =  {"cwd": os.path.join(wd, "preads" ),
-                       "job_id": p_id, 
+                       "job_id": p_id,
                        "prefix": db_prefix,
                        "config": config}
         make_c_task = PypeTask( inputs = {"job_done": job_done},
@@ -432,10 +432,10 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
                                 parameters = parameters,
                                 TaskType = PypeThreadTaskBase,
                                 URL = "task://localhost/ct_%05d" % p_id )
-        
+
         c_task = make_c_task( run_consensus_task )
         consensus_tasks.append(c_task)
-        consensus_out["cjob_%d" % p_id] = out_done 
+        consensus_out["cjob_%d" % p_id] = out_done
 
     return merge_tasks, merge_out, consensus_tasks, consensus_out
 
@@ -445,17 +445,17 @@ def parse_config(config_fn):
     config = ConfigParser.ConfigParser()
     config.read(config_fn)
     return config
-    
+
 def get_config(config):
     global job_type  # TODO: Stop using global for wait_for_file().
     job_type = "SGE"
     if config.has_option('General', 'job_type'):
         job_type = config.get('General', 'job_type')
-    
+
     pa_concurrent_jobs = 8
     if config.has_option('General', 'pa_concurrent_jobs'):
         pa_concurrent_jobs = config.getint('General', 'pa_concurrent_jobs')
-    
+
     cns_concurrent_jobs = 8
     if config.has_option('General', 'cns_concurrent_jobs'):
         cns_concurrent_jobs = config.getint('General', 'cns_concurrent_jobs')
@@ -514,9 +514,9 @@ def get_config(config):
 
     length_cutoff = config.getint('General', 'length_cutoff')
     input_fofn_fn = config.get('General', 'input_fofn')
-    
+
     length_cutoff_pr = config.getint('General', 'length_cutoff_pr')
-    
+
 
     bestn = 12
     if config.has_option('General', 'bestn'):
@@ -559,7 +559,7 @@ def get_config(config):
                    }
 
     hgap_config["install_prefix"] = sys.prefix
-    
+
     return hgap_config
 
 
@@ -654,7 +654,7 @@ def make_dirs(d):
 def main1(prog_name, input_config_fn, logger_config_fn=None):
     setup_logger(logger_config_fn)
 
-    fc_run_logger.info( "fc_run started with configuration %s", input_config_fn ) 
+    fc_run_logger.info( "fc_run started with configuration %s", input_config_fn )
     config = get_config(parse_config(input_config_fn))
     rawread_dir = os.path.abspath("./0-rawreads")
     pread_dir = os.path.abspath("./1-preads_ovl")
@@ -682,40 +682,40 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     if config["input_type"] == "raw":
         #### import sequences into daligner DB
         sleep_done = makePypeLocalFile( os.path.join( rawread_dir, "sleep_done") )
-        rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") ) 
+        rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") )
         parameters = {"work_dir": rawread_dir,
                       "config": config}
 
         make_build_rdb_task = PypeTask(inputs = {"input_fofn": rawread_fofn_plf},
-                                      outputs = {"rdb_build_done": rdb_build_done}, 
+                                      outputs = {"rdb_build_done": rdb_build_done},
                                       parameters = parameters,
                                       TaskType = PypeThreadTaskBase)
 
         build_rdb_task = make_build_rdb_task(build_rdb)
 
         wf.addTasks([build_rdb_task])
-        wf.refreshTargets([rdb_build_done]) 
-        
+        wf.refreshTargets([rdb_build_done])
+
 
         db_file = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
         #### run daligner
-        daligner_tasks, daligner_out = create_daligner_tasks( rawread_dir, "raw_reads", db_file, rdb_build_done, config) 
+        daligner_tasks, daligner_out = create_daligner_tasks( rawread_dir, "raw_reads", db_file, rdb_build_done, config)
 
         wf.addTasks(daligner_tasks)
         #wf.refreshTargets(updateFreq = 60) # larger number better for more jobs
 
         r_da_done = makePypeLocalFile( os.path.join( rawread_dir, "da_done") )
 
-        @PypeTask( inputs = daligner_out, 
+        @PypeTask( inputs = daligner_out,
                    outputs =  {"da_done":r_da_done},
                    TaskType = PypeThreadTaskBase,
                    URL = "task://localhost/rda_check" )
         def check_r_da_task(self):
             os.system("touch %s" % fn(self.da_done))
-        
+
         wf.addTask(check_r_da_task)
         wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
-        
+
         concurrent_jobs = config["cns_concurrent_jobs"]
         PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
         merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( rawread_dir, "raw_reads", r_da_done, config )
@@ -728,7 +728,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         r_cns_done = makePypeLocalFile( os.path.join( rawread_dir, "cns_done") )
         pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
 
-        @PypeTask( inputs = consensus_out, 
+        @PypeTask( inputs = consensus_out,
                    outputs =  {"cns_done":r_cns_done, "pread_fofn": pread_fofn},
                    TaskType = PypeThreadTaskBase,
                    URL = "task://localhost/cns_check" )
@@ -757,7 +757,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         wf.addTasks([fofn_abs_task])
         wf.refreshTargets([fofn_abs_task])
 
-    pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "pdb_build_done") ) 
+    pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "pdb_build_done") )
     parameters = {"work_dir": pread_dir,
                   "config": config}
 
@@ -769,7 +769,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     build_pdb_task = make_build_pdb_task(build_pdb)
 
     wf.addTasks([build_pdb_task])
-    wf.refreshTargets([pdb_build_done]) 
+    wf.refreshTargets([pdb_build_done])
 
 
 
@@ -779,40 +779,40 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     config["sge_option_da"] = config["sge_option_pda"]
     config["sge_option_la"] = config["sge_option_pla"]
-    daligner_tasks, daligner_out = create_daligner_tasks( pread_dir, "preads", db_file, pdb_build_done, config, pread_aln= True) 
+    daligner_tasks, daligner_out = create_daligner_tasks( pread_dir, "preads", db_file, pdb_build_done, config, pread_aln= True)
     wf.addTasks(daligner_tasks)
     #wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
 
     p_da_done = makePypeLocalFile( os.path.join( pread_dir, "da_done") )
 
-    @PypeTask( inputs = daligner_out, 
+    @PypeTask( inputs = daligner_out,
                outputs =  {"da_done":p_da_done},
                TaskType = PypeThreadTaskBase,
                URL = "task://localhost/pda_check" )
     def check_p_da_task(self):
         os.system("touch %s" % fn(self.da_done))
-    
+
     wf.addTask(check_p_da_task)
 
     merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( pread_dir, "preads", p_da_done, config )
     wf.addTasks( merge_tasks )
-    #wf.refreshTargets(updateFreq = 30) #all            
+    #wf.refreshTargets(updateFreq = 30) #all
 
     p_merge_done = makePypeLocalFile( os.path.join( pread_dir, "p_merge_done") )
 
-    @PypeTask( inputs = merge_out, 
+    @PypeTask( inputs = merge_out,
                outputs =  {"p_merge_done":p_merge_done},
                TaskType = PypeThreadTaskBase,
                URL = "task://localhost/pmerge_check" )
     def check_p_merge_check_task(self):
         os.system("touch %s" % fn(self.p_merge_done))
-    
-    wf.addTask(check_p_merge_check_task)
-    wf.refreshTargets(updateFreq = wait_time) #all            
 
-    
+    wf.addTask(check_p_merge_check_task)
+    wf.refreshTargets(updateFreq = wait_time) #all
+
+
     falcon_asm_done = makePypeLocalFile( os.path.join( falcon_asm_dir, "falcon_asm_done") )
-    @PypeTask( inputs = {"p_merge_done": p_merge_done, "db_file":db_file}, 
+    @PypeTask( inputs = {"p_merge_done": p_merge_done, "db_file":db_file},
                outputs =  {"falcon_asm_done":falcon_asm_done},
                parameters = {"wd": falcon_asm_dir,
                              "config": config,
@@ -827,7 +827,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         pread_dir = self.parameters["pread_dir"]
         script_dir = os.path.join( wd )
         script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
-        
+
         script = []
         script.append( "set -vex" )
         script.append( "trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done) )
@@ -854,9 +854,9 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         job_data["sge_option"] = config["sge_option_fc"]
         run_script(job_data, job_type = config["job_type"])
         wait_for_file(fn(self.falcon_asm_done), task=self, job_name=job_data['job_name'])
-    
+
     wf.addTask( run_falcon_asm_task )
-    wf.refreshTargets(updateFreq = wait_time) #all            
+    wf.refreshTargets(updateFreq = wait_time) #all
 
 
 def main(*argv):

@@ -47,10 +47,10 @@ module_path = falcon_kit.__path__[0]
 
 falcon = CDLL(os.path.join(module_path, "falcon.so"))
 """
-consensus_data * generate_utg_consensus( char ** input_seq, 
+consensus_data * generate_utg_consensus( char ** input_seq,
                            seq_coor_t *offset,
-                           unsigned int n_seq, 
-                           unsigned min_cov, 
+                           unsigned int n_seq,
+                           unsigned min_cov,
                            unsigned K,
                            double min_idt) {
 """
@@ -61,7 +61,7 @@ falcon.free_consensus_data.argtypes = [ POINTER(falcon_kit.ConsensusData) ]
 rcmap = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
 
 def get_consensus(c_input):
-    t_id, seqs, offsets, config = c_input 
+    t_id, seqs, offsets, config = c_input
     K = config[0]
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
@@ -75,7 +75,7 @@ def get_consensus(c_input):
 
 def echo(c_input):
 
-    t_id, seqs, offsets, config = c_input 
+    t_id, seqs, offsets, config = c_input
 
     return len(seqs), "test"
 
@@ -97,7 +97,7 @@ def get_seq_data(config):
                     seqs.append(l[2])
                     offsets.append( int(l[1]) )
             elif l[0] == "+":
-                yield (seed_id, seqs, offsets, config) 
+                yield (seed_id, seqs, offsets, config)
                 seqs = []
                 offsets = []
                 seed_id = None
@@ -114,10 +114,10 @@ if __name__ == "__main__":
     exe_pool = Pool(args.n_core)
     K = 8
     config = (K, )
-    for res in exe_pool.imap(get_consensus, get_seq_data(config)):  
-    #for res in exe_pool.imap(echo, get_seq_data(config)):  
-    #for res in map(echo, get_seq_data(config)):  
-    #for res in map(get_consensus, get_seq_data(config)):  
+    for res in exe_pool.imap(get_consensus, get_seq_data(config)):
+    #for res in exe_pool.imap(echo, get_seq_data(config)):
+    #for res in map(echo, get_seq_data(config)):
+    #for res in map(get_consensus, get_seq_data(config)):
         cns, t_id = res
         print ">"+t_id+"|tigcns"
         print cns

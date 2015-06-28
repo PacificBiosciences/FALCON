@@ -55,7 +55,7 @@ falcon.free_consensus_data.argtypes = [ POINTER(falcon_kit.ConsensusData) ]
 def get_alignment(seq1, seq0, edge_tolerance = 1000):
 
     kup = falcon_kit.kup
-    K = 8 
+    K = 8
     lk_ptr = kup.allocate_kmer_lookup( 1 << (K * 2) )
     sa_ptr = kup.allocate_seq( len(seq0) )
     sda_ptr = kup.allocate_seq_addr( len(seq0) )
@@ -68,13 +68,13 @@ def get_alignment(seq1, seq0, edge_tolerance = 1000):
     #x,y = zip( * [ (kmer_match.query_pos[i], kmer_match.target_pos[i]) for i in range(kmer_match.count )] )
     aln_range = aln_range_ptr[0]
     kup.free_kmer_match(kmer_match_ptr)
-    s1, e1, s0, e0, km_score = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2, aln_range.score  
+    s1, e1, s0, e0, km_score = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2, aln_range.score
     e1 += K + K/2
     e0 += K + K/2
     kup.free_aln_range(aln_range)
     len_1 = len(seq1)
     len_0 = len(seq0)
-    if e1 > len_1: 
+    if e1 > len_1:
         e1 = len_1
     if e0 > len_0:
         e0 = len_0
@@ -88,7 +88,7 @@ def get_alignment(seq1, seq0, edge_tolerance = 1000):
         aln_q_e = e1
         aln_t_s = s0
         aln_t_e = e0
-        
+
     kup.free_seq_addr_array(sda_ptr)
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
@@ -112,7 +112,7 @@ def get_consensus_without_trim( c_input ):
         seqs = seqs[:max_n_read]
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
-    consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K, 
+    consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K,
                                                     local_match_count_window, local_match_count_threshold, min_idt )
 
     consensus = string_at(consensus_data_ptr[0].sequence)[:]
@@ -137,7 +137,7 @@ def get_consensus_with_trim( c_input ):
             trim_seqs.append( (e1-s1, seq[s1:e1]) )
     trim_seqs.sort(key = lambda x:-x[0]) #use longest alignment first
     trim_seqs = [x[1] for x in trim_seqs]
-        
+
     if len(trim_seqs) > max_n_read:
         trim_seqs = trim_seqs[:max_n_read]
 
@@ -146,7 +146,7 @@ def get_consensus_with_trim( c_input ):
 
     seqs_ptr = (c_char_p * len(trim_seqs))()
     seqs_ptr[:] = trim_seqs
-    consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(trim_seqs), min_cov, K, 
+    consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(trim_seqs), min_cov, K,
                                                local_match_count_window, local_match_count_threshold, min_idt )
     consensus = string_at(consensus_data_ptr[0].sequence)[:]
     eff_cov = consensus_data_ptr[0].eff_cov[:len(consensus)]
@@ -176,8 +176,8 @@ def get_seq_data(config):
             elif l[0] == "+":
                 if len(seqs) > 10:
                     seqs.sort( key=lambda x: -len(x) )
-                    yield (seqs[:max_n_read], seed_id, config) 
-                #seqs_data.append( (seqs, seed_id) ) 
+                    yield (seqs[:max_n_read], seed_id, config)
+                #seqs_data.append( (seqs, seed_id) )
                 seqs = []
                 read_id = set()
                 seed_id = None
@@ -223,7 +223,7 @@ if __name__ == "__main__":
     K = 8
     config = args.min_cov, K, args.local_match_count_window, args.local_match_count_threshold,\
              args.max_n_read, args.min_idt, args.edge_tolerance, args.trim_size
-    for res in exe_pool.imap(get_consensus, get_seq_data(config)):  
+    for res in exe_pool.imap(get_consensus, get_seq_data(config)):
         cns, seed_id = res
         if args.output_full == True:
             if len(cns) > 500:
