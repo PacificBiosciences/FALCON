@@ -7,8 +7,8 @@ def test_help():
     except SystemExit:
         pass
 def test():
-    lines = data.strip().splitlines()
-    stats = mod.filter_stats(lines, min_len=62)
+    readlines = data.strip().splitlines
+    stats = mod.filter_stats(readlines, min_len=62)
     #print stats
     assert_equal(expected,  stats)
 
