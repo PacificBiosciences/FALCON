@@ -234,11 +234,6 @@ class StringGraph(object):
 
     def resolve_repeat_edges(self):
 
-        #nxsg = nx.DiGraph()
-        #for v, w in self.edges:
-        #    if self.e_reduce[(v, w)] != True:
-        #        nxsg.add_edge(v, w)
-        #nxsg_r = nxsg.reverse()
 
         edges_to_reduce = []
         nodes_to_test = set()
@@ -287,10 +282,6 @@ class StringGraph(object):
                 for e in self.nodes[ww].in_edges:
                     if self.e_reduce[ ( e.in_node.name, e.out_node.name ) ] == False:
                         ww_in_count += 1
-                #print ww, ww_in_count 
-                #G1 = nx.ego_graph( nxsg,  ww, 3, undirected=False)
-                #G2 = nx.ego_graph( nxsg,  v_n, 3, undirected=False)
-                #o_overlap = len( set(G1.nodes()) & set(G2.nodes()) )
 
                 if ww != v_n and\
                    self.e_reduce[ (vv, ww) ] == False and\
@@ -315,10 +306,6 @@ class StringGraph(object):
                 for e in self.nodes[vv].out_edges:
                     if self.e_reduce[ ( e.in_node.name, e.out_node.name )] == False:
                         vv_out_count += 1
-                #print vv, vv_out_count 
-                #G1 = nx.ego_graph( nxsg_r,  vv, 3, undirected=False)
-                #G2 = nx.ego_graph( nxsg_r,  v_n, 3, undirected=False)
-                #i_overlap = len( set(G1.nodes()) & set(G2.nodes()) )
 
                 if vv != v_n and\
                    self.e_reduce[ (vv, ww) ] == False and\
@@ -653,8 +640,6 @@ def generate_string_graph(args):
 
             if identity < args.min_idt: # only take record with >96% identity as overlapped reads
                 continue
-            #if score > -2000:
-            #    continue
             f_strain, f_start, f_end, f_len = (int(c) for c in l[4:8])
             g_strain, g_start, g_end, g_len = (int(c) for c in l[8:12])
 
@@ -662,8 +647,10 @@ def generate_string_graph(args):
             if f_len < args.min_len: continue
             if g_len < args.min_len: continue
             
-            # double check for proper overlap
             """
+            # double check for proper overlap
+            # this is not necessary when using DALIGNER for overlapper
+            # it may be useful if other overlappers give fuzzier alignment boundary
             if f_start > 24 and f_len - f_end > 24:  # allow 24 base tolerance on both sides of the overlapping
                 continue
             
@@ -689,7 +676,6 @@ def generate_string_graph(args):
             overlap_count[f_id] = overlap_count.get(f_id,0)+1
             overlap_count[g_id] = overlap_count.get(g_id,0)+1
             
-    #print "###", len(overlap_data), len(contained_reads)
     overlap_set = set()
     sg = StringGraph()
     for od in overlap_data:
@@ -810,7 +796,6 @@ def generate_string_graph(args):
     if DEBUG_LOG_LEVEL > 1:
         print sum( [1 for c in sg.e_reduce.values() if c == False] )
 
-    #max_score = max([ sg.edges[ e ].attr["score"] for e in sg.edges if sg.e_reduce[e] != True ])
     out_f = open("sg_edges_list", "w")
     nxsg = nx.DiGraph()
     edge_data = {}
@@ -869,7 +854,7 @@ def construct_compound_paths(ug, u_edge_data):
     compound_paths_0 = []
     for p in list(branch_nodes):
         if ug.out_degree(p) > 1:
-            coverage, data, data_r =  find_bundle(ug, u_edge_data, p, 32, 8, 500000)
+            coverage, data, data_r =  find_bundle(ug, u_edge_data, p, 48, 16, 500000)
             if coverage == True:
                 start_node, end_node, bundle_edges, length, score, depth = data
                 compound_paths_0.append(  (start_node, "NA", end_node, 1.0*len(bundle_edges)/depth, length, score, bundle_edges ) )
@@ -1056,13 +1041,10 @@ def main(*argv):
         path_length =0
         path_score = 0 
         for v, w in sg2.out_edges(n):
-            #print "test",v,w,path
             if (v, w) not in free_edges:
                 continue
             rv = reverse_end(v)
             rw = reverse_end(w)
-            #if (rw, rv) not in free_edges:
-            #    continue
 
             path_length = 0
             path_score = 0
