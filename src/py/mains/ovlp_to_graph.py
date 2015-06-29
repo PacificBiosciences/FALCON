@@ -1301,9 +1301,31 @@ def main(*argv):
 
     compound_path_file.close()
 
+
+    # remove short utg using local flow consistent rule
+    """
+      short UTG like this can be removed, this kind of utg are likely artifects of repeats 
+      >____           _____>
+           \__UTG_>__/
+      <____/         \_____<
+    """
+    ug_edge_to_remove = set() 
+    for s, t, v in ug.edges(keys=True):
+        if ug2.in_degree(s) == 1 and ug2.out_degree(s) == 2 and \
+           ug2.in_degree(t) == 2 and ug2.out_degree(t) == 1:
+            length, score, path_or_edges, type_ = u_edge_data[ (s, t, v) ]
+            if length < 60000: 
+                rs = reverse_end(t)
+                rt = reverse_end(s)
+                rv = reverse_end(v)
+                ug_edge_to_remove.add( (s, t, v) )
+                ug_edge_to_remove.add( (rs, rt, rv) )
+    for s, t, v in list(ug_edge_to_remove):
+        ug2.remove_edge(s, t, key=v)
+        length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+        u_edge_data[ (s, t, v) ] = length, score, edges, "repeat_bridge"
+
     ug = ug2
-
-
 
     with open("utg_data","w") as f:
         for s, t, v in u_edge_data:
@@ -1314,8 +1336,6 @@ def main(*argv):
             else:
                 path_or_edges = "~".join( path_or_edges )
             print >>f, s, v, t, type_, length, score, path_or_edges
-
-
 
     # contig construction from utgs
 
