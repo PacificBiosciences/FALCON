@@ -874,21 +874,28 @@ def construct_compound_paths(ug, u_edge_data):
                 start_node, end_node, bundle_edges, length, score, depth = data
                 compound_paths_0.append(  (start_node, "NA", end_node, 1.0*len(bundle_edges)/depth, length, score, bundle_edges ) )
 
-    compound_paths_0.sort( key=lambda x: -x[5] )
+    compound_paths_0.sort( key=lambda x: -len(x[6]) )
 
 
     edge_to_cpath = {}
     compound_paths_1 = {}
     for s, v, t, width, length, score, bundle_edges in compound_paths_0:
+        if DEBUG_LOG_LEVEL > 1:
+            print "constructing utg, test ", s,v, t
+        
         overlapped = False
         for vv, ww, kk in list(bundle_edges):
             if (vv, ww, kk) in edge_to_cpath:
+                if DEBUG_LOG_LEVEL > 1:
+                    print "remove overlapped utg", (s, v, t), (vv, ww, kk)
                 overlapped = True
                 break
             rvv = reverse_end(vv)
             rww = reverse_end(ww)
             rkk = reverse_end(kk)
-            if (vv, ww, kk) in edge_to_cpath:
+            if (rww, rvv, rkk) in edge_to_cpath:
+                if DEBUG_LOG_LEVEL > 1:
+                    print "remove overlapped r utg", (s, v, t),  (rww, rvv, rkk)
                 overlapped = True
                 break
             
