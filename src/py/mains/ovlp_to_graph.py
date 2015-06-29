@@ -591,16 +591,6 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
 
     data = start_node, end_node, bundle_edges, length_to_node[end_node], score_to_node[end_node], depth
     
-    """
-    start_node_r, end_node_r = reverse_end(end_node), reverse_end(start_node)
-    
-    bundle_edge_r = set()
-    for v, w, k in list(bundle_edges):
-        vv, ww, kk = reverse_end(w), reverse_end(v), reverse_end(k)
-        bundle_edge_r.add( (vv, ww, kk) )
-
-    data_r = start_node_r, end_node_r, bundle_edge_r, length_to_node[end_node], score_to_node[end_node], depth
-    """
     data_r = None
 
     if DEBUG_LOG_LEVEL > 1:
