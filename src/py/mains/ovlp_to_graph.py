@@ -202,15 +202,19 @@ class StringGraph(object):
 
             out_edges = self.nodes[v].out_edges
             if len(out_edges) > 0:
-                out_edges.sort(key=lambda e: e.attr["score"])
-                e = out_edges[-1]
-                best_edges.add( (e.in_node.name, e.out_node.name) )
+                out_edges.sort(key=lambda e: -e.attr["score"])
+                for e in out_edges:
+                    if self.e_reduce[ (e.in_node.name, e.out_node.name) ] != True:
+                        best_edges.add( (e.in_node.name, e.out_node.name) )
+                        break
 
             in_edges = self.nodes[v].in_edges
             if len(in_edges) > 0:
-                in_edges.sort(key=lambda e: e.attr["score"])
-                e = in_edges[-1]
-                best_edges.add( (e.in_node.name, e.out_node.name) )
+                in_edges.sort(key=lambda e: -e.attr["score"])
+                for e in in_edges:
+                    if self.e_reduce[ (e.in_node.name, e.out_node.name) ] != True:
+                        best_edges.add( (e.in_node.name, e.out_node.name) )
+                        break
 
         if DEBUG_LOG_LEVEL > 1:
             print "X", len(best_edges)
