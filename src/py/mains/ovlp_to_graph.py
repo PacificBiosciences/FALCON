@@ -1150,6 +1150,10 @@ def main(*argv):
                     path_or_edges = "~".join( path_or_edges )
                 print >>f, s, v, t, type_, length, score, path_or_edges
 
+    # identify spurs in the utg graph
+    # Currently, we use ad-hoc logic filtering out shorter utg, but we ca
+    # add proper alignment comparison later to remove redundant utgs 
+
     utg_spurs = set()
     all_nodes = ug.nodes()
     excessive_link_nodes = set()
@@ -1299,9 +1303,6 @@ def main(*argv):
 
     ug = ug2
 
-    # identify spurs in the utg graph
-    # Currently, we use ad-hoc logic filtering out shorter utg, but we ca
-    # add proper alignment comparison later to remove redundant utgs 
 
 
     with open("utg_data","w") as f:
