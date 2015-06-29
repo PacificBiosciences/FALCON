@@ -128,7 +128,7 @@ def main(*argv):
     a_ctg_base_out = open("a_ctg_base.fa","w")
     p_ctg_t_out = open("p_ctg_tiling_path","w")
     a_ctg_t_out = open("a_ctg_tiling_path","w")
-    a_ctg_base_t_out = open("a_ctg_base_titling_path","w")
+    a_ctg_base_t_out = open("a_ctg_base_tiling_path","w")
     layout_ctg = set()
 
     with open(ctg_data_file) as f:
