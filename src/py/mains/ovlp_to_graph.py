@@ -1157,79 +1157,17 @@ def main(*argv):
 
     utg_spurs = set()
     all_nodes = ug.nodes()
-    excessive_link_nodes = set()
-
-    for n in all_nodes:
-        in_degree = len( set( e[0] for e in ug.in_edges(n))  ) # ignore mutli-edges
-        out_degree = len( set( e[1] for e in ug.out_edges(n)) )
-        if in_degree == 1 and out_degree == 1:
-            simple_nodes.add(n)
-        else:
-            if out_degree != 0:
-                s_nodes.add(n)
-            if in_degree != 0:
-                t_nodes.add(n)
-
-            if out_degree >= 2 and in_degree == 0:
-                excessive_link_nodes.add(n)
-            if in_degree >= 2 and out_degree == 0:
-                excessive_link_nodes.add(n)
-            if out_degree > 3 and in_degree < 2:
-                excessive_link_nodes.add(n)
-            if in_degree > 3 and out_degree < 2:
-                excessive_link_nodes.add(n)
-            if out_degree >= 3 and in_degree >= 3:
-                excessive_link_nodes.add(n)
-            if in_degree >= 3 and out_degree >= 3:
-                excessive_link_nodes.add(n)
-
-    spur_edges = set()
 
     ug2 = ug.copy()
+    spur_edges = set()
     edges_to_remove = set()
-
-    for n in list(excessive_link_nodes):
-        in_degree = len( set( e[0] for e in ug.in_edges(n))  ) # ignore mutli-edges
-        out_degree = len( set( e[1] for e in ug.out_edges(n)) )
-
-        for s, t, v in ug.in_edges(n, keys=True):
-            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
-            if length > 30000:
-                continue
-            u_edge_data[ (s, t, v) ] = length, score, edges, "spur:1"
-            if DEBUG_LOG_LEVEL > 1:
-                print "spur:1", s,t,v, in_degree, out_degree
-            spur_edges.add( (s, t, v) )
-            edges_to_remove.add( (s, t, v) )
-            rs = reverse_end(t)
-            rt = reverse_end(s)
-            rv = reverse_end(v)
-            edges_to_remove.add( (rs, rt, rv) )
-            length, score, edges, type_ = u_edge_data[ (rs, rt, rv) ]
-            u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:1"
-
-        for s, t, v in ug.out_edges(n, keys=True):
-            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
-            if length > 30000:
-                continue
-            u_edge_data[ (s, t, v) ] = length, score, edges, "spur:1"
-            if DEBUG_LOG_LEVEL > 1:
-                print "spur:1", s,t,v, in_degree, out_degree
-            spur_edges.add( (s, t, v) )
-            edges_to_remove.add( (s, t, v) )
-            rs = reverse_end(t)
-            rt = reverse_end(s)
-            rv = reverse_end(v)
-            edges_to_remove.add( (rs, rt, rv) )
-            length, score, edges, type_ = u_edge_data[ (rs, rt, rv) ]
-            u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:1"
 
     for n in s_nodes:
         if ug.in_degree(n) != 0:
             continue
         for s, t, v in ug.out_edges(n, keys=True):
             length, score, edges, type_ = u_edge_data[ (s, t, v) ]
-            if length > 30000:
+            if length > 50000 and len(edges) > 3:
                 continue
             in_degree = len( set( e[0] for e in ug.in_edges(t))  ) # ignore mutli-edges
             out_degree = len( set( e[1] for e in ug.out_edges(t)) )
@@ -1249,7 +1187,7 @@ def main(*argv):
             continue
         for s, t, v in ug.in_edges(n, keys=True):
             length, score, edges, type_ = u_edge_data[ (s, t, v) ]
-            if length > 30000:
+            if length > 50000 and len(edges) > 3:
                 continue
             in_degree = len( set( e[0] for e in ug.in_edges(s))  ) # ignore mutli-edges
             out_degree = len( set( e[1] for e in ug.out_edges(s)) )
