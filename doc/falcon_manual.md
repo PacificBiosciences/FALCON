@@ -26,33 +26,32 @@ for generating a genome assembly from a set of sequencing reads:
 
 * Constructing contig from graph
 
-Each of the step is accomplished with different command line tools implementing
-different set algorithms to accomplish the work.  Also, the computation
-requirement are also quite different for each steps.  The manual assumes the
-user has a reasonable amount computation resources. For example, to assemble
-100M size genome with a reasonable amount of time, one might need at least 32
-core cpus and 128Gb RAM. The code is written with the assumption of a cluster
-computation environment. One need a job queue for long last scripting job and
-cpu-rich computational job queues
+Each step of the process is accomplished by a different command line tool which
+uses a unique algorithm to perform each task.  The computational requirements
+are also quite different for each step.  This manual assumes the user has a
+reasonable amount of compute resources. For example, to assemble a 100M size
+genome within a reasonable amount of time, one might need at least 32 CPU cores
+and 128Gb RAM. The code is written with the assumption of a cluster computation
+environment. The cluster should support dispatching jobs that are both long
+running and can run on many cores simultaneously.
 
 With a file that contains a set of sub-reads, the script `fc_run.py` can drive
-the workflow managing checking the data dependency and submitting the jobs for
-each step and generating a draft assembly from the giving data.
+the workflow, including checking for data dependencies, submitting jobs for
+each step and generating a draft assembly from the data.
 
-`fc_run.py` is the workflow driving script needs to be run on a machine which
-allow long last time through the period of time of the whole assembly process.
-It takes a configuration file as single input.  The input files of the raw
-sequence data is included in the configuration files.
+`fc_run.py needs to be run on a machine that will be active for the duration of
+`the whole assembly process. Its only input is a configuration file name. The
+input files of the raw sequence data is included in the configuration files.
 
-The configuration file can be used for controlling the computation resource used
-and important algorithm parameters for reaching optimized assembly according to
-the input data set. Unfortunately, there is no magic way to guess what the right
-options are as the available computational resource from place to place and the
-scope of a sequencing project varies from case to case.  The best way to tune
-the parameter is to understand some assembly theory, a little bit of the
-implementation so one can guess the impact of changing certain option correctly.
-It is also very important to do quick look at the read length distribution and
-overall coverage and adjust the options accordingly.
+The configuration file can be used for controlling the computational resources
+used and important algorithm parameters for obtaining the optimal assembly for
+the given input data. Unfortunately, there is no magic way to guess what the
+right options are as the available computational resources and scope of a
+sequencing project varies from case to case.  The best way to tune the
+parameters is to understand some assembly theory as well as a little bit of the
+implementation so one can guess the impact of changing a particular option
+correctly. It is also very important to do a quick look at the read length 
+distribution and overall coverage to adjust the options accordingly.
 
 In this manual, we will go over the hierarchical genome assembly process and the
 `fc_run.py` option choice side-by-side.
@@ -151,7 +150,7 @@ Here is an example of `fc_run.cfg` for a small E. coli assembly,
     sge_option_fc = -pe smp 24 -q jobqueue
     sge_option_cns = -pe smp 8 -q jobqueue
 
-    # concurrency settgin
+    # concurrency setting
     pa_concurrent_jobs = 32
     cns_concurrent_jobs = 32
     ovlp_concurrent_jobs = 32
@@ -163,7 +162,7 @@ Here is an example of `fc_run.cfg` for a small E. coli assembly,
     pa_DBsplit_option = -x500 -s50
     ovlp_DBsplit_option = -x500 -s50
 
-    # error correction consensus optione
+    # error correction consensus options
     falcon_sense_option = --output_multi --min_idt 0.70 --min_cov 4 --local_match_count_threshold 2 --max_n_read 200 --n_core 6
 
     # overlap filtering options
@@ -194,7 +193,7 @@ directly into the final assembly overlapping step.
 
 You will need to decide the length cutoff. Typically, it will be nice to chose
 the threshold at the point you can get longest 15x to 20x for genome assembly.
-However, if the computational resource is abundant and you might find other
+However, if computational resources are abundant and you might find other
 applications of error corrected reads, you can set lower length cutoff to get
 more error corrected reads for your applications.
 
@@ -210,13 +209,13 @@ overlapping step for error correction. One strategy is to chose smaller
 
 The option `pa_concurrent_jobs` controls the number of concurrent jobs that can
 be submitted by `fc_run.py`.  `sge_option_da` and `sge_option_la` controls the
-job queue and the number of slots of the `daligner` jobs.  The default number of
-thread used by `daligner` is 4. However, depending on the cluster configuration
-and the amount of memoery of the computational nodes, you might want to use more
-than 4 slots.  The best to chose the right number is to consult your local HPC
-gurus and do some small experiments firest.
+job queue and the number of slots of the `daligner` jobs.  The default number of 
+threads used by `daligner` is 4. However, depending on the cluster configuration
+and the amount of memory of the computational nodes, you might want to use more
+than 4 slots.  The best way to chose the right number is to consult your local
+HPC gurus and do some small experiments first.
 
-The total numebr of jobs that is run is determined how one "splits" the sequence
+The total number of jobs that is run is determined how one "splits" the sequence
 database. You should read Gene Myers's blog ( http://dazzlerblog.wordpress.com )
 carefully to know how to tune the option `pa_DBsplit_option` and
 `pa_HPCdaligner_option`.  Generally, for large genome, you should use `-s400`
@@ -242,14 +241,14 @@ ignore all reads less than 1kb by specifying `-l1000`.
 The output of `daligner` is a set of `.las` files that contains information of
 the alignments between the reads.  Such information is dumped as sequences for
 error correction by a binary executable `LA4Falcon` to `fc_consensus.py`. The
-`fc_consensus.py` dose the work to generate consensus. (The alignments for
+`fc_consensus.py` does the work to generate consensus. (The alignments for
 generating consensus are done with back-end code written in C for speed.)
 
 The `fc_consensus.py` has many options. You can use the `falcon_sense_option` to
-control it.  In most of case, the `--min_cov` and `--max_n_read` are the most
+control it.  In most cases, the `--min_cov` and `--max_n_read` are the most
 important options.  `--min_cov` controls when a seed read getting trimmed or
-broken due to low coverage.  `--max_n_read` put a cap on the number of reads
-used for error correction. In high repetitive genome, you will need to put
+broken due to low coverage.  `--max_n_read` puts a cap on the number of reads
+used for error correction. In a highly repetitive genome, you will need to put
 smaller `--max_n_read` to make sure the consensus code does not waste time
 aligning repeats. The longest proper overlaps are used for correction to reduce the
 probability of collapsed repeats.
@@ -280,11 +279,11 @@ much lower now so we expect much higher correlation between the p-reads.
 
 ## Overlap filtering
 
-Not all overlap are "independent" so it is possible to impose some filtering
+Not all overlaps are "independent" so it is possible to impose some filtering
 step to reduce computation and assembly graph complexity. For example, if a read
 is fully contained in another read, the overlap information between these two
 read does not provide extra information for re-constructing the genome. Also,
-due to the transitive property of the overlapping relations, many overlap
+due to the transitive property of the overlapping relations, much overlap
 information can be simply inferred.  In fact, the first stage for constructing
 contigs are to remove the transitive reducible edges. It means that we might
 just needs the "best `n` overlaps" in the 5' or 3' ends.  The `--bestn`
@@ -293,7 +292,7 @@ maximum overlap reported for each read.
 
 Another useful heuristics is to only keep reads that has average 5' and 3'
 coverage.  If a read is ended in a repeat regions, it might have higher than
-normal coverages of the end which is a repeat.  Such reads does not provide much
+normal coverages of the end which is a repeat.  Such reads do not provide much
 value for uniquely resolving the related repeats.  We can filter them out and
 hopefully there are reads which span through the repeats and have "normal"
 unique anchors on both ends.  Also, if the coverage is too low on one end of a
@@ -337,10 +336,10 @@ assembly beside understand the nature of these repeats.
 
 Given the overlapping data, the string graph is constructed by
 `fc_ovlp_to_graph.py` using the default parameters. `fc_ovlp_to_graph.py`
-generated several files representing the final string graph of the assembly. The
-final `ctg_path` contain the information of the graph of each contig. A contig
-is a linear of path of simple paths and compound paths. "Compound paths" are
-those subgraph that is not simple but have unique inlet and outlet after graph
+generates several files representing the final string graph of the assembly. The
+final `ctg_path` contains the information of the graph of each contig. A contig
+is a linear path of simple paths and compound paths. "Compound paths" are
+are subgraphs that are not simple but have unique inlet and outlet after graph
 edge reduction. They can be induced by genome polymorphism or sequence errors.
 By explicitly encoding such information in the graph output, we can examine the
 sequences again to classify them later.
@@ -363,7 +362,7 @@ there are true structure polymorphism, there are typically bigger difference
 between the associated contigs and the primary contigs.
 
 The script "fc_graph_to_contig.py" takes the sequence data and graph output to
-construct contigs. It generated all associated contigs at this moment. Some
+construct contigs. It generates all associated contigs at this moment. Some
 post-processing procedure to de-duplicate some of the associated contigs induced
 by errors will be developed in the future. ( You are encourage to find some
 creative way to solve this problem for sure. )
@@ -420,7 +419,7 @@ The `job_*` directories store the output for each `daligner` job. The `m_*`
 directories are the working directory for merging jobs. There are some empty
 files which the name is ended with `done`. The time stamp of those files are
 used to track the stage of the workflow.  You can modify the time stamps and
-re-satrt the `fc_run.py` to trigger doing the computation for certain part of
+re-start the `fc_run.py` to trigger doing the computation for certain part of
 the workflow.  However, it is not recommended unless you have some time to read
 the source code of `fc_run.py` to know how the dependences inside the workflow
 are tracked. (For example, if you `touch rdb_build_done` after a successfully
