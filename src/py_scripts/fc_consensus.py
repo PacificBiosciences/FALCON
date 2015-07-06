@@ -173,13 +173,14 @@ def get_seq_data(config):
                         seed_id = l[0]
                     if l[0] not in read_ids: #avoidng using the same read twice
                         seqs.append(l[1])
+                        read_ids.add(l[0])
             elif l[0] == "+":
                 if len(seqs) > 10:
                     seqs = seqs[:1] + sorted(seqs[1:], key=lambda x: -len(x))
                     yield (seqs[:max_n_read], seed_id, config) 
                 #seqs_data.append( (seqs, seed_id) ) 
                 seqs = []
-                read_id = set()
+                read_ids = set()
                 seed_id = None
             elif l[0] == "-":
                 #yield (seqs, seed_id)
