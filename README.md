@@ -12,7 +12,11 @@ convenience.
 DOCUMENTATION
 -------------
 
+[wiki pages](https://github.com/PacificBiosciences/FALCON/wiki)
+[Developer Installation Guide](https://github.com/PacificBiosciences/FALCON/wiki/Setup:-Installation-and-Environment)
+[v0.3.0 Integration Installation Guide](https://github.com/PacificBiosciences/FALCON-integrate/wiki/Installation-for-v0.3.0)
 [Documentation is here.](https://github.com/PacificBiosciences/FALCON/wiki/Manual)
+[FAQ](https://github.com/PacificBiosciences/FALCON/wiki/FAQs)
 
 ABOUT THE LICENSE
 ------------------
