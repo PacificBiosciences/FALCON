@@ -139,7 +139,6 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
     with open(script_fn,"w") as script_file:
         script_file.write("set -vex\n")
         script_file.write("trap 'touch {rdb_build_done}.exit' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
-        script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname\n")
         script_file.write("date\n")
@@ -178,7 +177,6 @@ def build_pdb(self):
     with open(script_fn,"w") as script_file:
         script_file.write("set -vex\n")
         script_file.write("trap 'touch {pdb_build_done}.exit' EXIT\n".format(pdb_build_done = fn(pdb_build_done)))
-        script_file.write("source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname\n")
         script_file.write("date\n")
@@ -210,7 +208,6 @@ def run_daligner(self):
     script = []
     script.append( "set -vex" )
     script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
-    script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
     script.append( "hostname" )
     script.append( "date" )
@@ -244,7 +241,6 @@ def run_merge_task(self):
     script = []
     script.append( "set -vex" )
     script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
-    script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
     script.append( "hostname" )
     script.append( "date" )
@@ -275,7 +271,6 @@ def run_consensus_task(self):
     with open( os.path.join(cwd, "cp_%05d.sh" % job_id), "w") as c_script:
         print >> c_script, "set -vex"
         print >> c_script, "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done_fn)
-        print >> c_script, "source {install_prefix}/bin/activate\n".format(install_prefix = install_prefix)
         print >> c_script, "cd .."
         if config["falcon_sense_skip_contained"] == True:
             print >> c_script, """LA4Falcon -H%d -fso %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
@@ -286,7 +281,6 @@ def run_consensus_task(self):
 
     script = []
     script.append( "set -vex" )
-    script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
     script.append( "cd %s" % cwd )
     script.append( "hostname" )
     script.append( "date" )
@@ -831,7 +825,6 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         script = []
         script.append( "set -vex" )
         script.append( "trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done) )
-        script.append( "source {install_prefix}/bin/activate".format(install_prefix = install_prefix) )
         script.append( "cd %s" % pread_dir )
         # Write preads4falcon.fasta, in 1-preads_ovl:
         script.append( "DB2Falcon -U preads")
