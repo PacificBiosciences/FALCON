@@ -226,7 +226,7 @@ def use_tmpdir_for_files(basenames, src_dir, link_dir):
     Return list of script lines, sans linefeed.
     """
     script = list()
-    unique = os.path.abspath(link_dir).replace('/', '_')
+    unique = os.path.abspath(src_dir).replace('/', '_')
     root = tempfile.gettempdir()
     tmp_dir = os.path.join(root, 'falcon', unique)
     script.append('mkdir -p %s' %tmp_dir)
