@@ -7,6 +7,7 @@ import glob
 import sys
 import os
 import re
+import tempfile
 import time
 import hashlib
 
