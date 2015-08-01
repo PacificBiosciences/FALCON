@@ -7,6 +7,7 @@ import glob
 import sys
 import os
 import re
+import tempfile
 import time
 import logging
 import logging.config
@@ -135,7 +136,6 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
                     new_db = False
                     break
 
-
     with open(script_fn,"w") as script_file:
         script_file.write("set -vex\n")
         script_file.write("trap 'touch {rdb_build_done}.exit' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
@@ -190,6 +190,26 @@ def build_pdb(self):
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(fn(pdb_build_done), task=self, job_name=job_data['job_name'])
     
+def use_tmpdir_for_files(basenames, src_dir, link_dir):
+    """Generate script to copy db files to tmpdir (for speed).
+    - Choose tmp_dir, based on src_dir name.
+    - rsync *.db *.idx *.bps
+    - symlink from link_dir into tmp_dir.
+    Return list of script lines, sans linefeed.
+    """
+    script = list()
+    unique = os.path.abspath(link_dir).replace('/', '_')
+    root = tempfile.gettempdir()
+    tmp_dir = os.path.join(root, 'falcon', unique)
+    script.append('mkdir -p %s' %tmp_dir)
+    for basename in basenames:
+        src = os.path.join(src_dir, basename)
+        dst = os.path.join(tmp_dir, basename)
+        rm_cmd = 'rm -f %s' %basename
+        rsync_cmd = 'rsync -av %s %s' %(src, dst)
+        ln_cmd = 'ln -sf %s %s' %(dst, basename)
+        script.extend([rm_cmd, rsync_cmd, ln_cmd])
+    return script
 
 def run_daligner(self):
     daligner_cmd = self.parameters["daligner_cmd"]
@@ -211,6 +231,11 @@ def run_daligner(self):
     script.append( "cd %s" % cwd )
     script.append( "hostname" )
     script.append( "date" )
+    if config['use_tmpdir']:
+        basenames = [pattern.format(db_prefix) for pattern in ('.{}.idx', '.{}.bps', '{}.db')]
+        dst_dir = os.path.abspath(cwd)
+        src_dir = os.path.abspath(os.path.dirname(cwd)) # by convention
+        script.extend(use_tmpdir_for_files(basenames, src_dir, dst_dir))
     script.append( "time "+ daligner_cmd )
 
     for p_id in xrange( 1, nblock+1 ):
@@ -526,6 +551,10 @@ def get_config(config):
         print """ No target specified, assuming "assembly" as target """
         target = "assembly"
 
+    if config.has_option('General', 'use_tmpdir'):
+        use_tmpdir = config.getboolean('General','use_tmpdir')
+    else:
+        use_tmpdir = False
 
     hgap_config = {"input_fofn_fn" : input_fofn_fn,
                    "target" : target,
@@ -549,7 +578,8 @@ def get_config(config):
                    "pa_DBsplit_option": pa_DBsplit_option,
                    "ovlp_DBsplit_option": ovlp_DBsplit_option,
                    "falcon_sense_option": falcon_sense_option,
-                   "falcon_sense_skip_contained": falcon_sense_skip_contained
+                   "falcon_sense_skip_contained": falcon_sense_skip_contained,
+                   "use_tmpdir": use_tmpdir,
                    }
 
     hgap_config["install_prefix"] = sys.prefix
