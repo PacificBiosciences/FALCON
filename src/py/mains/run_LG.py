@@ -27,12 +27,28 @@ def setup_logger():
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
+def prepend_env_paths(content, names):
+    export_env_vars = ['export %(k)s=%(v)s:${%(k)s}' %(
+        k=name, v=os.environ.get(name, '')) for name in names]
+    return '\n'.join(export_env_vars + [content])
+
+def update_env_in_script(fn, names):
+    """Modify fn using on prepend_env_paths().
+    """
+    with open(fn) as ifs:
+        content = ifs.read()
+    content = prepend_env_paths(content, names)
+    with open(fn, 'w') as ofs:
+        ofs.write(content)
+
 def run_script(job_data, job_type = "SGE" ):
+    script_fn = job_data["script_fn"]
+    update_env_in_script(script_fn,
+        ['PATH', 'PYTHONPATH', 'LD_LIBRARY_PATH'])
     if job_type == "SGE":
         job_name = job_data["job_name"]
         cwd = job_data["cwd"]
         sge_option = job_data["sge_option"]
-        script_fn = job_data["script_fn"]
         sge_cmd="qsub -N {job_name} {sge_option} -o {cwd}/sge_log -j y\
                  -S /bin/bash {script}".format(job_name=job_name,  
                                                cwd=os.getcwd(), 
@@ -41,7 +57,7 @@ def run_script(job_data, job_type = "SGE" ):
 
         os.system( sge_cmd )
     elif job_type == "local":
-        os.system( "bash %s" % job_data["script_fn"] )
+        os.system( "bash %s" % script_fn )
 
 def wait_for_file(filename, task = None, job_name = ""):
     while 1:
