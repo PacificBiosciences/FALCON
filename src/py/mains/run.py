@@ -19,12 +19,42 @@ import StringIO
 
 wait_time = 5
 
+def prepend_env_paths(content, names):
+    """
+    E.g.
+      names = ['PATH', 'PYTYHONPATH']
+      content =
+        echo hi
+      =>
+        export PATH=current:path:${PATH}
+        export PYTHON=current:path:${PYTHONPATH}
+        echo hi
+    """
+    export_env_vars = ['export %(k)s=%(v)s:${%(k)s}' %dict(
+        k=name, v=os.environ.get(name, '')) for name in names]
+    return '\n'.join(export_env_vars + [content])
+
+def update_env_in_script(fn, names):
+    """Modify fn using on prepend_env_paths().
+    """
+    with open(fn) as ifs:
+        content = ifs.read()
+    content = prepend_env_paths(content, names)
+    with open(fn, 'w') as ofs:
+        ofs.write(content)
+
 def run_script(job_data, job_type = "SGE" ):
+    """For now, we actually modify the script before running it.
+    This assume a simple bash script.
+    We will have a better solution eventually.
+    """
+    script_fn = job_data["script_fn"]
+    update_env_in_script(script_fn,
+        ['PATH', 'PYTHONPATH', 'LD_LIBRARY_PATH'])
     if job_type == "SGE":
         job_name = job_data["job_name"]
         cwd = job_data["cwd"]
         sge_option = job_data["sge_option"]
-        script_fn = job_data["script_fn"]
         sge_cmd="qsub -N {job_name} {sge_option} -o {cwd}/sge_log -j y\
                  -S /bin/bash {script}".format(job_name=job_name,  
                                                cwd=os.getcwd(), 
@@ -38,13 +68,11 @@ def run_script(job_data, job_type = "SGE" ):
         job_name = job_data["job_name"]
         cwd = job_data["cwd"]
         sge_option = job_data["sge_option"]
-        script_fn = job_data["script_fn"]
         fc_run_logger.info( "submitting %s for SGE, start job: %s " % (script_fn, job_name) )
         sge_cmd="sbatch -J {job_name} {sge_option} {script}".format(job_name=job_name, cwd=os.getcwd(),sge_option=sge_option, script=script_fn)
         cmd = sge_cmd
         rc = os.system(cmd)
     elif job_type == "local":
-        script_fn = job_data["script_fn"]
         job_name = job_data["job_name"]
         fc_run_logger.info( "executing %r locally, start job: %r " % (script_fn, job_name) )
         log_fn = '{0}.log'.format(script_fn)
