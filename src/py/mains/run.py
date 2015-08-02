@@ -273,7 +273,7 @@ def run_daligner(self):
     script.append( "touch {job_done}".format(job_done = fn(job_done)) )
 
     with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script))
+        script_file.write("\n".join(script) + '\n')
 
     job_data = make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_da
@@ -302,7 +302,7 @@ def run_merge_task(self):
     script.append( "touch {job_done}".format(job_done = fn(job_done)) )
 
     with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script))
+        script_file.write("\n".join(script) + '\n')
 
     job_data = make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_la
@@ -341,7 +341,7 @@ def run_consensus_task(self):
     script.append( "time bash cp_%05d.sh" % job_id )
 
     with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script))
+        script_file.write("\n".join(script) + '\n')
 
     job_data = make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_cns
@@ -900,7 +900,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         script.append( """touch %s""" % fn(self.falcon_asm_done))
 
         with open(script_fn, "w") as script_file:
-            script_file.write("\n".join(script))
+            script_file.write("\n".join(script) + '\n')
 
         job_data = make_job_data(self.URL, script_fn)
         job_data["sge_option"] = config["sge_option_fc"]
