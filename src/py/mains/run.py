@@ -221,7 +221,7 @@ def build_pdb(self):
 def use_tmpdir_for_files(basenames, src_dir, link_dir):
     """Generate script to copy db files to tmpdir (for speed).
     - Choose tmp_dir, based on src_dir name.
-    - rsync *.db *.idx *.bps
+    - rsync basenames into tmp_dir  # after 'flock', per file
     - symlink from link_dir into tmp_dir.
     Return list of script lines, sans linefeed.
     """
@@ -234,7 +234,8 @@ def use_tmpdir_for_files(basenames, src_dir, link_dir):
         src = os.path.join(src_dir, basename)
         dst = os.path.join(tmp_dir, basename)
         rm_cmd = 'rm -f %s' %basename
-        rsync_cmd = 'rsync -av %s %s' %(src, dst)
+        # Wait on lock for up to 10 minutes, in case of very large files.
+        rsync_cmd = "flock -w 600 %s.lock -c 'rsync -av %s %s'" %(dst, src, dst)
         ln_cmd = 'ln -sf %s %s' %(dst, basename)
         script.extend([rm_cmd, rsync_cmd, ln_cmd])
     return script
