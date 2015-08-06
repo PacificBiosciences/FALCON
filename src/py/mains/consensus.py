@@ -183,9 +183,11 @@ def main(*argv):
     parser.add_argument('--output_full', action="store_true", default=False,
                         help='output uncorrected regions too')
     parser.add_argument('--output_multi', action="store_true", default=False,
-                        help='output multi correct regions')
-    parser.add_argument('--output_dformat', action="store_true", default=False,
-                        help='output daligner compatible header, only work with --output_multi')
+                        help='output multi correct regions; implies --output_dformat, unless --output-simple-fasta-header')
+    parser.add_argument('--output_dformat', action="store_true", default=True,
+                        help='output daligner compatible header, only work with --output_multi; DEPRECATED and ignored, as this is the default now')
+    parser.add_argument('--output_simple_fasta_header', action='store_true', default=False,
+                        help='Turn off --output_dformat. This was for older (pre spring 2015) DALIGNER. Never needed now.')
     parser.add_argument('--min_idt', type=float, default=0.70,
                         help='minimum identity of the alignments used for correction')
     parser.add_argument('--edge_tolerance', type=int, default=1000,
