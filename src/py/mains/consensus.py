@@ -224,7 +224,7 @@ def main(*argv):
                 for cns_seq in cns:
                     if len(cns_seq) < 500:
                         continue
-                    if args.output_dformat:
+                    if not args.output_simple_fasta_header:
                         if seq_i >= 10:
                             break
                         print ">prolog/%s%01d/%d_%d" % (seed_id, seq_i, 0, len(cns_seq))
