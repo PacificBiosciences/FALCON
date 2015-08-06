@@ -1,3 +1,4 @@
+from .. import run_support as support
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
 from pypeflow.controller import PypeWorkflow, PypeThreadWorkflow
@@ -6,41 +7,11 @@ import glob
 import sys
 import os
 import re
-import tempfile
 import time
-import logging
-import logging.config
-import uuid
 import hashlib
-import ConfigParser
-import StringIO
 
 
 wait_time = 5
-
-def prepend_env_paths(content, names):
-    """
-    E.g.
-      names = ['PATH', 'PYTYHONPATH']
-      content =
-        echo hi
-      =>
-        export PATH=current:path:${PATH}
-        export PYTHON=current:path:${PYTHONPATH}
-        echo hi
-    """
-    export_env_vars = ['export %(k)s=%(v)s:${%(k)s}' %dict(
-        k=name, v=os.environ.get(name, '')) for name in names]
-    return '\n'.join(export_env_vars + [content])
-
-def update_env_in_script(fn, names):
-    """Modify fn using on prepend_env_paths().
-    """
-    with open(fn) as ifs:
-        content = ifs.read()
-    content = prepend_env_paths(content, names)
-    with open(fn, 'w') as ofs:
-        ofs.write(content)
 
 def run_script(job_data, job_type = "SGE" ):
     """For now, we actually modify the script before running it.
@@ -48,7 +19,7 @@ def run_script(job_data, job_type = "SGE" ):
     We will have a better solution eventually.
     """
     script_fn = job_data["script_fn"]
-    update_env_in_script(script_fn,
+    support.update_env_in_script(script_fn,
         ['PATH', 'PYTHONPATH', 'LD_LIBRARY_PATH'])
     if job_type == "SGE":
         job_name = job_data["job_name"]
@@ -118,22 +89,6 @@ def wait_for_file(filename, task, job_name = ""):
                 os.system("qdel %s" % job_name) # Failure is ok.
             break
 
-def make_job_data(url, script_fn):
-    """Choose defaults.
-    Run in same directory as script_fn.
-    Base job_name on script_fn.
-    """
-    wd = os.path.dirname(script_fn)
-    job_name = '{0}-{1}-{1}'.format(
-            os.path.basename(script_fn),
-            url.split("/")[-1],
-            str(uuid.uuid4())[:8],
-            )
-    job_data = {"job_name": job_name,
-                "cwd": wd,
-                "script_fn": script_fn }
-    return job_data
-
 def build_rdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
 
     input_fofn = self.input_fofn
@@ -180,7 +135,7 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
         script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
         script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
 
-    job_data = make_job_data(self.URL, script_fn)
+    job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(fn(rdb_build_done), task=self, job_name=job_data['job_name'])
@@ -212,33 +167,11 @@ def build_pdb(self):
         script_file.write("HPCdaligner %s -H%d preads > run_jobs.sh\n" % (ovlp_HPCdaligner_option, length_cutoff))
         script_file.write("touch {pdb_build_done}\n".format(pdb_build_done = fn(pdb_build_done)))
 
-    job_data = make_job_data(self.URL, script_fn)
+    job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_pda
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(fn(pdb_build_done), task=self, job_name=job_data['job_name'])
     
-def use_tmpdir_for_files(basenames, src_dir, link_dir):
-    """Generate script to copy db files to tmpdir (for speed).
-    - Choose tmp_dir, based on src_dir name.
-    - rsync basenames into tmp_dir  # after 'flock', per file
-    - symlink from link_dir into tmp_dir.
-    Return list of script lines, sans linefeed.
-    """
-    script = list()
-    unique = os.path.abspath(src_dir).replace('/', '_')
-    root = tempfile.gettempdir()
-    tmp_dir = os.path.join(root, 'falcon', unique)
-    script.append('mkdir -p %s' %tmp_dir)
-    for basename in basenames:
-        src = os.path.join(src_dir, basename)
-        dst = os.path.join(tmp_dir, basename)
-        rm_cmd = 'rm -f %s' %basename
-        # Wait on lock for up to 10 minutes, in case of very large files.
-        rsync_cmd = "flock -w 600 %s.lock -c 'rsync -av %s %s'" %(dst, src, dst)
-        ln_cmd = 'ln -sf %s %s' %(dst, basename)
-        script.extend([rm_cmd, rsync_cmd, ln_cmd])
-    return script
-
 def run_daligner(self):
     daligner_cmd = self.parameters["daligner_cmd"]
     job_uid = self.parameters["job_uid"]
@@ -263,7 +196,7 @@ def run_daligner(self):
         basenames = [pattern.format(db_prefix) for pattern in ('.{}.idx', '.{}.bps', '{}.db')]
         dst_dir = os.path.abspath(cwd)
         src_dir = os.path.abspath(os.path.dirname(cwd)) # by convention
-        script.extend(use_tmpdir_for_files(basenames, src_dir, dst_dir))
+        script.extend(support.use_tmpdir_for_files(basenames, src_dir, dst_dir))
     script.append( "time "+ daligner_cmd )
 
     for p_id in xrange( 1, nblock+1 ):
@@ -274,7 +207,7 @@ def run_daligner(self):
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script) + '\n')
 
-    job_data = make_job_data(self.URL, script_fn)
+    job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(fn(job_done), task=self, job_name=job_data['job_name'])
@@ -303,7 +236,7 @@ def run_merge_task(self):
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script) + '\n')
 
-    job_data = make_job_data(self.URL, script_fn)
+    job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_la
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(fn(job_done), task=self, job_name=job_data['job_name'])
@@ -342,7 +275,7 @@ def run_consensus_task(self):
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script) + '\n')
 
-    job_data = make_job_data(self.URL, script_fn)
+    job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_cns
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(job_done_fn, task=self, job_name=job_data['job_name'])
@@ -365,7 +298,7 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
                     break
 
     for pid in xrange(1, nblock + 1):
-        make_dirs("%s/m_%05d" % (wd, pid))
+        support.make_dirs("%s/m_%05d" % (wd, pid))
 
     with open(os.path.join(wd,  "run_jobs.sh")) as f :
         for l in f :
@@ -374,7 +307,7 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
             job_uid = job_uid[:8]
             l = l.split()
             if l[0] == "daligner":
-                make_dirs(os.path.join( wd, "./job_%s" % job_uid))
+                support.make_dirs(os.path.join( wd, "./job_%s" % job_uid))
                 call = "cd %s/job_%s;ln -sf ../.%s.bps .; ln -sf ../.%s.idx .; ln -sf ../%s.db ." % (wd, job_uid, db_prefix, db_prefix, db_prefix)
                 rc = os.system(call)
                 if rc:
@@ -439,9 +372,9 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
     for p_id in mjob_data:
         s_data = mjob_data[p_id]
 
-        make_dirs("%s/m_%05d" % (wd, p_id))
-        make_dirs("%s/preads" % (wd) )
-        make_dirs("%s/las_files" % (wd) )
+        support.make_dirs("%s/m_%05d" % (wd, p_id))
+        support.make_dirs("%s/preads" % (wd) )
+        support.make_dirs("%s/las_files" % (wd) )
 
         merge_script_file = os.path.abspath( "%s/m_%05d/m_%05d.sh" % (wd, p_id, p_id) )
         with open(merge_script_file, "w") as merge_script:
@@ -488,226 +421,12 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
 
 
 
-def parse_config(config_fn):
-    config = ConfigParser.ConfigParser()
-    config.read(config_fn)
-    return config
-    
-def get_config(config):
-    global job_type  # TODO: Stop using global for wait_for_file().
-    job_type = "SGE"
-    if config.has_option('General', 'job_type'):
-        job_type = config.get('General', 'job_type')
-    
-    pa_concurrent_jobs = 8
-    if config.has_option('General', 'pa_concurrent_jobs'):
-        pa_concurrent_jobs = config.getint('General', 'pa_concurrent_jobs')
-    
-    cns_concurrent_jobs = 8
-    if config.has_option('General', 'cns_concurrent_jobs'):
-        cns_concurrent_jobs = config.getint('General', 'cns_concurrent_jobs')
-
-    ovlp_concurrent_jobs = 8
-    if config.has_option('General', 'ovlp_concurrent_jobs'):
-        ovlp_concurrent_jobs = config.getint('General', 'ovlp_concurrent_jobs')
-
-    #appending = False
-    #if config.has_option('General', 'appending'):
-    #    appending = config.get('General', 'appending')
-    #    if appending == "True":
-    #        appending = True
-
-    openending = False
-    if config.has_option('General', 'openending'):
-        openending = config.get('General', 'openending')
-        if openending == "True":
-            openending = True
-
-    input_type = "raw"
-    if config.has_option('General', 'input_type'):
-        input_type = config.get('General', 'input_type')
-
-    overlap_filtering_setting =  """--max_diff 1000 --max_cov 1000 --min_cov 2"""
-    if config.has_option('General', 'overlap_filtering_setting'):
-        overlap_filtering_setting = config.get('General', 'overlap_filtering_setting')
-
-    pa_HPCdaligner_option = """-v -dal4 -t16 -e.70 -l1000 -s100"""
-    if config.has_option('General', 'pa_HPCdaligner_option'):
-        pa_HPCdaligner_option = config.get('General', 'pa_HPCdaligner_option')
-
-    ovlp_HPCdaligner_option = """ -v -dal24 -t32 -h60 -e.96 -l500 -s1000"""
-    if config.has_option('General', 'ovlp_HPCdaligner_option'):
-        ovlp_HPCdaligner_option = config.get('General', 'ovlp_HPCdaligner_option')
-
-    pa_DBsplit_option = """ -x500 -s200"""
-    if config.has_option('General', 'pa_DBsplit_option'):
-        pa_DBsplit_option = config.get('General', 'pa_DBsplit_option')
-
-    ovlp_DBsplit_option = """ -x500 -s200"""
-    if config.has_option('General', 'ovlp_DBsplit_option'):
-        ovlp_DBsplit_option = config.get('General', 'ovlp_DBsplit_option')
-
-    falcon_sense_option = """ --output_multi --min_idt 0.70 --min_cov 2 --local_match_count_threshold 0 --max_n_read 1800 --n_core 6"""
-    if config.has_option('General', 'falcon_sense_option'):
-        falcon_sense_option = config.get('General', 'falcon_sense_option')
-
-    falcon_sense_skip_contained = "False"
-    if config.has_option('General', 'falcon_sense_skip_contained'):
-        falcon_sense_skip_contained = config.get('General', 'falcon_sense_skip_contained')
-        if falcon_sense_skip_contained in ["True", "true", "1"]:
-            falcon_sense_skip_contained = True
-        else:
-            falcon_sense_skip_contained = False
-
-    length_cutoff = config.getint('General', 'length_cutoff')
-    input_fofn_fn = config.get('General', 'input_fofn')
-    
-    length_cutoff_pr = config.getint('General', 'length_cutoff_pr')
-    
-
-    bestn = 12
-    if config.has_option('General', 'bestn'):
-        bestn = config.getint('General', 'bestn')
-
-
-    if config.has_option('General', 'target'):
-        target = config.get('General', 'target')
-        if target not in ["overlapping", "pre-assembly", "assembly"]:
-            print """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target %s in the configuration file.  """ % target
-            sys.exit(1)
-    else:
-        print """ No target specified, assuming "assembly" as target """
-        target = "assembly"
-
-    if config.has_option('General', 'use_tmpdir'):
-        use_tmpdir = config.getboolean('General','use_tmpdir')
-    else:
-        use_tmpdir = False
-
-    hgap_config = {"input_fofn_fn" : input_fofn_fn,
-                   "target" : target,
-                   "job_type" : job_type,
-                   "input_type": input_type,
-                   "openending": openending,
-                   "pa_concurrent_jobs" : pa_concurrent_jobs,
-                   "ovlp_concurrent_jobs" : ovlp_concurrent_jobs,
-                   "cns_concurrent_jobs" : cns_concurrent_jobs,
-                   "overlap_filtering_setting": overlap_filtering_setting,
-                   "length_cutoff" : length_cutoff,
-                   "length_cutoff_pr" : length_cutoff_pr,
-                   "sge_option_da": config.get('General', 'sge_option_da'),
-                   "sge_option_la": config.get('General', 'sge_option_la'),
-                   "sge_option_pda": config.get('General', 'sge_option_pda'),
-                   "sge_option_pla": config.get('General', 'sge_option_pla'),
-                   "sge_option_fc": config.get('General', 'sge_option_fc'),
-                   "sge_option_cns": config.get('General', 'sge_option_cns'),
-                   "pa_HPCdaligner_option": pa_HPCdaligner_option,
-                   "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
-                   "pa_DBsplit_option": pa_DBsplit_option,
-                   "ovlp_DBsplit_option": ovlp_DBsplit_option,
-                   "falcon_sense_option": falcon_sense_option,
-                   "falcon_sense_skip_contained": falcon_sense_skip_contained,
-                   "use_tmpdir": use_tmpdir,
-                   }
-
-    hgap_config["install_prefix"] = sys.prefix
-    
-    return hgap_config
-
-
-default_logging_config = """
-[loggers]
-keys=root,pypeflow,fc_run
-
-[handlers]
-keys=stream,file_pypeflow,file_fc
-
-[formatters]
-keys=form01
-
-[logger_root]
-level=NOTSET
-handlers=stream
-
-[logger_pypeflow]
-level=NOTSET
-handlers=stream
-qualname=pypeflow
-propagate=1
-
-[logger_fc_run]
-level=NOTSET
-handlers=stream
-qualname=fc_run
-propagate=1
-
-[handler_stream]
-class=StreamHandler
-level=INFO
-formatter=form01
-args=(sys.stderr,)
-
-[handler_file_pypeflow]
-class=FileHandler
-level=DEBUG
-formatter=form01
-args=('pypeflow.log',)
-
-[handler_file_fc]
-class=FileHandler
-level=DEBUG
-formatter=form01
-args=('fc_run.log',)
-
-[formatter_form01]
-format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
-"""
-
-def setup_logger(logging_config_fn):
-    """See https://docs.python.org/2/library/logging.config.html
-    """
-    logging.Formatter.converter = time.gmtime # cannot be done in .ini
-
-    if logging_config_fn:
-        logger_fileobj = open(logging_config_fn)
-    else:
-        logger_fileobj = StringIO.StringIO(default_logging_config)
-    defaults = {
-    }
-    logging.config.fileConfig(logger_fileobj, defaults=defaults, disable_existing_loggers=False)
-
-    global fc_run_logger
-    fc_run_logger = logging.getLogger("fc_run")
-
-def make_fofn_abs(self):
-    """Copy i_fofn to o_fofn, but with relative filenames expanded for CWD.
-    """
-    i_fofn_fn = fn(self.i_fofn)
-    o_fofn_fn = fn(self.o_fofn)
-    #cwd = self.parameters["cwd"]
-
-    assert os.path.abspath(o_fofn_fn) != os.path.abspath(i_fofn_fn)
-    with open(i_fofn_fn) as ifs, open(o_fofn_fn, 'w') as ofs:
-        for line in ifs:
-            ifn = line.strip()
-            if not ifn: continue
-            abs_ifn = os.path.abspath(ifn)
-            ofs.write('%s\n' %abs_ifn)
-    #return o_fofn_fn
-def make_fofn_abs_raw(self):
-    return make_fofn_abs(self)
-def make_fofn_abs_preads(self):
-    return make_fofn_abs(self)
-
-def make_dirs(d):
-    if not os.path.isdir(d):
-        os.makedirs(d)
-
 def main1(prog_name, input_config_fn, logger_config_fn=None):
-    setup_logger(logger_config_fn)
+    global fc_run_logger
+    fc_run_logger = support.setup_logger(logger_config_fn)
 
     fc_run_logger.info( "fc_run started with configuration %s", input_config_fn ) 
-    config = get_config(parse_config(input_config_fn))
+    config = support.get_config(support.parse_config(input_config_fn))
     rawread_dir = os.path.abspath("./0-rawreads")
     pread_dir = os.path.abspath("./1-preads_ovl")
     falcon_asm_dir  = os.path.abspath("./2-asm-falcon")
@@ -715,7 +434,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     sge_log_dir = os.path.abspath("./sge_log")
 
     for d in (rawread_dir, pread_dir, falcon_asm_dir, script_dir, sge_log_dir):
-        make_dirs(d)
+        support.make_dirs(d)
 
     concurrent_jobs = config["pa_concurrent_jobs"]
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
@@ -727,7 +446,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                   outputs = {"o_fofn": rawread_fofn_plf},
                                   parameters = {},
                                   TaskType = PypeThreadTaskBase)
-    fofn_abs_task = make_fofn_abs_task(make_fofn_abs_raw)
+    fofn_abs_task = make_fofn_abs_task(support.make_fofn_abs_raw)
     wf.addTasks([fofn_abs_task])
     wf.refreshTargets([fofn_abs_task])
 
@@ -805,7 +524,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                      outputs = {"o_fofn": pread_fofn},
                                      parameters = {},
                                      TaskType = PypeThreadTaskBase)
-        fofn_abs_task = make_fofn_abs_task(make_fofn_abs_preads)
+        fofn_abs_task = make_fofn_abs_task(support.make_fofn_abs_preads)
         wf.addTasks([fofn_abs_task])
         wf.refreshTargets([fofn_abs_task])
 
@@ -901,7 +620,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         with open(script_fn, "w") as script_file:
             script_file.write("\n".join(script) + '\n')
 
-        job_data = make_job_data(self.URL, script_fn)
+        job_data = support.make_job_data(self.URL, script_fn)
         job_data["sge_option"] = config["sge_option_fc"]
         run_script(job_data, job_type = config["job_type"])
         wait_for_file(fn(self.falcon_asm_done), task=self, job_name=job_data['job_name'])
