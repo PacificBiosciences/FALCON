@@ -212,14 +212,14 @@ def main(*argv):
             continue
 
 
-        if args.output_full == True:
+        if args.output_full:
             print ">"+seed_id+"_f"
             print cns
         else:
             cns = good_region.findall(cns)
             if len(cns) == 0:
                 continue
-            if args.output_multi == True:
+            if args.output_multi:
                 seq_i = 0
                 for cns_seq in cns:
                     if len(cns_seq) < 500:
