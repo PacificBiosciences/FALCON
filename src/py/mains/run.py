@@ -89,7 +89,13 @@ def wait_for_file(filename, task, job_name = ""):
                 os.system("qdel %s" % job_name) # Failure is ok.
             break
 
-def build_rdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
+def task_make_fofn_abs_raw(self):
+    return support.make_fofn_abs(self.i_fofn_fn, self.o_fnfn_fn)
+
+def task_make_fofn_abs_preads(self):
+    return support.make_fofn_abs(self.i_fofn_fn, self.o_fnfn_fn)
+
+def build_rdb(self):
 
     input_fofn = self.input_fofn
     input_fofn_fn = fn(input_fofn)
@@ -103,44 +109,15 @@ def build_rdb(self):  #essential the same as build_rdb() but the subtle differen
     pa_DBsplit_option = config["pa_DBsplit_option"]
     openending = config["openending"]
 
-
-
     script_fn = os.path.join( work_dir, "prepare_rdb.sh" )
-    
-    last_block = 1
-    new_db = True
-    if os.path.exists( os.path.join(work_dir, "raw_reads.db") ):
-        with open(  os.path.join(work_dir, "raw_reads.db") ) as f:
-            for l in f:
-                l = l.strip().split()
-                if l[0] == "blocks" and l[1] == "=":
-                    last_block = int(l[2])
-                    new_db = False
-                    break
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("set -vex\n")
-        script_file.write("trap 'touch {rdb_build_done}.exit' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
-        script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
-        script_file.write("hostname\n")
-        script_file.write("date\n")
-        #script_file.write("for f in `cat {input_fofn_fn}`; do fasta2DB raw_reads $f; done\n".format(input_fofn_fn = input_fofn_fn))
-        script_file.write("fasta2DB -v raw_reads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
-        if new_db  == True:
-            script_file.write("DBsplit %s raw_reads\n" % pa_DBsplit_option)
-        if openending == True:
-            script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')\n""")
-        else:
-            script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
-        script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
-        script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
+    support.build_rdb([input_fofn, work_dir, config], [script_fn])
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(fn(rdb_build_done), task=self, job_name=job_data['job_name'])
 
-def build_pdb(self):
+def build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
 
     input_fofn = self.pread_fofn
     input_fofn_fn = fn(input_fofn)
@@ -446,7 +423,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                   outputs = {"o_fofn": rawread_fofn_plf},
                                   parameters = {},
                                   TaskType = PypeThreadTaskBase)
-    fofn_abs_task = make_fofn_abs_task(support.make_fofn_abs_raw)
+    fofn_abs_task = make_fofn_abs_task(task_make_fofn_abs_raw)
     wf.addTasks([fofn_abs_task])
     wf.refreshTargets([fofn_abs_task])
 
@@ -524,7 +501,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                      outputs = {"o_fofn": pread_fofn},
                                      parameters = {},
                                      TaskType = PypeThreadTaskBase)
-        fofn_abs_task = make_fofn_abs_task(support.make_fofn_abs_preads)
+        fofn_abs_task = make_fofn_abs_task(task_make_fofn_abs_preads)
         wf.addTasks([fofn_abs_task])
         wf.refreshTargets([fofn_abs_task])
 

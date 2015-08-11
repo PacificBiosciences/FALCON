@@ -271,11 +271,40 @@ def make_fofn_abs(i_fofn_fn, o_fofn_fn):
             abs_ifn = os.path.abspath(ifn)
             ofs.write('%s\n' %abs_ifn)
     #return o_fofn_fn
-def make_fofn_abs_raw(self):
-    return make_fofn_abs(self.i_fofn_fn, self.o_fnfn_fn)
-def make_fofn_abs_preads(self):
-    return make_fofn_abs(self.i_fofn_fn, self.o_fnfn_fn)
 
 def make_dirs(d):
     if not os.path.isdir(d):
         os.makedirs(d)
+
+def build_rdb(inputs, outputs):
+    input_fofn, work_dir, config, = inputs
+    script_fn, = outputs
+    
+    last_block = 1
+    new_db = True
+    if os.path.exists( os.path.join(work_dir, "raw_reads.db") ):
+        with open(  os.path.join(work_dir, "raw_reads.db") ) as f:
+            for l in f:
+                l = l.strip().split()
+                if l[0] == "blocks" and l[1] == "=":
+                    last_block = int(l[2])
+                    new_db = False
+                    break
+
+    with open(script_fn,"w") as script_file:
+        script_file.write("set -vex\n")
+        script_file.write("trap 'touch {rdb_build_done}.exit' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
+        script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
+        script_file.write("hostname\n")
+        script_file.write("date\n")
+        #script_file.write("for f in `cat {input_fofn_fn}`; do fasta2DB raw_reads $f; done\n".format(input_fofn_fn = input_fofn_fn))
+        script_file.write("fasta2DB -v raw_reads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
+        if new_db  == True:
+            script_file.write("DBsplit %s raw_reads\n" % pa_DBsplit_option)
+        if openending == True:
+            script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')\n""")
+        else:
+            script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
+        script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
+        script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
+

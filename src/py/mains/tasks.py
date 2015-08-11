@@ -1,6 +1,8 @@
 """Executable tasks.
 
-To be called by either pypeFLOW or pbsmrtpipe.
+To be called by pbsmrtpipe.
+
+pypeFLOW uses its own adaptors instead.
 """
 from .. import run_support as support
 import sys
