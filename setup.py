@@ -24,9 +24,14 @@ setup(name='falcon_kit',
                     extra_link_args=["-fPIC",  "-O3"]),
                    ],
       entry_points = {'console_scripts': [
+          'falcon-task=falcon_kit.mains.tasks:main',
           ],
+      },
+      extras_require = {
+          'falcon-task':  ['falcon_kit'],
       },
       scripts = scripts,
       zip_safe = False,
+      setup_requires=install_requires,
       install_requires=install_requires
      )
