@@ -23,6 +23,9 @@ setup(name='falcon_kit',
                    Extension('falcon_kit.ext_falcon', ['src/c/ext_falcon.c', 'src/c/DW_banded.c', 'src/c/kmer_lookup.c', 'src/c/falcon.c'],
                     extra_link_args=["-fPIC",  "-O3"]),
                    ],
+      entry_points = {'console_scripts': [
+          ],
+      },
       scripts = scripts,
       zip_safe = False,
       install_requires=install_requires

@@ -4,3 +4,6 @@
 *.pyc
 *.pyo
 *.swp
+*.so
+*.dylib
+*.dll
