@@ -276,7 +276,7 @@ def make_dirs(d):
     if not os.path.isdir(d):
         os.makedirs(d)
 
-def build_rdb(input_fofn_fn=None, work_dir=None, config=None, job_done=None, script_fn=None):
+def build_rdb(input_fofn_fn, work_dir, config, job_done, script_fn):
     length_cutoff = config["length_cutoff"]
     pa_HPCdaligner_option = config["pa_HPCdaligner_option"]
     pa_DBsplit_option = config["pa_DBsplit_option"]
@@ -348,4 +348,28 @@ def run_falcon_asm(pread_dir, db_file, config, job_done, script_fn):
     script.append( """touch %s""" % job_done)
 
     with open(script_fn, "w") as script_file:
+        script_file.write("\n".join(script) + '\n')
+
+def run_daligner(daligner_cmd=None, db_prefix=None, nblock=None, config=None, job_done=None, script_fn=None):
+    cwd = os.path.dirname(script_fn)
+
+    script = []
+    script.append( "set -vex" )
+    script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done) )
+    script.append( "cd %s" % cwd )
+    script.append( "hostname" )
+    script.append( "date" )
+    if config['use_tmpdir']:
+        basenames = [pattern.format(db_prefix) for pattern in ('.{}.idx', '.{}.bps', '{}.db')]
+        dst_dir = os.path.abspath(cwd)
+        src_dir = os.path.abspath(os.path.dirname(cwd)) # by convention
+        script.extend(use_tmpdir_for_files(basenames, src_dir, dst_dir))
+    script.append( "time "+ daligner_cmd )
+
+    for p_id in xrange( 1, nblock+1 ):
+        script.append( """ for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do ln -sf $f ../m_%05d; done """  % (db_prefix, p_id, db_prefix, p_id) )
+
+    script.append( "touch {job_done}".format(job_done = job_done) )
+
+    with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script) + '\n')

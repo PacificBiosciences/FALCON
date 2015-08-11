@@ -156,50 +156,37 @@ def task_run_falcon_asm(self):
         'script_fn': script_fn,
     }
     support.run_falcon_asm(**args)
+
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = config["sge_option_fc"]
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
-def run_daligner(self):
+def task_run_daligner(self):
+    job_done = fn(self.job_done)
     daligner_cmd = self.parameters["daligner_cmd"]
     job_uid = self.parameters["job_uid"]
     cwd = self.parameters["cwd"]
-    job_done = self.job_done
-    config = self.parameters["config"]
-    sge_option_da = config["sge_option_da"]
-    install_prefix = config["install_prefix"]
     db_prefix = self.parameters["db_prefix"]
     nblock = self.parameters["nblock"]
-
+    config = self.parameters["config"]
+    sge_option_da = config["sge_option_da"]
     script_dir = os.path.join( cwd )
     script_fn =  os.path.join( script_dir , "rj_%s.sh" % (job_uid))
-
-    script = []
-    script.append( "set -vex" )
-    script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
-    script.append( "cd %s" % cwd )
-    script.append( "hostname" )
-    script.append( "date" )
-    if config['use_tmpdir']:
-        basenames = [pattern.format(db_prefix) for pattern in ('.{}.idx', '.{}.bps', '{}.db')]
-        dst_dir = os.path.abspath(cwd)
-        src_dir = os.path.abspath(os.path.dirname(cwd)) # by convention
-        script.extend(support.use_tmpdir_for_files(basenames, src_dir, dst_dir))
-    script.append( "time "+ daligner_cmd )
-
-    for p_id in xrange( 1, nblock+1 ):
-        script.append( """ for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do ln -sf $f ../m_%05d; done """  % (db_prefix, p_id, db_prefix, p_id) )
-
-    script.append( "touch {job_done}".format(job_done = fn(job_done)) )
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script) + '\n')
+    args = {
+        'daligner_cmd': daligner_cmd,
+        'db_prefix': db_prefix,
+        'nblock': nblock,
+        'config': config,
+        'job_done': job_done,
+        'script_fn': script_fn,
+    }
+    support.run_daligner(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(fn(job_done), task=self, job_name=job_data['job_name'])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
 def run_merge_task(self):
     p_script_fn = self.parameters["merge_script"]
@@ -315,7 +302,7 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
                                                parameters = parameters,
                                                TaskType = PypeThreadTaskBase,
                                                URL = "task://localhost/d_%s_%s" % (job_uid, db_prefix) )
-                daligner_task = make_daligner_task( run_daligner )
+                daligner_task = make_daligner_task( task_run_daligner )
                 tasks.append( daligner_task )
                 tasks_out[ "ajob_%s" % job_uid ] = job_done
                 job_id += 1
