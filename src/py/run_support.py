@@ -260,13 +260,9 @@ def setup_logger(logging_config_fn):
 
     return logging.getLogger("fc_run")
 
-def make_fofn_abs(self):
+def make_fofn_abs(i_fofn_fn, o_fofn_fn):
     """Copy i_fofn to o_fofn, but with relative filenames expanded for CWD.
     """
-    i_fofn_fn = fn(self.i_fofn)
-    o_fofn_fn = fn(self.o_fofn)
-    #cwd = self.parameters["cwd"]
-
     assert os.path.abspath(o_fofn_fn) != os.path.abspath(i_fofn_fn)
     with open(i_fofn_fn) as ifs, open(o_fofn_fn, 'w') as ofs:
         for line in ifs:
@@ -276,9 +272,9 @@ def make_fofn_abs(self):
             ofs.write('%s\n' %abs_ifn)
     #return o_fofn_fn
 def make_fofn_abs_raw(self):
-    return make_fofn_abs(self)
+    return make_fofn_abs(self.i_fofn_fn, self.o_fnfn_fn)
 def make_fofn_abs_preads(self):
-    return make_fofn_abs(self)
+    return make_fofn_abs(self.i_fofn_fn, self.o_fnfn_fn)
 
 def make_dirs(d):
     if not os.path.isdir(d):
