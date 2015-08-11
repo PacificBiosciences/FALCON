@@ -90,27 +90,21 @@ def wait_for_file(filename, task, job_name = ""):
             break
 
 def task_make_fofn_abs_raw(self):
-    return support.make_fofn_abs(self.i_fofn_fn, self.o_fnfn_fn)
+    return support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
 
 def task_make_fofn_abs_preads(self):
-    return support.make_fofn_abs(self.i_fofn_fn, self.o_fnfn_fn)
+    return support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
 
 def task_build_rdb(self):
-    input_fofn = self.input_fofn
-    input_fofn_fn = fn(input_fofn)
-    job_done = self.rdb_build_done
+    input_fofn_fn = fn(self.input_fofn)
+    job_done = fn(self.rdb_build_done)
     work_dir = self.parameters["work_dir"]
     config = self.parameters["config"]
     sge_option_da = config["sge_option_da"]
-    install_prefix = config["install_prefix"]
-    length_cutoff = config["length_cutoff"]
-    pa_HPCdaligner_option = config["pa_HPCdaligner_option"]
-    pa_DBsplit_option = config["pa_DBsplit_option"]
-    openending = config["openending"]
 
     script_fn = os.path.join( work_dir, "prepare_rdb.sh" )
     args = {
-        'input_fofn': input_fofn,
+        'input_fofn_fn': input_fofn_fn,
         'work_dir': work_dir,
         'config': config,
         'job_done': job_done,
@@ -121,26 +115,21 @@ def task_build_rdb(self):
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(fn(job_done), task=self, job_name=job_data['job_name'])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
 def task_build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
-    input_fofn = self.pread_fofn
-    input_fofn_fn = fn(input_fofn)
-    job_done = self.pdb_build_done
+    input_fofn_fn = fn(self.pread_fofn)
+    job_done = fn(self.pdb_build_done)
     work_dir = self.parameters["work_dir"]
     config = self.parameters["config"]
     sge_option_pda = config["sge_option_pda"]
-    install_prefix = config["install_prefix"]
-    length_cutoff = config["length_cutoff_pr"]
-    ovlp_HPCdaligner_option = config["ovlp_HPCdaligner_option"]
-    ovlp_DBsplit_option = config["ovlp_DBsplit_option"]
 
     script_fn = os.path.join( work_dir, "prepare_pdb.sh" )
     args = {
-        'input_fofn': input_fofn,
+        'input_fofn_fn': input_fofn_fn,
         'work_dir': work_dir,
         'config': config,
-        'job_done': rdb_build_done,
+        'job_done': job_done,
         'script_fn': script_fn,
     }
     support.build_pdb(**args)
@@ -148,19 +137,20 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_pda
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(fn(pdb_build_done), task=self, job_name=job_data['job_name'])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
 def task_run_falcon_asm(self):
     wd = self.parameters["wd"]
     #p_merge_done = self.p_merge_done
-    job_done = self.falcon_asm_done
+    db_file = fn(self.db_file)
+    job_done = fn(self.falcon_asm_done)
     config = self.parameters["config"]
-    install_prefix = config["install_prefix"]
     pread_dir = self.parameters["pread_dir"]
     script_dir = os.path.join( wd )
     script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
     args = {
         'pread_dir': pread_dir,
+        'db_file': db_file,
         'config': config,
         'job_done': job_done,
         'script_fn': script_fn,
@@ -169,7 +159,7 @@ def task_run_falcon_asm(self):
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = config["sge_option_fc"]
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(fn(self.falcon_asm_done), task=self, job_name=job_data['job_name'])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
 def run_daligner(self):
     daligner_cmd = self.parameters["daligner_cmd"]
@@ -530,7 +520,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     parameters = {"work_dir": pread_dir,
                   "config": config}
 
-    make_build_pdb_task  = PypeTask( inputs = { "pread_fofn": pread_fofn },
+    make_build_pdb_task  = PypeTask(inputs = { "pread_fofn": pread_fofn },
                                     outputs = { "pdb_build_done": pdb_build_done },
                                     parameters = parameters,
                                     TaskType = PypeThreadTaskBase,
@@ -565,7 +555,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
     merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( pread_dir, "preads", p_da_done, config )
     wf.addTasks( merge_tasks )
-    #wf.refreshTargets(updateFreq = 30) #all            
+    #wf.refreshTargets(updateFreq = 30) #all
 
     p_merge_done = makePypeLocalFile( os.path.join( pread_dir, "p_merge_done") )
 
@@ -577,12 +567,12 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         os.system("touch %s" % fn(self.p_merge_done))
     
     wf.addTask(check_p_merge_check_task)
-    wf.refreshTargets(updateFreq = wait_time) #all            
+    wf.refreshTargets(updateFreq = wait_time) #all
 
     
     falcon_asm_done = makePypeLocalFile( os.path.join( falcon_asm_dir, "falcon_asm_done") )
     make_run_falcon_asm = PypeTask(
-               inputs = {"p_merge_done": p_merge_done, "db_file":db_file}, 
+               inputs = {"p_merge_done": p_merge_done, "db_file":db_file},
                outputs =  {"falcon_asm_done":falcon_asm_done},
                parameters = {"wd": falcon_asm_dir,
                              "config": config,
@@ -590,7 +580,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                TaskType = PypeThreadTaskBase,
                URL = "task://localhost/falcon" )
     wf.addTask(make_run_falcon_asm(task_run_falcon_asm))
-    wf.refreshTargets(updateFreq = wait_time) #all            
+    wf.refreshTargets(updateFreq = wait_time) #all
 
 
 def main(*argv):
