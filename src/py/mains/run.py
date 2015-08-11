@@ -109,6 +109,7 @@ def task_build_rdb(self):
         'config': config,
         'job_done': job_done,
         'script_fn': script_fn,
+        'run_jobs_fn': fn(self.run_jobs),
     }
     support.build_rdb(**args)
 
@@ -131,6 +132,7 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
         'config': config,
         'job_done': job_done,
         'script_fn': script_fn,
+        'run_jobs_fn': fn(self.run_jobs),
     }
     support.build_pdb(**args)
 
@@ -237,7 +239,7 @@ def task_run_consensus(self):
     wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
 
-def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
+def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
     job_id = 0
     tasks = []
     tasks_out = {}
@@ -256,7 +258,7 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
     for pid in xrange(1, nblock + 1):
         support.make_dirs("%s/m_%05d" % (wd, pid))
 
-    with open(os.path.join(wd,  "run_jobs.sh")) as f :
+    with open(run_jobs_fn) as f :
         for l in f :
             l = l.strip()
             job_uid = hashlib.md5(l).hexdigest()
@@ -288,14 +290,14 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
                 job_id += 1
     return tasks, tasks_out
 
-def create_merge_tasks(wd, db_prefix, input_dep, config):
+def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
     merge_tasks = []
     consensus_tasks = []
     merge_out = {}
     consensus_out ={}
     mjob_data = {}
 
-    with open(os.path.join(wd,  "run_jobs.sh")) as f :
+    with open(run_jobs_fn) as f :
         for l in f:
             l = l.strip().split()
             if l[0] not in ( "LAsort", "LAmerge", "mv" ):
@@ -411,11 +413,13 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         #### import sequences into daligner DB
         sleep_done = makePypeLocalFile( os.path.join( rawread_dir, "sleep_done") )
         rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") ) 
+        run_jobs = makePypeLocalFile( os.path.join( rawread_dir, "run_jobs.sh") ) 
         parameters = {"work_dir": rawread_dir,
                       "config": config}
 
         make_build_rdb_task = PypeTask(inputs = {"input_fofn": rawread_fofn_plf},
-                                      outputs = {"rdb_build_done": rdb_build_done}, 
+                                      outputs = {"rdb_build_done": rdb_build_done,
+                                                 "run_jobs": run_jobs}, 
                                       parameters = parameters,
                                       TaskType = PypeThreadTaskBase)
         build_rdb_task = make_build_rdb_task(task_build_rdb)
@@ -425,7 +429,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
         db_file = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
         #### run daligner
-        daligner_tasks, daligner_out = create_daligner_tasks( rawread_dir, "raw_reads", db_file, rdb_build_done, config) 
+        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", db_file, rdb_build_done, config) 
 
         wf.addTasks(daligner_tasks)
         #wf.refreshTargets(updateFreq = 60) # larger number better for more jobs
@@ -444,7 +448,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         
         concurrent_jobs = config["cns_concurrent_jobs"]
         PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
-        merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( rawread_dir, "raw_reads", r_da_done, config )
+        merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks(fn(run_jobs), rawread_dir, "raw_reads", r_da_done, config)
         wf.addTasks( merge_tasks )
         if config["target"] == "overlapping":
             wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
@@ -487,8 +491,10 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     parameters = {"work_dir": pread_dir,
                   "config": config}
 
+    run_jobs = makePypeLocalFile(os.path.join(pread_dir, 'run_jobs.sh'))
     make_build_pdb_task  = PypeTask(inputs = { "pread_fofn": pread_fofn },
-                                    outputs = { "pdb_build_done": pdb_build_done },
+                                    outputs = { "pdb_build_done": pdb_build_done,
+                                                "run_jobs": run_jobs},
                                     parameters = parameters,
                                     TaskType = PypeThreadTaskBase,
                                     URL = "task://localhost/build_pdb")
@@ -505,7 +511,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     config["sge_option_da"] = config["sge_option_pda"]
     config["sge_option_la"] = config["sge_option_pla"]
-    daligner_tasks, daligner_out = create_daligner_tasks( pread_dir, "preads", db_file, pdb_build_done, config, pread_aln= True) 
+    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", db_file, pdb_build_done, config, pread_aln= True) 
     wf.addTasks(daligner_tasks)
     #wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
 
@@ -520,7 +526,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     
     wf.addTask(check_p_da_task)
 
-    merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( pread_dir, "preads", p_da_done, config )
+    merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks(fn(run_jobs), pread_dir, "preads", p_da_done, config)
     wf.addTasks( merge_tasks )
     #wf.refreshTargets(updateFreq = 30) #all
 

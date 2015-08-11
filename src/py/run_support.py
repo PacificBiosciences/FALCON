@@ -276,7 +276,7 @@ def make_dirs(d):
     if not os.path.isdir(d):
         os.makedirs(d)
 
-def build_rdb(input_fofn_fn, work_dir, config, job_done, script_fn):
+def build_rdb(input_fofn_fn, work_dir, config, job_done, script_fn, run_jobs_fn):
     length_cutoff = config["length_cutoff"]
     pa_HPCdaligner_option = config["pa_HPCdaligner_option"]
     pa_DBsplit_option = config["pa_DBsplit_option"]
@@ -307,10 +307,11 @@ def build_rdb(input_fofn_fn, work_dir, config, job_done, script_fn):
             script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')\n""")
         else:
             script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
-        script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
+        script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > %s\n" %(
+            pa_HPCdaligner_option, length_cutoff, last_block, run_jobs_fn))
         script_file.write("touch {job_done}\n".format(job_done = job_done))
 
-def build_pdb(input_fofn_fn, work_dir, config, job_done, script_fn):
+def build_pdb(input_fofn_fn, work_dir, config, job_done, script_fn, run_jobs_fn):
     length_cutoff = config["length_cutoff_pr"]
     ovlp_HPCdaligner_option = config["ovlp_HPCdaligner_option"]
     ovlp_DBsplit_option = config["ovlp_DBsplit_option"]
@@ -323,7 +324,8 @@ def build_pdb(input_fofn_fn, work_dir, config, job_done, script_fn):
         script_file.write("date\n")
         script_file.write("fasta2DB -v preads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
         script_file.write("DBsplit -x%d %s preads\n" % (length_cutoff, ovlp_DBsplit_option))
-        script_file.write("HPCdaligner %s -H%d preads > run_jobs.sh\n" % (ovlp_HPCdaligner_option, length_cutoff))
+        script_file.write("HPCdaligner %s -H%d preads > %s\n" %(
+            ovlp_HPCdaligner_option, length_cutoff, run_jobs_fn))
         script_file.write("touch {job_done}\n".format(job_done = job_done))
 
 def run_falcon_asm(pread_dir, db_file, config, job_done, script_fn):
