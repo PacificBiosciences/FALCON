@@ -276,10 +276,7 @@ def make_dirs(d):
     if not os.path.isdir(d):
         os.makedirs(d)
 
-def build_rdb(inputs, outputs):
-    input_fofn, work_dir, config, = inputs
-    script_fn, = outputs
-    
+def build_rdb(input_fofn, work_dir, config, build_done, script_fn):
     last_block = 1
     new_db = True
     if os.path.exists( os.path.join(work_dir, "raw_reads.db") ):
@@ -308,3 +305,14 @@ def build_rdb(inputs, outputs):
         script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
         script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
 
+def build_pdb(input_fofn, work_dir, config, build_done, script_fn):
+    with open(script_fn,"w") as script_file:
+        script_file.write("set -vex\n")
+        script_file.write("trap 'touch {pdb_build_done}.exit' EXIT\n".format(pdb_build_done = fn(pdb_build_done)))
+        script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
+        script_file.write("hostname\n")
+        script_file.write("date\n")
+        script_file.write("fasta2DB -v preads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
+        script_file.write("DBsplit -x%d %s preads\n" % (length_cutoff, ovlp_DBsplit_option))
+        script_file.write("HPCdaligner %s -H%d preads > run_jobs.sh\n" % (ovlp_HPCdaligner_option, length_cutoff))
+        script_file.write("touch {pdb_build_done}\n".format(pdb_build_done = fn(pdb_build_done)))

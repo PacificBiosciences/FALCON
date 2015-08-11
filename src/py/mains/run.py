@@ -95,8 +95,7 @@ def task_make_fofn_abs_raw(self):
 def task_make_fofn_abs_preads(self):
     return support.make_fofn_abs(self.i_fofn_fn, self.o_fnfn_fn)
 
-def build_rdb(self):
-
+def task_build_rdb(self):
     input_fofn = self.input_fofn
     input_fofn_fn = fn(input_fofn)
     rdb_build_done = self.rdb_build_done
@@ -110,15 +109,21 @@ def build_rdb(self):
     openending = config["openending"]
 
     script_fn = os.path.join( work_dir, "prepare_rdb.sh" )
-    support.build_rdb([input_fofn, work_dir, config], [script_fn])
+    args = {
+        'input_fofn': input_fofn,
+        'work_dir': work_dir,
+        'config': config,
+        'build_done': rdb_build_done,
+        'script_fn': script_fn,
+    }
+    support.build_rdb(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(fn(rdb_build_done), task=self, job_name=job_data['job_name'])
 
-def build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
-
+def task_build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
     input_fofn = self.pread_fofn
     input_fofn_fn = fn(input_fofn)
     pdb_build_done = self.pdb_build_done
@@ -130,19 +135,15 @@ def build_pdb(self):  #essential the same as build_rdb() but the subtle differen
     ovlp_HPCdaligner_option = config["ovlp_HPCdaligner_option"]
     ovlp_DBsplit_option = config["ovlp_DBsplit_option"]
 
-
     script_fn = os.path.join( work_dir, "prepare_pdb.sh" )
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("set -vex\n")
-        script_file.write("trap 'touch {pdb_build_done}.exit' EXIT\n".format(pdb_build_done = fn(pdb_build_done)))
-        script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
-        script_file.write("hostname\n")
-        script_file.write("date\n")
-        script_file.write("fasta2DB -v preads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
-        script_file.write("DBsplit -x%d %s preads\n" % (length_cutoff, ovlp_DBsplit_option))
-        script_file.write("HPCdaligner %s -H%d preads > run_jobs.sh\n" % (ovlp_HPCdaligner_option, length_cutoff))
-        script_file.write("touch {pdb_build_done}\n".format(pdb_build_done = fn(pdb_build_done)))
+    args = {
+        'input_fofn': input_fofn,
+        'work_dir': work_dir,
+        'config': config,
+        'build_done': rdb_build_done,
+        'script_fn': script_fn,
+    }
+    support.build_pdb(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_pda
@@ -439,7 +440,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                       parameters = parameters,
                                       TaskType = PypeThreadTaskBase)
 
-        build_rdb_task = make_build_rdb_task(build_rdb)
+        build_rdb_task = make_build_rdb_task(task_build_rdb)
 
         wf.addTasks([build_rdb_task])
         wf.refreshTargets([rdb_build_done]) 
@@ -514,7 +515,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                     parameters = parameters,
                                     TaskType = PypeThreadTaskBase,
                                     URL = "task://localhost/build_pdb")
-    build_pdb_task = make_build_pdb_task(build_pdb)
+    build_pdb_task = make_build_pdb_task(task_build_pdb)
 
     wf.addTasks([build_pdb_task])
     wf.refreshTargets([pdb_build_done]) 
