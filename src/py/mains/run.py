@@ -149,7 +149,41 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
     job_data["sge_option"] = sge_option_pda
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(fn(pdb_build_done), task=self, job_name=job_data['job_name'])
+
+def task_run_falcon_asm(self):
+    wd = self.parameters["wd"]
+    config = self.parameters["config"]
+    install_prefix = config["install_prefix"]
+    pread_dir = self.parameters["pread_dir"]
+    script_dir = os.path.join( wd )
+    script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
     
+    script = []
+    script.append( "set -vex" )
+    script.append( "trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done) )
+    script.append( "cd %s" % pread_dir )
+    # Write preads4falcon.fasta, in 1-preads_ovl:
+    script.append( "DB2Falcon -U preads")
+    script.append( "cd %s" % wd )
+    script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
+    overlap_filtering_setting = config["overlap_filtering_setting"]
+    length_cutoff_pr = config["length_cutoff_pr"]
+    script.append( """fc_ovlp_filter.py --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
+            (fn(db_file), overlap_filtering_setting, length_cutoff_pr) )
+    script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
+    script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
+    # Write 'p_ctg.fa' and 'a_ctg.fa':
+    script.append( """fc_graph_to_contig.py""" )
+    script.append( """touch %s""" % fn(self.falcon_asm_done))
+
+    with open(script_fn, "w") as script_file:
+        script_file.write("\n".join(script) + '\n')
+
+    job_data = support.make_job_data(self.URL, script_fn)
+    job_data["sge_option"] = config["sge_option_fc"]
+    run_script(job_data, job_type = config["job_type"])
+    wait_for_file(fn(self.falcon_asm_done), task=self, job_name=job_data['job_name'])
+
 def run_daligner(self):
     daligner_cmd = self.parameters["daligner_cmd"]
     job_uid = self.parameters["job_uid"]
@@ -425,6 +459,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                   parameters = {},
                                   TaskType = PypeThreadTaskBase)
     fofn_abs_task = make_fofn_abs_task(task_make_fofn_abs_raw)
+
     wf.addTasks([fofn_abs_task])
     wf.refreshTargets([fofn_abs_task])
 
@@ -439,12 +474,10 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                       outputs = {"rdb_build_done": rdb_build_done}, 
                                       parameters = parameters,
                                       TaskType = PypeThreadTaskBase)
-
         build_rdb_task = make_build_rdb_task(task_build_rdb)
 
         wf.addTasks([build_rdb_task])
         wf.refreshTargets([rdb_build_done]) 
-        
 
         db_file = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
         #### run daligner
@@ -561,49 +594,14 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
     
     falcon_asm_done = makePypeLocalFile( os.path.join( falcon_asm_dir, "falcon_asm_done") )
-    @PypeTask( inputs = {"p_merge_done": p_merge_done, "db_file":db_file}, 
+    make_run_falcon_asm = PypeTask( inputs = {"p_merge_done": p_merge_done, "db_file":db_file}, 
                outputs =  {"falcon_asm_done":falcon_asm_done},
                parameters = {"wd": falcon_asm_dir,
                              "config": config,
                              "pread_dir": pread_dir},
                TaskType = PypeThreadTaskBase,
                URL = "task://localhost/falcon" )
-
-    def run_falcon_asm_task(self):
-        wd = self.parameters["wd"]
-        config = self.parameters["config"]
-        install_prefix = config["install_prefix"]
-        pread_dir = self.parameters["pread_dir"]
-        script_dir = os.path.join( wd )
-        script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
-        
-        script = []
-        script.append( "set -vex" )
-        script.append( "trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done) )
-        script.append( "cd %s" % pread_dir )
-        # Write preads4falcon.fasta, in 1-preads_ovl:
-        script.append( "DB2Falcon -U preads")
-        script.append( "cd %s" % wd )
-        script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
-        overlap_filtering_setting = config["overlap_filtering_setting"]
-        length_cutoff_pr = config["length_cutoff_pr"]
-        script.append( """fc_ovlp_filter.py --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
-                (fn(db_file), overlap_filtering_setting, length_cutoff_pr) )
-        script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
-        script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
-        # Write 'p_ctg.fa' and 'a_ctg.fa':
-        script.append( """fc_graph_to_contig.py""" )
-        script.append( """touch %s""" % fn(self.falcon_asm_done))
-
-        with open(script_fn, "w") as script_file:
-            script_file.write("\n".join(script) + '\n')
-
-        job_data = support.make_job_data(self.URL, script_fn)
-        job_data["sge_option"] = config["sge_option_fc"]
-        run_script(job_data, job_type = config["job_type"])
-        wait_for_file(fn(self.falcon_asm_done), task=self, job_name=job_data['job_name'])
-    
-    wf.addTask( run_falcon_asm_task )
+    wf.addTask(make_run_falcon_asm(task_run_falcon_asm))
     wf.refreshTargets(updateFreq = wait_time) #all            
 
 
