@@ -350,7 +350,7 @@ def run_falcon_asm(pread_dir, db_file, config, job_done, script_fn):
     with open(script_fn, "w") as script_file:
         script_file.write("\n".join(script) + '\n')
 
-def run_daligner(daligner_cmd=None, db_prefix=None, nblock=None, config=None, job_done=None, script_fn=None):
+def run_daligner(daligner_cmd, db_prefix, nblock, config, job_done, script_fn):
     cwd = os.path.dirname(script_fn)
 
     script = []
@@ -369,6 +369,20 @@ def run_daligner(daligner_cmd=None, db_prefix=None, nblock=None, config=None, jo
     for p_id in xrange( 1, nblock+1 ):
         script.append( """ for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do ln -sf $f ../m_%05d; done """  % (db_prefix, p_id, db_prefix, p_id) )
 
+    script.append( "touch {job_done}".format(job_done = job_done) )
+
+    with open(script_fn,"w") as script_file:
+        script_file.write("\n".join(script) + '\n')
+
+def run_las_merge(p_script_fn, job_done, config, script_fn):
+    cwd = os.path.dirname(script_fn)
+    script = []
+    script.append( "set -vex" )
+    script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done) )
+    script.append( "cd %s" % cwd )
+    script.append( "hostname" )
+    script.append( "date" )
+    script.append( "time bash %s" % p_script_fn )
     script.append( "touch {job_done}".format(job_done = job_done) )
 
     with open(script_fn,"w") as script_file:

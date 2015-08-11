@@ -188,41 +188,34 @@ def task_run_daligner(self):
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
-def run_merge_task(self):
+def task_run_las_merge(self):
     p_script_fn = self.parameters["merge_script"]
     job_id = self.parameters["job_id"]
     cwd = self.parameters["cwd"]
-    job_done = self.job_done
+    job_done = fn(self.job_done)
     config = self.parameters["config"]
     sge_option_la = config["sge_option_la"]
-    install_prefix = config["install_prefix"]
 
     script_dir = os.path.join( cwd )
     script_fn =  os.path.join( script_dir , "rp_%05d.sh" % (job_id))
-
-    script = []
-    script.append( "set -vex" )
-    script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
-    script.append( "cd %s" % cwd )
-    script.append( "hostname" )
-    script.append( "date" )
-    script.append( "time bash %s" % p_script_fn )
-    script.append( "touch {job_done}".format(job_done = fn(job_done)) )
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script) + '\n')
+    args = {
+        'p_script_fn': p_script_fn,
+        'config': config,
+        'job_done': job_done,
+        'script_fn': script_fn,
+    }
+    support.run_las_merge(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_la
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(fn(job_done), task=self, job_name=job_data['job_name'])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
 def run_consensus_task(self):
     job_id = self.parameters["job_id"]
     cwd = self.parameters["cwd"]
     config = self.parameters["config"]
     sge_option_cns = config["sge_option_cns"]
-    install_prefix = config["install_prefix"]
     script_dir = os.path.join( cwd )
     job_done_fn = os.path.join( cwd, "c_%05d_done" % job_id )
     script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
@@ -371,7 +364,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
                                        parameters = parameters,
                                        TaskType = PypeThreadTaskBase,
                                        URL = "task://localhost/m_%05d_%s" % (p_id, db_prefix) )
-        merge_task = make_merge_task ( run_merge_task )
+        merge_task = make_merge_task ( task_run_las_merge)
 
         merge_out["mjob_%d" % p_id] = job_done
         merge_tasks.append(merge_task)
