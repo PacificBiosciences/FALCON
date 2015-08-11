@@ -276,7 +276,7 @@ def make_dirs(d):
     if not os.path.isdir(d):
         os.makedirs(d)
 
-def build_rdb(input_fofn, work_dir, config, build_done, script_fn):
+def build_rdb(input_fofn, work_dir, config, job_done, script_fn):
     last_block = 1
     new_db = True
     if os.path.exists( os.path.join(work_dir, "raw_reads.db") ):
@@ -290,7 +290,7 @@ def build_rdb(input_fofn, work_dir, config, build_done, script_fn):
 
     with open(script_fn,"w") as script_file:
         script_file.write("set -vex\n")
-        script_file.write("trap 'touch {rdb_build_done}.exit' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
+        script_file.write("trap 'touch {job_done}.exit' EXIT\n".format(job_done = fn(job_done)))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname\n")
         script_file.write("date\n")
@@ -303,16 +303,39 @@ def build_rdb(input_fofn, work_dir, config, build_done, script_fn):
         else:
             script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
         script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
-        script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
+        script_file.write("touch {job_done}\n".format(job_done = fn(job_done)))
 
-def build_pdb(input_fofn, work_dir, config, build_done, script_fn):
+def build_pdb(input_fofn, work_dir, config, job_done, script_fn):
     with open(script_fn,"w") as script_file:
         script_file.write("set -vex\n")
-        script_file.write("trap 'touch {pdb_build_done}.exit' EXIT\n".format(pdb_build_done = fn(pdb_build_done)))
+        script_file.write("trap 'touch {job_done}.exit' EXIT\n".format(pdb_job_done = fn(job_done)))
         script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
         script_file.write("hostname\n")
         script_file.write("date\n")
         script_file.write("fasta2DB -v preads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
         script_file.write("DBsplit -x%d %s preads\n" % (length_cutoff, ovlp_DBsplit_option))
         script_file.write("HPCdaligner %s -H%d preads > run_jobs.sh\n" % (ovlp_HPCdaligner_option, length_cutoff))
-        script_file.write("touch {pdb_build_done}\n".format(pdb_build_done = fn(pdb_build_done)))
+        script_file.write("touch {job_done}\n".format(pdb_job_done = fn(job_done)))
+
+def run_falcon_asm(pread_dir, config, job_done, script_fn):
+    overlap_filtering_setting = config["overlap_filtering_setting"]
+    length_cutoff_pr = config["length_cutoff_pr"]
+
+    script = []
+    script.append( "set -vex" )
+    script.append( "trap 'touch %s.exit' EXIT" % fn(job_done) )
+    script.append( "cd %s" % pread_dir )
+    # Write preads4falcon.fasta, in 1-preads_ovl:
+    script.append( "DB2Falcon -U preads")
+    script.append( "cd %s" % wd )
+    script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
+    script.append( """fc_ovlp_filter.py --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
+            (fn(db_file), overlap_filtering_setting, length_cutoff_pr) )
+    script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
+    script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
+    # Write 'p_ctg.fa' and 'a_ctg.fa':
+    script.append( """fc_graph_to_contig.py""" )
+    script.append( """touch %s""" % fn(job_done))
+
+    with open(script_fn, "w") as script_file:
+        script_file.write("\n".join(script) + '\n')

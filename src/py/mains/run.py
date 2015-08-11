@@ -98,7 +98,7 @@ def task_make_fofn_abs_preads(self):
 def task_build_rdb(self):
     input_fofn = self.input_fofn
     input_fofn_fn = fn(input_fofn)
-    rdb_build_done = self.rdb_build_done
+    job_done = self.rdb_build_done
     work_dir = self.parameters["work_dir"]
     config = self.parameters["config"]
     sge_option_da = config["sge_option_da"]
@@ -113,7 +113,7 @@ def task_build_rdb(self):
         'input_fofn': input_fofn,
         'work_dir': work_dir,
         'config': config,
-        'build_done': rdb_build_done,
+        'job_done': job_done,
         'script_fn': script_fn,
     }
     support.build_rdb(**args)
@@ -121,12 +121,12 @@ def task_build_rdb(self):
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(fn(rdb_build_done), task=self, job_name=job_data['job_name'])
+    wait_for_file(fn(job_done), task=self, job_name=job_data['job_name'])
 
 def task_build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
     input_fofn = self.pread_fofn
     input_fofn_fn = fn(input_fofn)
-    pdb_build_done = self.pdb_build_done
+    job_done = self.pdb_build_done
     work_dir = self.parameters["work_dir"]
     config = self.parameters["config"]
     sge_option_pda = config["sge_option_pda"]
@@ -140,7 +140,7 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
         'input_fofn': input_fofn,
         'work_dir': work_dir,
         'config': config,
-        'build_done': rdb_build_done,
+        'job_done': rdb_build_done,
         'script_fn': script_fn,
     }
     support.build_pdb(**args)
@@ -152,33 +152,20 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
 
 def task_run_falcon_asm(self):
     wd = self.parameters["wd"]
+    #p_merge_done = self.p_merge_done
+    job_done = self.falcon_asm_done
     config = self.parameters["config"]
     install_prefix = config["install_prefix"]
     pread_dir = self.parameters["pread_dir"]
     script_dir = os.path.join( wd )
     script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
-    
-    script = []
-    script.append( "set -vex" )
-    script.append( "trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done) )
-    script.append( "cd %s" % pread_dir )
-    # Write preads4falcon.fasta, in 1-preads_ovl:
-    script.append( "DB2Falcon -U preads")
-    script.append( "cd %s" % wd )
-    script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
-    overlap_filtering_setting = config["overlap_filtering_setting"]
-    length_cutoff_pr = config["length_cutoff_pr"]
-    script.append( """fc_ovlp_filter.py --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
-            (fn(db_file), overlap_filtering_setting, length_cutoff_pr) )
-    script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
-    script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
-    # Write 'p_ctg.fa' and 'a_ctg.fa':
-    script.append( """fc_graph_to_contig.py""" )
-    script.append( """touch %s""" % fn(self.falcon_asm_done))
-
-    with open(script_fn, "w") as script_file:
-        script_file.write("\n".join(script) + '\n')
-
+    args = {
+        'pread_dir': pread_dir,
+        'config': config,
+        'job_done': job_done,
+        'script_fn': script_fn,
+    }
+    support.run_falcon_asm(**args)
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = config["sge_option_fc"]
     run_script(job_data, job_type = config["job_type"])
@@ -594,7 +581,8 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
     
     falcon_asm_done = makePypeLocalFile( os.path.join( falcon_asm_dir, "falcon_asm_done") )
-    make_run_falcon_asm = PypeTask( inputs = {"p_merge_done": p_merge_done, "db_file":db_file}, 
+    make_run_falcon_asm = PypeTask(
+               inputs = {"p_merge_done": p_merge_done, "db_file":db_file}, 
                outputs =  {"falcon_asm_done":falcon_asm_done},
                parameters = {"wd": falcon_asm_dir,
                              "config": config,
