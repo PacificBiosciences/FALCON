@@ -211,43 +211,30 @@ def task_run_las_merge(self):
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
-def run_consensus_task(self):
+def task_run_consensus(self):
+    out_file_fn = fn(self.out_file)
     job_id = self.parameters["job_id"]
     cwd = self.parameters["cwd"]
     config = self.parameters["config"]
+    prefix = self.parameters["prefix"]
     sge_option_cns = config["sge_option_cns"]
     script_dir = os.path.join( cwd )
-    job_done_fn = os.path.join( cwd, "c_%05d_done" % job_id )
+    job_done = os.path.join( cwd, "c_%05d_done" % job_id )
     script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
-    prefix = self.parameters["prefix"]
-    falcon_sense_option = config["falcon_sense_option"]
-    length_cutoff = config["length_cutoff"]
-
-    with open( os.path.join(cwd, "cp_%05d.sh" % job_id), "w") as c_script:
-        print >> c_script, "set -vex"
-        print >> c_script, "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done_fn)
-        print >> c_script, "cd .."
-        if config["falcon_sense_skip_contained"] == True:
-            print >> c_script, """LA4Falcon -H%d -fso %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
-        else:
-            print >> c_script, """LA4Falcon -H%d -fo %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
-        print >> c_script, """fc_consensus.py %s > %s""" % (falcon_sense_option, fn(self.out_file))
-        print >> c_script, "touch {job_done}".format(job_done = job_done_fn)
-
-    script = []
-    script.append( "set -vex" )
-    script.append( "cd %s" % cwd )
-    script.append( "hostname" )
-    script.append( "date" )
-    script.append( "time bash cp_%05d.sh" % job_id )
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script) + '\n')
+    args = {
+        'job_id': job_id,
+        'out_file_fn': out_file_fn,
+        'prefix': prefix,
+        'config': config,
+        'job_done': job_done,
+        'script_fn': script_fn,
+    }
+    support.run_consensus(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_cns
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(job_done_fn, task=self, job_name=job_data['job_name'])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
 
 def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
@@ -382,7 +369,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
                                 TaskType = PypeThreadTaskBase,
                                 URL = "task://localhost/ct_%05d" % p_id )
         
-        c_task = make_c_task( run_consensus_task )
+        c_task = make_c_task( task_run_consensus)
         consensus_tasks.append(c_task)
         consensus_out["cjob_%d" % p_id] = out_done 
 

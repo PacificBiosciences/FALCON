@@ -387,3 +387,30 @@ def run_las_merge(p_script_fn, job_done, config, script_fn):
 
     with open(script_fn,"w") as script_file:
         script_file.write("\n".join(script) + '\n')
+
+def run_consensus(job_id, out_file_fn, prefix, config, job_done, script_fn):
+    cwd = os.path.dirname(script_fn)
+    falcon_sense_option = config["falcon_sense_option"]
+    length_cutoff = config["length_cutoff"]
+
+    c_script_fn = os.path.join(cwd, "cp_%05d.sh" % job_id)
+    with open(c_script_fn, "w") as c_script:
+        print >> c_script, "set -vex"
+        print >> c_script, "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done)
+        print >> c_script, "cd .."
+        if config["falcon_sense_skip_contained"] == True:
+            print >> c_script, """LA4Falcon -H%d -fso %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
+        else:
+            print >> c_script, """LA4Falcon -H%d -fo %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
+        print >> c_script, """fc_consensus.py %s > %s""" % (falcon_sense_option, out_file_fn)
+        print >> c_script, "touch {job_done}".format(job_done = job_done)
+
+    script = []
+    script.append( "set -vex" )
+    script.append( "cd %s" % cwd )
+    script.append( "hostname" )
+    script.append( "date" )
+    script.append( "time bash %s" %os.path.basename(c_script_fn) )
+
+    with open(script_fn,"w") as script_file:
+        script_file.write("\n".join(script) + '\n')
