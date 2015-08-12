@@ -89,199 +89,157 @@ def wait_for_file(filename, task, job_name = ""):
                 os.system("qdel %s" % job_name) # Failure is ok.
             break
 
-def build_rdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
+def task_make_fofn_abs_raw(self):
+    return support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
 
-    input_fofn = self.input_fofn
-    input_fofn_fn = fn(input_fofn)
-    rdb_build_done = self.rdb_build_done
+def task_make_fofn_abs_preads(self):
+    return support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
+
+def task_build_rdb(self):
+    input_fofn_fn = fn(self.input_fofn)
+    job_done = fn(self.rdb_build_done)
     work_dir = self.parameters["work_dir"]
     config = self.parameters["config"]
     sge_option_da = config["sge_option_da"]
-    install_prefix = config["install_prefix"]
-    length_cutoff = config["length_cutoff"]
-    pa_HPCdaligner_option = config["pa_HPCdaligner_option"]
-    pa_DBsplit_option = config["pa_DBsplit_option"]
-    openending = config["openending"]
-
-
 
     script_fn = os.path.join( work_dir, "prepare_rdb.sh" )
-    
-    last_block = 1
-    new_db = True
-    if os.path.exists( os.path.join(work_dir, "raw_reads.db") ):
-        with open(  os.path.join(work_dir, "raw_reads.db") ) as f:
-            for l in f:
-                l = l.strip().split()
-                if l[0] == "blocks" and l[1] == "=":
-                    last_block = int(l[2])
-                    new_db = False
-                    break
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("set -vex\n")
-        script_file.write("trap 'touch {rdb_build_done}.exit' EXIT\n".format(rdb_build_done = fn(rdb_build_done)))
-        script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
-        script_file.write("hostname\n")
-        script_file.write("date\n")
-        #script_file.write("for f in `cat {input_fofn_fn}`; do fasta2DB raw_reads $f; done\n".format(input_fofn_fn = input_fofn_fn))
-        script_file.write("fasta2DB -v raw_reads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
-        if new_db  == True:
-            script_file.write("DBsplit %s raw_reads\n" % pa_DBsplit_option)
-        if openending == True:
-            script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')\n""")
-        else:
-            script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
-        script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > run_jobs.sh\n" % (pa_HPCdaligner_option, length_cutoff, last_block))
-        script_file.write("touch {rdb_build_done}\n".format(rdb_build_done = fn(rdb_build_done)))
+    args = {
+        'input_fofn_fn': input_fofn_fn,
+        'work_dir': work_dir,
+        'config': config,
+        'job_done': job_done,
+        'script_fn': script_fn,
+        'run_jobs_fn': fn(self.run_jobs),
+    }
+    support.build_rdb(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(fn(rdb_build_done), task=self, job_name=job_data['job_name'])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
-def build_pdb(self):
-
-    input_fofn = self.pread_fofn
-    input_fofn_fn = fn(input_fofn)
-    pdb_build_done = self.pdb_build_done
+def task_build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
+    input_fofn_fn = fn(self.pread_fofn)
+    job_done = fn(self.pdb_build_done)
     work_dir = self.parameters["work_dir"]
     config = self.parameters["config"]
     sge_option_pda = config["sge_option_pda"]
-    install_prefix = config["install_prefix"]
-    length_cutoff = config["length_cutoff_pr"]
-    ovlp_HPCdaligner_option = config["ovlp_HPCdaligner_option"]
-    ovlp_DBsplit_option = config["ovlp_DBsplit_option"]
-
 
     script_fn = os.path.join( work_dir, "prepare_pdb.sh" )
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("set -vex\n")
-        script_file.write("trap 'touch {pdb_build_done}.exit' EXIT\n".format(pdb_build_done = fn(pdb_build_done)))
-        script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
-        script_file.write("hostname\n")
-        script_file.write("date\n")
-        script_file.write("fasta2DB -v preads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
-        script_file.write("DBsplit -x%d %s preads\n" % (length_cutoff, ovlp_DBsplit_option))
-        script_file.write("HPCdaligner %s -H%d preads > run_jobs.sh\n" % (ovlp_HPCdaligner_option, length_cutoff))
-        script_file.write("touch {pdb_build_done}\n".format(pdb_build_done = fn(pdb_build_done)))
+    args = {
+        'input_fofn_fn': input_fofn_fn,
+        'work_dir': work_dir,
+        'config': config,
+        'job_done': job_done,
+        'script_fn': script_fn,
+        'run_jobs_fn': fn(self.run_jobs),
+    }
+    support.build_pdb(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_pda
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(fn(pdb_build_done), task=self, job_name=job_data['job_name'])
-    
-def run_daligner(self):
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
+
+def task_run_falcon_asm(self):
+    wd = self.parameters["wd"]
+    #p_merge_done = self.p_merge_done
+    db_file = fn(self.db_file)
+    job_done = fn(self.falcon_asm_done)
+    config = self.parameters["config"]
+    pread_dir = self.parameters["pread_dir"]
+    script_dir = os.path.join( wd )
+    script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
+    args = {
+        'pread_dir': pread_dir,
+        'db_file': db_file,
+        'config': config,
+        'job_done': job_done,
+        'script_fn': script_fn,
+    }
+    support.run_falcon_asm(**args)
+
+    job_data = support.make_job_data(self.URL, script_fn)
+    job_data["sge_option"] = config["sge_option_fc"]
+    run_script(job_data, job_type = config["job_type"])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
+
+def task_run_daligner(self):
+    job_done = fn(self.job_done)
     daligner_cmd = self.parameters["daligner_cmd"]
     job_uid = self.parameters["job_uid"]
     cwd = self.parameters["cwd"]
-    job_done = self.job_done
-    config = self.parameters["config"]
-    sge_option_da = config["sge_option_da"]
-    install_prefix = config["install_prefix"]
     db_prefix = self.parameters["db_prefix"]
     nblock = self.parameters["nblock"]
-
+    config = self.parameters["config"]
+    sge_option_da = config["sge_option_da"]
     script_dir = os.path.join( cwd )
     script_fn =  os.path.join( script_dir , "rj_%s.sh" % (job_uid))
-
-    script = []
-    script.append( "set -vex" )
-    script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
-    script.append( "cd %s" % cwd )
-    script.append( "hostname" )
-    script.append( "date" )
-    if config['use_tmpdir']:
-        basenames = [pattern.format(db_prefix) for pattern in ('.{}.idx', '.{}.bps', '{}.db')]
-        dst_dir = os.path.abspath(cwd)
-        src_dir = os.path.abspath(os.path.dirname(cwd)) # by convention
-        script.extend(support.use_tmpdir_for_files(basenames, src_dir, dst_dir))
-    script.append( "time "+ daligner_cmd )
-
-    for p_id in xrange( 1, nblock+1 ):
-        script.append( """ for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do ln -sf $f ../m_%05d; done """  % (db_prefix, p_id, db_prefix, p_id) )
-
-    script.append( "touch {job_done}".format(job_done = fn(job_done)) )
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script) + '\n')
+    args = {
+        'daligner_cmd': daligner_cmd,
+        'db_prefix': db_prefix,
+        'nblock': nblock,
+        'config': config,
+        'job_done': job_done,
+        'script_fn': script_fn,
+    }
+    support.run_daligner(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_da
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(fn(job_done), task=self, job_name=job_data['job_name'])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
-def run_merge_task(self):
+def task_run_las_merge(self):
     p_script_fn = self.parameters["merge_script"]
     job_id = self.parameters["job_id"]
     cwd = self.parameters["cwd"]
-    job_done = self.job_done
+    job_done = fn(self.job_done)
     config = self.parameters["config"]
     sge_option_la = config["sge_option_la"]
-    install_prefix = config["install_prefix"]
 
     script_dir = os.path.join( cwd )
     script_fn =  os.path.join( script_dir , "rp_%05d.sh" % (job_id))
-
-    script = []
-    script.append( "set -vex" )
-    script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = fn(job_done)) )
-    script.append( "cd %s" % cwd )
-    script.append( "hostname" )
-    script.append( "date" )
-    script.append( "time bash %s" % p_script_fn )
-    script.append( "touch {job_done}".format(job_done = fn(job_done)) )
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script) + '\n')
+    args = {
+        'p_script_fn': p_script_fn,
+        'config': config,
+        'job_done': job_done,
+        'script_fn': script_fn,
+    }
+    support.run_las_merge(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_la
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(fn(job_done), task=self, job_name=job_data['job_name'])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
-def run_consensus_task(self):
+def task_run_consensus(self):
+    out_file_fn = fn(self.out_file)
     job_id = self.parameters["job_id"]
     cwd = self.parameters["cwd"]
     config = self.parameters["config"]
-    sge_option_cns = config["sge_option_cns"]
-    install_prefix = config["install_prefix"]
-    script_dir = os.path.join( cwd )
-    job_done_fn = os.path.join( cwd, "c_%05d_done" % job_id )
-    script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
     prefix = self.parameters["prefix"]
-    falcon_sense_option = config["falcon_sense_option"]
-    length_cutoff = config["length_cutoff"]
-
-    with open( os.path.join(cwd, "cp_%05d.sh" % job_id), "w") as c_script:
-        print >> c_script, "set -vex"
-        print >> c_script, "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done_fn)
-        print >> c_script, "cd .."
-        if config["falcon_sense_skip_contained"] == True:
-            print >> c_script, """LA4Falcon -H%d -fso %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
-        else:
-            print >> c_script, """LA4Falcon -H%d -fo %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
-        print >> c_script, """fc_consensus.py %s > %s""" % (falcon_sense_option, fn(self.out_file))
-        print >> c_script, "touch {job_done}".format(job_done = job_done_fn)
-
-    script = []
-    script.append( "set -vex" )
-    script.append( "cd %s" % cwd )
-    script.append( "hostname" )
-    script.append( "date" )
-    script.append( "time bash cp_%05d.sh" % job_id )
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script) + '\n')
+    sge_option_cns = config["sge_option_cns"]
+    script_dir = os.path.join( cwd )
+    job_done = os.path.join( cwd, "c_%05d_done" % job_id )
+    script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
+    args = {
+        'job_id': job_id,
+        'out_file_fn': out_file_fn,
+        'prefix': prefix,
+        'config': config,
+        'job_done': job_done,
+        'script_fn': script_fn,
+    }
+    support.run_consensus(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
     job_data["sge_option"] = sge_option_cns
     run_script(job_data, job_type = config["job_type"])
-    wait_for_file(job_done_fn, task=self, job_name=job_data['job_name'])
+    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
 
-def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
+def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
     job_id = 0
     tasks = []
     tasks_out = {}
@@ -300,7 +258,7 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
     for pid in xrange(1, nblock + 1):
         support.make_dirs("%s/m_%05d" % (wd, pid))
 
-    with open(os.path.join(wd,  "run_jobs.sh")) as f :
+    with open(run_jobs_fn) as f :
         for l in f :
             l = l.strip()
             job_uid = hashlib.md5(l).hexdigest()
@@ -326,20 +284,20 @@ def create_daligner_tasks(wd, db_prefix, db_file, rdb_build_done, config, pread_
                                                parameters = parameters,
                                                TaskType = PypeThreadTaskBase,
                                                URL = "task://localhost/d_%s_%s" % (job_uid, db_prefix) )
-                daligner_task = make_daligner_task( run_daligner )
+                daligner_task = make_daligner_task( task_run_daligner )
                 tasks.append( daligner_task )
                 tasks_out[ "ajob_%s" % job_uid ] = job_done
                 job_id += 1
     return tasks, tasks_out
 
-def create_merge_tasks(wd, db_prefix, input_dep, config):
+def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
     merge_tasks = []
     consensus_tasks = []
     merge_out = {}
     consensus_out ={}
     mjob_data = {}
 
-    with open(os.path.join(wd,  "run_jobs.sh")) as f :
+    with open(run_jobs_fn) as f :
         for l in f:
             l = l.strip().split()
             if l[0] not in ( "LAsort", "LAmerge", "mv" ):
@@ -395,7 +353,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
                                        parameters = parameters,
                                        TaskType = PypeThreadTaskBase,
                                        URL = "task://localhost/m_%05d_%s" % (p_id, db_prefix) )
-        merge_task = make_merge_task ( run_merge_task )
+        merge_task = make_merge_task ( task_run_las_merge)
 
         merge_out["mjob_%d" % p_id] = job_done
         merge_tasks.append(merge_task)
@@ -413,7 +371,7 @@ def create_merge_tasks(wd, db_prefix, input_dep, config):
                                 TaskType = PypeThreadTaskBase,
                                 URL = "task://localhost/ct_%05d" % p_id )
         
-        c_task = make_c_task( run_consensus_task )
+        c_task = make_c_task( task_run_consensus)
         consensus_tasks.append(c_task)
         consensus_out["cjob_%d" % p_id] = out_done 
 
@@ -446,7 +404,8 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                   outputs = {"o_fofn": rawread_fofn_plf},
                                   parameters = {},
                                   TaskType = PypeThreadTaskBase)
-    fofn_abs_task = make_fofn_abs_task(support.make_fofn_abs_raw)
+    fofn_abs_task = make_fofn_abs_task(task_make_fofn_abs_raw)
+
     wf.addTasks([fofn_abs_task])
     wf.refreshTargets([fofn_abs_task])
 
@@ -454,23 +413,23 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         #### import sequences into daligner DB
         sleep_done = makePypeLocalFile( os.path.join( rawread_dir, "sleep_done") )
         rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") ) 
+        run_jobs = makePypeLocalFile( os.path.join( rawread_dir, "run_jobs.sh") ) 
         parameters = {"work_dir": rawread_dir,
                       "config": config}
 
         make_build_rdb_task = PypeTask(inputs = {"input_fofn": rawread_fofn_plf},
-                                      outputs = {"rdb_build_done": rdb_build_done}, 
+                                      outputs = {"rdb_build_done": rdb_build_done,
+                                                 "run_jobs": run_jobs}, 
                                       parameters = parameters,
                                       TaskType = PypeThreadTaskBase)
-
-        build_rdb_task = make_build_rdb_task(build_rdb)
+        build_rdb_task = make_build_rdb_task(task_build_rdb)
 
         wf.addTasks([build_rdb_task])
         wf.refreshTargets([rdb_build_done]) 
-        
 
         db_file = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
         #### run daligner
-        daligner_tasks, daligner_out = create_daligner_tasks( rawread_dir, "raw_reads", db_file, rdb_build_done, config) 
+        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", db_file, rdb_build_done, config) 
 
         wf.addTasks(daligner_tasks)
         #wf.refreshTargets(updateFreq = 60) # larger number better for more jobs
@@ -489,7 +448,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         
         concurrent_jobs = config["cns_concurrent_jobs"]
         PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
-        merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( rawread_dir, "raw_reads", r_da_done, config )
+        merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks(fn(run_jobs), rawread_dir, "raw_reads", r_da_done, config)
         wf.addTasks( merge_tasks )
         if config["target"] == "overlapping":
             wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
@@ -524,7 +483,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                      outputs = {"o_fofn": pread_fofn},
                                      parameters = {},
                                      TaskType = PypeThreadTaskBase)
-        fofn_abs_task = make_fofn_abs_task(support.make_fofn_abs_preads)
+        fofn_abs_task = make_fofn_abs_task(task_make_fofn_abs_preads)
         wf.addTasks([fofn_abs_task])
         wf.refreshTargets([fofn_abs_task])
 
@@ -532,12 +491,14 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     parameters = {"work_dir": pread_dir,
                   "config": config}
 
-    make_build_pdb_task  = PypeTask( inputs = { "pread_fofn": pread_fofn },
-                                    outputs = { "pdb_build_done": pdb_build_done },
+    run_jobs = makePypeLocalFile(os.path.join(pread_dir, 'run_jobs.sh'))
+    make_build_pdb_task  = PypeTask(inputs = { "pread_fofn": pread_fofn },
+                                    outputs = { "pdb_build_done": pdb_build_done,
+                                                "run_jobs": run_jobs},
                                     parameters = parameters,
                                     TaskType = PypeThreadTaskBase,
                                     URL = "task://localhost/build_pdb")
-    build_pdb_task = make_build_pdb_task(build_pdb)
+    build_pdb_task = make_build_pdb_task(task_build_pdb)
 
     wf.addTasks([build_pdb_task])
     wf.refreshTargets([pdb_build_done]) 
@@ -550,7 +511,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     config["sge_option_da"] = config["sge_option_pda"]
     config["sge_option_la"] = config["sge_option_pla"]
-    daligner_tasks, daligner_out = create_daligner_tasks( pread_dir, "preads", db_file, pdb_build_done, config, pread_aln= True) 
+    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", db_file, pdb_build_done, config, pread_aln= True) 
     wf.addTasks(daligner_tasks)
     #wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
 
@@ -565,9 +526,9 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     
     wf.addTask(check_p_da_task)
 
-    merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks( pread_dir, "preads", p_da_done, config )
+    merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks(fn(run_jobs), pread_dir, "preads", p_da_done, config)
     wf.addTasks( merge_tasks )
-    #wf.refreshTargets(updateFreq = 30) #all            
+    #wf.refreshTargets(updateFreq = 30) #all
 
     p_merge_done = makePypeLocalFile( os.path.join( pread_dir, "p_merge_done") )
 
@@ -579,54 +540,20 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         os.system("touch %s" % fn(self.p_merge_done))
     
     wf.addTask(check_p_merge_check_task)
-    wf.refreshTargets(updateFreq = wait_time) #all            
+    wf.refreshTargets(updateFreq = wait_time) #all
 
     
     falcon_asm_done = makePypeLocalFile( os.path.join( falcon_asm_dir, "falcon_asm_done") )
-    @PypeTask( inputs = {"p_merge_done": p_merge_done, "db_file":db_file}, 
+    make_run_falcon_asm = PypeTask(
+               inputs = {"p_merge_done": p_merge_done, "db_file":db_file},
                outputs =  {"falcon_asm_done":falcon_asm_done},
                parameters = {"wd": falcon_asm_dir,
                              "config": config,
                              "pread_dir": pread_dir},
                TaskType = PypeThreadTaskBase,
                URL = "task://localhost/falcon" )
-
-    def run_falcon_asm_task(self):
-        wd = self.parameters["wd"]
-        config = self.parameters["config"]
-        install_prefix = config["install_prefix"]
-        pread_dir = self.parameters["pread_dir"]
-        script_dir = os.path.join( wd )
-        script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
-        
-        script = []
-        script.append( "set -vex" )
-        script.append( "trap 'touch %s.exit' EXIT" % fn(self.falcon_asm_done) )
-        script.append( "cd %s" % pread_dir )
-        # Write preads4falcon.fasta, in 1-preads_ovl:
-        script.append( "DB2Falcon -U preads")
-        script.append( "cd %s" % wd )
-        script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
-        overlap_filtering_setting = config["overlap_filtering_setting"]
-        length_cutoff_pr = config["length_cutoff_pr"]
-        script.append( """fc_ovlp_filter.py --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
-                (fn(db_file), overlap_filtering_setting, length_cutoff_pr) )
-        script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
-        script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
-        # Write 'p_ctg.fa' and 'a_ctg.fa':
-        script.append( """fc_graph_to_contig.py""" )
-        script.append( """touch %s""" % fn(self.falcon_asm_done))
-
-        with open(script_fn, "w") as script_file:
-            script_file.write("\n".join(script) + '\n')
-
-        job_data = support.make_job_data(self.URL, script_fn)
-        job_data["sge_option"] = config["sge_option_fc"]
-        run_script(job_data, job_type = config["job_type"])
-        wait_for_file(fn(self.falcon_asm_done), task=self, job_name=job_data['job_name'])
-    
-    wf.addTask( run_falcon_asm_task )
-    wf.refreshTargets(updateFreq = wait_time) #all            
+    wf.addTask(make_run_falcon_asm(task_run_falcon_asm))
+    wf.refreshTargets(updateFreq = wait_time) #all
 
 
 def main(*argv):

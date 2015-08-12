@@ -1,6 +1,9 @@
 /build/
 /dist/
-/falcon_kit.egg-info/
+falcon_kit.egg-info/
 *.pyc
 *.pyo
 *.swp
+*.so
+*.dylib
+*.dll
