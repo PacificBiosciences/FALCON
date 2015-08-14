@@ -1,13 +1,31 @@
 from falcon_kit.multiproc import Pool
 import falcon_kit.util.io as io
 import argparse
+import os
 
-Reader = io.CapturedProcessReaderContext
+#Reader = io.CapturedProcessReaderContext
 
-
+def uptodate(fn, deps):
+    """Return true iff fn does not need to be remade.
+    'deps' are currently ignored b/c we really should just use 'make'.
+    So for now, 'rm fn' in order to re-create.
+    TODO: Dump a makefile instead.
+    """
+    return os.path.exists(fn)
+def LA4Falcon_to_file(db_fn, fn, stage):
+    out_fn = '%s.%d.stdout' %(fn, stage)
+    if not uptodate(out_fn, [db_fn, fn]):
+        cmd = "LA4Falcon -mo %s %s >| %s" % (db_fn, fn, out_fn)
+        try:
+            io.system(cmd)
+        except:
+            if os.path.exists(out_fn):
+                io.system('rm -f %s' %out_fn)
+            raise
+    return out_fn
 def run_filter_stage1(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len):
-    cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
-    reader = Reader(cmd)
+    out_fn = LA4Falcon_to_file(db_fn, fn, 1)
+    reader = open(out_fn)
     with reader:
         return fn, filter_stage1(reader.readlines, max_diff, max_ovlp, min_ovlp, min_len)
 def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
@@ -73,8 +91,8 @@ def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
         return ignore_rtn
 
 def run_filter_stage2(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):
-    cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
-    reader = Reader(cmd)
+    out_fn = LA4Falcon_to_file(db_fn, fn, 2)
+    reader = open(out_fn)
     with reader:
         return fn, filter_stage2(reader.readlines, max_diff, max_ovlp, min_ovlp, min_len, ignore_set)
 def filter_stage2(readlines, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):
@@ -104,8 +122,8 @@ def filter_stage2(readlines, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):
         return contained_id 
 
 def run_filter_stage3(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set, bestn):
-    cmd = "LA4Falcon -mo %s %s" % (db_fn, fn)
-    reader = Reader(cmd)
+    out_fn = LA4Falcon_to_file(db_fn, fn, 3)
+    reader = open(out_fn)
     with reader:
         return fn, filter_stage3(reader.readlines, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set, bestn)
 def filter_stage3(readlines, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, contained_set, bestn):

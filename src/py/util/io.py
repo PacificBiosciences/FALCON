@@ -55,6 +55,17 @@ def run_func(args):
         LOG('interrupted %s(%s)' %(func_name, ', '.join(reprarg(a) for a in args)))
         return
 
+def system(cmd):
+    """Run cmd.
+    Raise Exception on non-zero returncode.
+    """
+    LOG('system(%r) ...' %cmd)
+    rc = os.system(cmd)
+    msg = 'system(%r) -> %d' %(cmd, rc)
+    LOG(msg)
+    if rc:
+        raise Exception(msg)
+
 def syscall(cmd):
     """Return stdout, fully captured.
     Wait for subproc to finish.
