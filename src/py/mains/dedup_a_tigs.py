@@ -1,5 +1,4 @@
-
-from falcon_kit.FastaReader import FastaReader 
+from falcon_kit.FastaReader import FastaReader
 import argparse
 
 def parse_args(argv):
