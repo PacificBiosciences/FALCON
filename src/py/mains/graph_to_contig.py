@@ -124,7 +124,7 @@ def main(*argv):
             utg_data[ (s,v,t) ] = type_, length, score, path_or_edges
 
     p_ctg_out = open("p_ctg.fa","w")
-    a_ctg_out = open("a_ctg.fa","w")
+    a_ctg_out = open("a_ctg_all.fa","w")
     a_ctg_base_out = open("a_ctg_base.fa","w")
     p_ctg_t_out = open("p_ctg_tiling_path","w")
     a_ctg_t_out = open("a_ctg_tiling_path","w")
