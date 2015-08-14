@@ -124,7 +124,7 @@ def main(*argv):
             utg_data[ (s,v,t) ] = type_, length, score, path_or_edges
 
     p_ctg_out = open("p_ctg.fa","w")
-    a_ctg_out = open("a_ctg.fa","w")
+    a_ctg_out = open("a_ctg_all.fa","w")
     a_ctg_base_out = open("a_ctg_base.fa","w")
     p_ctg_t_out = open("p_ctg_tiling_path","w")
     a_ctg_t_out = open("a_ctg_tiling_path","w")
@@ -183,8 +183,6 @@ def main(*argv):
 
                     #a_ctg_data.append( (s, t, shortest_path) ) #first path is the same as the one used in the primary contig
                     while 1:
-                        if s == t:
-                            break
                         n0 = shortest_path[0]
                         for n1 in shortest_path[1:]:
                             c_graph.remove_edge(n0, n1)
@@ -199,7 +197,6 @@ def main(*argv):
                             break
                         #if len(shortest_path) < 2:
                         #    break
-
                     all_alt_path.sort()
                     all_alt_path.reverse()
                     shortest_path = all_alt_path[0][1]
@@ -232,7 +229,6 @@ def main(*argv):
                 #count = len( [x for x in a_ctg_group[ (v, w) ] if len(x[1]) > 3] )
                 #if count < 2:
                 #    continue
-
                 atig_output = []
 
                 score, atig_path = a_ctg_group[ (v, w) ][0]
@@ -247,10 +243,8 @@ def main(*argv):
                     total_score += aln_score
 
                 base_seq = "".join(sub_seqs)
-                atig_output.append( (v, w, atig_path, total_length, total_score, base_seq, atig_path_edges, 1, 1) )
+                atig_output.append( (v, w, atig_path, total_length, total_score, base_seq, atig_path_edges, 0, 1, 1) )
 
-
-                duplicated = True
                 for score, atig_path in a_ctg_group[ (v, w) ][1:]:
                     atig_path_edges = zip(atig_path[:-1], atig_path[1:])
                     sub_seqs = []
@@ -264,23 +258,24 @@ def main(*argv):
 
                     seq = "".join(sub_seqs)
 
-                    aln_data, x, y = get_aln_data(base_seq, seq)
-                    if len( aln_data ) != 0:
-                        idt =  1.0-1.0*aln_data[-1][-1] / aln_data[-1][-2]
-                        cov = 1.0*(aln_data[-1][3]-aln_data[-1][2])/aln_data[-1][4]
-                        if idt < 0.96 or cov < 0.98:
-                            duplicated = False
-                            atig_output.append( (v, w, atig_path, total_length, total_score, seq, atig_path_edges, idt, cov) )
-                    else:
-                        duplicated = False
-                        atig_output.append( (v, w, atig_path, total_length, total_score, seq, atig_path_edges, 0, 0) )
+                    delta_len = len(seq) - len(base_seq)
+                    idt = 0.0
+                    cov = 0.0
+                    if len(base_seq) > 2000 and len(seq) > 2000:
+                        aln_data, x, y = get_aln_data(base_seq, seq)
+                        if len( aln_data ) != 0:
+                            idt =  1.0-1.0*aln_data[-1][-1] / aln_data[-1][-2]
+                            cov = 1.0*(aln_data[-1][3]-aln_data[-1][2])/aln_data[-1][4]
+                    
+                    atig_output.append( (v, w, atig_path, total_length, total_score, seq, atig_path_edges, delta_len, idt, cov) )
+
 
                 if len(atig_output) == 1:
                     continue
 
                 sub_id = 0
                 for data in atig_output:
-                    v0, w0, tig_path, total_length, total_score, seq, atig_path_edges, a_idt, cov = data
+                    v0, w0, tig_path, total_length, total_score, seq, atig_path_edges, delta_len, a_idt, cov = data
                     for vv, ww in atig_path_edges:
                         rid, s, t, aln_score, idt, e_seq = edge_data[ (vv, ww) ]
                         if sub_id != 0:
@@ -289,10 +284,10 @@ def main(*argv):
                             print >> a_ctg_base_t_out, "%s-%03d-%02d %s %s %s %d %d %d %0.2f" % (ctg_id, a_id, sub_id, vv, ww, rid, s, t, aln_score, idt)
 
                     if sub_id != 0:
-                        print >> a_ctg_out, ">%s-%03d-%02d %s %s %d %d %d %0.4f %0.4f" % (ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), a_idt, cov )
+                        print >> a_ctg_out, ">%s-%03d-%02d %s %s %d %d %d %d %0.2f %0.2f" % (ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), delta_len, a_idt, cov )
                         print >> a_ctg_out, seq
                     else:
-                        print >> a_ctg_base_out, ">%s-%03d-%02d %s %s %d %d %d %0.4f %0.4f" % (ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), a_idt, cov )
+                        print >> a_ctg_base_out, ">%s-%03d-%02d %s %s %d %d %d %d %0.2f %0.2f" % (ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), delta_len, a_idt, cov )
                         print >> a_ctg_base_out, seq
 
                     sub_id += 1

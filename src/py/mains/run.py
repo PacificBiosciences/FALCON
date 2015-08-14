@@ -7,11 +7,36 @@ import glob
 import sys
 import os
 import re
+import tempfile
 import time
 import hashlib
 
 
 wait_time = 5
+
+def prepend_env_paths(content, names):
+    """
+    E.g.
+      names = ['PATH', 'PYTYHONPATH']
+      content =
+        echo hi
+      =>
+        export PATH=current:path:${PATH}
+        export PYTHON=current:path:${PYTHONPATH}
+        echo hi
+    """
+    export_env_vars = ['export %(k)s=%(v)s:${%(k)s}' %dict(
+        k=name, v=os.environ.get(name, '')) for name in names]
+    return '\n'.join(export_env_vars + [content])
+
+def update_env_in_script(fn, names):
+    """Modify fn using on prepend_env_paths().
+    """
+    with open(fn) as ifs:
+        content = ifs.read()
+    content = prepend_env_paths(content, names)
+    with open(fn, 'w') as ofs:
+        ofs.write(content)
 
 def run_script(job_data, job_type = "SGE" ):
     """For now, we actually modify the script before running it.
