@@ -347,7 +347,7 @@ def run_falcon_asm(pread_dir, db_file, config, job_done, script_fn):
     script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
     # Write 'p_ctg.fa' and 'a_ctg.fa':
     script.append( """fc_graph_to_contig.py""" )
-    scritp.append( """fc_dedup_a_tigs.py""" )
+    script.append( """fc_dedup_a_tigs.py""" )
     script.append( """touch %s""" % job_done)
 
     with open(script_fn, "w") as script_file:
