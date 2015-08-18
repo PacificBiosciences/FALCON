@@ -84,7 +84,7 @@ def wait_for_file(filename, task, job_name = ""):
         if task.shutdown_event is not None and task.shutdown_event.is_set():
             fc_run_logger.warning( "shutdown_event received (Keyboard Interrupt maybe?), %r not finished."
                 % (job_name) )
-            if job_type == "SGE":
+            if support.job_type == "SGE":
                 fc_run_logger.info( "deleting the job by `qdel` now..." )
                 os.system("qdel %s" % job_name) # Failure is ok.
             break
