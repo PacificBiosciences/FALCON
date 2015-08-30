@@ -46,6 +46,8 @@ class StringGraph(object):
         self.n_mark = {}
         self.e_reduce = {}
         self.repeat_overlap = {}
+        self.best_out = {}
+        self.best_in = {}
         
     def add_node(self, node_name):
         """ 
@@ -206,6 +208,7 @@ class StringGraph(object):
                 for e in out_edges:
                     if self.e_reduce[ (e.in_node.name, e.out_node.name) ] != True:
                         best_edges.add( (e.in_node.name, e.out_node.name) )
+                        self.best_out[v] = e.out_node.name
                         break
 
             in_edges = self.nodes[v].in_edges
@@ -214,6 +217,7 @@ class StringGraph(object):
                 for e in in_edges:
                     if self.e_reduce[ (e.in_node.name, e.out_node.name) ] != True:
                         best_edges.add( (e.in_node.name, e.out_node.name) )
+                        self.best_in[v] = e.in_node.name
                         break
 
         if DEBUG_LOG_LEVEL > 1:
@@ -812,6 +816,8 @@ def generate_string_graph(args):
             label = "%s:%d-%d" % (rid, sp, tp)
             nxsg.add_edge(v, w, label = label, length = length, score = score)
             edge_data[ (v, w) ] = (rid, sp, tp, length, score, identity, type_)
+            if w in sg.best_in:
+                nxsg.node[w]["best_in"] = v
         elif (v, w) in removed_edges:
             type_ = "R"
         elif (v, w) in spur_edges:
@@ -1317,9 +1323,36 @@ def main(*argv):
                 if rt in path_nodes:
                     break
 
+                length, score, path_or_edges, type_ = u_edge_data[ (t0, t, v) ]
+
+               
+                """
+                If the next node has two in-edges and the current path has the best overlap,
+                we will extend the contigs. Otherwise, we will terminate the contig extension.
+                This can help reduce some mis-assemblies but it can still construct long contigs
+                when there is an oppertunity (assuming the best overlap has the highest
+                likelihood to be correct.)
+                """
+                if len(ug.in_edges(t, keys=True)) > 1:
+                    best_in_node = sg.node[t]["best_in"] 
+                    
+                    if type_ == "simple" and best_in_node != path_or_edges[-2]:
+                        break
+                    if type_ == "compound":
+                        t_in_nodes = set()
+                        for ss, vv, tt in path_or_edges:
+                            if tt != t:
+                                continue
+                            length, score, path_or_edges, type_ = u_edge_data[ (ss,vv,tt) ]
+                            if path_or_edges[-1] == tt:
+                                t_in_nodes.add(path_or_edges[-2])
+                        if best_in_node not in t_in_nodes:
+                            break
+                # ----------------
+
+
                 path.append( (t0, t, v) )
                 path_nodes.add(t)
-                length, score, path_or_edges, type_ = u_edge_data[ (t0, t, v) ]
                 path_length += length
                 path_score += score
                 assert len( ug.out_edges( t, keys=True ) ) == 1 # t is "simple_out" node
