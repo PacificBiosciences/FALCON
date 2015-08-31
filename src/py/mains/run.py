@@ -89,6 +89,9 @@ def wait_for_file(filename, task, job_name = ""):
             if support.job_type == "SGE":
                 fc_run_logger.info( "deleting the job by `qdel` now..." )
                 os.system("qdel %s" % job_name) # Failure is ok.
+            if support.job_type == "SLURM"
+            	fc_run_logger.info( "Deleting the job by 'scancel' now...")
+            	os.system("scancel -n %s" % job_name)
             break
 
 def task_make_fofn_abs_raw(self):
