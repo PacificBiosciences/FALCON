@@ -39,7 +39,7 @@ def run_script(job_data, job_type = "SGE" ):
         cwd = job_data["cwd"]
         sge_option = job_data["sge_option"]
         with open(script_fn, 'r') as original: data = original.read()
-		with open(script_fn, 'w') as modified: modified.write("#!/bin/sh" + "\n" + data)
+	with open(script_fn, 'w') as modified: modified.write("#!/bin/sh" + "\n" + data)
         fc_run_logger.info( "submitting %s for SLURM, start job: %s " % (script_fn, job_name) )
         sge_cmd="sbatch -J {job_name} {sge_option} {script}".format(job_name=job_name, cwd=os.getcwd(),sge_option=sge_option, script=script_fn)
         cmd = sge_cmd
