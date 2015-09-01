@@ -86,12 +86,13 @@ def wait_for_file(filename, task, job_name = ""):
         if task.shutdown_event is not None and task.shutdown_event.is_set():
             fc_run_logger.warning( "shutdown_event received (Keyboard Interrupt maybe?), %r not finished."
                 % (job_name) )
-            if support.job_type == "SGE":
-                fc_run_logger.info( "deleting the job by `qdel` now..." )
-                os.system("qdel %s" % job_name) # Failure is ok.
-            if support.job_type == "SLURM"
-            	fc_run_logger.info( "Deleting the job by 'scancel' now...")
-            	os.system("scancel -n %s" % job_name)
+        if support.job_type == "SGE":
+            fc_run_logger.info( "deleting the job by `qdel` now..." )
+            os.system("qdel %s" % job_name) # Failure is ok.
+            break
+        if support.job_type == "SLURM":
+            fc_run_logger.info( "Deleting the job by 'scancel' now...")
+            os.system("scancel -n %s" % job_name)
             break
 
 def task_make_fofn_abs_raw(self):
