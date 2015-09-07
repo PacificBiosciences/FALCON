@@ -10,7 +10,7 @@ install_requires=[ "networkx >= 1.7" ]
 scripts = glob.glob("src/py_scripts/*.py")
 
 setup(name='falcon_kit',
-      version='0.3.0',
+      version='0.4.0',
       description='a small toolkit for DNA seqeucne alignment, overlapping, and assembly',
       author='Jason Chin',
       author_email='jchin@pacificbiosciences.com',
