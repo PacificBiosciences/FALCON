@@ -1,8 +1,9 @@
 from falcon_kit.multiproc import Pool
 import falcon_kit.util.io as io
 import argparse
-import subprocess as sp
 import shlex
+import subprocess as sp
+import sys
 
 Reader = io.CapturedProcessReaderContext
 
@@ -112,6 +113,6 @@ def parse_args(argv):
     parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
     return parser.parse_args(argv[1:])
 
-def main(*argv):
+def main(argv=sys.argv):
     args = parse_args(argv)
     ovlp_stats(**vars(args))

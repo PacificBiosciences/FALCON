@@ -3,7 +3,7 @@
 '''
 def test_help():
     try:
-        mod.main(*['prog', '--help'])
+        mod.main(['prog', '--help'])
     except SystemExit:
         pass
 '''

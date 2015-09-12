@@ -1,5 +1,6 @@
 from falcon_kit.FastaReader import FastaReader
 import argparse
+import sys
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description='remove duplicate a-tig, it assumes the working directory has the a_ctg_all.fa file')
@@ -9,7 +10,7 @@ def parse_args(argv):
     args = parser.parse_args(argv[1:])
     return args
 
-def main(*argv):
+def main(argv=sys.argv):
     args = parse_args(argv)
     reads = FastaReader("a_ctg_all.fa")
     with open("a_ctg.fa","w") as f:

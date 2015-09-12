@@ -1,6 +1,7 @@
 from falcon_kit.multiproc import Pool
 import falcon_kit.util.io as io
 import argparse
+import sys
 
 Reader = io.CapturedProcessReaderContext
 
@@ -270,6 +271,6 @@ def parse_args(argv):
     args = parser.parse_args(argv[1:])
     return args
 
-def main(*argv):
+def main(argv=sys.argv):
     args = parse_args(argv)
     ovlp_filter(**vars(args))

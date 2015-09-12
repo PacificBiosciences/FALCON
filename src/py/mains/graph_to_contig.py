@@ -60,7 +60,7 @@ def reverse_end( node_id ):
     new_end = "B" if end == "E" else "E"
     return node_id + ":" + new_end
 
-def main(*argv):
+def main(argv=None):
     reads_in_layout = set()
     with open(edge_data_file) as f:
         for l in f:

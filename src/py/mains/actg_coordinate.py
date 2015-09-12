@@ -1,7 +1,7 @@
 from falcon_kit.FastaReader import FastaReader
 
 
-def main(*argv):
+def main(argv=None):
   p_ctg_coor_map = {}
   with open("p_ctg_tiling_path") as f:
     for row in f:

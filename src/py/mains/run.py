@@ -561,7 +561,8 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     wf.refreshTargets(updateFreq = wait_time) #all
 
 
-def main(*argv):
+def main(argv=sys.argv):
+    print(argv)
     if len(argv) < 2:
         sys.stderr.write( """
 you need to specify a configuration file"

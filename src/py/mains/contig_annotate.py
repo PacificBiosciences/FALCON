@@ -2,7 +2,7 @@ import networkx as nx
 from falcon_kit.fc_asm_graph import AsmGraph
 
 
-def main(*argv):
+def main(argv=None):
   G_asm = AsmGraph("sg_edges_list", "utg_data", "ctg_paths")
 
 

@@ -42,7 +42,7 @@ def get_aln_data(t_seq, q_seq):
     kup.free_seq_addr_array(sda_ptr)
     return aln_data, x, y
 
-def main(*argv):
+def main(argv=None):
   G_asm = AsmGraph("sg_edges_list", "utg_data", "ctg_paths")
   G_asm.load_sg_seq("preads4falcon.fasta")
 
