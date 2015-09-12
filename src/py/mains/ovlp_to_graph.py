@@ -2,8 +2,8 @@
 import networkx as nx
 import os
 import shlex
-import sys
 import subprocess
+import sys
 
 DEBUG_LOG_LEVEL = 0
 
@@ -957,7 +957,7 @@ def construct_compound_paths(ug, u_edge_data):
 
     return compound_paths
 
-def main(*argv):
+def main(argv=sys.argv):
     import argparse
     
     parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes')

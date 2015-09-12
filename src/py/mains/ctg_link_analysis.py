@@ -1,6 +1,6 @@
 from falcon_kit import fc_asm_graph 
 
-def main(*argv):
+def main(argv=None):
   AsmGraph = fc_asm_graph.AsmGraph
 
   G_asm = AsmGraph("sg_edges_list", "utg_data", "ctg_paths")
