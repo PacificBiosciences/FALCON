@@ -560,7 +560,7 @@ def main(*argv):
     if len(argv) < 2:
         sys.stderr.write( """
 you need to specify a configuration file"
-usage: fc_run.py fc_run.cfg [logging.cfg]
+usage: fc_run fc_run.cfg [logging.cfg]
 """)
         sys.exit(2)
     main1(*argv)

@@ -341,13 +341,13 @@ def run_falcon_asm(pread_dir, db_file, config, job_done, script_fn):
     script.append( "DB2Falcon -U preads")
     script.append( "cd %s" % wd )
     script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
-    script.append( """fc_ovlp_filter.py --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
+    script.append( """fc_ovlp_filter --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
             (db_file, overlap_filtering_setting, length_cutoff_pr) )
     script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
-    script.append( """fc_ovlp_to_graph.py preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
+    script.append( """fc_ovlp_to_graph preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
     # Write 'p_ctg.fa' and 'a_ctg.fa':
-    script.append( """fc_graph_to_contig.py""" )
-    script.append( """fc_dedup_a_tigs.py""" )
+    script.append( """fc_graph_to_contig""" )
+    script.append( """fc_dedup_a_tigs""" )
     script.append( """touch %s""" % job_done)
 
     with open(script_fn, "w") as script_file:
@@ -405,7 +405,7 @@ def run_consensus(job_id, out_file_fn, prefix, config, job_done, script_fn):
             print >> c_script, """LA4Falcon -H%d -fso %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
         else:
             print >> c_script, """LA4Falcon -H%d -fo %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
-        print >> c_script, """fc_consensus.py %s > %s""" % (falcon_sense_option, out_file_fn)
+        print >> c_script, """fc_consensus %s > %s""" % (falcon_sense_option, out_file_fn)
         print >> c_script, "touch {job_done}".format(job_done = job_done)
 
     script = []
