@@ -33,8 +33,6 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
     (In the example, X=2 A=1 B=2.)
 
     Comments and lines starting with LAmerge are ignored.
-
-    TODO: Also remove the direct output of daligner, which are not ordinarily removed by HPCdaligner calls.
     """
     re_block_dali = re.compile(r'%s\.(\d+)' %db_prefix)
     def blocks_dali(line):
