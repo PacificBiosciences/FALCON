@@ -370,9 +370,15 @@ def run_daligner(daligner_cmd, db_prefix, nblock, config, job_done, script_fn):
     script.append( "time "+ daligner_cmd )
 
     for p_id in xrange( 1, nblock+1 ):
+        #script.append('rm -f %s.*.%s.*.*.las' %(
+        #    db_prefix, db_prefix))
         mdir = '../m_%05d' %p_id
-        script.append(""" for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do mkdir -p %s; ln -sf $f %s; done """  %(
-            db_prefix, p_id, db_prefix, mdir, mdir))
+        script.append(""" for f in `find $PWD -wholename "*.las"`; do mkdir -p %s; ln -sf $f %s; done """  %(
+            mdir, mdir))
+        #script.append(""" for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do mkdir -p %s; ln -sf $f %s; done """  %(db_prefix, p_id, db_prefix, mdir, mdir))
+        #script.append(""" for f in `find $PWD -wholename "*L1.*.*.las"`; do mkdir -p %s; ln -sf $f %s; done """  %(mdir, mdir))
+        # For raw_reads, the prefix is L1.*.las, but for preads, it is preads.*.las.
+        # I am not sure why yet. ~cdunn
 
     script.append( "touch {job_done}".format(job_done = job_done) )
 

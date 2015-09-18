@@ -14,13 +14,14 @@ def _verify_pairs(pairs1, pairs2):
 def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
     """Return a dict of job-desc-tuple -> HPCdaligner bash-job.
 
-    E.g.
+    E.g., each item will look like:
       (2, 1, 2, 3): 'daligner ...; LAsort ...; LAmerge ...; rm ...'
 
+    Rationale
+    ---------
     For i/o efficiency, we will combine daligner calls with LAsort lines, which include 0-level merge.
     Example:
       daligner -v -t16 -H12000 -e0.7 -s1000 raw_reads.2 raw_reads.1 raw_reads.2
-    X=2 A=1 B=2
     That would be combined with two LAsort lines:
       LAsort -v raw_reads.2.raw_reads.1.C0 ...
       LAsort -v raw_reads.2.raw_reads.2.C0 ...
@@ -29,10 +30,11 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
     will then be
       L.1.X.A, L.1.X.B, and L.1.X.C
     where A, B, or C could be X.
+    (In the example, X=2 A=1 B=2.)
 
     Comments and lines starting with LAmerge are ignored.
 
-    TODO: Also remove the direct outpus of daligner, which are not ordinarily removed by HPCdaligner calls.
+    TODO: Also remove the direct output of daligner, which are not ordinarily removed by HPCdaligner calls.
     """
     re_block_dali = re.compile(r'%s\.(\d+)' %db_prefix)
     def blocks_dali(line):

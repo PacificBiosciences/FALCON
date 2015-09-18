@@ -1,14 +1,15 @@
 from .. import run_support as support
+from ..functional import get_daligner_job_descriptions
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
 from pypeflow.controller import PypeWorkflow, PypeThreadWorkflow
 from falcon_kit.FastaReader import FastaReader
 import glob
-import sys
+import hashlib
 import os
 import re
+import sys
 import time
-import hashlib
 
 
 wait_time = 5
@@ -265,36 +266,36 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, c
 
     nblock = get_nblock(fn(db_file))
 
-    with open(run_jobs_fn) as f :
-        for l in f :
-            l = l.strip()
-            job_uid = hashlib.md5(l).hexdigest()
-            job_uid = job_uid[:8]
-            l = l.split()
-            if l[0] == "daligner":
-                support.make_dirs(os.path.join( wd, "./job_%s" % job_uid))
-                call = "cd %s/job_%s;ln -sf ../.%s.bps .; ln -sf ../.%s.idx .; ln -sf ../%s.db ." % (wd, job_uid, db_prefix, db_prefix, db_prefix)
-                rc = os.system(call)
-                if rc:
-                    raise Exception("Failure in system call: %r -> %d" %(call, rc))
-                job_done = makePypeLocalFile(os.path.abspath( "%s/job_%s/job_%s_done" % (wd, job_uid, job_uid)  ))
-                if pread_aln == True:
-                    l[0] = "daligner_p"
-                parameters =  {"daligner_cmd": " ".join(l),
-                               "cwd": os.path.join(wd, "job_%s" % job_uid),
-                               "job_uid": job_uid,
-                               "config": config,
-                               "nblock": nblock,
-                               "db_prefix": db_prefix}
-                make_daligner_task = PypeTask( inputs = {"rdb_build_done": rdb_build_done},
-                                               outputs = {"job_done": job_done},
-                                               parameters = parameters,
-                                               TaskType = PypeThreadTaskBase,
-                                               URL = "task://localhost/d_%s_%s" % (job_uid, db_prefix) )
-                daligner_task = make_daligner_task( task_run_daligner )
-                tasks.append( daligner_task )
-                tasks_out[ "ajob_%s" % job_uid ] = job_done
-                job_id += 1
+    re_daligner = re.compile(r'\bdaligner\b')
+
+    job_descs = get_daligner_job_descriptions(open(run_jobs_fn), db_prefix)
+    for desc, bash in job_descs.iteritems():
+        job_uid = hashlib.md5(bash).hexdigest()
+        job_uid = job_uid[:8]
+
+        support.make_dirs(os.path.join( wd, "./job_%s" % job_uid))
+        call = "cd %s/job_%s;ln -sf ../.%s.bps .; ln -sf ../.%s.idx .; ln -sf ../%s.db ." % (wd, job_uid, db_prefix, db_prefix, db_prefix)
+        rc = os.system(call)
+        if rc:
+            raise Exception("Failure in system call: %r -> %d" %(call, rc))
+        job_done = makePypeLocalFile(os.path.abspath( "%s/job_%s/job_%s_done" % (wd, job_uid, job_uid)  ))
+        if pread_aln:
+            bash = re_daligner.sub("daligner_p", bash)
+        parameters =  {"daligner_cmd": bash,
+                        "cwd": os.path.join(wd, "job_%s" % job_uid),
+                        "job_uid": job_uid,
+                        "config": config,
+                        "nblock": nblock,
+                        "db_prefix": db_prefix}
+        make_daligner_task = PypeTask( inputs = {"rdb_build_done": rdb_build_done},
+                                        outputs = {"job_done": job_done},
+                                        parameters = parameters,
+                                        TaskType = PypeThreadTaskBase,
+                                        URL = "task://localhost/d_%s_%s" % (job_uid, db_prefix) )
+        daligner_task = make_daligner_task( task_run_daligner )
+        tasks.append( daligner_task )
+        tasks_out[ "ajob_%s" % job_uid ] = job_done
+        job_id += 1
     return tasks, tasks_out
 
 def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
@@ -310,9 +311,11 @@ def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
             if l[0] not in ( "LAsort", "LAmerge", "mv" ):
                 continue
             if l[0] == "LAsort":
+                # We now run this part w/ daligner, but we still need
+                # a small script for some book-keeping.
                 p_id = int( l[2].split(".")[1] )
                 mjob_data.setdefault( p_id, [] )
-                mjob_data[p_id].append(  " ".join(l) )
+                #mjob_data[p_id].append(  " ".join(l) ) # Already done w/ daligner!
             if l[0] == "LAmerge":
                 l2 = l[2].split(".")
                 if l2[1][0] == "L":
