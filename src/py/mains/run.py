@@ -244,21 +244,26 @@ def task_run_consensus(self):
     wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
 
-def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
-    job_id = 0
-    tasks = []
-    tasks_out = {}
-
+def get_nblock(db_file):
     nblock = 1
     new_db = True
-    if os.path.exists( fn(db_file) ):
-        with open( fn(db_file) ) as f:
+    if os.path.exists(db_file):
+        with open(db_file) as f:
             for l in f:
                 l = l.strip().split()
                 if l[0] == "blocks" and l[1] == "=":
                     nblock = int(l[2])
                     new_db = False
                     break
+    # Ignore new_db for now.
+    return nblock
+
+def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
+    job_id = 0
+    tasks = []
+    tasks_out = {}
+
+    nblock = get_nblock(fn(db_file))
 
     for pid in xrange(1, nblock + 1):
         support.make_dirs("%s/m_%05d" % (wd, pid))
