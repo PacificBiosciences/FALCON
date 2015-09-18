@@ -265,9 +265,6 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, c
 
     nblock = get_nblock(fn(db_file))
 
-    for pid in xrange(1, nblock + 1):
-        support.make_dirs("%s/m_%05d" % (wd, pid))
-
     with open(run_jobs_fn) as f :
         for l in f :
             l = l.strip()

@@ -370,7 +370,9 @@ def run_daligner(daligner_cmd, db_prefix, nblock, config, job_done, script_fn):
     script.append( "time "+ daligner_cmd )
 
     for p_id in xrange( 1, nblock+1 ):
-        script.append( """ for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do ln -sf $f ../m_%05d; done """  % (db_prefix, p_id, db_prefix, p_id) )
+        mdir = '../m_%05d' %p_id
+        script.append(""" for f in `find $PWD -wholename "*%s.%d.%s.*.*.las"`; do mkdir -p %s; ln -sf $f %s; done """  %(
+            db_prefix, p_id, db_prefix, mdir, mdir))
 
     script.append( "touch {job_done}".format(job_done = job_done) )
 
