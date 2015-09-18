@@ -54,6 +54,10 @@ def run_script(job_data, job_type = "SGE" ):
         if rc:
             out = open(log_fn).read()
             fc_run_logger.warning('Contents of %r:\n%s' %(log_fn, out))
+    else:
+        msg = 'Unknown job_type=%s' %repr(job_type)
+        fc_run_logger.error(msg)
+        raise Exception(msg)
     if rc:
         msg = "Cmd %r (job %r) returned %d." % (cmd, job_name, rc)
         fc_run_logger.info(msg)
