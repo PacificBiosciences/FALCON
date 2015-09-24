@@ -5,7 +5,6 @@ from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
 from pypeflow.controller import PypeWorkflow, PypeThreadWorkflow
 from falcon_kit.FastaReader import FastaReader
 import glob
-import hashlib
 import os
 import re
 import sys
@@ -272,10 +271,13 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, c
 
     re_daligner = re.compile(r'\bdaligner\b')
 
+    line_count = 0
     job_descs = get_daligner_job_descriptions(open(run_jobs_fn), db_prefix)
     for desc, bash in job_descs.iteritems():
-        job_uid = hashlib.md5(bash).hexdigest()
-        job_uid = job_uid[:8]
+        #job_uid = hashlib.md5(bash).hexdigest()
+        #job_uid = job_uid[:8]
+        job_uid = '%08d' %line_count
+        line_count += 1
 
         support.make_dirs(os.path.join( wd, "./job_%s" % job_uid))
         call = "cd %s/job_%s;ln -sf ../.%s.bps .; ln -sf ../.%s.idx .; ln -sf ../%s.db ." % (wd, job_uid, db_prefix, db_prefix, db_prefix)
