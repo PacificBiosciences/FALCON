@@ -269,7 +269,7 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, c
 
     nblock = get_nblock(fn(db_file))
 
-    re_daligner = re.compile(r'\bdaligner\b')
+    xform_script = functional.get_script_xformer(pread_aln)
 
     line_count = 0
     job_descs = get_daligner_job_descriptions(open(run_jobs_fn), db_prefix)
@@ -285,8 +285,7 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, c
         if rc:
             raise Exception("Failure in system call: %r -> %d" %(call, rc))
         job_done = makePypeLocalFile(os.path.abspath( "%s/job_%s/job_%s_done" % (wd, job_uid, job_uid)  ))
-        if pread_aln:
-            bash = re_daligner.sub("daligner_p", bash)
+        bash = xform_script(bash)
         parameters =  {"daligner_cmd": bash,
                         "cwd": os.path.join(wd, "job_%s" % job_uid),
                         "job_uid": job_uid,

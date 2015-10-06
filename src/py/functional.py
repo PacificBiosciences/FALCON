@@ -44,6 +44,7 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
         return re_pair_sort.search(line).group(1, 2)
 
     lines = [line.strip() for line in run_jobs_stream]
+    assert any(len(l) > 1 for l in lines) # in case caller passed filename, not stream
     lines_dali = [l for l in lines if l.startswith('daligner')] # could be daligner_p
     lines_sort = [l for l in lines if l.startswith('LAsort')]
     pair2dali = {}
@@ -72,3 +73,17 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
         script = '\n'.join([dali] + sorts) + '\n'
         result[id] = script
     return result
+
+_re_sub_daligner = re.compile(r'^daligner\b', re.MULTILINE)
+def xform_script_for_preads(script):
+    daligner_exe = 'daligner_p'
+    return _re_sub_daligner.sub(daligner_exe, script) #, flags=re.MULTILINE) # flags in py2.7
+
+def xform_script_for_raw_reads(script):
+    return script
+
+def get_script_xformer(pread_aln):
+    if pread_aln:
+        return xform_script_for_preads
+    else:
+        return xform_script_for_raw_reads
