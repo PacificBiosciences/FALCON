@@ -407,6 +407,7 @@ def run_consensus(job_id, out_file_fn, prefix, config, job_done, script_fn):
     c_script_fn = os.path.join(cwd, "cp_%05d.sh" % job_id)
     with open(c_script_fn, "w") as c_script:
         print >> c_script, "set -vex"
+        print >> c_script, "set -o pipefail"
         print >> c_script, "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done)
         print >> c_script, "cd .."
         if config["falcon_sense_skip_contained"] == True:
