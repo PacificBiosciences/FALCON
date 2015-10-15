@@ -1,5 +1,5 @@
 from .. import run_support as support
-from ..functional import get_daligner_job_descriptions
+from ..functional import get_daligner_job_descriptions, get_script_xformer
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
 from pypeflow.controller import PypeWorkflow, PypeThreadWorkflow
@@ -269,7 +269,7 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, c
 
     nblock = get_nblock(fn(db_file))
 
-    xform_script = functional.get_script_xformer(pread_aln)
+    xform_script = get_script_xformer(pread_aln)
 
     line_count = 0
     job_descs = get_daligner_job_descriptions(open(run_jobs_fn), db_prefix)
