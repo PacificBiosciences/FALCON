@@ -34,6 +34,19 @@ def run_script(job_data, job_type = "SGE" ):
         fc_run_logger.info( "submitting %s for SGE, start job: %s " % (script_fn, job_name) )
         cmd = sge_cmd
         rc = os.system(cmd)
+    elif job_type == "torque":
+        job_name = job_data["job_name"]
+        cwd = job_data["cwd"]
+        sge_option = job_data["sge_option"]
+        sge_cmd="qsub -N {job_name} {sge_option} -o {cwd}/sge_log -j oe\
+                 -S /bin/bash {script}".format(job_name=job_name,
+                                               cwd=os.getcwd(),
+                                               sge_option=sge_option,
+                                               script=script_fn)
+
+        fc_run_logger.info( "submitting %s for torque, start job: %s " % (script_fn, job_name) )
+        cmd = sge_cmd
+        rc = os.system(cmd)
     elif job_type == "SLURM":
         job_name = job_data["job_name"]
         cwd = job_data["cwd"]
