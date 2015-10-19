@@ -156,10 +156,10 @@ def get_config(config):
     if config.has_option('General', 'target'):
         target = config.get('General', 'target')
         if target not in ["overlapping", "pre-assembly", "assembly"]:
-            print """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target %s in the configuration file.  """ % target
-            raise SystemExit(1)
+            msg = """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target %s in the configuration file.  """ % target
+            raise Exception(msg)
     else:
-        print """ No target specified, assuming "assembly" as target """
+        fc_run_logger.info(""" No target specified, assuming "assembly" as target """)
         target = "assembly"
 
     if config.has_option('General', 'use_tmpdir'):
