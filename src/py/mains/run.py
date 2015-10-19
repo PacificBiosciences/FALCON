@@ -12,75 +12,90 @@ import time
 
 
 wait_time = 5
+fc_run_logger = None
+
+def system(call, check=False):
+    fc_run_logger.debug('$(%s)' %repr(call))
+    rc = os.system(call)
+    msg = "Call %r returned %d." % (call, rc)
+    if rc:
+        fc_run_logger.warning(msg)
+        if check:
+            raise Exception(msg)
+    else:
+        fc_run_logger.debug(msg)
+    return rc
+
+def _qsub_script(job_data, specific):
+        script_fn = job_data["script_fn"]
+        job_name = job_data["job_name"]
+        cwd = job_data["cwd"]
+        sge_option = job_data["sge_option"]
+        sge_cmd="qsub -N {job_name} {sge_option} -o {cwd}/sge_log {specific}\
+                 -S /bin/bash {script}".format(job_name=job_name,
+                                               cwd=os.getcwd(),
+                                               specific=specific,
+                                               sge_option=sge_option,
+                                               script=script_fn)
+        system(sge_cmd, check=True)
+
+def _run_script_sge(job_data):
+    specific = '-j y'
+    _qsub_script(job_data, specific)
+
+def _run_script_torque(job_data):
+    # See https://github.com/PacificBiosciences/FALCON/pull/227
+    specific = '-j oe'
+    _qsub_script(job_data, specific)
+
+def _run_script_slurm(job_data):
+        script_fn = job_data["script_fn"]
+        job_name = job_data["job_name"]
+        cwd = job_data["cwd"]
+        sge_option = job_data["sge_option"]
+        with open(script_fn, 'r') as original: data = original.read()
+        with open(script_fn, 'w') as modified: modified.write("#!/bin/sh" + "\n" + data)
+        sge_cmd="sbatch -J {job_name} {sge_option} {script}".format(job_name=job_name, cwd=os.getcwd(),sge_option=sge_option, script=script_fn)
+        system(sge_cmd, check=True)
+
+def _run_script_local(job_data):
+        script_fn = job_data["script_fn"]
+        job_name = job_data["job_name"]
+        log_fn = '{0}.log'.format(script_fn)
+        cmd = "bash {0} 1> {1} 2>&1".format(script_fn, log_fn)
+        try:
+            system(cmd, check=True)
+        except Exception:
+            out = open(log_fn).read()
+            fc_run_logger.exception('Contents of %r:\n%s' %(log_fn, out))
+            raise
+
+_run_scripts = {
+        'SGE': _run_script_sge,
+        'TORQUE': _run_script_torque,
+        'SLURM': _run_script_slurm,
+        'LOCAL': _run_script_local,
+}
 
 def run_script(job_data, job_type = "SGE" ):
     """For now, we actually modify the script before running it.
     This assume a simple bash script.
     We will have a better solution eventually.
     """
+    try:
+        _run_script = _run_scripts[job_type.upper()]
+    except LookupError as e:
+        msg = 'Unknown job_type=%s' %repr(job_type)
+        fc_run_logger.exception(msg)
+        raise
+    job_name = job_data["job_name"]
     script_fn = job_data["script_fn"]
     support.update_env_in_script(script_fn,
         ['PATH', 'PYTHONPATH', 'LD_LIBRARY_PATH'])
-    if job_type == "SGE":
-        job_name = job_data["job_name"]
-        cwd = job_data["cwd"]
-        sge_option = job_data["sge_option"]
-        sge_cmd="qsub -N {job_name} {sge_option} -o {cwd}/sge_log -j y\
-                 -S /bin/bash {script}".format(job_name=job_name,  
-                                               cwd=os.getcwd(), 
-                                               sge_option=sge_option, 
-                                               script=script_fn)
-
-        fc_run_logger.info( "submitting %s for SGE, start job: %s " % (script_fn, job_name) )
-        cmd = sge_cmd
-        rc = os.system(cmd)
-    elif job_type == "torque":
-        job_name = job_data["job_name"]
-        cwd = job_data["cwd"]
-        sge_option = job_data["sge_option"]
-        sge_cmd="qsub -N {job_name} {sge_option} -o {cwd}/sge_log -j oe\
-                 -S /bin/bash {script}".format(job_name=job_name,
-                                               cwd=os.getcwd(),
-                                               sge_option=sge_option,
-                                               script=script_fn)
-
-        fc_run_logger.info( "submitting %s for torque, start job: %s " % (script_fn, job_name) )
-        cmd = sge_cmd
-        rc = os.system(cmd)
-    elif job_type == "SLURM":
-        job_name = job_data["job_name"]
-        cwd = job_data["cwd"]
-        sge_option = job_data["sge_option"]
-        with open(script_fn, 'r') as original: data = original.read()
-        with open(script_fn, 'w') as modified: modified.write("#!/bin/sh" + "\n" + data)
-        fc_run_logger.info( "submitting %s for SLURM, start job: %s " % (script_fn, job_name) )
-        sge_cmd="sbatch -J {job_name} {sge_option} {script}".format(job_name=job_name, cwd=os.getcwd(),sge_option=sge_option, script=script_fn)
-        cmd = sge_cmd
-        rc = os.system(cmd)
-    elif job_type == "local":
-        job_name = job_data["job_name"]
-        fc_run_logger.info( "executing %r locally, start job: %r " % (script_fn, job_name) )
-        log_fn = '{0}.log'.format(script_fn)
-        cmd = "bash {0} 1> {1} 2>&1".format(script_fn, log_fn)
-        rc = os.system(cmd)
-        if rc:
-            out = open(log_fn).read()
-            fc_run_logger.warning('Contents of %r:\n%s' %(log_fn, out))
-    else:
-        msg = 'Unknown job_type=%s' %repr(job_type)
-        fc_run_logger.error(msg)
-        raise Exception(msg)
-    if rc:
-        msg = "Cmd %r (job %r) returned %d." % (cmd, job_name, rc)
-        fc_run_logger.info(msg)
-        # For non-qsub, this might still help with debugging. But technically
-        # we should not raise here, as a failure should be noticed later.
-        # When we are confident that script failures are handled well,
-        # we can make this optional.
-        raise Exception(msg)
-    else:
-        msg = "Cmd %r (job %r) returned %d" % (cmd, job_name, rc)
-        fc_run_logger.debug(msg)
+    fc_run_logger.info('(%s) %r' %(job_type, script_fn))
+    fc_run_logger.debug('%s (job %r)' %(_run_script.__name__, job_name))
+    rc = _run_script(job_data)
+    # Someday, we might trap exceptions here, as a failure would be caught later anyway.
 
 def wait_for_file(filename, task, job_name = ""):
     """We could be in the thread or sub-process which spawned a qsub job,
@@ -91,24 +106,26 @@ def wait_for_file(filename, task, job_name = ""):
         # We prefer all jobs to rely on `*done.exit`, but not all do yet. So we check that 1st.
         exit_fn = filename + '.exit'
         if os.path.exists(exit_fn):
-            fc_run_logger.info( "%r generated. job: %r exited." % (exit_fn, job_name) )
+            fc_run_logger.info( "%r found." % (exit_fn) )
+            fc_run_logger.debug( " job: %r exited." % (job_name) )
             os.unlink(exit_fn) # to allow a restart later, if not done
             if not os.path.exists(filename):
                 fc_run_logger.warning( "%r is missing. job: %r failed!" % (filename, job_name) )
             break
         if os.path.exists(filename) and not os.path.exists(exit_fn):
             # (rechecked exit_fn to avoid race condition)
-            fc_run_logger.info( "%r generated. job: %r finished." % (filename, job_name) )
+            fc_run_logger.info( "%r not found, but job is done." % (exit_fn) )
+            fc_run_logger.debug( " job: %r exited." % (job_name) )
             break
         if task.shutdown_event is not None and task.shutdown_event.is_set():
             fc_run_logger.warning( "shutdown_event received (Keyboard Interrupt maybe?), %r not finished."
                 % (job_name) )
             if support.job_type == "SGE":
                 fc_run_logger.info( "deleting the job by `qdel` now..." )
-                os.system("qdel %s" % job_name) # Failure is ok.
+                system("qdel %s" % job_name) # Failure is ok.
             if support.job_type == "SLURM":
                 fc_run_logger.info( "Deleting the job by 'scancel' now...")
-                os.system("scancel -n %s" % job_name)
+                system("scancel -n %s" % job_name)
             break
 
 def task_make_fofn_abs_raw(self):
@@ -294,7 +311,7 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, c
 
         support.make_dirs(os.path.join( wd, "./job_%s" % job_uid))
         call = "cd %s/job_%s;ln -sf ../.%s.bps .; ln -sf ../.%s.idx .; ln -sf ../%s.db ." % (wd, job_uid, db_prefix, db_prefix, db_prefix)
-        rc = os.system(call)
+        rc = system(call)
         if rc:
             raise Exception("Failure in system call: %r -> %d" %(call, rc))
         job_done = makePypeLocalFile(os.path.abspath( "%s/job_%s/job_%s_done" % (wd, job_uid, job_uid)  ))
@@ -469,7 +486,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                    TaskType = PypeThreadTaskBase,
                    URL = "task://localhost/rda_check" )
         def check_r_da_task(self):
-            os.system("touch %s" % fn(self.da_done))
+            system("touch %s" % fn(self.da_done))
         
         wf.addTask(check_r_da_task)
         wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
@@ -496,7 +513,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                 fn_list.sort()
                 for fa_fn in fn_list:
                     print >>f, fa_fn
-            os.system("touch %s" % fn(self.cns_done))
+            system("touch %s" % fn(self.cns_done))
 
         wf.addTask(check_r_cns_task)
         wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs
@@ -550,7 +567,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                TaskType = PypeThreadTaskBase,
                URL = "task://localhost/pda_check" )
     def check_p_da_task(self):
-        os.system("touch %s" % fn(self.da_done))
+        system("touch %s" % fn(self.da_done))
     
     wf.addTask(check_p_da_task)
 
@@ -565,7 +582,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                TaskType = PypeThreadTaskBase,
                URL = "task://localhost/pmerge_check" )
     def check_p_merge_check_task(self):
-        os.system("touch %s" % fn(self.p_merge_done))
+        system("touch %s" % fn(self.p_merge_done))
     
     wf.addTask(check_p_merge_check_task)
     wf.refreshTargets(updateFreq = wait_time) #all

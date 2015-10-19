@@ -9,7 +9,7 @@ import time
 import uuid
 
 job_type = None
-fc_run_logger = None
+logger = None
 
 def _prepend_env_paths(content, names):
     """
@@ -156,10 +156,10 @@ def get_config(config):
     if config.has_option('General', 'target'):
         target = config.get('General', 'target')
         if target not in ["overlapping", "pre-assembly", "assembly"]:
-            print """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target %s in the configuration file.  """ % target
-            raise SystemExit(1)
+            msg = """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target %s in the configuration file.  """ % target
+            raise Exception(msg)
     else:
-        print """ No target specified, assuming "assembly" as target """
+        logger.info(""" No target specified, assuming "assembly" as target """)
         target = "assembly"
 
     if config.has_option('General', 'use_tmpdir'):
@@ -205,28 +205,28 @@ keys=root,pypeflow,fc_run
 keys=stream,file_pypeflow,file_fc
 
 [formatters]
-keys=form01
+keys=form01,form02
 
 [logger_root]
 level=NOTSET
 handlers=stream
 
 [logger_pypeflow]
-level=NOTSET
-handlers=stream
+level=DEBUG
+handlers=file_pypeflow
 qualname=pypeflow
 propagate=1
 
 [logger_fc_run]
 level=NOTSET
-handlers=stream
-qualname=fc_run
+handlers=file_fc
+qualname=.
 propagate=1
 
 [handler_stream]
 class=StreamHandler
 level=INFO
-formatter=form01
+formatter=form02
 args=(sys.stderr,)
 
 [handler_file_pypeflow]
@@ -239,10 +239,13 @@ args=('pypeflow.log',)
 class=FileHandler
 level=DEBUG
 formatter=form01
-args=('fc_run.log',)
+args=('fc.log',)
 
 [formatter_form01]
 format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+
+[formatter_form02]
+format=[%(levelname)s]%(message)s
 """
 
 def setup_logger(logging_config_fn):
@@ -258,7 +261,9 @@ def setup_logger(logging_config_fn):
     }
     logging.config.fileConfig(logger_fileobj, defaults=defaults, disable_existing_loggers=False)
 
-    return logging.getLogger("fc_run")
+    global logger
+    logger = logging.getLogger("fc_run")
+    return logger
 
 def make_fofn_abs(i_fofn_fn, o_fofn_fn):
     """Copy i_fofn to o_fofn, but with relative filenames expanded for CWD.
