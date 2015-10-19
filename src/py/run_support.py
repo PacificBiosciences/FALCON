@@ -9,7 +9,7 @@ import time
 import uuid
 
 job_type = None
-fc_run_logger = None
+logger = None
 
 def _prepend_env_paths(content, names):
     """
@@ -159,7 +159,7 @@ def get_config(config):
             msg = """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target %s in the configuration file.  """ % target
             raise Exception(msg)
     else:
-        fc_run_logger.info(""" No target specified, assuming "assembly" as target """)
+        logger.info(""" No target specified, assuming "assembly" as target """)
         target = "assembly"
 
     if config.has_option('General', 'use_tmpdir'):
@@ -245,7 +245,7 @@ args=('fc.log',)
 format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 [formatter_form02]
-format=[%(levelname)s] %(message)s
+format=[%(levelname)s]%(message)s
 """
 
 def setup_logger(logging_config_fn):
@@ -261,7 +261,9 @@ def setup_logger(logging_config_fn):
     }
     logging.config.fileConfig(logger_fileobj, defaults=defaults, disable_existing_loggers=False)
 
-    return logging.getLogger("fc_run")
+    global logger
+    logger = logging.getLogger("fc_run")
+    return logger
 
 def make_fofn_abs(i_fofn_fn, o_fofn_fn):
     """Copy i_fofn to o_fofn, but with relative filenames expanded for CWD.

@@ -12,6 +12,7 @@ import time
 
 
 wait_time = 5
+fc_run_logger = None
 
 def system(call, check=False):
     fc_run_logger.debug('$(%s)' %repr(call))
@@ -91,7 +92,8 @@ def run_script(job_data, job_type = "SGE" ):
     script_fn = job_data["script_fn"]
     support.update_env_in_script(script_fn,
         ['PATH', 'PYTHONPATH', 'LD_LIBRARY_PATH'])
-    fc_run_logger.info('%s() on %r (job %r)' %(_run_script.__name__, script_fn, job_name))
+    fc_run_logger.info('(%s) %r' %(job_type, script_fn))
+    fc_run_logger.debug('%s (job %r)' %(_run_script.__name__, job_name))
     rc = _run_script(job_data)
     # Someday, we might trap exceptions here, as a failure would be caught later anyway.
 
@@ -104,14 +106,16 @@ def wait_for_file(filename, task, job_name = ""):
         # We prefer all jobs to rely on `*done.exit`, but not all do yet. So we check that 1st.
         exit_fn = filename + '.exit'
         if os.path.exists(exit_fn):
-            fc_run_logger.info( "%r generated. job: %r exited." % (exit_fn, job_name) )
+            fc_run_logger.info( "%r found." % (exit_fn) )
+            fc_run_logger.debug( " job: %r exited." % (job_name) )
             os.unlink(exit_fn) # to allow a restart later, if not done
             if not os.path.exists(filename):
                 fc_run_logger.warning( "%r is missing. job: %r failed!" % (filename, job_name) )
             break
         if os.path.exists(filename) and not os.path.exists(exit_fn):
             # (rechecked exit_fn to avoid race condition)
-            fc_run_logger.info( "%r generated. job: %r finished." % (filename, job_name) )
+            fc_run_logger.info( "%r not found, but job is done." % (exit_fn) )
+            fc_run_logger.debug( " job: %r exited." % (job_name) )
             break
         if task.shutdown_event is not None and task.shutdown_event.is_set():
             fc_run_logger.warning( "shutdown_event received (Keyboard Interrupt maybe?), %r not finished."
