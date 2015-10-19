@@ -205,28 +205,28 @@ keys=root,pypeflow,fc_run
 keys=stream,file_pypeflow,file_fc
 
 [formatters]
-keys=form01
+keys=form01,form02
 
 [logger_root]
 level=NOTSET
 handlers=stream
 
 [logger_pypeflow]
-level=NOTSET
-handlers=stream
+level=DEBUG
+handlers=file_pypeflow
 qualname=pypeflow
 propagate=1
 
 [logger_fc_run]
 level=NOTSET
-handlers=stream
-qualname=fc_run
+handlers=file_fc
+qualname=.
 propagate=1
 
 [handler_stream]
 class=StreamHandler
 level=INFO
-formatter=form01
+formatter=form02
 args=(sys.stderr,)
 
 [handler_file_pypeflow]
@@ -239,10 +239,13 @@ args=('pypeflow.log',)
 class=FileHandler
 level=DEBUG
 formatter=form01
-args=('fc_run.log',)
+args=('fc.log',)
 
 [formatter_form01]
 format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+
+[formatter_form02]
+format=[%(levelname)s] %(message)s
 """
 
 def setup_logger(logging_config_fn):
