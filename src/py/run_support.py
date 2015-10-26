@@ -308,12 +308,14 @@ def build_rdb(input_fofn_fn, work_dir, config, job_done, script_fn, run_jobs_fn)
         script_file.write("fasta2DB -v raw_reads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
         if new_db  == True:
             script_file.write("DBsplit %s raw_reads\n" % pa_DBsplit_option)
+            script_file.write("date\n")
         if openending == True:
             script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')\n""")
         else:
             script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
         script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > %s\n" %(
             pa_HPCdaligner_option, length_cutoff, last_block, run_jobs_fn))
+        script_file.write("date\n")
         script_file.write("touch {job_done}\n".format(job_done = job_done))
 
 def build_pdb(input_fofn_fn, work_dir, config, job_done, script_fn, run_jobs_fn):
@@ -342,17 +344,34 @@ def run_falcon_asm(pread_dir, db_file, config, job_done, script_fn):
     script.append( "set -vex" )
     script.append( "trap 'touch %s.exit' EXIT" % job_done )
     script.append( "cd %s" % pread_dir )
-    # Write preads4falcon.fasta, in 1-preads_ovl:
+    script.append("date")
+    # Given preads.db,
+    # write preads4falcon.fasta, in 1-preads_ovl:
     script.append( "DB2Falcon -U preads")
+    script.append("date")
     script.append( "cd %s" % wd )
+    # Generate las.fofn:
     script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
+    # Given, las.fofn,
+    # write preads.ovl:
     script.append( """fc_ovlp_filter --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
             (db_file, overlap_filtering_setting, length_cutoff_pr) )
+    script.append("date")
     script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
+    # TODO: Figure out which steps need preads4falcon.fasta.
+
+    # Given preads.ovl,
+    # write sg_edges_list, c_path, utg_data, ctg_paths.
     script.append( """fc_ovlp_to_graph preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
-    # Write 'p_ctg.fa' and 'a_ctg.fa':
+    script.append("date")
+    # Given sg_edges_list, utg_data, ctg_paths,
+    # Write p_ctg.fa and a_ctg_all.fa,
+    # plus a_ctg_base.fa, p_ctg_tiling_path, a_ctg_tiling_path, a_ctg_base_tiling_path:
     script.append( """fc_graph_to_contig""" )
+    script.append("date")
+    # Given a_ctg_all.fa, write a_ctg.fa:
     script.append( """fc_dedup_a_tigs""" )
+    script.append("date")
     script.append( """touch %s""" % job_done)
 
     with open(script_fn, "w") as script_file:
@@ -373,6 +392,7 @@ def run_daligner(daligner_cmd, db_prefix, nblock, config, job_done, script_fn):
         src_dir = os.path.abspath(os.path.dirname(cwd)) # by convention
         script.extend(use_tmpdir_for_files(basenames, src_dir, dst_dir))
     script.append( "time "+ daligner_cmd )
+    script.append( "date" )
 
     for p_id in xrange( 1, nblock+1 ):
         script.append('rm -f %s.*.%s.*.*.las' %(
@@ -385,6 +405,7 @@ def run_daligner(daligner_cmd, db_prefix, nblock, config, job_done, script_fn):
         # For raw_reads, the prefix is L1.*.las, but for preads, it is preads.*.las.
         # I am not sure why yet. ~cdunn
 
+    script.append( "date" )
     script.append( "touch {job_done}".format(job_done = job_done) )
 
     with open(script_fn,"w") as script_file:
@@ -397,30 +418,38 @@ def run_las_merge(p_script_fn, job_done, config, script_fn):
     script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done) )
     script.append( "cd %s" % cwd )
     script.append( "hostname" )
-    script.append( "date" )
     script.append( "time bash %s" % p_script_fn )
     script.append( "touch {job_done}".format(job_done = job_done) )
 
     with open(script_fn,"w") as script_file:
+        script_file.write("date\n")
         script_file.write("\n".join(script) + '\n')
+        script_file.write("date\n")
 
 def run_consensus(job_id, out_file_fn, prefix, config, job_done, script_fn):
     cwd = os.path.dirname(script_fn)
     falcon_sense_option = config["falcon_sense_option"]
     length_cutoff = config["length_cutoff"]
 
+    script = []
+    script.append("set -vex")
+    script.append("set -o pipefail")
+    script.append("trap 'touch {job_done}.exit' EXIT".format(job_done = job_done))
+    script.append("cd ..")
+    script.append( "date" )
+    pipe = ''
+    if config["falcon_sense_skip_contained"]:
+        pipe += """LA4Falcon -H%d -fso %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id)
+    else:
+        pipe += """LA4Falcon -H%d -fo %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id)
+    pipe += """fc_consensus %s > %s""" % (falcon_sense_option, out_file_fn)
+    script.append(pipe)
+    script.append("date")
+    script.append("touch {job_done}".format(job_done = job_done))
+
     c_script_fn = os.path.join(cwd, "cp_%05d.sh" % job_id)
-    with open(c_script_fn, "w") as c_script:
-        print >> c_script, "set -vex"
-        print >> c_script, "set -o pipefail"
-        print >> c_script, "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done)
-        print >> c_script, "cd .."
-        if config["falcon_sense_skip_contained"] == True:
-            print >> c_script, """LA4Falcon -H%d -fso %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
-        else:
-            print >> c_script, """LA4Falcon -H%d -fo %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id),
-        print >> c_script, """fc_consensus %s > %s""" % (falcon_sense_option, out_file_fn)
-        print >> c_script, "touch {job_done}".format(job_done = job_done)
+    with open(c_script_fn, "w") as f:
+        f.write('\n'.join(script + ['']))
 
     script = []
     script.append( "set -vex" )
@@ -428,6 +457,7 @@ def run_consensus(job_id, out_file_fn, prefix, config, job_done, script_fn):
     script.append( "hostname" )
     script.append( "date" )
     script.append( "time bash %s" %os.path.basename(c_script_fn) )
+    script.append( "date" )
 
-    with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script) + '\n')
+    with open(script_fn,"w") as f:
+        f.write("\n".join(script + ['']))
