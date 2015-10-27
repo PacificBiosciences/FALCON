@@ -10,8 +10,9 @@ class FakePool(object):
         return map(func, iterable)
     def imap(self, func, iterable, chunksize=None):
         return itertools.imap(func, iterable)
-    def __init__(self, *args, **kwds):
-        pass
+    def __init__(self, initializer=None, initargs=[], *args, **kwds):
+        if initializer:
+            initializer(*initargs)
 
 def Pool(processes, *args, **kwds):
     """Pool factory.
@@ -21,4 +22,4 @@ def Pool(processes, *args, **kwds):
     if processes:
         return multiprocessing.Pool(processes, *args, **kwds)
     else:
-        return FakePool()
+        return FakePool(*args, **kwds)

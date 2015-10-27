@@ -196,7 +196,9 @@ def main(argv=sys.argv):
                         help='the size for triming both ends from initial sparse aligned region')
     good_region = re.compile("[ACGT]+")
     args = parser.parse_args(argv[1:])
-    exe_pool = Pool(args.n_core)
+    def Start():
+        print>>sys.stderr, 'Started a worker in %d from parent %d' %(os.getpid(), os.getppid())
+    exe_pool = Pool(args.n_core, initializer=Start)
     if args.trim:
         get_consensus = get_consensus_with_trim
     else:
@@ -237,4 +239,3 @@ def main(argv=sys.argv):
                 cns.sort(key = lambda x: len(x))
                 print ">"+seed_id
                 print cns[-1]
-
