@@ -14,7 +14,6 @@ def run_filter_stage1(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len):
 def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
         ignore_rtn = []
         current_q_id = None
-        contained = False
         ave_idt = 0.0
         all_over_len = 0.0
         overlap_data = {"5p":0, "3p":0}
@@ -37,7 +36,6 @@ def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
 
                 overlap_data = {"5p":0, "3p":0}
                 current_q_id = q_id
-                contained = False
                 ave_idt = 0.0
                 all_over_len = 0.0
 
@@ -52,14 +50,13 @@ def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
             if q_l < min_len or t_l < min_len:
                 continue
 
-            if not contained:
-                if l[-1] in ("contains", "overlap"):
-                    ave_idt += idt * overlap_len
-                    all_over_len += overlap_len
-                if q_s == 0:
-                    overlap_data["5p"] += 1
-                elif q_e == q_l:
-                    overlap_data["3p"] += 1
+            if l[-1] in ("contains", "overlap"):
+                ave_idt += idt * overlap_len
+                all_over_len += overlap_len
+            if q_s == 0:
+                overlap_data["5p"] += 1
+            elif q_e == q_l:
+                overlap_data["3p"] += 1
 
         if q_id !=  None:
             left_count = overlap_data["5p"]
