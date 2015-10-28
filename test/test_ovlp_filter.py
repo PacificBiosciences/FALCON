@@ -10,10 +10,9 @@ def test():
     readlines = data.strip().splitlines
     max_diff, max_ovlp, min_ovlp, min_len = 1000, 1000, 1, 1
     stage1 = mod.filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len)
-    print stage1
     assert_equal(expected1,  stage1)
-expected1 = ['000000000', '000000001', '000000002', '000000003', '000000017', '000000028']
-expected1 = [None, '000000001', '000000002', '000000003', '000000017', '000000028'] # BUGGY!
+
+expected1 = ['000000001', '000000002', '000000017', '000000028']
 data = """
 000000000 000000001 -1807 100.00 0 181 1988 1988 0 0 1807 1989 overlap
 000000000 000000002 -823 99.88 0 0 823 1988 0 1166 1989 1989 overlap
