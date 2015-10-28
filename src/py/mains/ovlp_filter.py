@@ -54,7 +54,7 @@ def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
                 all_over_len += overlap_len
             if q_s == 0:
                 overlap_data["5p"] += 1
-            elif q_e == q_l:
+            if q_e == q_l:
                 overlap_data["3p"] += 1
         if q_id is not None:
             if ignore(overlap_data):
