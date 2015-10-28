@@ -33,8 +33,9 @@ def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
             q_id, t_id = l[:2]
 
             if q_id != current_q_id:
-                if ignore(overlap_data):
-                    ignore_rtn.append( current_q_id )
+                if current_q_id is not None:
+                    if ignore(overlap_data):
+                        ignore_rtn.append( current_q_id )
                 overlap_data = {"5p":0, "3p":0}
                 current_q_id = q_id
                 ave_idt = 0.0
