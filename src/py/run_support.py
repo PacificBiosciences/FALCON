@@ -265,9 +265,25 @@ def setup_logger(logging_config_fn):
     logger = logging.getLogger("fc_run")
     return logger
 
+def fasta_is_header(line):
+    return '/' in line or '>' in line
+
 def fasta_reformat(ifs, ofs):
+    header = None
+    bases = ''
     for line in ifs:
-        ofs.write(line)
+        line = line.strip()
+        if not fasta_is_header(line):
+            bases += line
+            continue
+        if header:
+            ofs.write(header + '\n')
+            ofs.write(bases + '\n')
+        header = line
+        bases = ''
+    if header:
+        ofs.write(header + '\n')
+        ofs.write(bases + '\n')
 
 def fasta_has_long_lines(ifs):
     maxlen = 2
@@ -275,13 +291,11 @@ def fasta_has_long_lines(ifs):
     bases = ''
     for line in ifs:
         line = line.strip()
-        if '/' not in line:
+        if not fasta_is_header(line):
             if len(line) > maxlen:
                 return True
-            #bases += line
             continue
         header = line
-        #bases = ''
     return False
 
 def fofn_contains_fasta(ifs):
