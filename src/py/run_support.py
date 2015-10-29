@@ -265,10 +265,21 @@ def setup_logger(logging_config_fn):
     logger = logging.getLogger("fc_run")
     return logger
 
+def WriteSplit(write, seq, split):
+    nfull = len(seq) // split
+    for i in range(nfull):
+        slice = seq[i*split:(i+1)*split]
+        write(''.join(slice))
+        write('\n')
+    if nfull*split < len(seq):
+        slice = seq[nfull*split:]
+        write(''.join(slice))
+        write('\n')
+
 def fasta_is_header(line):
     return '/' in line or '>' in line
 
-def fasta_reformat(ifs, ofs):
+def fasta_reformat(ifs, ofs, maxlen):
     header = None
     bases = ''
     for line in ifs:
@@ -278,15 +289,14 @@ def fasta_reformat(ifs, ofs):
             continue
         if header:
             ofs.write(header + '\n')
-            ofs.write(bases + '\n')
+            WriteSplit(ofs.write, bases, maxlen)
         header = line
         bases = ''
     if header:
         ofs.write(header + '\n')
-        ofs.write(bases + '\n')
+        WriteSplit(ofs.write, bases, maxlen)
 
-def fasta_has_long_lines(ifs):
-    maxlen = 2
+def fasta_has_long_lines(ifs, maxlen):
     header = None
     bases = ''
     for line in ifs:
@@ -315,13 +325,15 @@ def _fix_if_fasta(fofn_fn):
     """
     if not fofn_contains_fasta(open(fofn_fn)):
         return
+    maxlen = 60
     d = os.path.dirname(fofn_fn)
     fasta_fns = [line.strip() for line in open(fofn_fn)]
     with open(fofn_fn, 'w') as ofs:
         for old_fn in fasta_fns:
-            if fasta_has_long_lines(open(old_fn)):
+            if fasta_has_long_lines(open(old_fn), maxlen):
                 new_fn = os.path.join(d, 'linewrapped.' + os.path.basename(old_fn))
-                fasta_reformat(open(old_fn), open(new_fn, 'w'))
+                print 'line-wrapping %r -> %r' %(old_fn, new_fn)
+                fasta_reformat(open(old_fn), open(new_fn, 'w'), maxlen)
             else:
                 new_fn = old_fn
             ofs.write('%s\n' %new_fn)
