@@ -265,8 +265,60 @@ def setup_logger(logging_config_fn):
     logger = logging.getLogger("fc_run")
     return logger
 
+def fasta_reformat(ifs, ofs):
+    for line in ifs:
+        ofs.write(line)
+
+def fasta_has_long_lines(ifs):
+    maxlen = 2
+    header = None
+    bases = ''
+    for line in ifs:
+        line = line.strip()
+        if '/' not in line:
+            if len(line) > maxlen:
+                return True
+            #bases += line
+            continue
+        header = line
+        #bases = ''
+    return False
+
+def fofn_contains_fasta(ifs):
+    """Return whether fofn refers to fasta-files, best guess.
+    Assume no blank lines.
+    """
+    first_line = ifs.readline().strip()
+    return first_line.endswith('.fasta') or first_line.endswith('.fa')
+
+def _fix_if_fasta(fofn_fn):
+    """Fix fasta files listed in fofn.
+    If filenames are fasta, then scan for long lines.
+    If found, then copy to same dir as fofn_fn
+    and reformat.
+    Assume fofn_fn is writeable (and its directory).
+    Assume no blank lines.
+    """
+    if not fofn_contains_fasta(open(fofn_fn)):
+        return
+    d = os.path.dirname(fofn_fn)
+    fasta_fns = [line.strip() for line in open(fofn_fn)]
+    with open(fofn_fn, 'w') as ofs:
+        for old_fn in fasta_fns:
+            if fasta_has_long_lines(open(old_fn)):
+                new_fn = os.path.join(d, 'linewrapped.' + os.path.basename(old_fn))
+                fasta_reformat(open(old_fn), open(new_fn, 'w'))
+            else:
+                new_fn = old_fn
+            ofs.write('%s\n' %new_fn)
+
 def make_fofn_abs(i_fofn_fn, o_fofn_fn):
     """Copy i_fofn to o_fofn, but with relative filenames expanded for CWD.
+
+    Also, scan the filenames.
+    If fasta, then scan them for long lines.
+    If found, then copy and reformat for shorter lines.
+    This is needed for daligner, which currently cannot handle long lines.
     """
     assert os.path.abspath(o_fofn_fn) != os.path.abspath(i_fofn_fn)
     with open(i_fofn_fn) as ifs, open(o_fofn_fn, 'w') as ofs:
@@ -275,7 +327,7 @@ def make_fofn_abs(i_fofn_fn, o_fofn_fn):
             if not ifn: continue
             abs_ifn = os.path.abspath(ifn)
             ofs.write('%s\n' %abs_ifn)
-    #return o_fofn_fn
+    _fix_if_fasta(o_fofn_fn)
 
 def make_dirs(d):
     if not os.path.isdir(d):
