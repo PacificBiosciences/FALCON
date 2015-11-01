@@ -12,9 +12,18 @@ def run_filter_stage1(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len):
     with reader:
         return fn, filter_stage1(reader.readlines, max_diff, max_ovlp, min_ovlp, min_len)
 def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
+        def ignore(overlap_data):
+            left_count = overlap_data["5p"]
+            right_count = overlap_data["3p"]
+            if abs(left_count - right_count) > max_diff:
+                return True
+            elif left_count > max_ovlp or right_count > max_ovlp:
+                return True
+            elif left_count < min_ovlp or right_count < min_ovlp:
+                return True
+
         ignore_rtn = []
         current_q_id = None
-        contained = False
         ave_idt = 0.0
         all_over_len = 0.0
         overlap_data = {"5p":0, "3p":0}
@@ -23,21 +32,12 @@ def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
             l = l.strip().split()
             q_id, t_id = l[:2]
 
-            if q_id != None and q_id != current_q_id:
-
-                left_count = overlap_data["5p"]
-                right_count = overlap_data["3p"]
-            
-                if abs(left_count - right_count) > max_diff:
-                    ignore_rtn.append( current_q_id )
-                elif left_count > max_ovlp or right_count > max_ovlp:
-                    ignore_rtn.append( current_q_id )
-                elif left_count < min_ovlp or right_count < min_ovlp: 
-                    ignore_rtn.append( current_q_id )
-
+            if q_id != current_q_id:
+                if current_q_id is not None:
+                    if ignore(overlap_data):
+                        ignore_rtn.append( current_q_id )
                 overlap_data = {"5p":0, "3p":0}
                 current_q_id = q_id
-                contained = False
                 ave_idt = 0.0
                 all_over_len = 0.0
 
@@ -46,31 +46,20 @@ def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
             q_s, q_e, q_l = int(l[5]), int(l[6]), int(l[7])
             t_s, t_e, t_l = int(l[9]), int(l[10]), int(l[11])
 
-            if idt < 90:
+            if idt < 90.0:
                 continue
-
             if q_l < min_len or t_l < min_len:
                 continue
-
-            if not contained:
-                if l[-1] in ("contains", "overlap"):
-                    ave_idt += idt * overlap_len
-                    all_over_len += overlap_len
-                if q_s == 0:
-                    overlap_data["5p"] += 1
-                elif q_e == q_l:
-                    overlap_data["3p"] += 1
-
-        if q_id !=  None:
-            left_count = overlap_data["5p"]
-            right_count = overlap_data["3p"]
-            if abs(left_count - right_count) > max_diff:
+            if l[-1] in ("contains", "overlap"):
+                ave_idt += idt * overlap_len
+                all_over_len += overlap_len
+            if q_s == 0:
+                overlap_data["5p"] += 1
+            if q_e == q_l:
+                overlap_data["3p"] += 1
+        if q_id is not None:
+            if ignore(overlap_data):
                 ignore_rtn.append( current_q_id )
-            elif left_count > max_ovlp or right_count > max_ovlp:
-                ignore_rtn.append( current_q_id )
-            elif left_count < min_ovlp or right_count < min_ovlp: 
-                ignore_rtn.append( current_q_id )
-            
         return ignore_rtn
 
 def run_filter_stage2(db_fn, fn, max_diff, max_ovlp, min_ovlp, min_len, ignore_set):

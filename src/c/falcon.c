@@ -308,7 +308,8 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
                                           unsigned t_len, 
                                           unsigned min_cov ) {
 
-    seq_coor_t i, j, t_pos;
+    seq_coor_t i, j;
+    seq_coor_t t_pos = 0;
     unsigned int * coverage;
     unsigned int * local_nbase;
 
@@ -357,6 +358,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
                 coverage[ t_pos ] ++;
             }
             // Assume t_pos was set on earlier iteration.
+            // (Otherwise, use its initial value, which might be an error. ~cd)
             if (delta > msa_array[t_pos]->max_delta) {
                 msa_array[t_pos]->max_delta = delta;
                 if (msa_array[t_pos]->max_delta + 4 > msa_array[t_pos]->size ) {
@@ -364,7 +366,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
                 }
             }
             
-            unsigned int base;
+            unsigned int base = -1;
             switch (c_tag->q_base) {
                 case 'A': base = 0; break;
                 case 'C': base = 1; break;
@@ -372,7 +374,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
                 case 'T': base = 3; break;
                 case '-': base = 4; break;
             }
-            // Note: On bad input, base may be uninitialized.
+            // Note: On bad input, base may be -1.
             update_col( &(msa_array[t_pos]->delta[delta].base[base]), c_tag->p_t_pos, c_tag->p_delta, c_tag->p_q_base);
             local_nbase[ t_pos ] ++;
         }
@@ -475,7 +477,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
 
     // reconstruct the sequences
     unsigned int index;
-    char bb;
+    char bb = '$';
     int ck;
     char * cns_str;
     int * eqv;
@@ -509,7 +511,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
                 case 4: bb = '-'; break;
             }
         }
-        // Note: On bad input, bb will keep previous value, possibly unitialized.
+        // Note: On bad input, bb will keep previous value, possibly '$'.
 
         score0 = g_best_aln_col->score;
         i = g_best_aln_col->best_p_t_pos;
