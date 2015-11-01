@@ -429,7 +429,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     fc_run_logger = support.setup_logger(logger_config_fn)
 
     fc_run_logger.info( "fc_run started with configuration %s", input_config_fn ) 
-    config = support.get_config(support.parse_config(input_config_fn))
+    config = support.get_dict_from_old_falcon_cfg(support.parse_config(input_config_fn))
     rawread_dir = os.path.abspath("./0-rawreads")
     pread_dir = os.path.abspath("./1-preads_ovl")
     falcon_asm_dir  = os.path.abspath("./2-asm-falcon")
