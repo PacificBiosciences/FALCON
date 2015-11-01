@@ -73,12 +73,37 @@ def make_job_data(url, script_fn):
                 "script_fn": script_fn }
     return job_data
 
+def validate_config_dict(cd):
+    pass
+
+def get_config(config):
+    """Temporary version for pbsmrtpipe.
+    This will add missing (but curently required) options and use
+    get_dict_from_old_falcon_cfg() below.
+    The plan is to pass a simpler config from pbsmrtpipe,
+    but that will be in a different commit.
+    Side-effect: Update 'config'.
+    """
+    section = 'General'
+    def add(name, val):
+        if not config.has_option(section, name):
+            config.set(section, name, val)
+    add('input_fofn', 'NA')
+    add('target', 'assembly')
+    add('sge_option_da', 'NA')
+    add('sge_option_la', 'NA')
+    add('sge_option_pda', 'NA')
+    add('sge_option_pda', 'NA')
+    add('sge_option_fc', 'NA')
+    add('sge_option_cns', 'NA')
+    return get_dict_from_old_falcon_cfg(config)
+
 def parse_config(config_fn):
     config = ConfigParser.ConfigParser()
     config.read(config_fn)
     return config
 
-def get_config(config):
+def get_dict_from_old_falcon_cfg(config):
     global job_type  # TODO: Stop using global for wait_for_file().
     job_type = "SGE"
     if config.has_option('General', 'job_type'):

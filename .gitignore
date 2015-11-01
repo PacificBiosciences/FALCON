@@ -7,3 +7,4 @@ falcon_kit.egg-info/
 *.so
 *.dylib
 *.dll
+*.egg
