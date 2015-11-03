@@ -93,7 +93,7 @@ def get_config(config):
     add('sge_option_da', 'NA')
     add('sge_option_la', 'NA')
     add('sge_option_pda', 'NA')
-    add('sge_option_pda', 'NA')
+    add('sge_option_pla', 'NA')
     add('sge_option_fc', 'NA')
     add('sge_option_cns', 'NA')
     return get_dict_from_old_falcon_cfg(config)
