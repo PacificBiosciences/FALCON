@@ -299,11 +299,20 @@ def fasta_reformat(ifs, ofs, maxlen):
 def fasta_has_long_lines(ifs, maxlen):
     header = None
     bases = ''
+    lens = []
     for line in ifs:
         line = line.strip()
         if not fasta_is_header(line):
             if len(line) > maxlen:
                 return True
+            if len(lens) < 3:
+                lens.append(len(line))
+                if len(lens) == 3:
+                    if all(lens, lambda x: x==maxlen):
+                        # The first 3 are exactly maxlen,
+                        # So assume everything is fine.
+                        # This saves time.
+                        return False
             continue
         header = line
     return False
