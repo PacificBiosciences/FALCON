@@ -417,6 +417,7 @@ def run_daligner(daligner_cmd, db_prefix, nblock, config, job_done, script_fn):
         src_dir = os.path.abspath(os.path.dirname(cwd)) # by convention
         script.extend(use_tmpdir_for_files(basenames, src_dir, dst_dir))
     script.append( "time "+ daligner_cmd )
+    script.append( "set +vx" )
     script.append( "date" )
 
     for p_id in xrange( 1, nblock+1 ):
