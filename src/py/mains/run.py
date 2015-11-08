@@ -277,6 +277,38 @@ def task_run_consensus(self):
     run_script(job_data, job_type = config["job_type"])
     wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
+def mkdir(d):
+    if not os.path.isdir(d):
+        os.makedirs(d)
+
+def task_daligner_gather(self):
+    da_done = fn(self.da_done)
+    main_dir = os.path.dirname(da_done)
+    out_dict = self.inputDataObjs
+    nblock = self.parameters['nblock']
+    fc_run_logger.debug('nblock=%d, out_dir:\n%s'%(nblock, out_dict))
+
+    # Create m_* dirs.
+    for block in xrange(1, nblock+1):
+        mdir = os.path.join(main_dir, 'm_%05d' %block) # By convention. pbsmrtpipe works differently.
+        mkdir(mdir)
+        # TODO: Remove existing symlinks?
+
+    # Symlink all daligner *.las.
+    # Could be L1.* or preads.*
+    re_las = re.compile(r'\.(\d*)(\.\d*)?\.las$')
+    for dal_done in out_dict.values():
+        job_rundir = os.path.dirname(fn(dal_done))
+        for las_fn in os.listdir(job_rundir):
+            mo = re_las.search(las_fn)
+            if not mo:
+                continue
+            block = int(mo.group(1)) # We will merge in the m_* dir of the left block.
+            mdir = os.path.join(main_dir, 'm_%05d' %block) # By convention. pbsmrtpipe works differently.
+            las_path = os.path.join('..', os.path.basename(job_rundir), las_fn)
+            cmd = 'ln -sf {} {}'.format(las_path, mdir)
+            system(cmd)
+    system("touch %s" %da_done)
 
 def get_nblock(db_file):
     nblock = 1
@@ -473,19 +505,22 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         db_file = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
         raw_reads_nblock = get_nblock(fn(db_file))
         #### run daligner
-        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", raw_reads_nblock, rdb_build_done, config)
+        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", raw_reads_nblock, rdb_build_done, config) 
 
         wf.addTasks(daligner_tasks)
         #wf.refreshTargets(updateFreq = 60) # larger number better for more jobs
         r_da_done = makePypeLocalFile( os.path.join( rawread_dir, "da_done") )
 
-        @PypeTask( inputs = daligner_out, 
+        parameters =  {
+                "nblock": raw_reads_nblock,
+        }
+        make_daligner_gather = PypeTask(
+                   inputs = daligner_out, 
                    outputs =  {"da_done":r_da_done},
+                   parameters = parameters,
                    TaskType = PypeThreadTaskBase,
                    URL = "task://localhost/rda_check" )
-        def check_r_da_task(self):
-            system("touch %s" % fn(self.da_done))
-        
+        check_r_da_task = make_daligner_gather(task_daligner_gather)
         wf.addTask(check_r_da_task)
         wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
         
@@ -555,19 +590,21 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     config["sge_option_da"] = config["sge_option_pda"]
     config["sge_option_la"] = config["sge_option_pla"]
-    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", preads_nblock, pdb_build_done, config, pread_aln= True)
+    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", preads_nblock, pdb_build_done, config, pread_aln= True) 
     wf.addTasks(daligner_tasks)
     #wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
 
     p_da_done = makePypeLocalFile( os.path.join( pread_dir, "da_done") )
-
-    @PypeTask( inputs = daligner_out, 
-               outputs =  {"da_done":p_da_done},
-               TaskType = PypeThreadTaskBase,
-               URL = "task://localhost/pda_check" )
-    def check_p_da_task(self):
-        system("touch %s" % fn(self.da_done))
-    
+    parameters =  {
+            "nblock": preads_nblock,
+    }
+    make_daligner_gather = PypeTask(
+                inputs = daligner_out, 
+                outputs =  {"da_done":p_da_done},
+                parameters = parameters,
+                TaskType = PypeThreadTaskBase,
+                URL = "task://localhost/pda_check" )
+    check_p_da_task = make_daligner_gather(task_daligner_gather)
     wf.addTask(check_p_da_task)
 
     merge_tasks, merge_out, consensus_tasks, consensus_out = create_merge_tasks(fn(run_jobs), pread_dir, "preads", p_da_done, config)
