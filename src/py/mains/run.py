@@ -334,9 +334,7 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, nblock, rdb_build_done, co
     line_count = 0
     job_descs = get_daligner_job_descriptions(open(run_jobs_fn), db_prefix)
     for desc, bash in job_descs.iteritems():
-        #job_uid = hashlib.md5(bash).hexdigest()
-        #job_uid = job_uid[:8]
-        job_uid = '%08d' %line_count
+        job_uid = '%04x' %line_count
         line_count += 1
 
         support.make_dirs(os.path.join( wd, "./job_%s" % job_uid))
