@@ -292,12 +292,10 @@ def get_nblock(db_file):
     # Ignore new_db for now.
     return nblock
 
-def create_daligner_tasks(run_jobs_fn, wd, db_prefix, db_file, rdb_build_done, config, pread_aln = False):
+def create_daligner_tasks(run_jobs_fn, wd, db_prefix, nblock, rdb_build_done, config, pread_aln = False):
     job_id = 0
     tasks = []
     tasks_out = {}
-
-    nblock = get_nblock(fn(db_file))
 
     xform_script = get_script_xformer(pread_aln)
 
@@ -473,12 +471,12 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         wf.refreshTargets([rdb_build_done]) 
 
         db_file = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
+        raw_reads_nblock = get_nblock(fn(db_file))
         #### run daligner
-        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", db_file, rdb_build_done, config) 
+        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", raw_reads_nblock, rdb_build_done, config)
 
         wf.addTasks(daligner_tasks)
         #wf.refreshTargets(updateFreq = 60) # larger number better for more jobs
-
         r_da_done = makePypeLocalFile( os.path.join( rawread_dir, "da_done") )
 
         @PypeTask( inputs = daligner_out, 
@@ -551,12 +549,13 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
 
     db_file = makePypeLocalFile(os.path.join( pread_dir, "%s.db" % "preads" ))
+    preads_nblock = get_nblock(fn(db_file))
     #### run daligner
     concurrent_jobs = config["ovlp_concurrent_jobs"]
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     config["sge_option_da"] = config["sge_option_pda"]
     config["sge_option_la"] = config["sge_option_pla"]
-    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", db_file, pdb_build_done, config, pread_aln= True) 
+    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", preads_nblock, pdb_build_done, config, pread_aln= True)
     wf.addTasks(daligner_tasks)
     #wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
 
