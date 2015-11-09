@@ -324,7 +324,7 @@ def get_nblock(db_file):
     # Ignore new_db for now.
     return nblock
 
-def create_daligner_tasks(run_jobs_fn, wd, db_prefix, nblock, rdb_build_done, config, pread_aln = False):
+def create_daligner_tasks(run_jobs_fn, wd, db_prefix, nblock, rdb_build_done, config, pread_aln=False):
     job_id = 0
     tasks = []
     tasks_out = {}
