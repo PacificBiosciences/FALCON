@@ -10,7 +10,6 @@ Reader = io.CapturedProcessReaderContext
 
 def filter_stats(readlines, min_len):
         current_q_id = None
-        contained = False
         ave_idt = 0.0
         all_over_len = 0.0
         overlap_data = {"5p":0, "3p":0}
@@ -29,7 +28,6 @@ def filter_stats(readlines, min_len):
                     rtn_data.append( (current_q_id, q_l, left_count, right_count  ) )
                 overlap_data = {"5p":0, "3p":0}
                 current_q_id = q_id
-                contained = False
                 ave_idt = 0.0
                 all_over_len = 0.0
 
@@ -44,14 +42,13 @@ def filter_stats(readlines, min_len):
             if idt < 90:
                 continue
 
-            if not contained:
-                if l[-1] in ("contains", "overlap"):
-                    ave_idt += idt * overlap_len
-                    all_over_len += overlap_len
-                if q_s == 0:
-                    overlap_data["5p"] += 1
-                elif q_e == q_l:
-                    overlap_data["3p"] += 1
+            if l[-1] in ("contains", "overlap"):
+                ave_idt += idt * overlap_len
+                all_over_len += overlap_len
+            if q_s == 0:
+                overlap_data["5p"] += 1
+            if q_e == q_l:
+                overlap_data["3p"] += 1
 
         if q_id != None:
             left_count = overlap_data["5p"]
