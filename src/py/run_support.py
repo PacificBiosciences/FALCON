@@ -344,7 +344,7 @@ def build_rdb(input_fofn_fn, work_dir, config, job_done, script_fn, run_jobs_fn)
         script_file.write("touch {job_done}\n".format(job_done = job_done))
 
 def build_pdb(input_fofn_fn, work_dir, config, job_done, script_fn, run_jobs_fn):
-    length_cutoff = config["length_cutoff_pr"]
+    length_cutoff_pr = config["length_cutoff_pr"]
     ovlp_HPCdaligner_option = config["ovlp_HPCdaligner_option"]
     ovlp_DBsplit_option = config["ovlp_DBsplit_option"]
 
@@ -355,9 +355,9 @@ def build_pdb(input_fofn_fn, work_dir, config, job_done, script_fn, run_jobs_fn)
         script_file.write("hostname\n")
         script_file.write("date\n")
         script_file.write("fasta2DB -v preads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
-        script_file.write("DBsplit -x%d %s preads\n" % (length_cutoff, ovlp_DBsplit_option))
+        script_file.write("DBsplit %s preads\n" % (ovlp_DBsplit_option))
         script_file.write("HPCdaligner %s -H%d preads > %s\n" %(
-            ovlp_HPCdaligner_option, length_cutoff, run_jobs_fn))
+            ovlp_HPCdaligner_option, length_cutoff_pr, run_jobs_fn))
         script_file.write("touch {job_done}\n".format(job_done = job_done))
 
 def run_falcon_asm(pread_dir, db_file, config, job_done, script_fn):
