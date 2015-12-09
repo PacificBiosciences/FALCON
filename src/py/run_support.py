@@ -161,7 +161,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option('General', 'falcon_sense_option'):
         falcon_sense_option = config.get('General', 'falcon_sense_option')
 
-    falcon_sense_skip_contained = "False"
+    falcon_sense_skip_contained = False
     if config.has_option('General', 'falcon_sense_skip_contained'):
         falcon_sense_skip_contained = config.get('General', 'falcon_sense_skip_contained')
         if falcon_sense_skip_contained in ["True", "true", "1"]:
