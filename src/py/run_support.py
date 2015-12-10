@@ -1,7 +1,9 @@
+from . import bash
 import ConfigParser
 import logging
 import logging.config
 import os
+import re
 import StringIO
 import sys
 import tempfile
@@ -306,170 +308,65 @@ def make_dirs(d):
     if not os.path.isdir(d):
         os.makedirs(d)
 
-def build_rdb(input_fofn_fn, work_dir, config, job_done, script_fn, run_jobs_fn):
-    length_cutoff = config["length_cutoff"]
-    pa_HPCdaligner_option = config["pa_HPCdaligner_option"]
-    pa_DBsplit_option = config["pa_DBsplit_option"]
-    openending = config["openending"]
-
-    last_block = 1
+def get_nblock(db_file):
+    """Return #blocks in dazzler-db.
+    """
+    nblock = 1
     new_db = True
-    if os.path.exists( os.path.join(work_dir, "raw_reads.db") ):
-        with open(  os.path.join(work_dir, "raw_reads.db") ) as f:
+    if os.path.exists(db_file):
+        with open(db_file) as f:
             for l in f:
                 l = l.strip().split()
                 if l[0] == "blocks" and l[1] == "=":
-                    last_block = int(l[2])
+                    nblock = int(l[2])
                     new_db = False
                     break
+    # Ignore new_db for now.
+    return nblock
 
-    with open(script_fn,"w") as script_file:
-        script_file.write("set -vex\n")
-        script_file.write("trap 'touch {job_done}.exit' EXIT\n".format(job_done = job_done))
-        script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
-        script_file.write("hostname\n")
-        script_file.write("date\n")
-        #script_file.write("for f in `cat {input_fofn_fn}`; do fasta2DB raw_reads $f; done\n".format(input_fofn_fn = input_fofn_fn))
-        script_file.write("fasta2DB -v raw_reads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
-        if new_db  == True:
-            script_file.write("DBsplit %s raw_reads\n" % pa_DBsplit_option)
-            script_file.write("date\n")
-        if openending == True:
-            script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')\n""")
-        else:
-            script_file.write("""LB=$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')\n""")
-        script_file.write("HPCdaligner %s -H%d raw_reads %d-$LB > %s\n" %(
-            pa_HPCdaligner_option, length_cutoff, last_block, run_jobs_fn))
-        script_file.write("date\n")
-        script_file.write("touch {job_done}\n".format(job_done = job_done))
+def daligner_gather_las(job_rundirs):
+    """Return list of (block, las_fn).
+    """
+    # Could be L1.* or preads.*
+    re_las = re.compile(r'\.(\d*)(\.\d*)?\.las$')
+    for job_rundir in job_rundirs:
+        # 'out' sub-dir by convention. See run_daligner() above. (Improve that someday.)
+        for las_fn in os.listdir(job_rundir):
+            mo = re_las.search(las_fn)
+            if not mo:
+                continue
+            block = int(mo.group(1)) # We will merge in the m_* dir of the left block.
+            yield block, os.path.join(job_rundir, las_fn)
 
-def build_pdb(input_fofn_fn, work_dir, config, job_done, script_fn, run_jobs_fn):
-    length_cutoff_pr = config["length_cutoff_pr"]
-    ovlp_HPCdaligner_option = config["ovlp_HPCdaligner_option"]
-    ovlp_DBsplit_option = config["ovlp_DBsplit_option"]
+def build_rdb(input_fofn_fn, config, job_done, script_fn, run_jobs_fn):
+    script = bash.script_build_rdb(config, input_fofn_fn, run_jobs_fn)
+    bash.write_script_and_wrapper(script, script_fn, job_done, job_done+'.exit')
 
-    with open(script_fn,"w") as script_file:
-        script_file.write("set -vex\n")
-        script_file.write("trap 'touch {job_done}.exit' EXIT\n".format(job_done = job_done))
-        script_file.write("cd {work_dir}\n".format(work_dir = work_dir))
-        script_file.write("hostname\n")
-        script_file.write("date\n")
-        script_file.write("fasta2DB -v preads -f{input_fofn_fn}\n".format(input_fofn_fn = input_fofn_fn))
-        script_file.write("DBsplit %s preads\n" % (ovlp_DBsplit_option))
-        script_file.write("HPCdaligner %s -H%d preads > %s\n" %(
-            ovlp_HPCdaligner_option, length_cutoff_pr, run_jobs_fn))
-        script_file.write("touch {job_done}\n".format(job_done = job_done))
+def build_pdb(input_fofn_fn, config, job_done, script_fn, run_jobs_fn):
+    script = bash.script_build_pdb(config, input_fofn_fn, run_jobs_fn)
+    bash.write_script_and_wrapper(script, script_fn, job_done, job_done+'.exit')
+
+def run_db2falcon(config, job_done, script_fn):
+    script = bash.script_run_DB2Falcon(config)
+    bash.write_script_and_wrapper(script, script_fn, job_done, job_done+'.exit')
 
 def run_falcon_asm(pread_dir, db_file, config, job_done, script_fn):
-    wd = os.path.dirname(script_fn)
-    overlap_filtering_setting = config["overlap_filtering_setting"]
-    length_cutoff_pr = config["length_cutoff_pr"]
+    script = bash.script_run_falcon_asm(config, pread_dir, db_file)
+    bash.write_script_and_wrapper(script, script_fn, job_done, job_done+'.exit')
 
-    script = []
-    script.append( "set -vex" )
-    script.append( "trap 'touch %s.exit' EXIT" % job_done )
-    script.append( "cd %s" % pread_dir )
-    script.append("date")
-    # Given preads.db,
-    # write preads4falcon.fasta, in 1-preads_ovl:
-    script.append( "DB2Falcon -U preads")
-    script.append("date")
-    script.append( "cd %s" % wd )
-    # Generate las.fofn:
-    script.append( """find %s/las_files -name "*.las" > las.fofn """ % pread_dir )
-    # Given, las.fofn,
-    # write preads.ovl:
-    script.append( """fc_ovlp_filter --db %s --fofn las.fofn %s --min_len %d > preads.ovl""" %\
-            (db_file, overlap_filtering_setting, length_cutoff_pr) )
-    script.append("date")
-    script.append( "ln -sf %s/preads4falcon.fasta ." % pread_dir)
-    # TODO: Figure out which steps need preads4falcon.fasta.
-
-    # Given preads.ovl,
-    # write sg_edges_list, c_path, utg_data, ctg_paths.
-    script.append( """fc_ovlp_to_graph preads.ovl --min_len %d > fc_ovlp_to_graph.log""" % length_cutoff_pr) # TODO: drop this logfile
-    script.append("date")
-    # Given sg_edges_list, utg_data, ctg_paths,
-    # Write p_ctg.fa and a_ctg_all.fa,
-    # plus a_ctg_base.fa, p_ctg_tiling_path, a_ctg_tiling_path, a_ctg_base_tiling_path:
-    script.append( """fc_graph_to_contig""" )
-    script.append("date")
-    # Given a_ctg_all.fa, write a_ctg.fa:
-    script.append( """fc_dedup_a_tigs""" )
-    script.append("date")
-    script.append( """touch %s""" % job_done)
-
-    with open(script_fn, "w") as script_file:
-        script_file.write("\n".join(script) + '\n')
-
-def run_daligner(daligner_cmd, db_prefix, config, job_done, script_fn):
-    cwd = os.path.dirname(script_fn)
-
-    script = []
-    script.append( "set -vex" )
-    script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done) )
-    script.append( "cd %s" % cwd )
-    script.append( "hostname" )
-    script.append( "date" )
+def run_daligner(daligner_script, db_prefix, config, job_done, script_fn):
     if config['use_tmpdir']:
-        basenames = [pattern.format(db_prefix) for pattern in ('.{}.idx', '.{}.bps', '{}.db')]
-        dst_dir = os.path.abspath(cwd)
-        src_dir = os.path.abspath(os.path.dirname(cwd)) # by convention
-        script.extend(use_tmpdir_for_files(basenames, src_dir, dst_dir))
-    script.append( "time "+ daligner_cmd )
-    script.append( "date" )
-    script.append( "touch {job_done}".format(job_done = job_done) )
+        # Really, we want to copy the symlinked db to tmpdir.
+        # The output is fine in NFS.
+        # Tricky. TODO.
+        logger.warning('use_tmpdir currently ignored')
+    bash.write_script_and_wrapper(daligner_script, script_fn, job_done, job_done+'.exit')
 
-    with open(script_fn,"w") as script_file:
-        script_file.write("\n".join(script) + '\n')
-
-def run_las_merge(p_script_fn, job_done, config, script_fn):
-    cwd = os.path.dirname(script_fn)
-    script = []
-    script.append( "set -vex" )
-    script.append( "trap 'touch {job_done}.exit' EXIT".format(job_done = job_done) )
-    script.append( "cd %s" % cwd )
-    script.append( "hostname" )
-    script.append( "time bash %s" % p_script_fn )
-    script.append( "touch {job_done}".format(job_done = job_done) )
-
-    with open(script_fn,"w") as script_file:
-        script_file.write("date\n")
-        script_file.write("\n".join(script) + '\n')
-        script_file.write("date\n")
+def run_las_merge(script, job_done, config, script_fn):
+    bash.write_script_and_wrapper(script, script_fn, job_done, job_done+'.exit')
 
 def run_consensus(job_id, out_file_fn, prefix, config, job_done, script_fn):
-    cwd = os.path.dirname(script_fn)
-    falcon_sense_option = config["falcon_sense_option"]
-    length_cutoff = config["length_cutoff"]
-
-    script = []
-    script.append("set -vex")
-    script.append("set -o pipefail")
-    script.append("trap 'touch {job_done}.exit' EXIT".format(job_done = job_done))
-    script.append("cd ..")
-    script.append( "date" )
-    pipe = ''
-    if config["falcon_sense_skip_contained"]:
-        pipe += """LA4Falcon -H%d -fso %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id)
-    else:
-        pipe += """LA4Falcon -H%d -fo %s las_files/%s.%d.las | """ % (length_cutoff, prefix, prefix, job_id)
-    pipe += """fc_consensus %s > %s""" % (falcon_sense_option, out_file_fn)
-    script.append(pipe)
-    script.append("date")
-    script.append("touch {job_done}".format(job_done = job_done))
-
-    c_script_fn = os.path.join(cwd, "cp_%05d.sh" % job_id)
-    with open(c_script_fn, "w") as f:
-        f.write('\n'.join(script + ['']))
-
-    script = []
-    script.append( "set -vex" )
-    script.append( "cd %s" % cwd )
-    script.append( "hostname" )
-    script.append( "date" )
-    script.append( "time bash %s" %os.path.basename(c_script_fn) )
-    script.append( "date" )
-
-    with open(script_fn,"w") as f:
-        f.write("\n".join(script + ['']))
+    db_fn = '../{prefix}'.format(**locals())
+    las_fn = '../las_files/{prefix}.{job_id}.las'.format(**locals())
+    script = bash.script_run_consensus(config, db_fn, las_fn, os.path.basename(out_file_fn))
+    bash.write_script_and_wrapper(script, script_fn, job_done, job_done+'.exit')
