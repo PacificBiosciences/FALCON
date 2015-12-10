@@ -402,7 +402,7 @@ def run_falcon_asm(pread_dir, db_file, config, job_done, script_fn):
     with open(script_fn, "w") as script_file:
         script_file.write("\n".join(script) + '\n')
 
-def run_daligner(daligner_cmd, db_prefix, nblock, config, job_done, script_fn):
+def run_daligner(daligner_cmd, db_prefix, config, job_done, script_fn):
     cwd = os.path.dirname(script_fn)
 
     script = []

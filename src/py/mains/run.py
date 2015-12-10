@@ -209,7 +209,6 @@ def task_run_daligner(self):
     job_uid = self.parameters["job_uid"]
     cwd = self.parameters["cwd"]
     db_prefix = self.parameters["db_prefix"]
-    nblock = self.parameters["nblock"]
     config = self.parameters["config"]
     sge_option_da = config["sge_option_da"]
     script_dir = os.path.join( cwd )
@@ -217,7 +216,6 @@ def task_run_daligner(self):
     args = {
         'daligner_cmd': daligner_cmd,
         'db_prefix': db_prefix,
-        'nblock': nblock,
         'config': config,
         'job_done': job_done,
         'script_fn': script_fn,
@@ -324,8 +322,7 @@ def get_nblock(db_file):
     # Ignore new_db for now.
     return nblock
 
-def create_daligner_tasks(run_jobs_fn, wd, db_prefix, nblock, rdb_build_done, config, pread_aln=False):
-    job_id = 0
+def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, config, pread_aln=False):
     tasks = []
     tasks_out = {}
 
@@ -348,7 +345,6 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, nblock, rdb_build_done, co
                         "cwd": os.path.join(wd, "job_%s" % job_uid),
                         "job_uid": job_uid,
                         "config": config,
-                        "nblock": nblock,
                         "db_prefix": db_prefix}
         make_daligner_task = PypeTask( inputs = {"rdb_build_done": rdb_build_done},
                                         outputs = {"job_done": job_done},
@@ -358,7 +354,6 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, nblock, rdb_build_done, co
         daligner_task = make_daligner_task( task_run_daligner )
         tasks.append( daligner_task )
         tasks_out[ "ajob_%s" % job_uid ] = job_done
-        job_id += 1
     return tasks, tasks_out
 
 def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
@@ -503,7 +498,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         db_file = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
         raw_reads_nblock = get_nblock(fn(db_file))
         #### run daligner
-        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", raw_reads_nblock, rdb_build_done, config) 
+        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", rdb_build_done, config) 
 
         wf.addTasks(daligner_tasks)
         #wf.refreshTargets(updateFreq = 60) # larger number better for more jobs
@@ -588,7 +583,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     config["sge_option_da"] = config["sge_option_pda"]
     config["sge_option_la"] = config["sge_option_pla"]
-    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", preads_nblock, pdb_build_done, config, pread_aln= True) 
+    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", pdb_build_done, config, pread_aln=True)
     wf.addTasks(daligner_tasks)
     #wf.refreshTargets(updateFreq = 30) # larger number better for more jobs
 
