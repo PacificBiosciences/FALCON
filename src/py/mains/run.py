@@ -194,6 +194,7 @@ def task_run_db2falcon(self):
     support.run_db2falcon(**args)
 
     job_data = support.make_job_data(self.URL, script_fn)
+    job_data["sge_option"] = config["sge_option_fc"]
     run_script(job_data, job_type=config["job_type"])
     wait_for_file(job_done, task=self, job_name=job_data['job_name'])
 
