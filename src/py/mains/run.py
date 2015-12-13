@@ -12,7 +12,6 @@ import sys
 import time
 
 
-wait_time = 5
 fc_run_logger = None
 
 def system(call, check=False):
@@ -102,8 +101,10 @@ def wait_for_file(filename, task, job_name = ""):
     """We could be in the thread or sub-process which spawned a qsub job,
     so we must check for the shutdown_event.
     """
+    wait_time = .2
     while 1:
         time.sleep(wait_time)
+        wait_time = 10 if wait_time > 10 else wait_time + .2
         # We prefer all jobs to rely on `*done.exit`, but not all do yet. So we check that 1st.
         exit_fn = filename + '.exit'
         if os.path.exists(exit_fn):
@@ -461,12 +462,12 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                    URL = "task://localhost/rda_check" )
         check_r_da_task = make_daligner_gather(task_daligner_gather)
         wf.addTask(check_r_da_task)
-        wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
+        wf.refreshTargets()
         
         merge_tasks, merge_out, p_ids_merge_job_done = create_merge_tasks(fn(run_jobs), rawread_dir, "raw_reads", r_da_done, config)
         wf.addTasks( merge_tasks )
         if config["target"] == "overlapping":
-            wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs, need to call to run jobs here or the # of concurrency is changed
+            wf.refreshTargets()
             sys.exit(0)
         consensus_tasks, consensus_out = create_consensus_tasks(rawread_dir, "raw_reads", config, p_ids_merge_job_done)
         wf.addTasks( consensus_tasks )
@@ -489,7 +490,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
         concurrent_jobs = config["cns_concurrent_jobs"]
         PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
-        wf.refreshTargets(updateFreq = wait_time) # larger number better for more jobs
+        wf.refreshTargets()
 
     if config["target"] == "pre-assembly":
         sys.exit(0)
@@ -560,7 +561,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     concurrent_jobs = config["ovlp_concurrent_jobs"]
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
 
-    wf.refreshTargets(updateFreq = wait_time) #all
+    wf.refreshTargets()
 
     
     db2falcon_done = makePypeLocalFile( os.path.join(pread_dir, "db2falcon_done"))
@@ -584,7 +585,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                TaskType = PypeThreadTaskBase,
                URL = "task://localhost/falcon" )
     wf.addTask(make_run_falcon_asm(task_run_falcon_asm))
-    wf.refreshTargets(updateFreq = wait_time) #all
+    wf.refreshTargets()
 
 
 def main(argv=sys.argv):
