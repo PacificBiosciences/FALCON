@@ -1,6 +1,5 @@
 from .. import run_support as support
 from .. import bash
-from ..run_support import get_nblock #temp
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
 from pypeflow.controller import PypeThreadWorkflow
