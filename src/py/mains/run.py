@@ -279,10 +279,12 @@ def task_run_consensus(self):
     script_dir = os.path.join( cwd )
     job_done = os.path.join( cwd, "c_%05d_done" % job_id )
     script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
+    db_fn = '../{prefix}'.format(**locals())
+    las_fn = '../las_files/{prefix}.{job_id}.las'.format(**locals())
     args = {
-        'job_id': job_id,
+        'db_fn': db_fn,
+        'las_fn': las_fn,
         'out_file_fn': out_file_fn,
-        'prefix': prefix,
         'config': config,
         'job_done': job_done,
         'script_fn': script_fn,

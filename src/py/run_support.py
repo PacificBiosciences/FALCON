@@ -365,8 +365,6 @@ def run_daligner(daligner_script, db_prefix, config, job_done, script_fn):
 def run_las_merge(script, job_done, config, script_fn):
     bash.write_script_and_wrapper(script, script_fn, job_done, job_done+'.exit')
 
-def run_consensus(job_id, out_file_fn, prefix, config, job_done, script_fn):
-    db_fn = '../{prefix}'.format(**locals())
-    las_fn = '../las_files/{prefix}.{job_id}.las'.format(**locals())
+def run_consensus(db_fn, las_fn, out_file_fn, config, job_done, script_fn):
     script = bash.script_run_consensus(config, db_fn, las_fn, os.path.basename(out_file_fn))
     bash.write_script_and_wrapper(script, script_fn, job_done, job_done+'.exit')
