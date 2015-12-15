@@ -11,6 +11,9 @@ def mkdir(d):
         os.makedirs(d)
 
 def write_script_and_wrapper(script, wrapper_fn, job_done, job_exit):
+    """
+    job_done/_exit should be either abspath or relative to dir of wrapper_fn.
+    """
     wdir = os.path.dirname(wrapper_fn)
     #mkdir(wdir) # To avoid races, callers must do this.
     root, ext = os.path.splitext(os.path.basename(wrapper_fn))
@@ -31,11 +34,13 @@ def write_script_and_wrapper(script, wrapper_fn, job_done, job_exit):
         ofs.write(script)
     wrapper = """
 set -vex
-trap 'touch {job_exit}' EXIT
 cd {wdir}
+trap 'touch {job_exit}' EXIT
+ls -il {sub_script_bfn}
 hostname
 chmod +x {sub_script_bfn}
 touch {sub_script_bfn}
+ls -il {sub_script_bfn}
 time ./{sub_script_bfn}
 touch {job_done}
 """.format(**locals())
