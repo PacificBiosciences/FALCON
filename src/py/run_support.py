@@ -350,8 +350,8 @@ def run_db2falcon(config, job_done, script_fn):
     script = bash.script_run_DB2Falcon(config)
     bash.write_script_and_wrapper(script, script_fn, job_done, job_done+'.exit')
 
-def run_falcon_asm(pread_dir, db_file, config, job_done, script_fn):
-    script = bash.script_run_falcon_asm(config, pread_dir, db_file)
+def run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn, job_done, script_fn):
+    script = bash.script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn)
     bash.write_script_and_wrapper(script, script_fn, job_done, job_done+'.exit')
 
 def run_daligner(daligner_script, db_prefix, config, job_done, script_fn):

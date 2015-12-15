@@ -191,28 +191,26 @@ set -o pipefail
 """ %pipe
     return script.format(**params)
 
-def script_run_falcon_asm(config, pread_dir, db_file):
+def script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn):
     params = dict(config)
     params.update(locals())
     script = """\
-# Generate las.fofn:
-find {pread_dir}/las_files -name "*.las" >| las.fofn
-
 # Given, las.fofn,
 # write preads.ovl:
-time fc_ovlp_filter --db {db_file} --fofn las.fofn {overlap_filtering_setting} --min_len {length_cutoff_pr} >| preads.ovl
+time fc_ovlp_filter --db {db_file_fn} --fofn {las_fofn_fn} {overlap_filtering_setting} --min_len {length_cutoff_pr} >| preads.ovl
 
-ln -sf {pread_dir}/preads4falcon.fasta .
-# TODO: Figure out which steps need preads4falcon.fasta.
+ln -sf {preads4falcon_fasta_fn} ./preads4falcon.fasta 
 
 # Given preads.ovl,
 # write sg_edges_list, c_path, utg_data, ctg_paths.
 time fc_ovlp_to_graph preads.ovl --min_len {length_cutoff_pr} >| fc_ovlp_to_graph.log
 
-# Given sg_edges_list, utg_data, ctg_paths,
-# Write p_ctg.fa and a_ctg_all.fa,
+# Given sg_edges_list, utg_data, ctg_paths, preads4falcon.fasta,
+# write p_ctg.fa and a_ctg_all.fa,
 # plus a_ctg_base.fa, p_ctg_tiling_path, a_ctg_tiling_path, a_ctg_base_tiling_path:
 time fc_graph_to_contig
+
+rm -f ./preads4falcon.fasta
 
 # Given a_ctg_all.fa, write a_ctg.fa:
 time fc_dedup_a_tigs
