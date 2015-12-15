@@ -1,6 +1,5 @@
 from .. import run_support as support
 from .. import bash
-from ..run_support import get_nblock #temp
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
 from pypeflow.controller import PypeThreadWorkflow
@@ -208,9 +207,13 @@ def task_run_falcon_asm(self):
     pread_dir = self.parameters["pread_dir"]
     script_dir = os.path.join( wd )
     script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
+    # Generate las.fofn in run-dir.
+    system('cd {}; find {}/las_files -name "*.las" >| las.fofn'.format(wd, pread_dir))
+    las_fofn_fn = 'las.fofn'
     args = {
-        'pread_dir': pread_dir,
-        'db_file': db_file,
+        'las_fofn_fn': las_fofn_fn,
+        'preads4falcon_fasta_fn': os.path.join(pread_dir, 'preads4falcon.fasta'),
+        'db_file_fn': db_file,
         'config': config,
         'job_done': job_done,
         'script_fn': script_fn,
@@ -280,10 +283,12 @@ def task_run_consensus(self):
     script_dir = os.path.join( cwd )
     job_done = os.path.join( cwd, "c_%05d_done" % job_id )
     script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
+    db_fn = '../{prefix}'.format(**locals())
+    las_fn = '../las_files/{prefix}.{job_id}.las'.format(**locals())
     args = {
-        'job_id': job_id,
+        'db_fn': db_fn,
+        'las_fn': las_fn,
         'out_file_fn': out_file_fn,
-        'prefix': prefix,
         'config': config,
         'job_done': job_done,
         'script_fn': script_fn,

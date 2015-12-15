@@ -154,7 +154,7 @@ def validated_fns(fofn):
     """Return list of filenames from fofn.
     Assert none are empty or non-existent.
     """
-    fns = open(fofn).read().strip().split("\n")
+    fns = open(fofn).read().strip().split()
     for fn in fns:
         assert fn
         assert os.path.isfile(fn)
