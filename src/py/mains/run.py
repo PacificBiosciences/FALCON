@@ -1,7 +1,7 @@
 from .. import run_support as support
 from .. import bash
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
-from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
+from pypeflow.task import PypeTask, PypeThreadTaskBase
 from pypeflow.controller import PypeThreadWorkflow
 from falcon_kit.FastaReader import FastaReader
 import glob
