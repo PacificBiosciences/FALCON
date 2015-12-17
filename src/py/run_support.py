@@ -195,7 +195,8 @@ def get_dict_from_old_falcon_cfg(config):
     else:
         use_tmpdir = False
 
-    hgap_config = {"input_fofn_fn" : input_fofn_fn,
+    hgap_config = {"input_fofn_fn" : input_fofn_fn, # deprecated
+                   "input_fofn" : input_fofn_fn,
                    "target" : target,
                    "job_type" : job_type,
                    "input_type": input_type,
@@ -220,6 +221,11 @@ def get_dict_from_old_falcon_cfg(config):
                    "falcon_sense_skip_contained": falcon_sense_skip_contained,
                    "use_tmpdir": use_tmpdir,
                    }
+    provided = dict(config.items(section))
+    unused = set(provided) - set(k.lower() for k in hgap_config)
+    if unused:
+        import warnings
+        warnings.warn("Unexpected keys in input config: %s" %repr(unused))
 
     hgap_config["install_prefix"] = sys.prefix
 
