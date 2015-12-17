@@ -76,7 +76,7 @@ _run_scripts = {
         'LOCAL': _run_script_local,
 }
 
-def run_script(job_data, job_type = "SGE" ):
+def run_script(job_data, job_type):
     """For now, we actually modify the script before running it.
     This assume a simple bash script.
     We will have a better solution eventually.
@@ -109,15 +109,16 @@ def wait_for_file(filename, task, job_name = ""):
         if os.path.exists(exit_fn):
             fc_run_logger.info( "%r found." % (exit_fn) )
             fc_run_logger.debug( " job: %r exited." % (job_name) )
-            os.unlink(exit_fn) # to allow a restart later, if not done
             if not os.path.exists(filename):
                 fc_run_logger.warning( "%r is missing. job: %r failed!" % (filename, job_name) )
             break
-        if os.path.exists(filename) and not os.path.exists(exit_fn):
-            # (rechecked exit_fn to avoid race condition)
-            fc_run_logger.info( "%r not found, but job is done." % (exit_fn) )
-            fc_run_logger.debug( " job: %r exited." % (job_name) )
-            break
+        if os.path.exists(filename):
+            os.listdir(os.path.dirname(exit_fn)) # sync NFS
+            if not os.path.exists(exit_fn):
+                # (rechecked exit_fn to avoid race condition)
+                fc_run_logger.info( "%r not found, but job is done." % (exit_fn) )
+                fc_run_logger.debug( " job: %r exited." % (job_name) )
+                break
         if task.shutdown_event is not None and task.shutdown_event.is_set():
             fc_run_logger.warning( "shutdown_event received (Keyboard Interrupt maybe?), %r not finished."
                 % (job_name) )
