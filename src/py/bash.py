@@ -10,10 +10,14 @@ def mkdir(d):
     if not os.path.isdir(d):
         os.makedirs(d)
 
-def write_script_and_wrapper(script, wrapper_fn, job_done, job_exit):
+def write_script_and_wrapper(script, wrapper_fn, job_done):
     """
-    job_done/_exit should be either abspath or relative to dir of wrapper_fn.
+    Write script to a filename based on wrapper_fn, in same directory.
+    Write wrapper to call it,
+     and to write job_done on success and job_done.exit on any exit.
+    'job_done' should be either abspath or relative to dir of wrapper_fn.
     """
+    job_exit = job_done + '.exit'
     wdir = os.path.dirname(wrapper_fn)
     #mkdir(wdir) # To avoid races, callers must do this.
     root, ext = os.path.splitext(os.path.basename(wrapper_fn))

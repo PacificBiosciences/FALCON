@@ -76,7 +76,7 @@ _run_scripts = {
         'LOCAL': _run_script_local,
 }
 
-def run_script(job_data, job_type = "SGE" ):
+def run_script(job_data, job_type):
     """For now, we actually modify the script before running it.
     This assume a simple bash script.
     We will have a better solution eventually.
@@ -109,15 +109,16 @@ def wait_for_file(filename, task, job_name = ""):
         if os.path.exists(exit_fn):
             fc_run_logger.info( "%r found." % (exit_fn) )
             fc_run_logger.debug( " job: %r exited." % (job_name) )
-            os.unlink(exit_fn) # to allow a restart later, if not done
             if not os.path.exists(filename):
                 fc_run_logger.warning( "%r is missing. job: %r failed!" % (filename, job_name) )
             break
-        if os.path.exists(filename) and not os.path.exists(exit_fn):
-            # (rechecked exit_fn to avoid race condition)
-            fc_run_logger.info( "%r not found, but job is done." % (exit_fn) )
-            fc_run_logger.debug( " job: %r exited." % (job_name) )
-            break
+        if os.path.exists(filename):
+            os.listdir(os.path.dirname(exit_fn)) # sync NFS
+            if not os.path.exists(exit_fn):
+                # (rechecked exit_fn to avoid race condition)
+                fc_run_logger.info( "%r not found, but job is done." % (exit_fn) )
+                fc_run_logger.debug( " job: %r exited." % (job_name) )
+                break
         if task.shutdown_event is not None and task.shutdown_event.is_set():
             fc_run_logger.warning( "shutdown_event received (Keyboard Interrupt maybe?), %r not finished."
                 % (job_name) )
@@ -128,6 +129,31 @@ def wait_for_file(filename, task, job_name = ""):
                 fc_run_logger.info( "Deleting the job by 'scancel' now...")
                 system("scancel -n %s" % job_name)
             break
+
+def run_script_and_wait(URL, script_fn, job_done, task,
+        job_type, sge_option):
+    job_data = support.make_job_data(URL, script_fn)
+    job_data['sge_option'] = sge_option
+    run_script(job_data, job_type)
+    wait_for_file(job_done, task, job_name=job_data['job_name'])
+
+def run_script_and_wait_and_rm_exit(URL, script_fn, job_done, task,
+        job_type, sge_option):
+    try:
+        run_script_and_wait(URL, script_fn, job_done, task,
+            job_type, sge_option)
+    except:
+        # By convention, job_exit is based on job_done.
+        # See bash.write_script_and_wrapper().
+        job_exit = job_done + '.exit'
+        os.listdir(os.path.dirname(job_exit))
+        if os.path.exists(job_exit):
+            try:
+                # to allow a restart later, if not done
+                os.unlink(job_exit)
+            except:
+                pass
+        raise
 
 def task_make_fofn_abs_raw(self):
     return support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
@@ -151,18 +177,14 @@ def task_build_rdb(self):
         'run_jobs_fn': fn(self.run_jobs),
     }
     support.build_rdb(**args)
-
-    job_data = support.make_job_data(self.URL, script_fn)
-    job_data["sge_option"] = sge_option_da
-    run_script(job_data, job_type = config["job_type"])
-    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
+    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+        job_type=config['job_type'], sge_option=sge_option_da)
 
 def task_build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
     input_fofn_fn = fn(self.pread_fofn)
     job_done = fn(self.pdb_build_done)
     work_dir = self.parameters["work_dir"]
     config = self.parameters["config"]
-    sge_option_pda = config["sge_option_pda"]
 
     script_fn = os.path.join( work_dir, "prepare_pdb.sh" )
     args = {
@@ -173,11 +195,8 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
         'run_jobs_fn': fn(self.run_jobs),
     }
     support.build_pdb(**args)
-
-    job_data = support.make_job_data(self.URL, script_fn)
-    job_data["sge_option"] = sge_option_pda
-    run_script(job_data, job_type = config["job_type"])
-    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
+    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+        job_type=config['job_type'], sge_option=config['sge_option_pda'])
 
 def task_run_db2falcon(self):
     wd = self.parameters["wd"]
@@ -192,11 +211,8 @@ def task_run_db2falcon(self):
         'script_fn': script_fn,
     }
     support.run_db2falcon(**args)
-
-    job_data = support.make_job_data(self.URL, script_fn)
-    job_data["sge_option"] = config["sge_option_fc"]
-    run_script(job_data, job_type=config["job_type"])
-    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
+    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+        job_type=config['job_type'], sge_option=config['sge_option_fc'])
 
 def task_run_falcon_asm(self):
     wd = self.parameters["wd"]
@@ -219,11 +235,8 @@ def task_run_falcon_asm(self):
         'script_fn': script_fn,
     }
     support.run_falcon_asm(**args)
-
-    job_data = support.make_job_data(self.URL, script_fn)
-    job_data["sge_option"] = config["sge_option_fc"]
-    run_script(job_data, job_type = config["job_type"])
-    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
+    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+        job_type=config['job_type'], sge_option=config['sge_option_fc'])
 
 def task_run_daligner(self):
     job_done = fn(self.job_done)
@@ -244,11 +257,8 @@ def task_run_daligner(self):
         'script_fn': script_fn,
     }
     support.run_daligner(**args)
-
-    job_data = support.make_job_data(self.URL, script_fn)
-    job_data["sge_option"] = sge_option_da
-    run_script(job_data, job_type = config["job_type"])
-    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
+    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+        job_type=config['job_type'], sge_option=config['sge_option_da'])
 
 def task_run_las_merge(self):
     script = self.parameters["merge_script"]
@@ -267,11 +277,8 @@ def task_run_las_merge(self):
         'script_fn': script_fn,
     }
     support.run_las_merge(**args)
-
-    job_data = support.make_job_data(self.URL, script_fn)
-    job_data["sge_option"] = sge_option_la
-    run_script(job_data, job_type = config["job_type"])
-    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
+    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+        job_type=config['job_type'], sge_option=config['sge_option_la'])
 
 def task_run_consensus(self):
     out_file_fn = fn(self.out_file)
@@ -279,7 +286,6 @@ def task_run_consensus(self):
     cwd = self.parameters["cwd"]
     config = self.parameters["config"]
     prefix = self.parameters["prefix"]
-    sge_option_cns = config["sge_option_cns"]
     script_dir = os.path.join( cwd )
     job_done = os.path.join( cwd, "c_%05d_done" % job_id )
     script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
@@ -294,11 +300,8 @@ def task_run_consensus(self):
         'script_fn': script_fn,
     }
     support.run_consensus(**args)
-
-    job_data = support.make_job_data(self.URL, script_fn)
-    job_data["sge_option"] = sge_option_cns
-    run_script(job_data, job_type = config["job_type"])
-    wait_for_file(job_done, task=self, job_name=job_data['job_name'])
+    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+        job_type=config['job_type'], sge_option=config['sge_option_cns'])
 
 def mkdir(d):
     if not os.path.isdir(d):
