@@ -142,7 +142,7 @@ def run_script_and_wait_and_rm_exit(URL, script_fn, job_done, task,
     try:
         run_script_and_wait(URL, script_fn, job_done, task,
             job_type, sge_option)
-    except:
+    finally:
         # By convention, job_exit is based on job_done.
         # See bash.write_script_and_wrapper().
         job_exit = job_done + '.exit'
@@ -153,7 +153,9 @@ def run_script_and_wait_and_rm_exit(URL, script_fn, job_done, task,
                 os.unlink(job_exit)
             except:
                 pass
-        raise
+        else:
+            fc_run_logger.warn('In %r, job-exit-file %r does not exist.' %(
+                os.getcwd(), job_exit))
 
 def task_make_fofn_abs_raw(self):
     return support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
