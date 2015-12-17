@@ -193,6 +193,8 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'stop_all_jobs_on_failure'):
         stop_all_jobs_on_failure = config.getboolean(section, 'stop_all_jobs_on_failure')
     else:
+        # Good default. Rarely needed, since we already stop early if *all* tasks fail
+        # in a given refresh.
         stop_all_jobs_on_failure = False
     if config.has_option(section, 'use_tmpdir'):
         use_tmpdir = config.getboolean(section, 'use_tmpdir')
