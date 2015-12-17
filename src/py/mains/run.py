@@ -418,6 +418,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     for d in (rawread_dir, pread_dir, falcon_asm_dir, script_dir, sge_log_dir):
         support.make_dirs(d)
 
+    exitOnFailure=config['stop_all_jobs_on_failure'] # only matter for parallel jobs
     concurrent_jobs = config["pa_concurrent_jobs"]
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
     wf = PypeThreadWorkflow()
@@ -458,7 +459,6 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", rdb_build_done, config) 
 
         wf.addTasks(daligner_tasks)
-        #wf.refreshTargets(updateFreq = 60) # larger number better for more jobs
         r_da_done = makePypeLocalFile( os.path.join( rawread_dir, "da_done") )
 
         parameters =  {
@@ -472,12 +472,13 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                    URL = "task://localhost/rda_check" )
         check_r_da_task = make_daligner_gather(task_daligner_gather)
         wf.addTask(check_r_da_task)
-        wf.refreshTargets()
+        wf.refreshTargets(exitOnFailure=exitOnFailure)
         
         merge_tasks, merge_out, p_ids_merge_job_done = create_merge_tasks(fn(run_jobs), rawread_dir, "raw_reads", r_da_done, config)
         wf.addTasks( merge_tasks )
+        wf.refreshTargets(exitOnFailure=exitOnFailure)
+
         if config["target"] == "overlapping":
-            wf.refreshTargets()
             sys.exit(0)
         consensus_tasks, consensus_out = create_consensus_tasks(rawread_dir, "raw_reads", config, p_ids_merge_job_done)
         wf.addTasks( consensus_tasks )
@@ -500,7 +501,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
         concurrent_jobs = config["cns_concurrent_jobs"]
         PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
-        wf.refreshTargets()
+        wf.refreshTargets(exitOnFailure=exitOnFailure)
 
     if config["target"] == "pre-assembly":
         sys.exit(0)
@@ -554,6 +555,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                 URL = "task://localhost/pda_check" )
     check_p_da_task = make_daligner_gather(task_daligner_gather)
     wf.addTask(check_p_da_task)
+    wf.refreshTargets(exitOnFailure=exitOnFailure)
 
     merge_tasks, merge_out, _ = create_merge_tasks(fn(run_jobs), pread_dir, "preads", p_da_done, config)
     wf.addTasks( merge_tasks )
@@ -571,7 +573,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     concurrent_jobs = config["ovlp_concurrent_jobs"]
     PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
 
-    wf.refreshTargets()
+    wf.refreshTargets(exitOnFailure=exitOnFailure)
 
     
     db2falcon_done = makePypeLocalFile( os.path.join(pread_dir, "db2falcon_done"))
