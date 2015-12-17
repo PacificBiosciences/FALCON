@@ -108,80 +108,81 @@ def parse_config(config_fn):
 def get_dict_from_old_falcon_cfg(config):
     global job_type  # TODO: Stop using global for wait_for_file().
     job_type = "SGE"
-    if config.has_option('General', 'job_type'):
-        job_type = config.get('General', 'job_type')
+    section = 'General'
+    if config.has_option(section, 'job_type'):
+        job_type = config.get(section, 'job_type')
 
     pa_concurrent_jobs = 8
-    if config.has_option('General', 'pa_concurrent_jobs'):
-        pa_concurrent_jobs = config.getint('General', 'pa_concurrent_jobs')
+    if config.has_option(section, 'pa_concurrent_jobs'):
+        pa_concurrent_jobs = config.getint(section, 'pa_concurrent_jobs')
 
     cns_concurrent_jobs = 8
-    if config.has_option('General', 'cns_concurrent_jobs'):
-        cns_concurrent_jobs = config.getint('General', 'cns_concurrent_jobs')
+    if config.has_option(section, 'cns_concurrent_jobs'):
+        cns_concurrent_jobs = config.getint(section, 'cns_concurrent_jobs')
 
     ovlp_concurrent_jobs = 8
-    if config.has_option('General', 'ovlp_concurrent_jobs'):
-        ovlp_concurrent_jobs = config.getint('General', 'ovlp_concurrent_jobs')
+    if config.has_option(section, 'ovlp_concurrent_jobs'):
+        ovlp_concurrent_jobs = config.getint(section, 'ovlp_concurrent_jobs')
 
     #appending = False
-    #if config.has_option('General', 'appending'):
-    #    appending = config.get('General', 'appending')
+    #if config.has_option(section, 'appending'):
+    #    appending = config.get(section, 'appending')
     #    if appending == "True":
     #        appending = True
 
     openending = False
-    if config.has_option('General', 'openending'):
-        openending = config.get('General', 'openending')
+    if config.has_option(section, 'openending'):
+        openending = config.get(section, 'openending')
         if openending == "True":
             openending = True
 
     input_type = "raw"
-    if config.has_option('General', 'input_type'):
-        input_type = config.get('General', 'input_type')
+    if config.has_option(section, 'input_type'):
+        input_type = config.get(section, 'input_type')
 
     overlap_filtering_setting =  """--max_diff 1000 --max_cov 1000 --min_cov 2"""
-    if config.has_option('General', 'overlap_filtering_setting'):
-        overlap_filtering_setting = config.get('General', 'overlap_filtering_setting')
+    if config.has_option(section, 'overlap_filtering_setting'):
+        overlap_filtering_setting = config.get(section, 'overlap_filtering_setting')
 
     pa_HPCdaligner_option = """-v -dal4 -t16 -e.70 -l1000 -s100"""
-    if config.has_option('General', 'pa_HPCdaligner_option'):
-        pa_HPCdaligner_option = config.get('General', 'pa_HPCdaligner_option')
+    if config.has_option(section, 'pa_HPCdaligner_option'):
+        pa_HPCdaligner_option = config.get(section, 'pa_HPCdaligner_option')
 
     ovlp_HPCdaligner_option = """ -v -dal24 -t32 -h60 -e.96 -l500 -s1000"""
-    if config.has_option('General', 'ovlp_HPCdaligner_option'):
-        ovlp_HPCdaligner_option = config.get('General', 'ovlp_HPCdaligner_option')
+    if config.has_option(section, 'ovlp_HPCdaligner_option'):
+        ovlp_HPCdaligner_option = config.get(section, 'ovlp_HPCdaligner_option')
 
     pa_DBsplit_option = """ -x500 -s200"""
-    if config.has_option('General', 'pa_DBsplit_option'):
-        pa_DBsplit_option = config.get('General', 'pa_DBsplit_option')
+    if config.has_option(section, 'pa_DBsplit_option'):
+        pa_DBsplit_option = config.get(section, 'pa_DBsplit_option')
 
     ovlp_DBsplit_option = """ -x500 -s200"""
-    if config.has_option('General', 'ovlp_DBsplit_option'):
-        ovlp_DBsplit_option = config.get('General', 'ovlp_DBsplit_option')
+    if config.has_option(section, 'ovlp_DBsplit_option'):
+        ovlp_DBsplit_option = config.get(section, 'ovlp_DBsplit_option')
 
     falcon_sense_option = """ --output_multi --min_idt 0.70 --min_cov 2 --local_match_count_threshold 0 --max_n_read 1800 --n_core 6"""
-    if config.has_option('General', 'falcon_sense_option'):
-        falcon_sense_option = config.get('General', 'falcon_sense_option')
+    if config.has_option(section, 'falcon_sense_option'):
+        falcon_sense_option = config.get(section, 'falcon_sense_option')
 
     falcon_sense_skip_contained = False
-    if config.has_option('General', 'falcon_sense_skip_contained'):
-        falcon_sense_skip_contained = config.get('General', 'falcon_sense_skip_contained')
+    if config.has_option(section, 'falcon_sense_skip_contained'):
+        falcon_sense_skip_contained = config.get(section, 'falcon_sense_skip_contained')
         if falcon_sense_skip_contained in ["True", "true", "1"]:
             falcon_sense_skip_contained = True
         else:
             falcon_sense_skip_contained = False
 
-    length_cutoff = config.getint('General', 'length_cutoff')
-    input_fofn_fn = config.get('General', 'input_fofn')
+    length_cutoff = config.getint(section, 'length_cutoff')
+    input_fofn_fn = config.get(section, 'input_fofn')
 
-    length_cutoff_pr = config.getint('General', 'length_cutoff_pr')
+    length_cutoff_pr = config.getint(section, 'length_cutoff_pr')
 
     bestn = 12
-    if config.has_option('General', 'bestn'):
-        bestn = config.getint('General', 'bestn')
+    if config.has_option(section, 'bestn'):
+        bestn = config.getint(section, 'bestn')
 
-    if config.has_option('General', 'target'):
-        target = config.get('General', 'target')
+    if config.has_option(section, 'target'):
+        target = config.get(section, 'target')
         if target not in ["overlapping", "pre-assembly", "assembly"]:
             msg = """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target %s in the configuration file.  """ % target
             raise Exception(msg)
@@ -189,8 +190,8 @@ def get_dict_from_old_falcon_cfg(config):
         logger.info(""" No target specified, assuming "assembly" as target """)
         target = "assembly"
 
-    if config.has_option('General', 'use_tmpdir'):
-        use_tmpdir = config.getboolean('General','use_tmpdir')
+    if config.has_option(section, 'use_tmpdir'):
+        use_tmpdir = config.getboolean(section, 'use_tmpdir')
     else:
         use_tmpdir = False
 
@@ -205,12 +206,12 @@ def get_dict_from_old_falcon_cfg(config):
                    "overlap_filtering_setting": overlap_filtering_setting,
                    "length_cutoff" : length_cutoff,
                    "length_cutoff_pr" : length_cutoff_pr,
-                   "sge_option_da": config.get('General', 'sge_option_da'),
-                   "sge_option_la": config.get('General', 'sge_option_la'),
-                   "sge_option_pda": config.get('General', 'sge_option_pda'),
-                   "sge_option_pla": config.get('General', 'sge_option_pla'),
-                   "sge_option_fc": config.get('General', 'sge_option_fc'),
-                   "sge_option_cns": config.get('General', 'sge_option_cns'),
+                   "sge_option_da": config.get(section, 'sge_option_da'),
+                   "sge_option_la": config.get(section, 'sge_option_la'),
+                   "sge_option_pda": config.get(section, 'sge_option_pda'),
+                   "sge_option_pla": config.get(section, 'sge_option_pla'),
+                   "sge_option_fc": config.get(section, 'sge_option_fc'),
+                   "sge_option_cns": config.get(section, 'sge_option_cns'),
                    "pa_HPCdaligner_option": pa_HPCdaligner_option,
                    "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
                    "pa_DBsplit_option": pa_DBsplit_option,
