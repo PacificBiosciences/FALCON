@@ -325,7 +325,7 @@ def task_daligner_gather(self):
 
     # Symlink all daligner *.las.
     for block, las_path in support.daligner_gather_las(job_rundirs):
-            fc_run_logger.warning('block: %s, las_path: %s' %(block, las_path))
+            #fc_run_logger.warning('block: %s, las_path: %s' %(block, las_path))
             mdir = os.path.join(main_dir, 'm_%05d' %block) # By convention. pbsmrtpipe works differently.
             las_path = os.path.relpath(las_path, mdir)
             cmd = 'ln -sf {} {}'.format(las_path, mdir)
