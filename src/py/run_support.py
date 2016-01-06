@@ -201,6 +201,10 @@ def get_dict_from_old_falcon_cfg(config):
     else:
         use_tmpdir = False
 
+    TEXT_FILE_BUSY = 'avoid_text_file_busy'
+    if config.has_option(section, TEXT_FILE_BUSY):
+        bash.BUG_avoid_Text_file_busy = config.getboolean(section, TEXT_FILE_BUSY)
+
     hgap_config = {"input_fofn_fn" : input_fofn_fn, # deprecated
                    "input_fofn" : input_fofn_fn,
                    "target" : target,
@@ -227,6 +231,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "falcon_sense_skip_contained": falcon_sense_skip_contained,
                    "stop_all_jobs_on_failure": stop_all_jobs_on_failure,
                    "use_tmpdir": use_tmpdir,
+                   TEXT_FILE_BUSY: bash.BUG_avoid_Text_file_busy,
                    }
     provided = dict(config.items(section))
     unused = set(provided) - set(k.lower() for k in hgap_config)

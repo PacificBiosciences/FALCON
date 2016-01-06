@@ -4,11 +4,19 @@ from . import functional
 import os
 
 BASH='/bin/bash'
-
+BUG_avoid_Text_file_busy=True
+# http://stackoverflow.com/questions/1384398/usr-bin-perl-bad-interpreter-text-file-busy/
 
 def mkdir(d):
     if not os.path.isdir(d):
         os.makedirs(d)
+
+def make_executable(path):
+    """http://stackoverflow.com/questions/12791997/how-do-you-do-a-simple-chmod-x-from-within-python
+    """
+    mode = os.stat(path).st_mode
+    mode |= (mode & 0444) >> 2    # copy R bits to X
+    os.chmod(path, mode)
 
 def write_script_and_wrapper(script, wrapper_fn, job_done):
     """
@@ -36,18 +44,31 @@ def write_script_and_wrapper(script, wrapper_fn, job_done):
         ofs.write('#!{}\n'.format(BASH))
         ofs.write('set -vex\n')
         ofs.write(script)
+    make_executable(os.path.join(wdir, sub_script_bfn))
+    if BUG_avoid_Text_file_busy:
+        exe = BASH
+    else:
+        # We prefer to run via shebang b/c we want the script-name to appear to 'top',
+        # but some users have a problem with that, e.g.
+        #   https://github.com/PacificBiosciences/FALCON/issues/269
+        # Another idea never worked reliably:
+        #chmod +x {sub_script_bfn}
+        #touch {sub_script_bfn}
+        # We are trying to avoid this problem:
+        #   /bin/bash: bad interpreter: Text file busy
+        exe = ''
+
     wrapper = """
 set -vex
 cd {wdir}
 trap 'touch {job_exit}' EXIT
 ls -il {sub_script_bfn}
 hostname
-chmod +x {sub_script_bfn}
-touch {sub_script_bfn}
 ls -il {sub_script_bfn}
-time ./{sub_script_bfn}
+time {exe} ./{sub_script_bfn}
 touch {job_done}
-""".format(**locals())
+"""
+    wrapper = wrapper.format(**locals())
     with open(wrapper_fn, 'w') as ofs:
         ofs.write(wrapper)
     return job_done, job_exit
