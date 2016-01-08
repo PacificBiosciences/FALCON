@@ -98,7 +98,7 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
     params = dict(config)
     params.update(locals())
     script = """\
-fasta2DB -v raw_reads -f{input_fofn_fn}
+fasta2DB -pfakemoviename -v raw_reads -f{input_fofn_fn}
 {DBsplit}
 LB={count}
 HPCdaligner {pa_HPCdaligner_option} -H{length_cutoff} raw_reads {last_block}-$LB >| {run_jobs_fn}
@@ -109,7 +109,7 @@ def script_build_pdb(config, input_fofn_fn, run_jobs_fn):
     params = dict(config)
     params.update(locals())
     script = """\
-fasta2DB -v preads -f{input_fofn_fn}
+fasta2DB -pfakemoviename -v preads -f{input_fofn_fn}
 DBsplit {ovlp_DBsplit_option} preads
 HPCdaligner {ovlp_HPCdaligner_option} -H{length_cutoff_pr} preads >| {run_jobs_fn}
 """.format(**params)
