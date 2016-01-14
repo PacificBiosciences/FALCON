@@ -205,7 +205,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, TEXT_FILE_BUSY):
         bash.BUG_avoid_Text_file_busy = config.getboolean(section, TEXT_FILE_BUSY)
 
-    hgap_config = {"input_fofn_fn" : input_fofn_fn, # deprecated
+    hgap_config = {#"input_fofn_fn" : input_fofn_fn, # deprecated
                    "input_fofn" : input_fofn_fn,
                    "target" : target,
                    "job_type" : job_type,
