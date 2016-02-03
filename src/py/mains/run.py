@@ -13,6 +13,7 @@ import time
 
 
 fc_run_logger = None
+MAX_UPDATE_DELTA_S = 600
 
 def system(call, check=False):
     fc_run_logger.debug('$(%s)' %repr(call))
@@ -135,7 +136,8 @@ def check_for_file_or_exit(filename, task, job_name):
         return Waiter.StillRunning
 
 def wait_for_file(filename, task, job_name):
-    """We could be in the thread or sub-process which spawned a qsub job,
+    """(This is the old way.)
+    We could be in the thread or sub-process which spawned a qsub job,
     so we must check for the shutdown_event.
     """
     wait_time = .2
@@ -168,10 +170,12 @@ def wait_for_file_with_progress(filename, progress_fn, task, job_name):
     # First, wait for progress_fn to exist at all.
     # We assume that any submitted job will eventually start. If not, the user
     # must hit Ctrl-C, because we really cannot know how to long to wait.
+    fc_run_logger.debug('Waiting for {}'.format(progress_fn))
     wait_for_file_to_exist(progress_fn)
+    fc_run_logger.debug('Found {}'.format(progress_fn))
 
     # Next, decide how long to allow between updates.
-    max_update_delta = datetime.timedelta(minutes=10)
+    max_update_delta = datetime.timedelta(seconds=MAX_UPDATE_DELTA_S)
     last_progress = os.path.getmtime(progress_fn)
     last_update = datetime.datetime.now()
     wait_time = .2
@@ -184,54 +188,61 @@ def wait_for_file_with_progress(filename, progress_fn, task, job_name):
         if status != Waiter.StillRunning:
             break
         latest_progress = os.path.getmtime(progress_fn)
+        latest_update = datetime.datetime.now()
+        #fc_run_logger.info('last={}, latest={}, last={}, latest={}, diff={}, cond={}'.format(
+        #    last_progress, latest_progress,
+        #    last_update, latest_update,
+        #    latest_update - last_update,
+        #    latest_update - last_update > max_update_delta,
+        #))
         if last_progress == latest_progress:
-            if datetime.datetime.now() - last_update > max_update_delta:
+            if latest_update - last_update > max_update_delta:
                 # Assume the job stopped, but cancel if not.
                 cancel_job(job_name, support.job_type)
                 break
             else:
                 continue
         last_progress = latest_progress
-        last_update = datetime.datetime.now()
+        last_update = latest_update
 
+# Compare nap to MAX_UPDATE_DELTA_S.
+# nap should be less!
 WRAPPER_SCRIPT = """
-%(bash_fn)s %(progress_fn)s > %(progress_out_fn)s &
+progress() {
+    nap=60
+
+    while [ 1 ]
+    do
+    echo "sleeping ${nap} seconds"
+    sleep ${nap}
+    done
+}
+progress > %(progress_out_fn)s &
 bg_progress=$!
 finish() {
     kill ${bg_progress} >/dev/null 2>&1
     echo "Finished by wrapper." >> %(progress_out_fn)s
+    kill -9 -- -$$
 }
 trap finish EXIT SIGINT SIGTERM
 %(bash_fn)s %(actual_script_fn)s
-"""
-
-# We cannot use a bash-function for this because there
-# are many problems with dangling background functions.
-PROGRESS_SCRIPT = """
-nap=1
-
-while [ 1 ]
-do
-    echo "sleeping ${nap} seconds"
-    sleep ${nap}
-done
 """
 
 def wrap_for_progress(actual_script_fn):
     """Create a new script which calls script_fn but
     also starts a background process which periodically updates
     a progress file.
+    Note: If the wrapper is killed by -9, it should be killed by the negative
+    of its PID so that all children are killed.
+    http://riccomini.name/posts/linux/2012-09-25-kill-subprocesses-linux-bash/
     """
     bash_fn = bash.BASH
     script_fn = actual_script_fn + '.wrap.sh'
-    progress_fn = actual_script_fn + '.progress.sh'
+    #progress_fn = actual_script_fn + '.progress.sh'
     progress_out_fn = actual_script_fn + '.progress.sh.log'
     wrapper_script = WRAPPER_SCRIPT %locals()
     with open(script_fn, 'w') as f:
         f.write(wrapper_script)
-    progress_script = PROGRESS_SCRIPT
-    with open(progress_fn, 'w') as f:
-        f.write(progress_script)
     return script_fn, progress_out_fn
 
 def run_script_and_wait(URL, script_fn, job_done, task,
