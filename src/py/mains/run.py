@@ -4,6 +4,7 @@ from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask, PypeThreadTaskBase
 from pypeflow.controller import PypeThreadWorkflow
 from falcon_kit.FastaReader import FastaReader
+import datetime
 import glob
 import os
 import re
@@ -96,14 +97,21 @@ def run_script(job_data, job_type):
     rc = _run_script(job_data)
     # Someday, we might trap exceptions here, as a failure would be caught later anyway.
 
-def wait_for_file(filename, task, job_name = ""):
-    """We could be in the thread or sub-process which spawned a qsub job,
-    so we must check for the shutdown_event.
-    """
-    wait_time = .2
-    while 1:
-        time.sleep(wait_time)
-        wait_time = 10 if wait_time > 10 else wait_time + .2
+class Waiter:
+    StillRunning = 0
+    FoundExit = 1
+    FoundDone = 2
+    Interrupted = 3
+
+def cancel_job(job_name, job_type):
+            if support.job_type == "SGE":
+                fc_run_logger.info( "deleting the job by `qdel` now..." )
+                system("qdel %s" % job_name) # Failure is ok.
+            if support.job_type == "SLURM":
+                fc_run_logger.info( "Deleting the job by 'scancel' now...")
+                system("scancel -n %s" % job_name)
+
+def check_for_file_or_exit(filename, task, job_name):
         # We prefer all jobs to rely on `*done.exit`, but not all do yet. So we check that 1st.
         exit_fn = filename + '.exit'
         if os.path.exists(exit_fn):
@@ -111,31 +119,131 @@ def wait_for_file(filename, task, job_name = ""):
             fc_run_logger.debug( " job: %r exited." % (job_name) )
             if not os.path.exists(filename):
                 fc_run_logger.warning( "%r is missing. job: %r failed!" % (filename, job_name) )
-            break
+            return Waiter.FoundExit
         if os.path.exists(filename):
             os.listdir(os.path.dirname(exit_fn)) # sync NFS
             if not os.path.exists(exit_fn):
                 # (rechecked exit_fn to avoid race condition)
                 fc_run_logger.info( "%r not found, but job is done." % (exit_fn) )
                 fc_run_logger.debug( " job: %r exited." % (job_name) )
-                break
+                return Waiter.FoundOnlyDone
         if task.shutdown_event is not None and task.shutdown_event.is_set():
             fc_run_logger.warning( "shutdown_event received (Keyboard Interrupt maybe?), %r not finished."
                 % (job_name) )
-            if support.job_type == "SGE":
-                fc_run_logger.info( "deleting the job by `qdel` now..." )
-                system("qdel %s" % job_name) # Failure is ok.
-            if support.job_type == "SLURM":
-                fc_run_logger.info( "Deleting the job by 'scancel' now...")
-                system("scancel -n %s" % job_name)
+            cancel_job(job_name, support.job_type)
+            return Waiter.Interrupted
+        return Waiter.StillRunning
+
+def wait_for_file(filename, task, job_name):
+    """We could be in the thread or sub-process which spawned a qsub job,
+    so we must check for the shutdown_event.
+    """
+    wait_time = .2
+    while 1:
+        time.sleep(wait_time)
+        wait_time = 10 if wait_time > 10 else wait_time + .2
+        status = check_for_file_or_exit(filename, task, job_name)
+        if status != Waiter.StillRunning:
             break
+
+def wait_for_file_to_exist(fn):
+    """This can wait forever.
+    """
+    wait_time = .2
+    while 1:
+        time.sleep(wait_time)
+        wait_time = 10 if wait_time > 10 else wait_time + .2
+        if os.path.exists(fn):
+            break
+
+def wait_for_file_with_progress(filename, progress_fn, task, job_name):
+    """Continue as long as we detect progress.
+    Ignore the .exit file. Instead, watch for changes to progress_fn.
+    We could be in the thread or sub-process which spawned a qsub job,
+    so we must check for the shutdown_event.
+    (I have so far made as few changes to the previous version as possible,
+     but someday this should be re-architected. I favor a separate, queryable
+     process.)
+    """
+    # First, wait for progress_fn to exist at all.
+    # We assume that any submitted job will eventually start. If not, the user
+    # must hit Ctrl-C, because we really cannot know how to long to wait.
+    wait_for_file_to_exist(progress_fn)
+
+    # Next, decide how long to allow between updates.
+    max_update_delta = datetime.timedelta(minutes=10)
+    last_progress = os.path.getmtime(progress_fn)
+    last_update = datetime.datetime.now()
+    wait_time = .2
+
+    # Loop until we exceed max_update_delta, or until we find something.
+    while 1:
+        time.sleep(wait_time)
+        wait_time = 10 if wait_time > 10 else wait_time + .2
+        status = check_for_file_or_exit(filename, task, job_name)
+        if status != Waiter.StillRunning:
+            break
+        latest_progress = os.path.getmtime(progress_fn)
+        if last_progress == latest_progress:
+            if datetime.datetime.now() - last_update > max_update_delta:
+                # Assume the job stopped, but cancel if not.
+                cancel_job(job_name, support.job_type)
+                break
+            else:
+                continue
+        last_progress = latest_progress
+        last_update = datetime.datetime.now()
+
+WRAPPER_SCRIPT = """
+%(bash_fn)s %(progress_fn)s > %(progress_out_fn)s &
+bg_progress=$!
+finish() {
+    kill ${bg_progress} >/dev/null 2>&1
+    echo "Finished by wrapper." >> %(progress_out_fn)s
+}
+trap finish EXIT SIGINT SIGTERM
+%(bash_fn)s %(actual_script_fn)s
+"""
+
+# We cannot use a bash-function for this because there
+# are many problems with dangling background functions.
+PROGRESS_SCRIPT = """
+nap=1
+
+while [ 1 ]
+do
+    echo "sleeping ${nap} seconds"
+    sleep ${nap}
+done
+"""
+
+def wrap_for_progress(actual_script_fn):
+    """Create a new script which calls script_fn but
+    also starts a background process which periodically updates
+    a progress file.
+    """
+    bash_fn = bash.BASH
+    script_fn = actual_script_fn + '.wrap.sh'
+    progress_fn = actual_script_fn + '.progress.sh'
+    progress_out_fn = actual_script_fn + '.progress.sh.log'
+    wrapper_script = WRAPPER_SCRIPT %locals()
+    with open(script_fn, 'w') as f:
+        f.write(wrapper_script)
+    progress_script = PROGRESS_SCRIPT
+    with open(progress_fn, 'w') as f:
+        f.write(progress_script)
+    return script_fn, progress_out_fn
 
 def run_script_and_wait(URL, script_fn, job_done, task,
         job_type, sge_option):
     job_data = support.make_job_data(URL, script_fn)
     job_data['sge_option'] = sge_option
+    actual_script_fn = job_data["script_fn"]
+    script_fn, progress_out_fn = wrap_for_progress(script_fn)
+    job_data["script_fn"] = script_fn
     run_script(job_data, job_type)
-    wait_for_file(job_done, task, job_name=job_data['job_name'])
+    #wait_for_file(job_done, task, job_name=job_data['job_name'])
+    wait_for_file_with_progress(job_done, progress_out_fn, task, job_name=job_data['job_name'])
 
 def run_script_and_wait_and_rm_exit(URL, script_fn, job_done, task,
         job_type, sge_option):
