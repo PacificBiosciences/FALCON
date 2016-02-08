@@ -1,5 +1,6 @@
 from . import bash
 import ConfigParser
+import json
 import logging
 import logging.config
 import os
@@ -294,12 +295,16 @@ format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
 format=[%(levelname)s]%(message)s
 """
 
-def setup_logger(logging_config_fn):
+def _setup_logging(logging_config_fn):
     """See https://docs.python.org/2/library/logging.config.html
     """
     logging.Formatter.converter = time.gmtime # cannot be done in .ini
 
     if logging_config_fn:
+        if logging_config_fn.endswith('.json'):
+            logging.config.dictConfig(json.loads(open(logging_config_fn).read()))
+            #print repr(logging.Logger.manager.loggerDict) # to debug
+            return
         logger_fileobj = open(logging_config_fn)
     else:
         logger_fileobj = StringIO.StringIO(default_logging_config)
@@ -307,6 +312,8 @@ def setup_logger(logging_config_fn):
     }
     logging.config.fileConfig(logger_fileobj, defaults=defaults, disable_existing_loggers=False)
 
+def setup_logger(logging_config_fn):
+    _setup_logging(logging_config_fn)
     global logger
     logger = logging.getLogger("fc_run")
     return logger

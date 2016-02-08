@@ -15,6 +15,12 @@ import time
 fc_run_logger = None
 MAX_UPDATE_DELTA_S = 600
 
+def remove(*fns):
+    for fn in fns:
+        if os.path.exists(fn):
+            os.remove(fn)
+        assert not os.path.exists(fn)
+
 def system(call, check=False):
     fc_run_logger.debug('$(%s)' %repr(call))
     rc = os.system(call)
@@ -285,6 +291,9 @@ def task_make_fofn_abs_preads(self):
 def task_build_rdb(self):
     input_fofn_fn = fn(self.input_fofn)
     job_done = fn(self.rdb_build_done)
+    db = fn(self.raw_reads_db)
+    run_jobs = fn(self.run_jobs)
+    remove(job_done, db, run_jobs)
     work_dir = self.parameters["work_dir"]
     config = self.parameters["config"]
     sge_option_da = config["sge_option_da"]
@@ -295,7 +304,7 @@ def task_build_rdb(self):
         'config': config,
         'job_done': job_done,
         'script_fn': script_fn,
-        'run_jobs_fn': fn(self.run_jobs),
+        'run_jobs_fn': run_jobs,
     }
     support.build_rdb(**args)
     run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
@@ -304,6 +313,9 @@ def task_build_rdb(self):
 def task_build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
     input_fofn_fn = fn(self.pread_fofn)
     job_done = fn(self.pdb_build_done)
+    db = fn(self.preads_db)
+    run_jobs = fn(self.run_jobs)
+    remove(job_done, db, run_jobs)
     work_dir = self.parameters["work_dir"]
     config = self.parameters["config"]
 
@@ -313,7 +325,7 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
         'config': config,
         'job_done': job_done,
         'script_fn': script_fn,
-        'run_jobs_fn': fn(self.run_jobs),
+        'run_jobs_fn': run_jobs,
     }
     support.build_pdb(**args)
     run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
@@ -564,8 +576,9 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         raw_reads_db = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
         make_build_rdb_task = PypeTask(inputs = {"input_fofn": rawread_fofn_plf},
                                       outputs = {"rdb_build_done": rdb_build_done,
-                                                 "raw_reads.db": raw_reads_db,
-                                                 "run_jobs": run_jobs}, 
+                                                 "raw_reads_db": raw_reads_db,
+                                                 "run_jobs": run_jobs,
+                                      },
                                       parameters = parameters,
                                       TaskType = PypeThreadTaskBase)
         build_rdb_task = make_build_rdb_task(task_build_rdb)
