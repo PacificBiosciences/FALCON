@@ -2,6 +2,7 @@
 """
 from . import functional
 import os
+import traceback
 
 BASH='/bin/bash'
 BUG_avoid_Text_file_busy=True
@@ -66,6 +67,11 @@ ls -il {sub_script_bfn}
 hostname
 ls -il {sub_script_bfn}
 time {exe} ./{sub_script_bfn} & wait
+rc=$!
+if [ -n ${{rc}} ]
+then
+    $(exit ${{rc}})
+fi
 touch {job_done}
 """
     wrapper = wrapper.format(**locals())
@@ -101,6 +107,7 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
 fasta2DB -pfakemoviename -v raw_reads -f{input_fofn_fn}
 {DBsplit}
 LB={count}
+rm -f {run_jobs_fn}
 HPCdaligner {pa_HPCdaligner_option} -H{length_cutoff} raw_reads {last_block}-$LB >| {run_jobs_fn}
 """.format(**params)
     return script
@@ -133,7 +140,11 @@ def scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, pread_aln=False):
     scripts = {}
     xform_script = functional.get_script_xformer(pread_aln)
     db_dir = os.path.dirname(run_jobs_fn)
-    job_descs = functional.get_daligner_job_descriptions(open(run_jobs_fn), db_prefix)
+    try:
+        job_descs = functional.get_daligner_job_descriptions(open(run_jobs_fn), db_prefix)
+    except Exception:
+        raise Exception('Could not parse job descriptions from file "{}":\n{}'.format(
+            run_jobs_fn, traceback.format_exc()))
     for i, (desc, bash) in enumerate(job_descs.iteritems()):
         job_uid = '%04x' %i
         daligner_cmd = xform_script(bash)
