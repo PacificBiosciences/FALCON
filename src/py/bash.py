@@ -62,16 +62,11 @@ def write_script_and_wrapper(script, wrapper_fn, job_done):
     wrapper = """
 set -vex
 cd {wdir}
-trap 'touch {job_exit}' EXIT SIGINT SIGTERM
+trap 'touch {job_exit}' EXIT
 ls -il {sub_script_bfn}
 hostname
 ls -il {sub_script_bfn}
-time {exe} ./{sub_script_bfn} & wait
-rc=$!
-if [ -n ${{rc}} ]
-then
-    $(exit ${{rc}})
-fi
+time {exe} ./{sub_script_bfn}
 touch {job_done}
 """
     wrapper = wrapper.format(**locals())
