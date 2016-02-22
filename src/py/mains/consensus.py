@@ -13,6 +13,23 @@ falcon.generate_consensus.restype = POINTER(falcon_kit.ConsensusData)
 falcon.free_consensus_data.argtypes = [ POINTER(falcon_kit.ConsensusData) ]
 
 
+def get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True):
+    if sort:
+        seqs = seqs[:1] + sorted(seqs[1:], key=lambda x: -len(x))
+
+    longest_n_reads = max_n_read                    
+    if max_cov_aln > 0:
+        longest_n_reads = 0
+        seed_len = len(seqs[0])
+        read_cov = 0
+        for seq in seqs[1:]:
+            longest_n_reads += 1
+            read_cov += len(seq)
+            if read_cov/seed_len > max_cov_aln: 
+                break
+        longest_n_reads = min(longest_n_reads, max_n_read)
+    return( seqs )
+
 def get_alignment(seq1, seq0, edge_tolerance = 1000):
 
     kup = falcon_kit.kup
@@ -68,9 +85,9 @@ def get_alignment(seq1, seq0, edge_tolerance = 1000):
 
 def get_consensus_without_trim( c_input ):
     seqs, seed_id, config = c_input
-    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size = config
-    if len(seqs) > max_n_read:
-        seqs = seqs[:max_n_read]
+    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
+    if len(seqs[1:]) > max_n_read:
+        seqs = get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True)
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
     consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K, 
@@ -84,7 +101,7 @@ def get_consensus_without_trim( c_input ):
 
 def get_consensus_with_trim( c_input ):
     seqs, seed_id, config = c_input
-    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size = config
+    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
     trim_seqs = []
     seed = seqs[0]
     for seq in seqs[1:]:
@@ -99,10 +116,10 @@ def get_consensus_with_trim( c_input ):
     trim_seqs.sort(key = lambda x:-x[0]) #use longest alignment first
     trim_seqs = [x[1] for x in trim_seqs]
         
-    if len(trim_seqs) > max_n_read:
-        trim_seqs = trim_seqs[:max_n_read]
-
     trim_seqs = [seed] + trim_seqs
+    if len(trim_seqs[1:]) > max_n_read:
+        # seqs already sorted, dont' sort again
+        trim_seqs = get_longest_reads(trim_seqs, max_n_read, max_cov_aln, sort=False)
 
 
     seqs_ptr = (c_char_p * len(trim_seqs))()
@@ -116,12 +133,14 @@ def get_consensus_with_trim( c_input ):
     return consensus, seed_id
 
 
-def get_seq_data(config, min_cov_aln, min_len_aln):
+def get_seq_data(config, min_n_read, min_len_aln):
     max_len = 100000
-    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size = config
+    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
     seqs = []
     seed_id = None
+    seed_len = 0
     seqs_data = []
+    read_cov = 0
     read_ids = set()
     with sys.stdin as f:
         for l in f:
@@ -138,22 +157,26 @@ def get_seq_data(config, min_cov_aln, min_len_aln):
                 if len(seq) >= min_len_aln:
                     if len(seqs) == 0:
                         seqs.append(seq) #the "seed"
-                        seed_id = l[0]
+                        seed_len = len(seq)
+                        seed_id = read_id
                     if read_id not in read_ids: #avoidng using the same read twice. seed is used again here by design
                         seqs.append(seq)
                         read_ids.add(read_id)
+                        read_cov += len(seq)
             elif l[0] == "+":
-                if len(seqs) >= min_cov_aln:
-                    seqs = seqs[:1] + sorted(seqs[1:], key=lambda x: -len(x))
-                    yield (seqs[:max_n_read], seed_id, config) 
+                if len(seqs) >= min_n_read and read_cov/seed_len >= min_cov_aln:
+                    seqs = get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True)
+                    yield (seqs, seed_id, config) 
                 #seqs_data.append( (seqs, seed_id) ) 
                 seqs = []
                 read_ids = set()
                 seed_id = None
+                read_cov = 0
             elif l[0] == "*":
                 seqs = []
                 read_ids = set()
                 seed_id = None
+                read_cov = 0
             elif l[0] == "-":
                 #yield (seqs, seed_id)
                 #seqs_data.append( (seqs, seed_id) )
@@ -173,9 +196,16 @@ def main(argv=sys.argv):
     parser.add_argument('--min_cov', type=int, default=6,
                         help='minimum coverage to break the consensus')
     parser.add_argument('--min_cov_aln', type=int, default=10,
-                        help='minimum coverage of alignment data; an alignment with fewer reads will be completely ignored')
-    parser.add_argument('--min_len_aln', type=int, default=100,
+                        help='minimum coverage of alignment data; a seed read with less than MIN_COV_ALN average depth' + \
+                        ' of coverage will be completely ignored')
+    parser.add_argument('--max_cov_aln', type=int, default=0, # 0 to emulate previous behavior
+                        help='maximum coverage of alignment data; a seed read with more than MAX_COV_ALN average depth' + \
+                        ' of coverage of the longest alignments will be capped, excess shorter alignments will be ignored')
+    parser.add_argument('--min_len_aln', type=int, default=0, # 0 to emulate previous behavior
                         help='minimum length of a sequence in an alignment to be used in consensus; any shorter sequence will be completely ignored')
+    parser.add_argument('--min_n_read', type=int, default=10,
+                        help='minimum number of reads used in generating the consensus; a seed read with fewer alignments will '+ \
+                        'be completely ignored (obsoleted, formerly called `--min_cov_aln\')')
     parser.add_argument('--max_n_read', type=int, default=500,
                         help='maximum number of reads used in generating the consensus')
     parser.add_argument('--trim', action="store_true", default=False,
@@ -206,9 +236,9 @@ def main(argv=sys.argv):
 
     K = 8
     config = args.min_cov, K, args.local_match_count_window, args.local_match_count_threshold,\
-             args.max_n_read, args.min_idt, args.edge_tolerance, args.trim_size
+             args.max_n_read, args.min_idt, args.edge_tolerance, args.trim_size, args.min_cov_aln, args.max_cov_aln
     # TODO: pass config object, not tuple, so we can add fields
-    for res in exe_pool.imap(get_consensus, get_seq_data(config, args.min_cov_aln, args.min_len_aln)):
+    for res in exe_pool.imap(get_consensus, get_seq_data(config, args.min_n_read, args.min_len_aln)):
         cns, seed_id = res
         if len(cns) < 500:
             continue
