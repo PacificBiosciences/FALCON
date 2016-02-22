@@ -21,7 +21,7 @@ def get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True):
 
     longest_n_reads = max_n_read
     if max_cov_aln > 0:
-        longest_n_reads = 0
+        longest_n_reads = 1
         seed_len = len(seqs[0])
         read_cov = 0
         for seq in seqs[1:]:
@@ -32,7 +32,7 @@ def get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True):
 
         longest_n_reads = min(longest_n_reads, max_n_read)
 
-    return( seqs[:longest_n_reads+1] )
+    return( seqs[:longest_n_reads] )
 
 
 def get_alignment(seq1, seq0, edge_tolerance = 1000):
