@@ -14,21 +14,25 @@ falcon.free_consensus_data.argtypes = [ POINTER(falcon_kit.ConsensusData) ]
 
 
 def get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True):
-    if sort:
+    # including the sort kwarg allows us to avoid a redundant sort
+    # in get_consensus_trimmed()
+    if sort: 
         seqs = seqs[:1] + sorted(seqs[1:], key=lambda x: -len(x))
 
-    longest_n_reads = max_n_read                    
+    longest_n_reads = max_n_read
     if max_cov_aln > 0:
         longest_n_reads = 0
         seed_len = len(seqs[0])
         read_cov = 0
         for seq in seqs[1:]:
+            # avoid an annoying +1 in seqs[:longest_n_reads], 
+            # count first break later
             longest_n_reads += 1
             read_cov += len(seq)
-            if read_cov/seed_len > max_cov_aln: 
+            if read_cov//seed_len > max_cov_aln: 
                 break
         longest_n_reads = min(longest_n_reads, max_n_read)
-    return( seqs )
+    return( seqs[:longest_n_reads] )
 
 def get_alignment(seq1, seq0, edge_tolerance = 1000):
 
@@ -164,7 +168,7 @@ def get_seq_data(config, min_n_read, min_len_aln):
                         read_ids.add(read_id)
                         read_cov += len(seq)
             elif l[0] == "+":
-                if len(seqs) >= min_n_read and read_cov/seed_len >= min_cov_aln:
+                if len(seqs) >= min_n_read and read_cov//seed_len >= min_cov_aln:
                     seqs = get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True)
                     yield (seqs, seed_id, config) 
                 #seqs_data.append( (seqs, seed_id) ) 
