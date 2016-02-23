@@ -18,7 +18,7 @@ setup(name='falcon_kit',
           'falcon_kit.mains',
           'falcon_kit.util',
           ],
-      package_dir={'falcon_kit':'src/py/'},
+      package_dir={'falcon_kit':'falcon_kit/'},
       ext_modules=[
                    Extension('falcon_kit.ext_falcon', ['src/c/ext_falcon.c', 'src/c/DW_banded.c', 'src/c/kmer_lookup.c', 'src/c/falcon.c'],
                     extra_link_args=[],
