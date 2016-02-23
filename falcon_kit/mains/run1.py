@@ -1,9 +1,8 @@
 from .. import run_support as support
 from .. import bash
+from pypeflow.pwatcher_bridge import PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
-from pypeflow.task import PypeTask, PypeThreadTaskBase
-from pypeflow.controller import PypeThreadWorkflow
-from falcon_kit.FastaReader import FastaReader
+from pypeflow.task import PypeTask
 import glob
 import os
 import re
@@ -31,143 +30,18 @@ def system(call, check=False):
         fc_run_logger.debug(msg)
     return rc
 
-def _qsub_script(job_data, specific):
-        script_fn = job_data["script_fn"]
-        job_name = job_data["job_name"]
-        cwd = job_data["cwd"]
-        sge_option = job_data["sge_option"]
-        sge_cmd="qsub -N {job_name} {sge_option} -o {cwd}/sge_log {specific}\
-                 -S /bin/bash {script}".format(job_name=job_name,
-                                               cwd=os.getcwd(),
-                                               specific=specific,
-                                               sge_option=sge_option,
-                                               script=script_fn)
-        system(sge_cmd, check=True)
-
-def _run_script_sge(job_data):
-    specific = '-j y'
-    _qsub_script(job_data, specific)
-
-def _run_script_torque(job_data):
-    # See https://github.com/PacificBiosciences/FALCON/pull/227
-    specific = '-j oe'
-    _qsub_script(job_data, specific)
-
-def _run_script_slurm(job_data):
-        script_fn = job_data["script_fn"]
-        job_name = job_data["job_name"]
-        cwd = job_data["cwd"]
-        sge_option = job_data["sge_option"]
-        with open(script_fn, 'r') as original: data = original.read()
-        with open(script_fn, 'w') as modified: modified.write("#!/bin/sh" + "\n" + data)
-        sge_cmd="sbatch -J {job_name} {sge_option} {script}".format(job_name=job_name, cwd=os.getcwd(),sge_option=sge_option, script=script_fn)
-        system(sge_cmd, check=True)
-
-def _run_script_local(job_data):
-        script_fn = job_data["script_fn"]
-        job_name = job_data["job_name"]
-        log_fn = '{0}.log'.format(script_fn)
-        cmd = "bash {0} 1> {1} 2>&1".format(script_fn, log_fn)
-        try:
-            system(cmd, check=True)
-        except Exception:
-            out = open(log_fn).read()
-            fc_run_logger.exception('Contents of %r:\n%s' %(log_fn, out))
-            raise
-
-_run_scripts = {
-        'SGE': _run_script_sge,
-        'TORQUE': _run_script_torque,
-        'SLURM': _run_script_slurm,
-        'LOCAL': _run_script_local,
-}
-
-def run_script(job_data, job_type):
-    """For now, we actually modify the script before running it.
-    This assume a simple bash script.
-    We will have a better solution eventually.
-    """
-    try:
-        _run_script = _run_scripts[job_type.upper()]
-    except LookupError as e:
-        msg = 'Unknown job_type=%s' %repr(job_type)
-        fc_run_logger.exception(msg)
-        raise
-    job_name = job_data["job_name"]
-    script_fn = job_data["script_fn"]
-    support.update_env_in_script(script_fn,
-        ['PATH', 'PYTHONPATH', 'LD_LIBRARY_PATH'])
-    fc_run_logger.info('(%s) %r' %(job_type, script_fn))
-    fc_run_logger.debug('%s (job %r)' %(_run_script.__name__, job_name))
-    rc = _run_script(job_data)
-    # Someday, we might trap exceptions here, as a failure would be caught later anyway.
-
-def wait_for_file(filename, task, job_name = ""):
-    """We could be in the thread or sub-process which spawned a qsub job,
-    so we must check for the shutdown_event.
-    """
-    wait_time = .2
-    while 1:
-        time.sleep(wait_time)
-        wait_time = 10 if wait_time > 10 else wait_time + .2
-        # We prefer all jobs to rely on `*done.exit`, but not all do yet. So we check that 1st.
-        exit_fn = filename + '.exit'
-        if os.path.exists(exit_fn):
-            fc_run_logger.info( "%r found." % (exit_fn) )
-            fc_run_logger.debug( " job: %r exited." % (job_name) )
-            if not os.path.exists(filename):
-                fc_run_logger.warning( "%r is missing. job: %r failed!" % (filename, job_name) )
-            break
-        if os.path.exists(filename):
-            os.listdir(os.path.dirname(exit_fn)) # sync NFS
-            if not os.path.exists(exit_fn):
-                # (rechecked exit_fn to avoid race condition)
-                fc_run_logger.info( "%r not found, but job is done." % (exit_fn) )
-                fc_run_logger.debug( " job: %r exited." % (job_name) )
-                break
-        if task.shutdown_event is not None and task.shutdown_event.is_set():
-            fc_run_logger.warning( "shutdown_event received (Keyboard Interrupt maybe?), %r not finished."
-                % (job_name) )
-            if support.job_type == "SGE":
-                fc_run_logger.info( "deleting the job by `qdel` now..." )
-                system("qdel %s" % job_name) # Failure is ok.
-            if support.job_type == "SLURM":
-                fc_run_logger.info( "Deleting the job by 'scancel' now...")
-                system("scancel -n %s" % job_name)
-            break
-
-def run_script_and_wait(URL, script_fn, job_done, task,
-        job_type, sge_option):
-    job_data = support.make_job_data(URL, script_fn)
-    job_data['sge_option'] = sge_option
-    run_script(job_data, job_type)
-    wait_for_file(job_done, task, job_name=job_data['job_name'])
-
-def run_script_and_wait_and_rm_exit(URL, script_fn, job_done, task,
-        job_type, sge_option):
-    try:
-        run_script_and_wait(URL, script_fn, job_done, task,
-            job_type, sge_option)
-    finally:
-        # By convention, job_exit is based on job_done.
-        # See bash.write_script_and_wrapper().
-        job_exit = job_done + '.exit'
-        os.listdir(os.path.dirname(job_exit))
-        if os.path.exists(job_exit):
-            try:
-                # to allow a restart later, if not done
-                os.unlink(job_exit)
-            except:
-                pass
-        else:
-            fc_run_logger.warn('In %r, job-exit-file %r does not exist.' %(
-                os.getcwd(), job_exit))
 
 def task_make_fofn_abs_raw(self):
-    return support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
+    #script_fn = 'noop.sh'
+    #open(script_fn, 'w').write('echo NOOP raw')
+    #self.generated_script_fn = script_fn
+    support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
 
 def task_make_fofn_abs_preads(self):
-    return support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
+    #script_fn = 'noop.sh'
+    #open(script_fn, 'w').write('echo NOOP preads')
+    #self.generated_script_fn = script_fn
+    support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
 
 def task_build_rdb(self):
     input_fofn_fn = fn(self.input_fofn)
@@ -188,8 +62,9 @@ def task_build_rdb(self):
         'run_jobs_fn': run_jobs,
     }
     support.build_rdb(**args)
-    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-        job_type=config['job_type'], sge_option=sge_option_da)
+    self.generated_script_fn = script_fn
+    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+    #    job_type=config['job_type'], sge_option=sge_option_da)
 
 def task_build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
     input_fofn_fn = fn(self.pread_fofn)
@@ -209,8 +84,9 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
         'run_jobs_fn': run_jobs,
     }
     support.build_pdb(**args)
-    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-        job_type=config['job_type'], sge_option=config['sge_option_pda'])
+    self.generated_script_fn = script_fn
+    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+    #    job_type=config['job_type'], sge_option=config['sge_option_pda'])
 
 def task_run_db2falcon(self):
     wd = self.parameters["wd"]
@@ -225,8 +101,9 @@ def task_run_db2falcon(self):
         'script_fn': script_fn,
     }
     support.run_db2falcon(**args)
-    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-        job_type=config['job_type'], sge_option=config['sge_option_fc'])
+    self.generated_script_fn = script_fn
+    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+    #    job_type=config['job_type'], sge_option=config['sge_option_fc'])
 
 def task_run_falcon_asm(self):
     wd = self.parameters["wd"]
@@ -249,8 +126,9 @@ def task_run_falcon_asm(self):
         'script_fn': script_fn,
     }
     support.run_falcon_asm(**args)
-    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-        job_type=config['job_type'], sge_option=config['sge_option_fc'])
+    self.generated_script_fn = script_fn
+    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+    #    job_type=config['job_type'], sge_option=config['sge_option_fc'])
 
 def task_run_daligner(self):
     job_done = fn(self.job_done)
@@ -271,8 +149,9 @@ def task_run_daligner(self):
         'script_fn': script_fn,
     }
     support.run_daligner(**args)
-    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-        job_type=config['job_type'], sge_option=config['sge_option_da'])
+    self.generated_script_fn = script_fn
+    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+    #    job_type=config['job_type'], sge_option=config['sge_option_da'])
 
 def task_run_las_merge(self):
     script = self.parameters["merge_script"]
@@ -291,8 +170,9 @@ def task_run_las_merge(self):
         'script_fn': script_fn,
     }
     support.run_las_merge(**args)
-    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-        job_type=config['job_type'], sge_option=config['sge_option_la'])
+    self.generated_script_fn = script_fn
+    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+    #    job_type=config['job_type'], sge_option=config['sge_option_la'])
 
 def task_run_consensus(self):
     out_file_fn = fn(self.out_file)
@@ -314,8 +194,9 @@ def task_run_consensus(self):
         'script_fn': script_fn,
     }
     support.run_consensus(**args)
-    run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-        job_type=config['job_type'], sge_option=config['sge_option_cns'])
+    self.generated_script_fn = script_fn
+    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
+    #    job_type=config['job_type'], sge_option=config['sge_option_cns'])
 
 def mkdir(d):
     if not os.path.isdir(d):
@@ -360,7 +241,7 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, config, pr
         make_daligner_task = PypeTask(inputs = {"rdb_build_done": rdb_build_done},
                                       outputs = {"job_done": job_done},
                                       parameters = parameters,
-                                      TaskType = PypeThreadTaskBase,
+                                      TaskType = MyFakePypeThreadTaskBase,
                                       URL = "task://localhost/d_%s_%s" %(job_uid, db_prefix))
         daligner_task = make_daligner_task(task_run_daligner)
         tasks.append(daligner_task)
@@ -382,7 +263,7 @@ def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
         make_merge_task = PypeTask(inputs = {"input_dep": input_dep},
                                    outputs = {"job_done": job_done},
                                    parameters = parameters,
-                                   TaskType = PypeThreadTaskBase,
+                                   TaskType = MyFakePypeThreadTaskBase,
                                    URL = "task://localhost/m_%05d_%s" % (p_id, db_prefix))
         merge_task = make_merge_task(task_run_las_merge)
         merge_out["mjob_%d" % p_id] = job_done
@@ -406,7 +287,7 @@ def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
         make_c_task = PypeTask(inputs = {"job_done": job_done},
                                outputs = {"out_file": out_file, "out_done": out_done},
                                parameters = parameters,
-                               TaskType = PypeThreadTaskBase,
+                               TaskType = MyFakePypeThreadTaskBase,
                                URL = "task://localhost/ct_%05d" % p_id)
         c_task = make_c_task(task_run_consensus)
         consensus_tasks.append(c_task)
@@ -432,15 +313,16 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
     exitOnFailure=config['stop_all_jobs_on_failure'] # only matter for parallel jobs
     concurrent_jobs = config["pa_concurrent_jobs"]
-    PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
-    wf = PypeThreadWorkflow()
+    Workflow = PypeProcWatcherWorkflow
+    PypeProcWatcherWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
+    wf = PypeProcWatcherWorkflow()
 
     input_fofn_plf = makePypeLocalFile(config["input_fofn"])
     rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, os.path.basename(config["input_fofn"])))
     make_fofn_abs_task = PypeTask(inputs = {"i_fofn": input_fofn_plf},
                                   outputs = {"o_fofn": rawread_fofn_plf},
                                   parameters = {},
-                                  TaskType = PypeThreadTaskBase)
+                                  TaskType = MyFakePypeThreadTaskBase)
     fofn_abs_task = make_fofn_abs_task(task_make_fofn_abs_raw)
 
     wf.addTasks([fofn_abs_task])
@@ -461,7 +343,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                                  "run_jobs": run_jobs,
                                       },
                                       parameters = parameters,
-                                      TaskType = PypeThreadTaskBase)
+                                      TaskType = MyFakePypeThreadTaskBase)
         build_rdb_task = make_build_rdb_task(task_build_rdb)
 
         wf.addTasks([build_rdb_task])
@@ -481,7 +363,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                    inputs = daligner_out,
                    outputs =  {"da_done":r_da_done},
                    parameters = parameters,
-                   TaskType = PypeThreadTaskBase,
+                   TaskType = MyFakePypeThreadTaskBase,
                    URL = "task://localhost/rda_check" )
         check_r_da_task = make_daligner_gather(task_daligner_gather)
         wf.addTask(check_r_da_task)
@@ -501,7 +383,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
         @PypeTask( inputs = consensus_out,
                    outputs =  {"cns_done":r_cns_done, "pread_fofn": pread_fofn},
-                   TaskType = PypeThreadTaskBase,
+                   TaskType = MyFakePypeThreadTaskBase,
                    URL = "task://localhost/cns_check" )
         def check_r_cns_task(self):
             with open(fn(self.pread_fofn),  "w") as f:
@@ -513,7 +395,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         wf.addTask(check_r_cns_task)
 
         concurrent_jobs = config["cns_concurrent_jobs"]
-        PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
+        PypeProcWatcherWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
     if config["target"] == "pre-assembly":
@@ -525,7 +407,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         make_fofn_abs_task = PypeTask(inputs = {"i_fofn": rawread_fofn_plf},
                                      outputs = {"o_fofn": pread_fofn},
                                      parameters = {},
-                                     TaskType = PypeThreadTaskBase)
+                                     TaskType = MyFakePypeThreadTaskBase)
         fofn_abs_task = make_fofn_abs_task(task_make_fofn_abs_preads)
         wf.addTasks([fofn_abs_task])
         wf.refreshTargets([fofn_abs_task])
@@ -541,7 +423,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                                "preads_db": preads_db,
                                                "run_jobs": run_jobs},
                                     parameters = parameters,
-                                    TaskType = PypeThreadTaskBase,
+                                    TaskType = MyFakePypeThreadTaskBase,
                                     URL = "task://localhost/build_pdb")
     build_pdb_task = make_build_pdb_task(task_build_pdb)
 
@@ -564,7 +446,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                 inputs = daligner_out,
                 outputs =  {"da_done":p_da_done},
                 parameters = parameters,
-                TaskType = PypeThreadTaskBase,
+                TaskType = MyFakePypeThreadTaskBase,
                 URL = "task://localhost/pda_check" )
     check_p_da_task = make_daligner_gather(task_daligner_gather)
     wf.addTask(check_p_da_task)
@@ -577,14 +459,14 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
     @PypeTask( inputs = merge_out,
                outputs =  {"p_merge_done": p_merge_done},
-               TaskType = PypeThreadTaskBase,
+               TaskType = MyFakePypeThreadTaskBase,
                URL = "task://localhost/pmerge_check" )
     def check_p_merge_check_task(self):
         system("touch %s" % fn(self.p_merge_done))
     wf.addTask(check_p_merge_check_task)
 
     concurrent_jobs = config["ovlp_concurrent_jobs"]
-    PypeThreadWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
+    PypeProcWatcherWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
 
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
@@ -596,7 +478,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                parameters = {"wd": pread_dir,
                              "config": config,
                             },
-               TaskType = PypeThreadTaskBase,
+               TaskType = MyFakePypeThreadTaskBase,
                URL = "task://localhost/db2falcon" )
     wf.addTask(make_run_db2falcon(task_run_db2falcon))
 
@@ -607,7 +489,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                parameters = {"wd": falcon_asm_dir,
                              "config": config,
                              "pread_dir": pread_dir},
-               TaskType = PypeThreadTaskBase,
+               TaskType = MyFakePypeThreadTaskBase,
                URL = "task://localhost/falcon" )
     wf.addTask(make_run_falcon_asm(task_run_falcon_asm))
     wf.refreshTargets()
