@@ -37,7 +37,7 @@
 # SUCH DAMAGE.
 #################################################################################$$
 
-from falcon_kit import * 
+from falcon_kit import *
 from pbcore.io import FastaReader
 import numpy as np
 import collections
@@ -68,7 +68,7 @@ def fivemer_entropy(seq):
         five_mer = seq[i:i+5]
         five_mer_count.setdefault(five_mer, 0)
         five_mer_count[five_mer] += 1
-    
+
     entropy = 0.0
     for five_mer in all_fivemers:
         p = five_mer_count.get(five_mer, 0) + 1.0
@@ -79,7 +79,7 @@ def fivemer_entropy(seq):
 
 def get_alignment(seq1, seq0):
 
-    K = 8 
+    K = 8
     lk_ptr = kup.allocate_kmer_lookup( 1 << (K * 2) )
     sa_ptr = kup.allocate_seq( len(seq0) )
     sda_ptr = kup.allocate_seq_addr( len(seq0) )
@@ -92,13 +92,13 @@ def get_alignment(seq1, seq0):
     #x,y = zip( * [ (kmer_match.query_pos[i], kmer_match.target_pos[i]) for i in range(kmer_match.count )] )
     aln_range = aln_range_ptr[0]
     kup.free_kmer_match(kmer_match_ptr)
-    s1, e1, s0, e0, km_score = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2, aln_range.score  
+    s1, e1, s0, e0, km_score = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2, aln_range.score
     e1 += K + K/2
     e0 += K + K/2
     kup.free_aln_range(aln_range)
     len_1 = len(seq1)
     len_0 = len(seq0)
-    if e1 > len_1: 
+    if e1 > len_1:
         e1 = len_1
     if e0 > len_0:
         e0 = len_0
@@ -112,7 +112,7 @@ def get_alignment(seq1, seq0):
         #aln_q_e = e1
         #aln_t_s = s0
         #aln_t_e = e0
-        
+
         alignment = DWA.align(seq1[s1:e1], e1-s1,
                               seq0[s0:e0], e0-s0,
                               500, 0)
@@ -126,10 +126,10 @@ def get_alignment(seq1, seq0):
         #print aln_str1
         #print aln_str0
 
-        if aln_size > 500: 
-            contain_status = "overlap"            
+        if aln_size > 500:
+            contain_status = "overlap"
         DWA.free_alignment(alignment)
-        
+
     kup.free_seq_addr_array(sda_ptr)
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
@@ -140,7 +140,7 @@ def get_alignment(seq1, seq0):
         return 0, 0, 0, 0, 0, 0, "none"
 
 def get_candidate_aln(hit_input):
-    
+
     global q_seqs, seqs, t_seqs, q_len
     q_name, hit_index_f, hit_index_r = hit_input
     q_seq = q_seqs[q_name]
@@ -149,7 +149,7 @@ def get_candidate_aln(hit_input):
     hit_index = hit_index_f
     c = collections.Counter(hit_index)
     s = [(c[0],c[1]) for c in c.items() if c[1] > 6]
-    
+
     hit_data = []
     hit_ids = set()
     for p, hit_count in s:
@@ -173,10 +173,10 @@ def get_candidate_aln(hit_input):
             continue
         if total_hit > 64:
             continue
-        seq1, seq0 = q_seq, hit[1] 
+        seq1, seq0 = q_seq, hit[1]
         aln_data = get_alignment(seq1, seq0)
         if rtn != None:
-             
+
             s1, e1, s2, e2, aln_size, aln_score, c_status = aln_data
             if c_status == "none":
                 continue
@@ -189,13 +189,13 @@ def get_candidate_aln(hit_input):
             """
             target_count[hit_id] += 1
             total_hit += 1
-            rtn.append( ( q_name, hit_id, -aln_score, "%0.2f" % (100.0*aln_score/(aln_size+1)), 
-                          0, s1, e1, len(seq1), 
+            rtn.append( ( q_name, hit_id, -aln_score, "%0.2f" % (100.0*aln_score/(aln_size+1)),
+                          0, s1, e1, len(seq1),
                           0, s2, e2, len(seq0), c_status + " %d" % hit_count ) )
 
     r_q_seq = "".join([RC_MAP[c] for c in q_seq[::-1]])
-    
-    hit_index = hit_index_r 
+
+    hit_index = hit_index_r
     c = collections.Counter(hit_index)
     s = [(c[0],c[1]) for c in c.items() if c[1] > 6]
 
@@ -215,7 +215,7 @@ def get_candidate_aln(hit_input):
     total_hit = 0
 
     for hit in hit_data:
-        hit_id = hit[0] 
+        hit_id = hit[0]
         hit_count = hit[3]
         target_count.setdefault(hit_id, 0)
         if target_count[hit_id] > 64:
@@ -237,8 +237,8 @@ def get_candidate_aln(hit_input):
             """
             target_count[hit_id] += 1
             total_hit += 1
-            rtn.append( ( q_name, hit_id, -aln_score, "%0.2f" % (100.0*aln_score/(aln_size+1)), 
-                          0, len(seq1) - e1, len(seq1) - s1, len(seq1), 
+            rtn.append( ( q_name, hit_id, -aln_score, "%0.2f" % (100.0*aln_score/(aln_size+1)),
+                          0, len(seq1) - e1, len(seq1) - s1, len(seq1),
                           1, s2, e2, len(seq0), c_status + " %d" % hit_count ) )
 
     return rtn
@@ -264,7 +264,7 @@ def build_look_up(seqs, K):
         start += 1000
 
     kup.mask_k_mer(1 << (K * 2), c_lk_ptr, 1024)
-    
+
     #return sda_ptr, sa_ptr, lk_ptr
 
 
@@ -290,7 +290,7 @@ def get_candidate_hits(q_name):
     kup.free_kmer_match(kmer_match_ptr)
 
     r_q_seq = "".join([RC_MAP[c] for c in q_seq[::-1]])
-    
+
     kmer_match_ptr = kup.find_kmer_pos_for_seq(r_q_seq, len(r_q_seq), K, c_sda_ptr, c_lk_ptr)
     kmer_match = kmer_match_ptr[0]
     count = kmer_match.count
@@ -314,11 +314,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='a simple multi-processor overlapper for sequence reads')
     parser.add_argument('target_fofn', help='a fasta fofn as the target sequences for overlapping')
     parser.add_argument('query_fofn', help='a fasta fofn  to be overlapped with sequence in target')
-    parser.add_argument('--min_len', type=int, default=4000, 
+    parser.add_argument('--min_len', type=int, default=4000,
                         help='minimum length of the reads to be considered for overlapping')
     parser.add_argument('--n_core', type=int, default=1,
                         help='number of processes used for detailed overlapping evalution')
-    parser.add_argument('--d_core', type=int, default=1, 
+    parser.add_argument('--d_core', type=int, default=1,
                         help='number of processes used for k-mer matching')
 
 
@@ -370,9 +370,9 @@ if __name__ == "__main__":
     build_look_up(seqs, K)
     m_pool = mp.Pool(args.d_core)
 
-    
+
     #for r in pool.imap(get_candidate_aln, lookup_data_iterator( q_seqs)):
     for r in pool.imap(get_candidate_aln, lookup_data_iterator( q_seqs, m_pool)):
         for h in r:
-            print " ".join([str(x) for x in h]) 
+            print " ".join([str(x) for x in h])
 

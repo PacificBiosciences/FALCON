@@ -230,7 +230,7 @@ def script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_f
 # write preads.ovl:
 time fc_ovlp_filter --db {db_file_fn} --fofn {las_fofn_fn} {overlap_filtering_setting} --min_len {length_cutoff_pr} >| preads.ovl
 
-ln -sf {preads4falcon_fasta_fn} ./preads4falcon.fasta 
+ln -sf {preads4falcon_fasta_fn} ./preads4falcon.fasta
 
 # Given preads.ovl,
 # write sg_edges_list, c_path, utg_data, ctg_paths.

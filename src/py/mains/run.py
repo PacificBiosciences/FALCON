@@ -400,7 +400,7 @@ def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
         out_file = makePypeLocalFile(os.path.abspath("%s/preads/out.%05d.fasta" % (wd, p_id)))
         out_done = makePypeLocalFile(os.path.abspath("%s/preads/c_%05d_done" % (wd, p_id)))
         parameters =  {"cwd": rdir,
-                       "job_id": p_id, 
+                       "job_id": p_id,
                        "prefix": db_prefix,
                        "config": config}
         make_c_task = PypeTask(inputs = {"job_done": job_done},
@@ -410,7 +410,7 @@ def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
                                URL = "task://localhost/ct_%05d" % p_id)
         c_task = make_c_task(task_run_consensus)
         consensus_tasks.append(c_task)
-        consensus_out["cjob_%d" % p_id] = out_done 
+        consensus_out["cjob_%d" % p_id] = out_done
     return consensus_tasks, consensus_out
 
 
@@ -449,8 +449,8 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     if config["input_type"] == "raw":
         #### import sequences into daligner DB
         sleep_done = makePypeLocalFile( os.path.join( rawread_dir, "sleep_done") )
-        rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") ) 
-        run_jobs = makePypeLocalFile( os.path.join( rawread_dir, "run_jobs.sh") ) 
+        rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") )
+        run_jobs = makePypeLocalFile( os.path.join( rawread_dir, "run_jobs.sh") )
         parameters = {"work_dir": rawread_dir,
                       "config": config}
 
@@ -465,11 +465,11 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         build_rdb_task = make_build_rdb_task(task_build_rdb)
 
         wf.addTasks([build_rdb_task])
-        wf.refreshTargets([rdb_build_done]) 
+        wf.refreshTargets([rdb_build_done])
 
         raw_reads_nblock = support.get_nblock(fn(raw_reads_db))
         #### run daligner
-        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", rdb_build_done, config) 
+        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", rdb_build_done, config)
 
         wf.addTasks(daligner_tasks)
         r_da_done = makePypeLocalFile( os.path.join( rawread_dir, "da_done") )
@@ -478,7 +478,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                 "nblock": raw_reads_nblock,
         }
         make_daligner_gather = PypeTask(
-                   inputs = daligner_out, 
+                   inputs = daligner_out,
                    outputs =  {"da_done":r_da_done},
                    parameters = parameters,
                    TaskType = PypeThreadTaskBase,
@@ -486,7 +486,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         check_r_da_task = make_daligner_gather(task_daligner_gather)
         wf.addTask(check_r_da_task)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
-        
+
         merge_tasks, merge_out, p_ids_merge_job_done = create_merge_tasks(fn(run_jobs), rawread_dir, "raw_reads", r_da_done, config)
         wf.addTasks( merge_tasks )
         wf.refreshTargets(exitOnFailure=exitOnFailure)
@@ -499,7 +499,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         r_cns_done = makePypeLocalFile( os.path.join( rawread_dir, "cns_done") )
         pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
 
-        @PypeTask( inputs = consensus_out, 
+        @PypeTask( inputs = consensus_out,
                    outputs =  {"cns_done":r_cns_done, "pread_fofn": pread_fofn},
                    TaskType = PypeThreadTaskBase,
                    URL = "task://localhost/cns_check" )
@@ -530,7 +530,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         wf.addTasks([fofn_abs_task])
         wf.refreshTargets([fofn_abs_task])
 
-    pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "pdb_build_done") ) 
+    pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "pdb_build_done") )
     parameters = {"work_dir": pread_dir,
                   "config": config}
 
@@ -546,7 +546,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     build_pdb_task = make_build_pdb_task(task_build_pdb)
 
     wf.addTasks([build_pdb_task])
-    wf.refreshTargets([pdb_build_done]) 
+    wf.refreshTargets([pdb_build_done])
 
 
     preads_nblock = support.get_nblock(fn(preads_db))
@@ -561,7 +561,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
             "nblock": preads_nblock,
     }
     make_daligner_gather = PypeTask(
-                inputs = daligner_out, 
+                inputs = daligner_out,
                 outputs =  {"da_done":p_da_done},
                 parameters = parameters,
                 TaskType = PypeThreadTaskBase,
@@ -575,7 +575,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
     p_merge_done = makePypeLocalFile(os.path.join( pread_dir, "p_merge_done"))
 
-    @PypeTask( inputs = merge_out, 
+    @PypeTask( inputs = merge_out,
                outputs =  {"p_merge_done": p_merge_done},
                TaskType = PypeThreadTaskBase,
                URL = "task://localhost/pmerge_check" )
@@ -588,7 +588,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
-    
+
     db2falcon_done = makePypeLocalFile( os.path.join(pread_dir, "db2falcon_done"))
     make_run_db2falcon = PypeTask(
                inputs = {"p_merge_done": p_merge_done,},

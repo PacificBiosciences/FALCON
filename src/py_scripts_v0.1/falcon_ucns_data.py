@@ -47,7 +47,7 @@ if __name__ == "__main__":
     import argparse
     import re
     from pbcore.io import FastaReader
-    
+
     tiling_path = {}
     with open("all_tiling_path_c") as f:
         for l in f:
@@ -83,12 +83,12 @@ if __name__ == "__main__":
             seq = seq_db[s_id]
             if end == "B":
                 s, e = e, s
-                offset = offset - len(seq) 
+                offset = offset - len(seq)
                 seq = "".join([rcmap[c] for c in seq[::-1]])
             else:
                 offset = offset - len(seq)
             print s_id, offset, seq
-        
+
         print "+ + +"
 
     f = FastaReader("a_nodup.fa")
@@ -108,12 +108,12 @@ if __name__ == "__main__":
             seq = seq_db[s_id]
             if end == "B":
                 s, e = e, s
-                offset = offset - len(seq) 
+                offset = offset - len(seq)
                 seq = "".join([rcmap[c] for c in seq[::-1]])
             else:
                 offset = offset - len(seq)
             print s_id, offset, seq
-        
+
         print "+ + +"
 
     print "- - -"

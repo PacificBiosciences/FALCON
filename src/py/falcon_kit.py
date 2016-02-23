@@ -75,7 +75,7 @@ falcon_dll = CDLL(ext_falcon.__file__)
 
 kup = falcon_dll
 
-kup.allocate_kmer_lookup.argtypes =  [seq_coor_t] 
+kup.allocate_kmer_lookup.argtypes =  [seq_coor_t]
 kup.allocate_kmer_lookup.restype = POINTER(KmerLookup)
 kup.init_kmer_lookup.argtypes = [POINTER(KmerLookup), seq_coor_t]
 kup.free_kmer_lookup.argtypes = [POINTER(KmerLookup)]
@@ -89,10 +89,10 @@ kup.allocate_seq_addr.argtypes = [seq_coor_t]
 kup.allocate_seq_addr.restype = POINTER(seq_coor_t)
 kup.free_seq_addr_array.argtypes = [POINTER(seq_coor_t)]
 
-kup.add_sequence.argtypes = [ seq_coor_t, c_uint, POINTER(c_char), seq_coor_t, POINTER(seq_coor_t), 
+kup.add_sequence.argtypes = [ seq_coor_t, c_uint, POINTER(c_char), seq_coor_t, POINTER(seq_coor_t),
                               POINTER(c_uint8), POINTER(KmerLookup) ]
 kup.mask_k_mer.argtypes =[ c_long, POINTER(KmerLookup), c_long ]
-kup.find_kmer_pos_for_seq.argtypes = [ POINTER(c_char), seq_coor_t, c_uint, POINTER(seq_coor_t), 
+kup.find_kmer_pos_for_seq.argtypes = [ POINTER(c_char), seq_coor_t, c_uint, POINTER(seq_coor_t),
                                        POINTER(KmerLookup)]
 kup.find_kmer_pos_for_seq.restype = POINTER(KmerMatch)
 kup.free_kmer_match.argtypes = [ POINTER(KmerMatch) ]
@@ -107,7 +107,7 @@ kup.free_aln_range.argtypes = [POINTER(AlnRange)]
 
 class Alignment(Structure):
     """
-    typedef struct {    
+    typedef struct {
         seq_coor_t aln_str_size ;
         seq_coor_t dist ;
         seq_coor_t aln_q_s;
@@ -130,7 +130,7 @@ class Alignment(Structure):
 
 DWA = falcon_dll
 
-DWA.align.argtypes = [ POINTER(c_char), c_long, POINTER(c_char), c_long, c_long, c_int ] 
+DWA.align.argtypes = [ POINTER(c_char), c_long, POINTER(c_char), c_long, c_long, c_int ]
 DWA.align.restype = POINTER(Alignment)
 DWA.free_alignment.argtypes = [POINTER(Alignment)]
 
@@ -164,7 +164,7 @@ def get_alignment(seq1, seq0):
         #s2 = 0 if s2 < 14 else s2 - 14
         e1 = len(seq1) if e1 >= len(seq1)-2*K else e1 + K*2
         e2 = len(seq0) if e2 >= len(seq0)-2*K else e2 + K*2
-        
+
         alignment = DWA.align(seq1[s1:e1], e1-s1,
                               seq0[s2:e2], e2-s2,
                               100,
@@ -181,13 +181,13 @@ def get_alignment(seq1, seq0):
         aln_q_e = alignment[0].aln_q_e
         aln_t_s = alignment[0].aln_t_s
         aln_t_e = alignment[0].aln_t_e
-        
+
         #print "X,",alignment[0].aln_q_s, alignment[0].aln_q_e
         #print "Y,",alignment[0].aln_t_s, alignment[0].aln_t_e
-        
+
         #print aln_str1
         #print aln_str0
-    
+
         DWA.free_alignment(alignment)
 
     kup.free_seq_addr_array(sda_ptr)

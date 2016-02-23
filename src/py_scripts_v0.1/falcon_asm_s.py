@@ -85,25 +85,25 @@ class StringGraph(object):
         self.n_mark = {}
         self.e_reduce = {}
         self.repeat_overlap = {}
-        
+
     def add_node(self, node_name):
-        """ 
+        """
         add a node into the graph by given a node name
         """
         if node_name not in self.nodes:
             self.nodes[node_name] = SGNode(node_name)
-    
+
     def add_edge(self, in_node_name, out_node_name, **attributes):
-        """ 
+        """
         add an edge into the graph by given a pair of nodes
         """
         if (in_node_name, out_node_name) not in self.edges:
-        
+
             self.add_node(in_node_name)
             self.add_node(out_node_name)
             in_node = self.nodes[in_node_name]
-            out_node = self.nodes[out_node_name]    
-            
+            out_node = self.nodes[out_node_name]
+
             edge = SGEdge(in_node, out_node)
             self.edges[ (in_node_name, out_node_name) ] = edge
             in_node.add_out_edge(edge)
@@ -146,7 +146,7 @@ class StringGraph(object):
             if len(self.nodes[v].out_edges) > 1:
                 for out_edge in self.nodes[v].out_edges:
                     w = out_edge.out_node.name
-                    
+
                     if len(self.nodes[w].out_edges) == 0 and self.e_reduce[ (v, w) ] != True:
                         #print "XXX: spur edge %s %s removed" % (v, w)
                         self.e_reduce[(v, w)] = True
@@ -174,23 +174,23 @@ class StringGraph(object):
         FUZZ = 500
         for n in self.nodes:
             n_mark[n] = "vacant"
-    
+
         for n_name, node in self.nodes.items():
 
             out_edges = node.out_edges
             if len(out_edges) == 0:
                 continue
-            
+
             out_edges.sort(key=lambda x: x.attr["length"])
-            
+
             for e in out_edges:
                 w = e.out_node
                 n_mark[ w.name ] = "inplay"
-            
+
             max_len = out_edges[-1].attr["length"]
-                
+
             max_len += FUZZ
-            
+
             for e in out_edges:
                 e_len = e.attr["length"]
                 w = e.out_node
@@ -201,7 +201,7 @@ class StringGraph(object):
                             x = e2.out_node
                             if n_mark[x.name] == "inplay":
                                 n_mark[x.name] = "eliminated"
-            
+
             for e in out_edges:
                 e_len = e.attr["length"]
                 w = e.out_node
@@ -215,7 +215,7 @@ class StringGraph(object):
                         x = e2.out_node
                         if n_mark[x.name] == "inplay":
                             n_mark[x.name] = "eliminated"
-                            
+
             for out_edge in out_edges:
                 v = out_edge.in_node
                 w = out_edge.out_node
@@ -226,7 +226,7 @@ class StringGraph(object):
                     e_reduce[(v_name, w_name)] = True
                     #print "XXX: tr edge %s %s removed" % (v_name, w_name)
                 n_mark[w.name] = "vacant"
-                
+
 
     def mark_best_overlap(self):
         """
@@ -262,7 +262,7 @@ class StringGraph(object):
                     v2, w2 = reverse_end(w), reverse_end(v)
                     #print "XXX: in best edge %s %s removed" % (v2, w2)
                     self.e_reduce[(v2, w2)] = True
-                
+
     def get_out_edges_for_node(self, name, mask=True):
         rtn = []
         for e in self.nodes[name].out_edges:
@@ -271,8 +271,8 @@ class StringGraph(object):
             if self.e_reduce[ (v.name, w.name) ] == False:
                 rtn.append(e)
         return rtn
-        
-        
+
+
     def get_in_edges_for_node(self, name, mask=True):
         rtn = []
         for e in self.nodes[name].in_edges:
@@ -302,13 +302,13 @@ class StringGraph(object):
                 rtn.append(e)
         rtn.sort(key=lambda e: e.attr["score"])
         return rtn[-1]
-        
+
 
 RCMAP = dict(zip("ACGTacgtNn-","TGCAtgcaNn-"))
 def generate_seq_from_path(sg, seqs, path):
     subseqs = []
     r_id, end = path[0].split(":")
-    
+
     count = 0
     for i in range( len( path ) -1 ):
         w_n, v_n = path[i:i+2]
@@ -339,8 +339,8 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
     """
     given a string graph:sg and the sequences: seqs, write the unitig fasta file into out_fn
     the funtion return a reduct graph representing the reduce string graph where the edges are unitigs
-    
-    some extra files generated: 
+
+    some extra files generated:
         unit_edges.dat : an easy to parse file for unitig data
         unit_edge_paths : the file contains the information of the path of all unitigs
         uni_graph.gexf: the unitig graph in gexf format for visulization
@@ -366,7 +366,7 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
 
         #nodes_for_tig.remove(n)
         upstream_nodes = []
-        
+
         c_node = v
         p_in_edges = sg.get_in_edges_for_node(c_node)
         p_out_edges = sg.get_out_edges_for_node(c_node)
@@ -379,10 +379,10 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
             p_out_edges = sg.get_out_edges_for_node(p_node.name)
             c_node = p_node.name
 
-        upstream_nodes.reverse()  
-            
+        upstream_nodes.reverse()
+
         downstream_nodes = []
-        c_node = w 
+        c_node = w
         n_out_edges = sg.get_out_edges_for_node(c_node)
         n_in_edges = sg.get_in_edges_for_node(c_node)
         while len(n_out_edges) == 1 and len(n_in_edges) == 1:
@@ -392,11 +392,11 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
                 break
             n_out_edges = sg.get_out_edges_for_node(n_node.name)
             n_in_edges = sg.get_in_edges_for_node(n_node.name)
-            c_node = n_node.name 
-        
+            c_node = n_node.name
+
         whole_path = upstream_nodes + [v, w] + downstream_nodes
         count += 1
-        subseq = generate_seq_from_path(sg, seqs, whole_path) 
+        subseq = generate_seq_from_path(sg, seqs, whole_path)
         #subseq = ""
         uni_edges.setdefault( (whole_path[0], whole_path[-1]), [] )
         uni_edges[(whole_path[0], whole_path[-1])].append(  ( whole_path, subseq ) )
@@ -413,7 +413,7 @@ def generate_unitig(sg, seqs, out_fn, connected_nodes = None):
 
         r_whole_path = reverse_path( whole_path )
         count += 1
-        subseq = generate_seq_from_path(sg, seqs, r_whole_path) 
+        subseq = generate_seq_from_path(sg, seqs, r_whole_path)
         #subseq = ""
         uni_edges.setdefault( (r_whole_path[0], r_whole_path[-1]), [] )
         uni_edges[(r_whole_path[0], r_whole_path[-1])].append(  ( r_whole_path, subseq ) )
@@ -453,7 +453,7 @@ def neighbor_bound(G, v, w, radius):
 
 def is_branch_node(G, n):
     """
-    test whether the node n is a "branch node" which the paths from any of two of 
+    test whether the node n is a "branch node" which the paths from any of two of
     its offsprings do not intersect within a given radius
     """
     out_edges = G.out_edges([n])
@@ -473,15 +473,15 @@ def is_branch_node(G, n):
 
 def get_bundle( path, u_graph, u_graph_r ):
 
-    """ 
+    """
     find a sub-graph contain the nodes between the start and the end of the path
-    inputs: 
+    inputs:
         u_graph : a unitig graph
     returns:
-        bundle_graph: the whole bundle graph 
-        bundle_paths: the paths in the bundle graph 
+        bundle_graph: the whole bundle graph
+        bundle_paths: the paths in the bundle graph
         sub_graph2_edges: all edges of the bundle graph
-    
+
     """
 
     p_start, p_end = path[0], path[-1]
@@ -491,11 +491,11 @@ def get_bundle( path, u_graph, u_graph_r ):
     down_path = nx.ego_graph(u_graph, p_start, radius=len(p_nodes), undirected=False)
     up_path = nx.ego_graph(u_graph_r, p_end, radius=len(p_nodes), undirected=False)
     subgraph_nodes = set(down_path) & set(up_path)
-    
+
 
     sub_graph = nx.DiGraph()
     for v, w in u_graph.edges_iter():
-        if v in subgraph_nodes and w in subgraph_nodes:            
+        if v in subgraph_nodes and w in subgraph_nodes:
             if (v, w) in p_edges:
                 sub_graph.add_edge(v, w, color = "red")
             else:
@@ -518,9 +518,9 @@ def get_bundle( path, u_graph, u_graph_r ):
             r_id, orientation = e[1].split(":")
             orientation = "E" if orientation == "B" else "E"
             visited.add( r_id +":" + orientation)
-            if not is_branch_node(sub_graph_r, e[1]): 
+            if not is_branch_node(sub_graph_r, e[1]):
                 tips.add(e[1])
-        
+
     while len(tips) != 0:
         n = tips.pop()
         out_edges = sub_graph.out_edges([n])
@@ -528,15 +528,15 @@ def get_bundle( path, u_graph, u_graph_r ):
             e = out_edges[0]
             sub_graph2.add_edge(e[0], e[1], n_weight = u_graph[e[0]][e[1]]["n_weight"])
             last_node = e[1]
-            if e[1] not in visited:                       
+            if e[1] not in visited:
                 visited.add(e[1])
                 r_id, orientation = e[1].split(":")
                 orientation = "E" if orientation == "B" else "E"
                 visited.add( r_id +":" + orientation)
-                if not is_branch_node(sub_graph_r, e[1]): 
+                if not is_branch_node(sub_graph_r, e[1]):
                     tips.add(e[1])
         else:
-        
+
             is_branch = is_branch_node(sub_graph, n)
             if not is_branch:
                 for e in out_edges:
@@ -552,7 +552,7 @@ def get_bundle( path, u_graph, u_graph_r ):
         ct += 1
     last_node = None
     longest_len = 0
-        
+
     sub_graph2_nodes = sub_graph2.nodes()
     sub_graph2_edges = sub_graph2.edges()
 
@@ -587,7 +587,7 @@ def get_bundle( path, u_graph, u_graph_r ):
     for v in sub_graph2_nodes:
         if v not in subgraph_nodes:
             sub_graph2.remove_node(v)
-    
+
     if DEBUG_LOG_LEVEL > 1:
         print "new_path", path[0], last_node, len(sub_graph2_nodes), path
 
@@ -600,8 +600,8 @@ def get_bundle( path, u_graph, u_graph_r ):
     sub_graph2_edges = sub_graph2.edges()
 
     nodes_idx = dict( [ (n[1], n[0]) for n in enumerate(path) ]  )
-    
-         
+
+
     # create a list of subpath that has no branch
     non_branch_subpaths = []
     wi = 0
@@ -624,17 +624,17 @@ def get_bundle( path, u_graph, u_graph_r ):
         vi = wi
 
     # create the accompany_graph that has the path of the alternative subpaths
-    
+
     associate_graph = nx.DiGraph()
     for v, w in sub_graph2.edges_iter():
         if (v, w) not in p_edges:
             associate_graph.add_edge(v, w, n_weight = sub_graph2[v][w]["n_weight"])
 
     if DEBUG_LOG_LEVEL > 1:
-        print "associate_graph size:", len(associate_graph)           
+        print "associate_graph size:", len(associate_graph)
         print "non_branch_subpaths",len(non_branch_subpaths), non_branch_subpaths
 
-    # construct the bundle graph                
+    # construct the bundle graph
     associate_graph_nodes = set(associate_graph.nodes())
     bundle_graph = nx.DiGraph()
     bundle_graph.add_path( path )
@@ -646,19 +646,19 @@ def get_bundle( path, u_graph, u_graph_r ):
         w = e2[0]
         if v == w:
             continue
-        in_between_node_count = nodes_idx[w] - nodes_idx[v] 
+        in_between_node_count = nodes_idx[w] - nodes_idx[v]
         if v in associate_graph_nodes and w in associate_graph_nodes:
             try:
-                a_path = nx.shortest_path(associate_graph, v, w, "n_weight")    
+                a_path = nx.shortest_path(associate_graph, v, w, "n_weight")
             except nx.NetworkXNoPath:
                 continue
-            bundle_graph.add_path( a_path )      
+            bundle_graph.add_path( a_path )
             bundle_paths.append( a_path )
 
     return bundle_graph, bundle_paths, sub_graph2_edges
-            
+
 def get_bundles(u_edges):
-    
+
     """
     input: all unitig edges
     output: the assembled primary_tigs.fa and all_tigs.fa
@@ -669,19 +669,19 @@ def get_bundles(u_edges):
     main_tig_paths = open("primary_tigs_paths","w")
     sv_tigs = open("all_tigs.fa","w")
     sv_tig_paths = open("all_tigs_paths","w")
-    max_weight = 0 
+    max_weight = 0
     for v, w in u_edges:
         x = max( [len(s[1]) for s in u_edges[ (v,w) ] ] )
         if DEBUG_LOG_LEVEL > 1:
             print "W", v, w, x
         if x > max_weight:
             max_weight = x
-            
+
     in_edges = {}
     out_edges = {}
     for v, w in u_edges:
-        in_edges.setdefault(w, []) 
-        out_edges.setdefault(w, []) 
+        in_edges.setdefault(w, [])
+        out_edges.setdefault(w, [])
         in_edges[w].append( (v, w) )
 
         out_edges.setdefault(v, [])
@@ -692,7 +692,7 @@ def get_bundles(u_edges):
     for v,w in u_edges:
 
         u_graph.add_edge(v, w, n_weight = max_weight - max( [len(s[1]) for s in  u_edges[ (v,w) ] ] ) )
-    
+
     bundle_edge_out = open("bundle_edges","w")
     bundle_index = 0
 
@@ -711,7 +711,7 @@ def get_bundles(u_edges):
         G_edges = set(G.edges())
 
         dual_component = False
-        
+
         for v, w in list(G_edges):
             v = v.split(":")[0]
             w = w.split(":")[0]
@@ -736,31 +736,31 @@ def get_bundles(u_edges):
             main_tig_paths.flush()
             sv_tigs.flush()
             sv_tig_paths.flush()
-            
-            
-            #root_nodes = set() 
-            candidates = [] 
-            for n in G: 
-                sp =nx.single_source_shortest_path_length(G, n) 
-                sp = sp.items() 
-                sp.sort(key=lambda x : x[1]) 
-                longest = sp[-1] 
+
+
+            #root_nodes = set()
+            candidates = []
+            for n in G:
+                sp =nx.single_source_shortest_path_length(G, n)
+                sp = sp.items()
+                sp.sort(key=lambda x : x[1])
+                longest = sp[-1]
                 if DEBUG_LOG_LEVEL > 2:
                     print "L", n, longest[0]
-                if longest[0].split(":")[0] == n.split(":")[0]: #avoid a big loop 
+                if longest[0].split(":")[0] == n.split(":")[0]: #avoid a big loop
                     continue
-                candidates.append ( (longest[1], n, longest[0]) ) 
+                candidates.append ( (longest[1], n, longest[0]) )
 
                 n = longest[0]
-                sp =nx.single_source_shortest_path_length(G_r, n) 
-                sp = sp.items() 
-                sp.sort(key=lambda x : x[1]) 
-                longest = sp[-1] 
+                sp =nx.single_source_shortest_path_length(G_r, n)
+                sp = sp.items()
+                sp.sort(key=lambda x : x[1])
+                longest = sp[-1]
                 if DEBUG_LOG_LEVEL > 2:
                     print "L", n, longest[0]
-                if longest[0].split(":")[0] == n.split(":")[0]: #avoid a big loop 
+                if longest[0].split(":")[0] == n.split(":")[0]: #avoid a big loop
                     continue
-                candidates.append ( (longest[1], longest[0], n) ) 
+                candidates.append ( (longest[1], longest[0], n) )
                 if len(candidates) != 0:
                     break
 
@@ -773,23 +773,23 @@ def get_bundles(u_edges):
                 else:
                     break
             else:
-                candidates.sort() 
-                
-                candidate = candidates[-1] 
-                
-                if candidate[1] == candidate[2]: 
-                    G.remove_node(candidate[1]) 
+                candidates.sort()
+
+                candidate = candidates[-1]
+
+                if candidate[1] == candidate[2]:
+                    G.remove_node(candidate[1])
                     G_r.remove_node(candidate[1])
-                    continue 
-             
-                path = nx.shortest_path(G, candidate[1], candidate[2], "n_weight") 
+                    continue
+
+                path = nx.shortest_path(G, candidate[1], candidate[2], "n_weight")
 
             if DEBUG_LOG_LEVEL > 1:
                 print "X", path[0], path[-1], len(path)
-            
+
             cmp_edges = set()
             #g_edges = set(G.edges())
-            new_path = []  
+            new_path = []
             tail = True
             # avioid confusion due to long palindrome sequence
             if len(path) > 2:
@@ -800,17 +800,17 @@ def get_bundles(u_edges):
                     #if (v_n, w_n) in cmp_edges or\
                     #    len(u_graph.out_edges(w_n)) > 5 or\
                     #    len(u_graph.in_edges(w_n)) > 5:
-                    if (v_n, w_n) in cmp_edges: 
+                    if (v_n, w_n) in cmp_edges:
                         tail = False
                         break
 
                     r_id, end = v_n.split(":")
-                    end = "E" if end == "B" else "B" 
-                    v_n2 = r_id + ":" + end 
+                    end = "E" if end == "B" else "B"
+                    v_n2 = r_id + ":" + end
 
                     r_id, end = w_n.split(":")
-                    end = "E" if end == "B" else "B" 
-                    w_n2 = r_id + ":" + end 
+                    end = "E" if end == "B" else "B"
+                    w_n2 = r_id + ":" + end
 
                     if (w_n2, v_n2) in G_edges:
                         cmp_edges.add( (w_n2, v_n2) )
@@ -819,11 +819,11 @@ def get_bundles(u_edges):
                     new_path.append(w_n)
             else:
                 new_path = path[:]
-                    
-            
+
+
             if len(new_path) > 1:
                 path = new_path
-                
+
                 if DEBUG_LOG_LEVEL > 2:
                     print "Y", path[0], path[-1], len(path)
 
@@ -831,7 +831,7 @@ def get_bundles(u_edges):
                 for bg_edge in bundle_graph_edges:
                     print >> bundle_edge_out, bundle_index, "edge", bg_edge[0], bg_edge[1]
                 for path_ in bundle_paths:
-                    print >>bundle_edge_out, "path", bundle_index, " ".join(path_) 
+                    print >>bundle_edge_out, "path", bundle_index, " ".join(path_)
 
                 edges_to_be_removed = set()
                 if DEBUG_LOG_LEVEL > 2:
@@ -842,22 +842,22 @@ def get_bundles(u_edges):
 
                     ASM_graph.add_path(bundle_paths[0], ctg="%04d" % bundle_index)
                     extra_u_edges = []
-                    
+
                     print >> main_tig_paths, ">%04d %s" % ( bundle_index, " ".join(bundle_paths[0]) )
                     subseqs = []
-                
-                    for i in range(len(bundle_paths[0]) - 1): 
+
+                    for i in range(len(bundle_paths[0]) - 1):
                         v, w = bundle_paths[0][i:i+2]
                         edges_to_be_removed.add( (v,w) )
                         uedges = u_edges[ (v,w) ]
                         uedges.sort( key= lambda x: len(x[0]) )
                         subseqs.append( uedges[-1][1] )
-                        visited_u_edges.add( "-".join(uedges[-1][0]) ) 
+                        visited_u_edges.add( "-".join(uedges[-1][0]) )
                         for ue in uedges:
                             if "-".join(ue[0]) not in visited_u_edges:
                                 visited_u_edges.add("-".join(ue[0]))
                                 extra_u_edges.append(ue)
-                    seq = "".join(subseqs)        
+                    seq = "".join(subseqs)
                     sv_tig_idx = 0
                     print >> sv_tig_paths, ">%04d-%04d %s" % ( bundle_index, sv_tig_idx, " ".join(bundle_paths[0]) )
                     if len(seq) > 0:
@@ -872,19 +872,19 @@ def get_bundles(u_edges):
                         print >> sv_tig_paths, ">%04d-%04d %s" % ( bundle_index, sv_tig_idx, " ".join(sv_path) )
                         ASM_graph.add_path(sv_path, ctg="%04d" % bundle_index)
                         subseqs = []
-                        for i in range(len(sv_path) - 1): 
+                        for i in range(len(sv_path) - 1):
                             v, w = sv_path[i:i+2]
                             edges_to_be_removed.add( (v,w) )
                             uedges = u_edges[ (v,w) ]
                             uedges.sort( key= lambda x: len(x[0]) )
                             subseqs.append( uedges[-1][1] )
-                            visited_u_edges.add( "-".join(uedges[-1][0]) ) 
+                            visited_u_edges.add( "-".join(uedges[-1][0]) )
                             for ue in uedges:
                                 if "-".join(ue[0]) not in visited_u_edges:
                                     visited_u_edges.add("-".join(ue[0]))
                                     extra_u_edges.append(ue)
-                        seq = "".join(subseqs)        
-                        if len(seq) > 0: 
+                        seq = "".join(subseqs)
+                        if len(seq) > 0:
                             print >> sv_tigs, ">%04d-%04d %s-%s" % (bundle_index, sv_tig_idx, sv_path[0], sv_path[-1])
                             print >> sv_tigs, "".join(subseqs)
                         sv_tig_idx += 1
@@ -895,8 +895,8 @@ def get_bundles(u_edges):
                         print >> sv_tigs, ">%04d-%04d-u %s-%s" % (bundle_index, sv_tig_idx, u_path[0], u_path[-1])
                         print >> sv_tigs, seq
                         sv_tig_idx += 1
-                        
-                    
+
+
                     bundle_index += 1
             else:
                 #TODO, consolidate code here
@@ -911,7 +911,7 @@ def get_bundles(u_edges):
                 sv_tig_idx += 1
                 bundle_index += 1
                 bundle_graph_edges = zip(path[:-1],path[1:])
-            
+
             #clean up the graph
 
             edges = set(G.edges())
@@ -919,7 +919,7 @@ def get_bundles(u_edges):
 
             if DEBUG_LOG_LEVEL > 2:
                 print "BGE",bundle_graph_edges
-            
+
             edge_remove_count = 0
             for v, w in edges_to_be_removed:
                 if (v, w) in edges:
@@ -929,7 +929,7 @@ def get_bundles(u_edges):
                     edge_remove_count += 1
                     if DEBUG_LOG_LEVEL > 2:
                         print "remove edge", bundle_index, w, v
-                    
+
             edges = set(G.edges())
             for v, w in edges_to_be_removed:
 
@@ -951,14 +951,14 @@ def get_bundles(u_edges):
 
             if edge_remove_count == 0:
                 break
-                
+
             nodes = G.nodes()
             for n in nodes:
                 if G.in_degree(n) == 0 and G.out_degree(n) == 0:
                     G.remove_node(n)
                     G_r.remove_node(n)
                     if DEBUG_LOG_LEVEL > 2:
-                        print "remove node", n 
+                        print "remove node", n
 
     sv_tig_paths.close()
     sv_tigs.close()
@@ -982,7 +982,7 @@ def SGToNXG(sg):
             G.add_node( w, size = out_degree )
             label = sg.edges[ (v, w) ].attr["label"]
             score = sg.edges[ (v, w) ].attr["score"]
-            print >>out_f, v, w, label, score 
+            print >>out_f, v, w, label, score
             G.add_edge( v, w, label = label, weight = 0.001*score, n_weight = max_score - score )
             #print in_node_name, out_node_name
     out_f.close()
@@ -991,11 +991,11 @@ def SGToNXG(sg):
 if __name__ == "__main__":
 
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes')
     parser.add_argument('overlap_file', help='a file that contains the overlap information.')
     parser.add_argument('read_fasta', help='the file that contains the sequence to be assembled')
-    parser.add_argument('--min_len', type=int, default=4000, 
+    parser.add_argument('--min_len', type=int, default=4000,
                         help='minimum length of the reads to be considered for assembling')
     parser.add_argument('--min_idt', type=float, default=96,
                         help='minimum alignment identity of the reads to be considered for assembling')
@@ -1019,7 +1019,7 @@ if __name__ == "__main__":
             if l[1] == "1":
                 contained_reads.add(l[0])
     print len(chimer_ids)
-    
+
     seqs = {}
     # load all p-reads into memory
     f = FastaReader(read_fasta)
@@ -1038,7 +1038,7 @@ if __name__ == "__main__":
 
 
     # loop through the overlapping data to load the data in the a python array
-    # contained reads are identified 
+    # contained reads are identified
 
     with open(overlap_file) as f:
         for l in f:
@@ -1047,12 +1047,12 @@ if __name__ == "__main__":
             #work around for some ill formed data recored
             if len(l) != 13:
                 continue
-            
+
             f_id, g_id, score, identity = l[:4]
             if f_id == g_id:  # don't need self-self overlapping
                 continue
 
-            if g_id not in seqs: 
+            if g_id not in seqs:
                 continue
 
             if f_id not in seqs:
@@ -1080,14 +1080,14 @@ if __name__ == "__main__":
             # only used reads longer than the 4kb for assembly
             if f_len < args.min_len: continue
             if g_len < args.min_len: continue
-            
+
             # double check for proper overlap
             if f_start > 24 and f_len - f_end > 24:  # allow 24 base tolerance on both sides of the overlapping
                 continue
-            
+
             if g_start > 24 and g_len - g_end > 24:
                 continue
-            
+
             if g_strain == 0:
                 if f_start < 24 and g_len - g_end > 24:
                     continue
@@ -1105,7 +1105,7 @@ if __name__ == "__main__":
 
             overlap_count[f_id] = overlap_count.get(f_id,0)+1
             overlap_count[g_id] = overlap_count.get(g_id,0)+1
-            
+
     print "###", len(overlap_data), len(contained_reads)
     overlap_set = set()
     sg = StringGraph()
@@ -1125,10 +1125,10 @@ if __name__ == "__main__":
         else:
             overlap_set.add(overlap_pair)
 
-        
+
         if g_s == 1: # revered alignment, swapping the begin and end coordinates
             g_b, g_e = g_e, g_b
-        
+
         # build the string graph edges for each overlap
         if f_b > 24:
             if g_b < g_e:
@@ -1140,10 +1140,10 @@ if __name__ == "__main__":
                 """
                 if f_b == 0 or g_e - g_l == 0:
                     continue
-                sg.add_edge( "%s:B" % g_id, "%s:B" % f_id, label = "%s:%d-%d" % (f_id, f_b, 0), 
+                sg.add_edge( "%s:B" % g_id, "%s:B" % f_id, label = "%s:%d-%d" % (f_id, f_b, 0),
                                                            length = abs(f_b-0),
                                                            score = -score)
-                sg.add_edge( "%s:E" % f_id, "%s:E" % g_id, label = "%s:%d-%d" % (g_id, g_e, g_l), 
+                sg.add_edge( "%s:E" % f_id, "%s:E" % g_id, label = "%s:%d-%d" % (g_id, g_e, g_l),
                                                            length = abs(g_e-g_l),
                                                            score = -score)
             else:
@@ -1151,14 +1151,14 @@ if __name__ == "__main__":
                      f.B         f.E
                   f  ----------->
                   g         <-------------
-                            g.E           g.B           
+                            g.E           g.B
                 """
                 if f_b == 0 or g_e == 0:
                     continue
-                sg.add_edge( "%s:E" % g_id, "%s:B" % f_id, label = "%s:%d-%d" % (f_id, f_b, 0), 
+                sg.add_edge( "%s:E" % g_id, "%s:B" % f_id, label = "%s:%d-%d" % (f_id, f_b, 0),
                                                            length = abs(f_b -0),
                                                            score = -score)
-                sg.add_edge( "%s:E" % f_id, "%s:B" % g_id, label = "%s:%d-%d" % (g_id, g_e, 0), 
+                sg.add_edge( "%s:E" % f_id, "%s:B" % g_id, label = "%s:%d-%d" % (g_id, g_e, 0),
                                                            length = abs(g_e- 0),
                                                            score = -score)
         else:
@@ -1171,10 +1171,10 @@ if __name__ == "__main__":
                 """
                 if g_b == 0 or f_e - f_l == 0:
                     continue
-                sg.add_edge( "%s:B" % f_id, "%s:B" % g_id, label = "%s:%d-%d" % (g_id, g_b, 0), 
+                sg.add_edge( "%s:B" % f_id, "%s:B" % g_id, label = "%s:%d-%d" % (g_id, g_b, 0),
                                                            length = abs(g_b - 0),
                                                            score = -score)
-                sg.add_edge( "%s:E" % g_id, "%s:E" % f_id, label = "%s:%d-%d" % (f_id, f_e, f_l), 
+                sg.add_edge( "%s:E" % g_id, "%s:E" % f_id, label = "%s:%d-%d" % (f_id, f_e, f_l),
                                                            length = abs(f_e-f_l),
                                                            score = -score)
             else:
@@ -1182,14 +1182,14 @@ if __name__ == "__main__":
                                     f.B         f.E
                   f                 ----------->
                   g         <-------------
-                            g.E           g.B           
+                            g.E           g.B
                 """
                 if g_b - g_l == 0 or f_e - f_l ==0:
                     continue
-                sg.add_edge( "%s:B" % f_id, "%s:E" % g_id, label = "%s:%d-%d" % (g_id, g_b, g_l), 
+                sg.add_edge( "%s:B" % f_id, "%s:E" % g_id, label = "%s:%d-%d" % (g_id, g_b, g_l),
                                                            length = abs(g_b - g_l),
                                                            score = -score)
-                sg.add_edge( "%s:B" % g_id, "%s:E" % f_id, label = "%s:%d-%d" % (f_id, f_e, f_l), 
+                sg.add_edge( "%s:B" % g_id, "%s:E" % f_id, label = "%s:%d-%d" % (f_id, f_e, f_l),
                                                            length = abs(f_e - f_l),
                                                            score = -score)
 

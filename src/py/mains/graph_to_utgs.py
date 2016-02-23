@@ -15,7 +15,7 @@ def get_aln_data(t_seq, q_seq):
     sda_ptr = kup.allocate_seq_addr( len(seq0) )
     kup.add_sequence( 0, K, seq0, len(seq0), sda_ptr, sa_ptr, lk_ptr)
     q_id = "dummy"
-    
+
     kmer_match_ptr = kup.find_kmer_pos_for_seq(q_seq, len(q_seq), K, sda_ptr, lk_ptr)
     kmer_match = kmer_match_ptr[0]
     aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K*5, 12)
@@ -23,7 +23,7 @@ def get_aln_data(t_seq, q_seq):
     x,y = zip( * [ (kmer_match.query_pos[i], kmer_match.target_pos[i]) for i in range(kmer_match.count)] )
     kup.free_kmer_match(kmer_match_ptr)
     s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
-    
+
     if e1 - s1 > 100:
 
         alignment = DWA.align(q_seq[s1:e1], e1-s1,
@@ -55,7 +55,7 @@ def main(argv=None):
     if type_ == "simple":
         path_or_edges = path_or_edges.split("~")
         seq = G_asm.get_seq_from_path( path_or_edges )
-        print >> utg_out, ">%s~%s~%s-%d %d %d" % (s, v, t, 0, length, score ) 
+        print >> utg_out, ">%s~%s~%s-%d %d %d" % (s, v, t, 0, length, score )
         print >> utg_out, seq
 
     if type_ == "compound":
@@ -66,17 +66,17 @@ def main(argv=None):
         path_or_edges = [ c.split("~") for c in path_or_edges.split("|")]
         for ss, vv, tt in path_or_edges:
             type_, length, score, sub_path = G_asm.utg_data[ (ss,tt,vv) ]
-             
+
             sub_path = sub_path.split("~")
             v1 = sub_path[0]
             for v2 in sub_path[1:]:
                 c_graph.add_edge( v1, v2, e_score = G_asm.sg_edges[ (v1, v2) ][1]  )
                 v1 = v2
-        
+
         shortest_path = nx.shortest_path( c_graph, s, t, "e_score" )
         score = nx.shortest_path_length( c_graph, s, t, "e_score" )
         all_alt_path.append( (score, shortest_path) )
-        
+
 
         #a_ctg_data.append( (s, t, shortest_path) ) #first path is the same as the one used in the primary contig
         while 1:
@@ -101,7 +101,7 @@ def main(argv=None):
         all_alt_path.reverse()
         shortest_path = all_alt_path[0][1]
 
-        
+
         score, atig_path = all_alt_path[0]
 
         atig_output = []
@@ -155,6 +155,6 @@ def main(argv=None):
         sub_id = 0
         for data in atig_output:
             v0, w0, tig_path, total_length, total_score, seq, atig_path_edges, a_idt, cov = data
-            print >> utg_out, ">%s~%s~%s-%d %d %d" % (v0, "NA", w0, sub_id,  total_length, total_score ) 
+            print >> utg_out, ">%s~%s~%s-%d %d %d" % (v0, "NA", w0, sub_id,  total_length, total_score )
             print >> utg_out, seq
             sub_id += 1

@@ -44,7 +44,7 @@ class RedisDict(object):
 
     def __len__(self):
         return self._rs.hlen( self.id_ )
-    
+
     def keys(self):
         return self._rs.hgetall( self.id_ ).keys()
 
