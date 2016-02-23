@@ -44,6 +44,7 @@ setup(name='falcon_kit',
           'fc_ovlp_stats=falcon_kit.mains.ovlp_stats:main',
           'fc_ovlp_to_graph=falcon_kit.mains.ovlp_to_graph:main',
           'fc_run=falcon_kit.mains.run:main',
+          'fc_run1=falcon_kit.mains.run1:main', # someday, this can replace fc_run
           ],
       },
       extras_require = {
