@@ -3,15 +3,15 @@
  *
  *       Filename:  kmer_count.c
  *
- *    Description:  
+ *    Description:
  *
  *        Version:  0.1
  *        Created:  07/20/2013 17:00:00
  *       Revision:  none
  *       Compiler:  gcc
  *
- *         Author:  Jason Chin, 
- *        Company:  
+ *         Author:  Jason Chin,
+ *        Company:
  *
  * =====================================================================================
 
@@ -94,7 +94,7 @@ void free_kmer_lookup( kmer_lookup *  ptr) {
 
 seq_array allocate_seq(seq_coor_t size) {
     seq_array sa;
-    sa  = (seq_array) malloc( size * sizeof(base) ); 
+    sa  = (seq_array) malloc( size * sizeof(base) );
     init_seq_array( sa, size);
     return sa;
 }
@@ -137,12 +137,12 @@ seq_coor_t get_kmer_bitvector(seq_array sa, unsigned int K) {
     return kmer_bv;
 }
 
-void add_sequence ( seq_coor_t start, 
-                    unsigned int K, 
-                    char * seq, 
+void add_sequence ( seq_coor_t start,
+                    unsigned int K,
+                    char * seq,
                     seq_coor_t seq_len,
-                    seq_addr_array sda, 
-                    seq_array sa, 
+                    seq_addr_array sda,
+                    seq_array sa,
                     kmer_lookup * lk ) {
 
     seq_coor_t i;
@@ -205,7 +205,7 @@ void mask_k_mer(seq_coor_t size, kmer_lookup * kl, seq_coor_t threshold) {
 
 
 kmer_match * find_kmer_pos_for_seq( char * seq, seq_coor_t seq_len, unsigned int K,
-                    seq_addr_array sda, 
+                    seq_addr_array sda,
                     kmer_lookup * lk) {
     seq_coor_t i;
     seq_coor_t kmer_bv;
@@ -261,9 +261,9 @@ kmer_match * find_kmer_pos_for_seq( char * seq, seq_coor_t seq_len, unsigned int
         kmer_match_rtn->count += 1;
         if (kmer_match_rtn->count > kmer_match_rtn_allocation_size - 1000) {
             kmer_match_rtn_allocation_size += KMERMATCHINC;
-            kmer_match_rtn->query_pos = (seq_coor_t *) realloc( kmer_match_rtn->query_pos, 
+            kmer_match_rtn->query_pos = (seq_coor_t *) realloc( kmer_match_rtn->query_pos,
                                                                    kmer_match_rtn_allocation_size  * sizeof(seq_coor_t) );
-            kmer_match_rtn->target_pos = (seq_coor_t *) realloc( kmer_match_rtn->target_pos, 
+            kmer_match_rtn->target_pos = (seq_coor_t *) realloc( kmer_match_rtn->target_pos,
                                                                     kmer_match_rtn_allocation_size  * sizeof(seq_coor_t) );
         }
         while ( next_kmer_pos > kmer_pos ){
@@ -274,9 +274,9 @@ kmer_match * find_kmer_pos_for_seq( char * seq, seq_coor_t seq_len, unsigned int
             kmer_match_rtn->count += 1;
             if (kmer_match_rtn->count > kmer_match_rtn_allocation_size - 1000) {
                 kmer_match_rtn_allocation_size += KMERMATCHINC;
-                kmer_match_rtn->query_pos = (seq_coor_t *) realloc( kmer_match_rtn->query_pos, 
+                kmer_match_rtn->query_pos = (seq_coor_t *) realloc( kmer_match_rtn->query_pos,
                                                                        kmer_match_rtn_allocation_size  * sizeof(seq_coor_t) );
-                kmer_match_rtn->target_pos = (seq_coor_t *) realloc( kmer_match_rtn->target_pos, 
+                kmer_match_rtn->target_pos = (seq_coor_t *) realloc( kmer_match_rtn->target_pos,
                                                                         kmer_match_rtn_allocation_size  * sizeof(seq_coor_t) );
             }
         }
@@ -291,9 +291,9 @@ void free_kmer_match( kmer_match * ptr) {
     free(ptr);
 }
 
-aln_range* find_best_aln_range(kmer_match * km_ptr, 
-                              seq_coor_t K, 
-                              seq_coor_t bin_size, 
+aln_range* find_best_aln_range(kmer_match * km_ptr,
+                              seq_coor_t K,
+                              seq_coor_t bin_size,
                               seq_coor_t count_th) {
     seq_coor_t i;
     seq_coor_t j;
@@ -365,7 +365,7 @@ aln_range* find_best_aln_range(kmer_match * km_ptr,
         }
     }
     //printf("k_mer: %lu %lu\n" , max_k_mer_count, max_k_mer_bin);
-    
+
     if ( max_k_mer_bin != INT_MAX && max_k_mer_count > count_th ) {
         for (i = 0; i <  km_ptr->count; i++ ) {
             d = (long int) (km_ptr->query_pos[i]) - (long int) (km_ptr->target_pos[i]);
@@ -373,7 +373,7 @@ aln_range* find_best_aln_range(kmer_match * km_ptr,
                 continue;
             }
             if (d_count[ (d - d_min)/ (long int) bin_size ] > count_th) {
-                q_coor[j] = km_ptr->query_pos[i];  
+                q_coor[j] = km_ptr->query_pos[i];
                 t_coor[j] = km_ptr->target_pos[i];
                 //printf("d_count: %lu %lu\n" ,i, d_count[(d - d_min)/ (long int) bin_size]);
                 //printf("coor: %lu %lu\n" , q_coor[j], t_coor[j]);
@@ -426,9 +426,9 @@ aln_range* find_best_aln_range(kmer_match * km_ptr,
     return arange;
 }
 
-aln_range* find_best_aln_range2(kmer_match * km_ptr, 
-                                seq_coor_t K, 
-                                seq_coor_t bin_width, 
+aln_range* find_best_aln_range2(kmer_match * km_ptr,
+                                seq_coor_t K,
+                                seq_coor_t bin_width,
                                 seq_coor_t count_th) {
 
     seq_coor_t * d_coor;
@@ -513,7 +513,7 @@ aln_range* find_best_aln_range2(kmer_match * km_ptr,
     for (i = 0; i < km_ptr->count; i ++)  {
         cx = km_ptr->query_pos[i];
         cy = km_ptr->target_pos[i];
-        d = cx - cy; 
+        d = cx - cy;
         if ( d < d_coor[max_s] || d > d_coor[max_e] ) continue;
 
         j = i - 1;
