@@ -91,7 +91,7 @@ def get_alignment(seq1, seq0, edge_tolerance = 1000):
 def get_consensus_without_trim( c_input ):
     seqs, seed_id, config = c_input
     min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
-    if len(seqs[1:]) > max_n_read:
+    if len(seqs) > max_n_read:
         seqs = get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True)
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
@@ -209,10 +209,10 @@ def main(argv=sys.argv):
     parser.add_argument('--min_len_aln', type=int, default=0, # 0 to emulate previous behavior
                         help='minimum length of a sequence in an alignment to be used in consensus; any shorter sequence will be completely ignored')
     parser.add_argument('--min_n_read', type=int, default=10,
-                        help='minimum number of reads used in generating the consensus; a seed read with fewer alignments will '+ \
-                        'be completely ignored (obsoleted, formerly called `--min_cov_aln\')')
+                        help='1 + minimum number of reads used in generating the consensus; a seed read with fewer alignments will '+ \
+                        'be completely ignored')
     parser.add_argument('--max_n_read', type=int, default=500,
-                        help='maximum number of reads used in generating the consensus')
+                        help='1 + maximum number of reads used in generating the consensus')
     parser.add_argument('--trim', action="store_true", default=False,
                         help='trim the input sequence with k-mer spare dynamic programming to find the mapped range')
     parser.add_argument('--output_full', action="store_true", default=False,
