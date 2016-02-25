@@ -234,7 +234,7 @@ ln -sf {preads4falcon_fasta_fn} ./preads4falcon.fasta
 
 # Given preads.ovl,
 # write sg_edges_list, c_path, utg_data, ctg_paths.
-time fc_ovlp_to_graph preads.ovl --min_len {length_cutoff_pr} >| fc_ovlp_to_graph.log
+time fc_ovlp_to_graph {fc_ovlp_to_graph_option} preads.ovl >| fc_ovlp_to_graph.log
 
 # Given sg_edges_list, utg_data, ctg_paths, preads4falcon.fasta,
 # write p_ctg.fa and a_ctg_all.fa,
