@@ -178,6 +178,13 @@ def get_dict_from_old_falcon_cfg(config):
 
     length_cutoff_pr = config.getint(section, 'length_cutoff_pr')
 
+    # This one depends on length_cutoff_pr for its default.
+    fc_ovlp_to_graph_option = ''
+    if config.has_option(section, 'fc_ovlp_to_graph_option'):
+        fc_ovlp_to_graph_option = config.get(section, 'fc_ovlp_to_graph_option')
+    if '--min_len' not in fc_ovlp_to_graph_option:
+        fc_ovlp_to_graph_option += ' --min_len %d' %length_cutoff_pr
+
     bestn = 12
     if config.has_option(section, 'bestn'):
         bestn = config.getint(section, 'bestn')
@@ -228,6 +235,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
                    "pa_DBsplit_option": pa_DBsplit_option,
                    "ovlp_DBsplit_option": ovlp_DBsplit_option,
+                   "fc_ovlp_to_graph_option": fc_ovlp_to_graph_option,
                    "falcon_sense_option": falcon_sense_option,
                    "falcon_sense_skip_contained": falcon_sense_skip_contained,
                    "stop_all_jobs_on_failure": stop_all_jobs_on_failure,
