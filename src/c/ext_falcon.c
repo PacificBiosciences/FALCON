@@ -7,7 +7,7 @@ initext_falcon(void)
 {
     PyObject *m;
 
-    m = Py_InitModule("falcon_kit.ext_falcon", SpamMethods);
+    m = Py_InitModule("ext_falcon", SpamMethods);
     if (m == NULL)
         return;
 }

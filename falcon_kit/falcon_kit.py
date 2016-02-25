@@ -42,7 +42,7 @@ __all__ = [
     ]
 
 from ctypes import *
-from . import ext_falcon
+import ext_falcon
 #module_path = os.path.split(__file__)[0]
 
 

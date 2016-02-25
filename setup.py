@@ -20,7 +20,7 @@ setup(name='falcon_kit',
           ],
       package_dir={'falcon_kit':'falcon_kit/'},
       ext_modules=[
-                   Extension('falcon_kit.ext_falcon', ['src/c/ext_falcon.c', 'src/c/DW_banded.c', 'src/c/kmer_lookup.c', 'src/c/falcon.c'],
+                   Extension('ext_falcon', ['src/c/ext_falcon.c', 'src/c/DW_banded.c', 'src/c/kmer_lookup.c', 'src/c/falcon.c'],
                     extra_link_args=[],
                     extra_compile_args=['-fPIC', '-O3', '-fno-omit-frame-pointer'],
                     # '-fno-omit-frame-pointer' can help with gperftools.
