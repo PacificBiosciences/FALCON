@@ -74,6 +74,18 @@ touch {job_done}
         ofs.write(wrapper)
     return job_done, job_exit
 
+def filter_DBsplit_option(opt):
+    """We want -a by default, but if we see --no-a[ll], we will not add -a.
+    """
+    flags = opt.split()
+    filt_flags = [flag for flag in flags if not flag.startswith('--no-a')]
+    if filt_flags != flags and '-a' not in flags:
+        flags.append('-a')
+    return ' '.join(flags)
+
+def update_dict_entry(d, key, func):
+    d[key] = func(d[key])
+
 def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
     """
     raw_reads.db will be output into CWD, and might already exist.
@@ -89,7 +101,8 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
                     last_block = int(l[2])
                     new_db = False
                     break
-
+    config = dict(config) # copy
+    update_dict_entry(config, 'pa_DBsplit_option', filter_DBsplit_option)
     DBsplit = 'DBsplit {pa_DBsplit_option} raw_reads'.format(**config) if new_db else ''
     openending = config["openending"]
     if openending == True:
@@ -109,6 +122,7 @@ HPCdaligner {pa_HPCdaligner_option} -H{length_cutoff} raw_reads {last_block}-$LB
 
 def script_build_pdb(config, input_fofn_fn, run_jobs_fn):
     params = dict(config)
+    update_dict_entry(params, 'ovlp_DBsplit_option', filter_DBsplit_option)
     params.update(locals())
     script = """\
 fasta2DB -pfakemoviename -v preads -f{input_fofn_fn}
