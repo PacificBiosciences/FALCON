@@ -564,11 +564,7 @@ consensus_data * generate_consensus( char ** input_seq,
                            unsigned int n_seq,
                            unsigned min_cov,
                            unsigned K,
-                           unsigned long local_match_count_window,
-                           unsigned long local_match_count_threshold,
                            double min_idt) {
-    // local_match_count_window, local_match_count_threshold obsoleted, keep the interface for a while
-
     unsigned int j;
     unsigned int seq_count;
     unsigned int aligned_seq_count;

@@ -90,13 +90,12 @@ def get_alignment(seq1, seq0, edge_tolerance = 1000):
 
 def get_consensus_without_trim( c_input ):
     seqs, seed_id, config = c_input
-    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
+    min_cov, K, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
     if len(seqs) > max_n_read:
         seqs = get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True)
     seqs_ptr = (c_char_p * len(seqs))()
     seqs_ptr[:] = seqs
-    consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K,
-                                                    local_match_count_window, local_match_count_threshold, min_idt )
+    consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(seqs), min_cov, K, min_idt )
 
     consensus = string_at(consensus_data_ptr[0].sequence)[:]
     eff_cov = consensus_data_ptr[0].eff_cov[:len(consensus)]
@@ -106,7 +105,7 @@ def get_consensus_without_trim( c_input ):
 
 def get_consensus_with_trim( c_input ):
     seqs, seed_id, config = c_input
-    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
+    min_cov, K, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
     trim_seqs = []
     seed = seqs[0]
     for seq in seqs[1:]:
@@ -129,8 +128,7 @@ def get_consensus_with_trim( c_input ):
 
     seqs_ptr = (c_char_p * len(trim_seqs))()
     seqs_ptr[:] = trim_seqs
-    consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(trim_seqs), min_cov, K,
-                                               local_match_count_window, local_match_count_threshold, min_idt )
+    consensus_data_ptr = falcon.generate_consensus( seqs_ptr, len(trim_seqs), min_cov, K, min_idt )
     consensus = string_at(consensus_data_ptr[0].sequence)[:]
     eff_cov = consensus_data_ptr[0].eff_cov[:len(consensus)]
     falcon.free_consensus_data( consensus_data_ptr )
@@ -140,7 +138,7 @@ def get_consensus_with_trim( c_input ):
 
 def get_seq_data(config, min_n_read, min_len_aln):
     max_len = 100000
-    min_cov, K, local_match_count_window, local_match_count_threshold, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
+    min_cov, K, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
     seqs = []
     seed_id = None
     seed_len = 0
@@ -194,10 +192,6 @@ def main(argv=sys.argv):
     parser.add_argument('--n_core', type=int, default=24,
                         help='number of processes used for generating consensus; '
                         '0 for main process only [default=%(default)s]')
-    parser.add_argument('--local_match_count_window', type=int, default=12,
-                        help='local match window size (obsoleted, no effect)')
-    parser.add_argument('--local_match_count_threshold', type=int, default=6,
-                        help='local match count threshold (obsoleted, no effect)')
     parser.add_argument('--min_cov', type=int, default=6,
                         help='minimum coverage to break the consensus [default=%(default)s]')
     parser.add_argument('--min_cov_aln', type=int, default=10,
@@ -240,7 +234,7 @@ def main(argv=sys.argv):
         get_consensus = get_consensus_without_trim
 
     K = 8
-    config = args.min_cov, K, args.local_match_count_window, args.local_match_count_threshold,\
+    config = args.min_cov, K, \
              args.max_n_read, args.min_idt, args.edge_tolerance, args.trim_size, args.min_cov_aln, args.max_cov_aln
     # TODO: pass config object, not tuple, so we can add fields
     for res in exe_pool.imap(get_consensus, get_seq_data(config, args.min_n_read, args.min_len_aln)):
