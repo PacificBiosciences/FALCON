@@ -193,26 +193,26 @@ def main(argv=sys.argv):
     parser = argparse.ArgumentParser(description='a simple multi-processor consensus sequence generator')
     parser.add_argument('--n_core', type=int, default=24,
                         help='number of processes used for generating consensus; '
-                        '0 for main process only (default=%(default)s)')
+                        '0 for main process only [default=%(default)s]')
     parser.add_argument('--local_match_count_window', type=int, default=12,
                         help='local match window size (obsoleted, no effect)')
     parser.add_argument('--local_match_count_threshold', type=int, default=6,
                         help='local match count threshold (obsoleted, no effect)')
     parser.add_argument('--min_cov', type=int, default=6,
-                        help='minimum coverage to break the consensus')
+                        help='minimum coverage to break the consensus [default=%(default)s]')
     parser.add_argument('--min_cov_aln', type=int, default=10,
                         help='minimum coverage of alignment data; a seed read with less than MIN_COV_ALN average depth' + \
-                        ' of coverage will be completely ignored')
+                        ' of coverage will be completely ignored [default=%(default)s]')
     parser.add_argument('--max_cov_aln', type=int, default=0, # 0 to emulate previous behavior
                         help='maximum coverage of alignment data; a seed read with more than MAX_COV_ALN average depth' + \
-                        ' of coverage of the longest alignments will be capped, excess shorter alignments will be ignored')
+                        ' of coverage of the longest alignments will be capped, excess shorter alignments will be ignored [default=%(default)s]')
     parser.add_argument('--min_len_aln', type=int, default=0, # 0 to emulate previous behavior
-                        help='minimum length of a sequence in an alignment to be used in consensus; any shorter sequence will be completely ignored')
+                        help='minimum length of a sequence in an alignment to be used in consensus; any shorter sequence will be completely ignored  [default=%(default)s]')
     parser.add_argument('--min_n_read', type=int, default=10,
                         help='1 + minimum number of reads used in generating the consensus; a seed read with fewer alignments will '+ \
-                        'be completely ignored')
+                        'be completely ignored [default=%(default)s]')
     parser.add_argument('--max_n_read', type=int, default=500,
-                        help='1 + maximum number of reads used in generating the consensus')
+                        help='1 + maximum number of reads used in generating the consensus [default=%(default)s]')
     parser.add_argument('--trim', action="store_true", default=False,
                         help='trim the input sequence with k-mer spare dynamic programming to find the mapped range')
     parser.add_argument('--output_full', action="store_true", default=False,
@@ -224,11 +224,11 @@ def main(argv=sys.argv):
     parser.add_argument('--output_simple_fasta_header', action='store_true', default=False,
                         help='Turn off --output_dformat. This was for older (pre spring 2015) DALIGNER. Never needed now.')
     parser.add_argument('--min_idt', type=float, default=0.70,
-                        help='minimum identity of the alignments used for correction')
+                        help='minimum identity of the alignments used for correction [default=%(default)s]')
     parser.add_argument('--edge_tolerance', type=int, default=1000,
-                        help='for trimming, the there is unaligned edge leng > edge_tolerance, ignore the read')
+                        help='for trimming, the there is unaligned edge leng > edge_tolerance, ignore the read [default=%(default)s]')
     parser.add_argument('--trim_size', type=int, default=50,
-                        help='the size for triming both ends from initial sparse aligned region')
+                        help='the size for triming both ends from initial sparse aligned region [default=%(default)s]')
     good_region = re.compile("[ACGT]+")
     args = parser.parse_args(argv[1:])
     def Start():

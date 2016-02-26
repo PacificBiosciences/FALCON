@@ -101,13 +101,18 @@ def ovlp_stats(fofn, min_len, n_core, stream, debug, silent):
 def parse_args(argv):
     parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter')
     parser.add_argument('--n_core', type=int, default=4,
-                        help='number of processes used for generating consensus; '
-                        '0 for main process only (default=%(default)s)')
-    parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
-    parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
-    parser.add_argument('--stream', action='store_true', help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
-    parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
-    parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
+            help='number of processes used for generating consensus; '
+                 '0 for main process only [default=%(default)s]')
+    parser.add_argument('--fofn', type=str,
+            help='file contains the path of all LAS file to be processed in parallel [required]')
+    parser.add_argument('--min_len', type=int, default=2500,
+            help="min length of the reads [default=%(default)s]")
+    parser.add_argument('--stream', action='store_true',
+            help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
+    parser.add_argument('--debug', '-g', action='store_true',
+            help="single-threaded, plus other aids to debugging")
+    parser.add_argument('--silent', action='store_true',
+            help="suppress cmd reporting on stderr")
     return parser.parse_args(argv[1:])
 
 def main(argv=sys.argv):
