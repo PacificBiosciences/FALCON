@@ -8,7 +8,7 @@ import sys
 import falcon_kit
 
 
-falcon.generate_consensus.argtypes = [ POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint, c_uint, c_double ]
+falcon.generate_consensus.argtypes = [ POINTER(c_char_p), c_uint, c_uint, c_uint, c_double ]
 falcon.generate_consensus.restype = POINTER(falcon_kit.ConsensusData)
 falcon.free_consensus_data.argtypes = [ POINTER(falcon_kit.ConsensusData) ]
 
