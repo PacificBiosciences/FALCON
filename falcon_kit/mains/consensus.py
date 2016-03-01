@@ -213,11 +213,7 @@ def main(argv=sys.argv):
     parser.add_argument('--output_full', action="store_true", default=False,
                         help='output uncorrected regions too')
     parser.add_argument('--output_multi', action="store_true", default=False,
-                        help='output multi correct regions; implies --output_dformat, unless --output-simple-fasta-header')
-    parser.add_argument('--output_dformat', action="store_true", default=True,
-                        help='output daligner compatible header, only work with --output_multi; DEPRECATED and ignored, as this is the default now')
-    parser.add_argument('--output_simple_fasta_header', action='store_true', default=False,
-                        help='Turn off --output_dformat. This was for older (pre spring 2015) DALIGNER. Never needed now.')
+                        help='output multi correct regions')
     parser.add_argument('--min_idt', type=float, default=0.70,
                         help='minimum identity of the alignments used for correction')
     parser.add_argument('--edge_tolerance', type=int, default=1000,
@@ -256,14 +252,10 @@ def main(argv=sys.argv):
                 for cns_seq in cns:
                     if len(cns_seq) < 500:
                         continue
-                    if not args.output_simple_fasta_header:
-                        if seq_i >= 10:
-                            break
-                        print ">prolog/%s%01d/%d_%d" % (seed_id, seq_i, 0, len(cns_seq))
-                        print format_seq(cns_seq, 80)
-                    else:
-                        print ">"+seed_id+"_%d" % seq_i
-                        print cns_seq
+                    if seq_i >= 10:
+                        break
+                    print ">prolog/%s%01d/%d_%d" % (seed_id, seq_i, 0, len(cns_seq))
+                    print format_seq(cns_seq, 80)
                     seq_i += 1
             else:
                 cns.sort(key = lambda x: len(x))
