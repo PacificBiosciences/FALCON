@@ -87,3 +87,53 @@ def get_script_xformer(pread_aln):
         return xform_script_for_preads
     else:
         return xform_script_for_raw_reads
+
+def calc_cutoff_from_reverse_sorted_readlength_counts(rl_counts, target):
+    """Return first read_len which gives at least 'target' bases.
+    """
+    total = sum(pair[0]*pair[1] for pair in rl_counts)
+    subtotal = 0
+    assert target <= total, (target, total)
+    cutoff = 0
+    for (rl, count) in rl_counts:
+        subtotal += rl*count
+        if subtotal >= target:
+            cutoff = rl
+            break
+    else:
+        raise Exception('Impossible target: target={target}, subtotal={subtotal}, total={total}'.format(locals()))
+    return cutoff
+
+def num2int(num):
+    """
+    >>> num2int('1,000,000')
+    1000000
+    """
+    return int(num.replace(',', ''))
+
+def get_reverse_sorted_readlength_counts_from_DBstats(DBstats_output):
+    """Return pairs of (readlength, count).
+        Bin:      Count  % Reads  % Bases     Average
+    169,514:          1      0.0      0.0      169514
+    ...
+    ->
+    [(169514, 1), ...]
+    """
+    rl_counts = list()
+    lines = DBstats_output.splitlines()
+    re_stat = re.compile(r'^\s*(?P<bin>\S+):\s+(?P<count>\S+)\s+\S+\s+\S+\s+\S+\s*$')
+    for line in lines:
+        match = re_stat.search(line)
+        if not match:
+            continue
+        rl = num2int(match.group('bin'))
+        count = num2int(match.group('count'))
+        rl_counts.append((rl, count))
+    return rl_counts
+
+def calc_cutoff(target, DBstats_output):
+    """Calculate the length_cutoff needed for at least 'target' bases.
+    DBstats_output: ASCII output of 'DBstats -b1 DB',
+    """
+    rl_counts = get_reverse_sorted_readlength_counts_from_DBstats(DBstats_output)
+    return calc_cutoff_from_reverse_sorted_readlength_counts(rl_counts, target)

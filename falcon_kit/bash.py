@@ -110,13 +110,20 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
     else:
         count = """$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')"""
     params = dict(config)
+    length_cutoff = params.get('length_cutoff')
+    if int(length_cutoff) < 0:
+        bash_cutoff = '$(fc_calc_cutoff --coverage {} {} <(DBstats -b1 {}))'.format(
+            params['genome_size'], params['seed_coverage'], 'raw_reads')
+    else:
+        bash_cutoff = '{}'.format(length_cutoff)
     params.update(locals())
     script = """\
 fasta2DB -pfakemoviename -v raw_reads -f{input_fofn_fn}
 {DBsplit}
 LB={count}
 rm -f {run_jobs_fn}
-HPCdaligner {pa_HPCdaligner_option} -H{length_cutoff} raw_reads {last_block}-$LB >| {run_jobs_fn}
+CUTOFF={bash_cutoff}
+HPCdaligner {pa_HPCdaligner_option} -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_fn}
 """.format(**params)
     return script
 
@@ -223,17 +230,26 @@ def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
     """config: falcon_sense_option, length_cutoff
     """
     params = dict(config)
+    # We calculate length_cutoff again! This is because we do not want
+    # to create yet another task in pbsmrtpipe.
+    length_cutoff = params.get('length_cutoff')
+    if int(length_cutoff) < 0:
+        bash_cutoff = '$(fc_calc_cutoff --coverage {} {} <(DBstats -b1 {}))'.format(
+            params['genome_size'], params['seed_coverage'], db_fn)
+    else:
+        bash_cutoff = '{}'.format(length_cutoff)
     params.update(locals())
     if config["falcon_sense_skip_contained"]:
-        pipe = """LA4Falcon -H{length_cutoff} -fso {db_fn} {las_fn} | """
+        pipe = """LA4Falcon -H$CUTOFF -fso {db_fn} {las_fn} | """
     else:
-        pipe = """LA4Falcon -H{length_cutoff}  -fo {db_fn} {las_fn} | """
+        pipe = """LA4Falcon -H$CUTOFF -fo  {db_fn} {las_fn} | """
     pipe += """fc_consensus {falcon_sense_option} >| {out_file_bfn}"""
 
     script = """
 set -o pipefail
-%s
-""" %pipe
+CUTOFF=%(bash_cutoff)s
+%(pipe)s
+"""%(locals())
     return script.format(**params)
 
 def script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn):

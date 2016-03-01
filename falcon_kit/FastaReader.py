@@ -245,7 +245,7 @@ class FastaReader(ReaderBase):
         ref000002|EGFR_Exon_3 203 4bf218da37175a91869033024ac8f9e9
         ref000003|EGFR_Exon_4 215 245bc7a046aad0788c22b071ed210f4d
         ref000004|EGFR_Exon_5 157 c368b8191164a9d6ab76fd328e2803ca
-        >>> r.close()
+        > r.close()
     """
     DELIMITER = ">"
 
