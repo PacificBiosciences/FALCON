@@ -105,6 +105,10 @@ def calc_cutoff_from_reverse_sorted_readlength_counts(rl_counts, target):
     return cutoff
 
 def num2int(num):
+    """
+    >>> num2int('1,000,000')
+    1000000
+    """
     return int(num.replace(',', ''))
 
 def get_reverse_sorted_readlength_counts_from_DBstats(DBstats_output):
