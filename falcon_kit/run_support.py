@@ -176,10 +176,23 @@ def get_dict_from_old_falcon_cfg(config):
         else:
             falcon_sense_skip_contained = False
 
-    length_cutoff = config.getint(section, 'length_cutoff')
-    input_fofn_fn = config.get(section, 'input_fofn')
+    genome_size = 0
+    if config.has_option(section, 'genome_size'):
+        genome_size = config.getint(section, 'genome_size')
+
+    seed_coverage = 20
+    if config.has_option(section, 'seed_coverage'):
+        seed_coverage = config.getint(section, 'seed_coverage')
+
+    length_cutoff = -1
+    if config.has_option(section, 'length_cutoff'):
+        length_cutoff = config.getint(section, 'length_cutoff')
+    if length_cutoff < 0:
+        if genome_size < 1:
+            raise Exception('Must specify either length_cutoff>0 or genome_size>0')
 
     length_cutoff_pr = config.getint(section, 'length_cutoff_pr')
+    input_fofn_fn = config.get(section, 'input_fofn')
 
     # This one depends on length_cutoff_pr for its default.
     fc_ovlp_to_graph_option = ''
@@ -226,6 +239,8 @@ def get_dict_from_old_falcon_cfg(config):
                    "ovlp_concurrent_jobs" : ovlp_concurrent_jobs,
                    "cns_concurrent_jobs" : cns_concurrent_jobs,
                    "overlap_filtering_setting": overlap_filtering_setting,
+                   "genome_size" : genome_size,
+                   "seed_coverage" : seed_coverage,
                    "length_cutoff" : length_cutoff,
                    "length_cutoff_pr" : length_cutoff_pr,
                    "sge_option_da": config.get(section, 'sge_option_da'),
