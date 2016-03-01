@@ -960,7 +960,8 @@ def construct_compound_paths(ug, u_edge_data):
 def main(argv=sys.argv):
     import argparse
 
-    parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes')
+    parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('overlap_file', help='a file that contains the overlap information.')
 
     parser.add_argument('--min_len', type=int, default=4000,

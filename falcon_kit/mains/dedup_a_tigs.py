@@ -3,7 +3,8 @@ import argparse
 import sys
 
 def parse_args(argv):
-    parser = argparse.ArgumentParser(description='remove duplicate a-tig, it assumes the working directory has the a_ctg_all.fa file')
+    parser = argparse.ArgumentParser(description='remove duplicate a-tig, it assumes the working directory has the a_ctg_all.fa file',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--max_idt', type=int, help="keep a-tig if the identity (in %) to the primary contig is <= max_idt", default = 96)
     parser.add_argument('--max_aln_cov', type=int, help="keep a-tig if the alignment coverage (in %) on the a-tig is <= max_aln_cov", default = 97)
     parser.add_argument('--min_len_diff', type=int, help="keep a-tig if the length different > min_len_diff", default = 500)
