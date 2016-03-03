@@ -116,14 +116,20 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
             params['genome_size'], params['seed_coverage'], 'raw_reads')
     else:
         bash_cutoff = '{}'.format(length_cutoff)
+    DBdust = 'DBdust {} raw_reads'.format(params.get('pa_DBdust_options', ''))
+    mdust = '-mdust'
+    if not params.get('dust'):
+        DBdust = "#" + DBdust
+        mdust = ''
     params.update(locals())
     script = """\
 fasta2DB -pfakemoviename -v raw_reads -f{input_fofn_fn}
 {DBsplit}
+{DBdust}
 LB={count}
 rm -f {run_jobs_fn}
 CUTOFF={bash_cutoff}
-HPCdaligner {pa_HPCdaligner_option} -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_fn}
+HPCdaligner {pa_HPCdaligner_option} {mdust} -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_fn}
 """.format(**params)
     return script
 
@@ -169,6 +175,8 @@ db_dir={db_dir}
 ln -sf ${{db_dir}}/.{db_prefix}.bps .
 ln -sf ${{db_dir}}/.{db_prefix}.idx .
 ln -sf ${{db_dir}}/{db_prefix}.db .
+ln -sf ${{db_dir}}/.{db_prefix}.dust.anno .
+ln -sf ${{db_dir}}/.{db_prefix}.dust.data .
 {daligner_cmd}
 #rm -f *.C?.las
 #rm -f *.N?.las

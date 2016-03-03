@@ -157,6 +157,14 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'pa_DBsplit_option'):
         pa_DBsplit_option = config.get(section, 'pa_DBsplit_option')
 
+    dust = False
+    if config.has_option(section, 'dust'):
+        dust = config.get(section, 'dust')
+
+    pa_DBdust_option = ""
+    if config.has_option(section, 'pa_DBdust_option'):
+        pa_DBdust_option = config.get(section, 'pa_DBdust_option')
+
     ovlp_DBsplit_option = """ -x500 -s200"""
     if config.has_option(section, 'ovlp_DBsplit_option'):
         ovlp_DBsplit_option = config.get(section, 'ovlp_DBsplit_option')
@@ -252,6 +260,8 @@ def get_dict_from_old_falcon_cfg(config):
                    "pa_HPCdaligner_option": pa_HPCdaligner_option,
                    "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
                    "pa_DBsplit_option": pa_DBsplit_option,
+                   "dust": dust,
+                   "pa_DBdust_option": pa_DBdust_option,
                    "ovlp_DBsplit_option": ovlp_DBsplit_option,
                    "fc_ovlp_to_graph_option": fc_ovlp_to_graph_option,
                    "falcon_sense_option": falcon_sense_option,
