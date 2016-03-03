@@ -129,9 +129,14 @@ fasta2DB -pfakemoviename -v raw_reads -f{input_fofn_fn}
 LB={count}
 rm -f {run_jobs_fn}
 CUTOFF={bash_cutoff}
+echo -n $CUTOFF >| length_cutoff
 HPCdaligner {pa_HPCdaligner_option} {mdust} -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_fn}
 """.format(**params)
     return script
+    # Note: We dump the 'length_cutoff' file for later reference within the preassembly report
+    # of pbsmrtpipe HGAP.
+    # However, it is not a true dependency because we still have a workflow that starts
+    # from 'corrected reads' (preads), in which case build_rdb is not run.
 
 def script_build_pdb(config, input_fofn_fn, run_jobs_fn):
     params = dict(config)
