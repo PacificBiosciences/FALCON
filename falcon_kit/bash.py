@@ -114,7 +114,7 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
     params = dict(config)
     length_cutoff = params.get('length_cutoff')
     if int(length_cutoff) < 0:
-        bash_cutoff = '$(fc_calc_cutoff --coverage {} {} <(DBstats -b1 {}))'.format(
+        bash_cutoff = '$(python -m falcon_kit.mains.calc_cutoff --coverage {} {} <(DBstats -b1 {}))'.format(
             params['seed_coverage'], params['genome_size'], 'raw_reads')
     else:
         bash_cutoff = '{}'.format(length_cutoff)
@@ -249,7 +249,7 @@ def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
     # to create yet another task in pbsmrtpipe.
     length_cutoff = params.get('length_cutoff')
     if int(length_cutoff) < 0:
-        bash_cutoff = '$(fc_calc_cutoff --coverage {} {} <(DBstats -b1 {}))'.format(
+        bash_cutoff = '$(python -m falcon_kit.mains.calc_cutoff --coverage {} {} <(DBstats -b1 {}))'.format(
             params['seed_coverage'], params['genome_size'], db_fn)
     else:
         bash_cutoff = '{}'.format(length_cutoff)
