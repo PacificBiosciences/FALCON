@@ -614,7 +614,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
 
 def main(argv=sys.argv):
-    print(argv)
+    print('%s args: %r' %(__name__,argv))
     if len(argv) < 2:
         sys.stderr.write( """
 you need to specify a configuration file"
