@@ -190,7 +190,7 @@ def get_dict_from_old_falcon_cfg(config):
 
     seed_coverage = 20
     if config.has_option(section, 'seed_coverage'):
-        seed_coverage = config.getint(section, 'seed_coverage')
+        seed_coverage = config.getfloat(section, 'seed_coverage')
 
     length_cutoff = -1
     if config.has_option(section, 'length_cutoff'):

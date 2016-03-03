@@ -113,7 +113,7 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
     length_cutoff = params.get('length_cutoff')
     if int(length_cutoff) < 0:
         bash_cutoff = '$(fc_calc_cutoff --coverage {} {} <(DBstats -b1 {}))'.format(
-            params['genome_size'], params['seed_coverage'], 'raw_reads')
+            params['seed_coverage'], params['genome_size'], 'raw_reads')
     else:
         bash_cutoff = '{}'.format(length_cutoff)
     DBdust = 'DBdust {} raw_reads'.format(params.get('pa_DBdust_options', ''))
@@ -243,7 +243,7 @@ def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
     length_cutoff = params.get('length_cutoff')
     if int(length_cutoff) < 0:
         bash_cutoff = '$(fc_calc_cutoff --coverage {} {} <(DBstats -b1 {}))'.format(
-            params['genome_size'], params['seed_coverage'], db_fn)
+            params['seed_coverage'], params['genome_size'], db_fn)
     else:
         bash_cutoff = '{}'.format(length_cutoff)
     params.update(locals())
