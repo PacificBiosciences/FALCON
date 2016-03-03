@@ -81,6 +81,8 @@ def filter_DBsplit_option(opt):
     filt_flags = [flag for flag in flags if not flag.startswith('--no-a')]
     if filt_flags != flags and '-a' not in flags:
         flags.append('-a')
+    if '-x' not in opt:
+        flags.append('-x100') # daligner belches on any read < kmer length
     return ' '.join(flags)
 
 def update_dict_entry(d, key, func):
