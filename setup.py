@@ -4,8 +4,11 @@ from setuptools import setup, Extension
 
 import glob
 
-#install_requires=[ "pbcore >= 0.6.3", "networkx >= 1.7" ]
-install_requires=[ "networkx == 1.7" ]
+install_requires=[
+        "networkx == 1.7",
+        "logging_tree",
+        #"pbcore >= 0.6.3",
+        ]
 
 scripts = glob.glob("src/py_scripts/*.py")
 

@@ -352,6 +352,13 @@ def setup_logger(logging_config_fn):
     _setup_logging(logging_config_fn)
     global logger
     logger = logging.getLogger("fc_run")
+
+    try:
+        import logging_tree
+        logger.info(logging_tree.format.build_description())
+    except ImportError:
+        pass
+
     return logger
 
 def make_fofn_abs(i_fofn_fn, o_fofn_fn):
