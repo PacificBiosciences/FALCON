@@ -165,6 +165,14 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'pa_DBdust_option'):
         pa_DBdust_option = config.get(section, 'pa_DBdust_option')
 
+    dazcon = False
+    if config.has_option(section, 'dazcon'):
+        dazcon = config.getboolean(section, 'dazcon')
+
+    pa_dazcon_option = "-j4 -x -l 500"
+    if config.has_option(section, 'pa_dazcon_option'):
+        pa_dazcon_option = config.get(section, 'pa_dazcon_option')
+
     ovlp_DBsplit_option = """ -x500 -s200"""
     if config.has_option(section, 'ovlp_DBsplit_option'):
         ovlp_DBsplit_option = config.get(section, 'ovlp_DBsplit_option')
@@ -262,6 +270,8 @@ def get_dict_from_old_falcon_cfg(config):
                    "pa_DBsplit_option": pa_DBsplit_option,
                    "dust": dust,
                    "pa_DBdust_option": pa_DBdust_option,
+                   "dazcon": dazcon,
+                   "pa_dazcon_option": pa_dazcon_option,
                    "ovlp_DBsplit_option": ovlp_DBsplit_option,
                    "fc_ovlp_to_graph_option": fc_ovlp_to_graph_option,
                    "falcon_sense_option": falcon_sense_option,

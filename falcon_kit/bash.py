@@ -255,15 +255,18 @@ def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
         bash_cutoff = '{}'.format(length_cutoff)
     params.update(locals())
     if config["falcon_sense_skip_contained"]:
-        pipe = """LA4Falcon -H$CUTOFF -fso {db_fn} {las_fn} | """
+        run_consensus = """LA4Falcon -H$CUTOFF -fso {db_fn} {las_fn} | """
     else:
-        pipe = """LA4Falcon -H$CUTOFF -fo  {db_fn} {las_fn} | """
-    pipe += """fc_consensus {falcon_sense_option} >| {out_file_bfn}"""
+        run_consensus = """LA4Falcon -H$CUTOFF -fo  {db_fn} {las_fn} | """
+    run_consensus += """fc_consensus {falcon_sense_option} >| {out_file_bfn}"""
+
+    if config.get('dazcon', False):
+        run_consensus = 'dazcon {pa_dazcon_option} -s {db_fn} -a {las_fn} >| {out_file_bfn}'
 
     script = """
 set -o pipefail
 CUTOFF=%(bash_cutoff)s
-%(pipe)s
+%(run_consensus)s
 """%(locals())
     return script.format(**params)
 
