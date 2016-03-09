@@ -6,7 +6,7 @@ import glob
 
 install_requires=[
         "networkx >=1.7, <=1.9.1",
-        "logging_tree",
+        #"logging_tree",
         #"pbcore >= 0.6.3",
         ]
 
