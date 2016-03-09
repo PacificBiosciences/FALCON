@@ -159,9 +159,9 @@ def get_dict_from_old_falcon_cfg(config):
 
     dust = False
     if config.has_option(section, 'dust'):
-        dust = config.get(section, 'dust')
+        dust = config.getboolean(section, 'dust')
 
-    pa_DBdust_option = ""
+    pa_DBdust_option = "-w128 -t2.5 -m20"
     if config.has_option(section, 'pa_DBdust_option'):
         pa_DBdust_option = config.get(section, 'pa_DBdust_option')
 
@@ -303,7 +303,7 @@ propagate=1
 [logger_fc_run]
 level=NOTSET
 handlers=file_fc
-qualname=.
+qualname=falcon_kit
 propagate=1
 
 [handler_stream]

@@ -118,7 +118,7 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
             params['seed_coverage'], params['genome_size'], 'raw_reads')
     else:
         bash_cutoff = '{}'.format(length_cutoff)
-    DBdust = 'DBdust {} raw_reads'.format(params.get('pa_DBdust_options', ''))
+    DBdust = 'DBdust {} raw_reads'.format(params.get('pa_DBdust_option', ''))
     mdust = '-mdust'
     if not params.get('dust'):
         DBdust = "#" + DBdust
