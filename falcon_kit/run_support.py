@@ -169,7 +169,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'dazcon'):
         dazcon = config.getboolean(section, 'dazcon')
 
-    pa_dazcon_option = "-j4 -x -l 500"
+    pa_dazcon_option = "-j 4 -x -l 500"
     if config.has_option(section, 'pa_dazcon_option'):
         pa_dazcon_option = config.get(section, 'pa_dazcon_option')
 
