@@ -315,7 +315,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     concurrent_jobs = config["pa_concurrent_jobs"]
     Workflow = PypeProcWatcherWorkflow
     PypeProcWatcherWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
-    wf = PypeProcWatcherWorkflow()
+    wf = PypeProcWatcherWorkflow(job_type=config['job_type'])
 
     input_fofn_plf = makePypeLocalFile(config["input_fofn"])
     rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, os.path.basename(config["input_fofn"])))
