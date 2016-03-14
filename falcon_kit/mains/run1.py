@@ -497,10 +497,10 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
 def main(argv=sys.argv):
     print(argv)
-    if len(argv) < 2:
+    if len(argv) < 2 or argv[1].startswith('-'):
         sys.stderr.write( """
 you need to specify a configuration file"
-usage: fc_run fc_run.cfg [logging.cfg]
+usage: fc_run1 fc_run.cfg [logging.cfg]
 """)
         sys.exit(2)
     main1(*argv)
