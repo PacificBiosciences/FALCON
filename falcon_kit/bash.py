@@ -261,7 +261,10 @@ def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
     run_consensus += """fc_consensus {falcon_sense_option} >| {out_file_bfn}"""
 
     if config.get('dazcon', False):
-        run_consensus = 'dazcon {pa_dazcon_option} -s {db_fn} -a {las_fn} >| {out_file_bfn}'
+        run_consensus = """
+which dazcon
+dazcon {pa_dazcon_option} -s {db_fn} -a {las_fn} >| {out_file_bfn}
+"""
 
     script = """
 set -o pipefail
