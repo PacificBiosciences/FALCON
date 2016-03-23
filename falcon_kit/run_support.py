@@ -181,7 +181,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'falcon_sense_option'):
         falcon_sense_option = config.get(section, 'falcon_sense_option')
     if 'local_match_count' in falcon_sense_option or 'output_dformat' in falcon_sense_option:
-        raise Exception('Please remote obsolete "--local_match_count_*" or "--output_dformat"' +
+        raise Exception('Please remove obsolete "--local_match_count_*" or "--output_dformat"' +
                         ' from "falcon_sense_option" in your cfg: %s' %repr(falcon_sense_option))
 
     falcon_sense_skip_contained = False
