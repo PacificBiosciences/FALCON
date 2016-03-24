@@ -104,7 +104,7 @@ def parse_args(argv):
     parser.add_argument('--n_core', type=int, default=4,
                         help='number of processes used for generating consensus; '
                         '0 for main process only')
-    parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
+    parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel', required=True)
     parser.add_argument('--min_len', type=int, default=2500, help="min length of the reads")
     parser.add_argument('--stream', action='store_true', help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
     parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
