@@ -5,7 +5,7 @@ from setuptools import setup, Extension
 import glob
 
 install_requires=[
-        "networkx >=1.7, <=1.9.1",
+        "networkx >=1.7, <=1.10",
         #"logging_tree",
         #"pbcore >= 0.6.3",
         ]
