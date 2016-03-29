@@ -75,10 +75,19 @@ def _run_script_local(job_data):
             fc_run_logger.exception('Contents of %r:\n%s' %(log_fn, out))
             raise
 
+def _run_script_lsf(job_data):
+        script_fn = job_data["script_fn"]
+        job_name = job_data["job_name"]
+        cwd = job_data["cwd"]
+        sge_option = job_data["sge_option"]
+        sge_cmd="bsub -J {job_name} {sge_option} -o {cwd}/sge_log   \" sh {script}\"".format(job_name=job_name, cwd=os.getcwd(),sge_option=sge_option, script=script_fn)
+
+        system(sge_cmd, check=True)
 _run_scripts = {
         'SGE': _run_script_sge,
         'TORQUE': _run_script_torque,
         'SLURM': _run_script_slurm,
+        'LSF':_run_script_lsf,
         'LOCAL': _run_script_local,
 }
 
@@ -134,6 +143,9 @@ def wait_for_file(filename, task, job_name = ""):
             if support.job_type == "SLURM":
                 fc_run_logger.info( "Deleting the job by 'scancel' now...")
                 system("scancel -n %s" % job_name)
+            if support.job_type == "LSF":
+                fc_run_logger.info( "Deleting the job by 'bkill' now...")
+                system("bkill -J %s" % job_name) # Failure is ok.
             break
 
 def run_script_and_wait(URL, script_fn, job_done, task,
