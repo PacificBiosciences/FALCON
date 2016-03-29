@@ -74,7 +74,7 @@ def _run_script_local(job_data):
             out = open(log_fn).read()
             fc_run_logger.exception('Contents of %r:\n%s' %(log_fn, out))
             raise
-
+#add support for lsf, attention parameters (sge_option) for cfg has to changed i.e. -N 8 -q queue
 def _run_script_lsf(job_data):
         script_fn = job_data["script_fn"]
         job_name = job_data["job_name"]
@@ -87,7 +87,7 @@ _run_scripts = {
         'SGE': _run_script_sge,
         'TORQUE': _run_script_torque,
         'SLURM': _run_script_slurm,
-        'LSF':_run_script_lsf,
+        'LSF': _run_script_lsf,
         'LOCAL': _run_script_local,
 }
 
