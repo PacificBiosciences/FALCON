@@ -262,7 +262,7 @@ def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
                        "config": config}
         make_merge_task = PypeTask(inputs = {"input_dep": input_dep},
                                    outputs = {"job_done": job_done},
-                                   parameters = parameters,/
+                                   parameters = parameters,
                                    TaskType = MyFakePypeThreadTaskBase,
                                    URL = "task://localhost/m_%05d_%s" % (p_id, db_prefix))
         merge_task = make_merge_task(task_run_las_merge)
