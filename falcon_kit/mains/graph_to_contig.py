@@ -104,7 +104,9 @@ def main(argv=None):
             if s < t:
                 e_seq = seqs[ rid ][ s:t ]
             else:
-                e_seq = "".join([ RCMAP[c] for c in seqs[ rid ][ s:t:-1 ] ])
+                # t and s were swapped for 'c' alignments in ovlp_to_graph.generate_string_graph():702
+                # They were translated from reverse-dir to forward-dir coordinate system in LA4Falcon.
+                e_seq = "".join([ RCMAP[c] for c in seqs[ rid ][ t:s ][::-1] ])
             edge_data[ (v, w) ] = ( rid, s, t, aln_score, idt, e_seq )
 
     utg_data = {}
