@@ -107,7 +107,7 @@ class AsmGraph(object):
             if s < t:
                 e_seq = seqs[ seq_id ][ s:t ]
             else:
-                e_seq = "".join([ RCMAP[c] for c in seqs[ seq_id ][ s:t:-1 ] ])
+                e_seq = "".join([ RCMAP[c] for c in seqs[ seq_id ][ t:s ][::-1] ])
             self.sg_edge_seqs[ (v, w) ] = e_seq
 
     def get_seq_from_path(self, path):

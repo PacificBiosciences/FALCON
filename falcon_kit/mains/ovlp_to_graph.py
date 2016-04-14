@@ -382,7 +382,7 @@ def generate_seq_from_path(sg, seqs, path):
         if b < e:
             subseqs.append( seqs[read_id][b:e] )
         else:
-            subseqs.append( "".join( [RCMAP[c] for c in seqs[read_id][b:e:-1]] ) )
+            subseqs.append( "".join( [RCMAP[c] for c in seqs[read_id][e:b][::-1]] ) )
 
     return "".join(subseqs)
 
