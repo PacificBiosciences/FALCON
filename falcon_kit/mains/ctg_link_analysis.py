@@ -74,7 +74,8 @@ def main(argv=None):
                 s2,t2,v2 = u2
                 len_1 = ctg_data[ ctg1 ][ 3 ]
                 len_2 = ctg_data[ ctg2 ][ 3 ]
-                print ctg1, ctg2, len_1, len_2, len(utg1), len(utg2), len(links), "~".join( (s1,v1,t1) ),  "~".join( (s2,v2,t2) ), len(c)
+                print '{} {} {:7d}\t{:7d}\t{}\t{}\t{}\t{} {} {}'.format(
+                        ctg1, ctg2, len_1, len_2, len(utg1), len(utg2), len(links), "~".join( (s1,v1,t1) ),  "~".join( (s2,v2,t2) ), len(c))
 
 
 

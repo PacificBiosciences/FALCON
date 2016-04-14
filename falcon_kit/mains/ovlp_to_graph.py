@@ -825,7 +825,9 @@ def generate_string_graph(args):
         elif sg.e_reduce[(v, w)] == True:
             type_ = "TR"
 
-        print >>out_f, v, w, rid, sp, tp, score, identity, type_
+        line = '%s %s %s %5d %5d %5d %5.2f %s' %(
+                v, w, rid, sp, tp, score, identity, type_)
+        print >>out_f, line
 
 
 
