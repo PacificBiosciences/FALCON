@@ -1,8 +1,10 @@
 from .. import run_support as support
 from .. import bash
+from ..util.system import only_these_symlinks
 from pypeflow.pwatcher_bridge import PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask
+import collections
 import glob
 import os
 import re
@@ -217,12 +219,12 @@ def task_daligner_gather(self):
     job_rundirs = [os.path.dirname(fn(dal_done)) for dal_done in out_dict.values()]
 
     # Symlink all daligner *.las.
+    links = collections.defaultdict(list)
     for block, las_path in support.daligner_gather_las(job_rundirs):
-            #fc_run_logger.warning('block: %s, las_path: %s' %(block, las_path))
             mdir = os.path.join(main_dir, 'm_%05d' %block) # By convention. pbsmrtpipe works differently.
-            las_path = os.path.relpath(las_path, mdir)
-            cmd = 'ln -sf {} {}'.format(las_path, mdir)
-            system(cmd)
+            #las_path = os.path.relpath(las_path, mdir)
+            links[mdir].append(las_path)
+    only_these_symlinks(links)
     system("touch %s" %da_done)
 
 def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, config, pread_aln=False):
