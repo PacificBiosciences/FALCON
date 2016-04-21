@@ -76,6 +76,15 @@ def make_job_data(url, script_fn):
                 "script_fn": script_fn }
     return job_data
 
+def update_HPCdaligner_option(option):
+    if '-dal' in option:
+        logger.warning('HPC.daligner option "-dal" has changed to "-B". Correcting this for you.')
+        option = option.replace('-dal', '-B')
+    if '-deg' in option:
+        logger.warning('HPC.daligner option "-deg" has changed to "-D". Correcting this for you.')
+        option = option.replace('-deg', '-D')
+    return option
+
 def validate_config_dict(cd):
     pass
 
@@ -145,13 +154,16 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'overlap_filtering_setting'):
         overlap_filtering_setting = config.get(section, 'overlap_filtering_setting')
 
-    pa_HPCdaligner_option = """-v -dal4 -t16 -e.70 -l1000 -s100"""
+    pa_HPCdaligner_option = """-v -D24 -t16 -e.70 -l1000 -s100"""
     if config.has_option(section, 'pa_HPCdaligner_option'):
         pa_HPCdaligner_option = config.get(section, 'pa_HPCdaligner_option')
 
-    ovlp_HPCdaligner_option = """ -v -dal24 -t32 -h60 -e.96 -l500 -s1000"""
+    ovlp_HPCdaligner_option = """ -v -D24 -t32 -h60 -e.96 -l500 -s1000"""
     if config.has_option(section, 'ovlp_HPCdaligner_option'):
         ovlp_HPCdaligner_option = config.get(section, 'ovlp_HPCdaligner_option')
+
+    pa_HPCdaligner_option = update_HPCdaligner_option(pa_HPCdaligner_option)
+    ovlp_HPCdaligner_option = update_HPCdaligner_option(ovlp_HPCdaligner_option)
 
     pa_DBsplit_option = """ -x500 -s200"""
     if config.has_option(section, 'pa_DBsplit_option'):
