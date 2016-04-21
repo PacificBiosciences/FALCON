@@ -132,7 +132,7 @@ LB={count}
 rm -f {run_jobs_fn}
 CUTOFF={bash_cutoff}
 echo -n $CUTOFF >| length_cutoff
-HPCdaligner {pa_HPCdaligner_option} {mdust} -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_fn}
+HPC.daligner {pa_HPCdaligner_option} {mdust} -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_fn}
 """.format(**params)
     return script
     # Note: We dump the 'length_cutoff' file for later reference within the preassembly report
@@ -147,7 +147,7 @@ def script_build_pdb(config, input_fofn_fn, run_jobs_fn):
     script = """\
 fasta2DB -pfakemoviename -v preads -f{input_fofn_fn}
 DBsplit {ovlp_DBsplit_option} preads
-HPCdaligner {ovlp_HPCdaligner_option} -H{length_cutoff_pr} preads >| {run_jobs_fn}
+HPC.daligner {ovlp_HPCdaligner_option} -H{length_cutoff_pr} preads >| {run_jobs_fn}
 """.format(**params)
     return script
 
