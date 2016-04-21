@@ -14,8 +14,10 @@ def _verify_pairs(pairs1, pairs2):
 def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
     """Return a dict of job-desc-tuple -> HPCdaligner bash-job.
 
+    Comments and lines starting with LAmerge are ignored.
+
     E.g., each item will look like:
-      (2, 1, 2, 3): 'daligner ...; LAsort ...; LAmerge ...; rm ...'
+      ('.2', '.1', '.2', '.3'): 'daligner ...; LAsort ...; LAmerge ...; rm ...'
 
     Rationale
     ---------
@@ -32,16 +34,26 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
     where A, B, or C could be X.
     (In the example, X=2 A=1 B=2.)
 
-    Comments and lines starting with LAmerge are ignored.
+    Oddly, b/c of a recent change by GM, if there is only 1 block, then the suffix string is empty.
     """
-    re_block_dali = re.compile(r'%s\.(\d+)' %db_prefix)
+    re_block_dali = re.compile(r'%s(\.\d+|)' %db_prefix)
     def blocks_dali(line):
+        """Return ['.1', '.2', ...]
+        Can return [''] if only 1 block.
+        """
         return [mo.group(1) for mo in re_block_dali.finditer(line)]
     # X == blocks[0]; A/B/C = blocks[...]
 
-    re_pair_sort = re.compile(r'%s\.(\d+)\.%s\.(\d+)' %(db_prefix, db_prefix))
+    re_pair_sort = re.compile(r'%s(\.\d+|)\.%s(\.\d+|)' %(db_prefix, db_prefix))
     def LAsort_pair(line):
-        return re_pair_sort.search(line).group(1, 2)
+        """Return [('.1', '.1'), ('.1', '.2'), ('.2', '.1'), ...]
+        Can return [('', '')] if only 1 block.
+        """
+        mo = re_pair_sort.search(line)
+        if not mo:
+            raise Exception('Pattern {!r} does not match line {!r}'.format(
+                re_pair_sort.pattern, line))
+        return mo.group(1, 2)
 
     lines = [line.strip() for line in run_jobs_stream]
     assert any(len(l) > 1 for l in lines), repr(lines) # in case caller passed filename, not stream
@@ -50,7 +62,7 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
     pair2dali = {}
     for line in lines_dali:
         blocks = blocks_dali(line)
-        for block in blocks[1:]:
+        for block in blocks:
             pair = (blocks[0], block)
             pair2dali[pair] = line
             if block != blocks[0]:
@@ -68,11 +80,53 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
         dali2pairs[dali].add(pair)
     result = {}
     for dali, pairs in dali2pairs.items():
-        sorts = [pair2sort[pair] for pair in sorted(pairs, key=lambda k: (int(k[0]), int(k[1])))]
-        id = tuple(map(int, blocks_dali(dali)))
+        sorts = [pair2sort[pair] for pair in sorted(pairs, key=lambda k: (
+            (int(k[0][1:]) if k[0].startswith('.') else 0),
+            (int(k[1][1:]) if k[1].startswith('.') else 0)
+        ))]
+        id = tuple(blocks_dali(dali))
         script = '\n'.join([dali] + sorts) + '\n'
         result[id] = script
     return result
+
+re_first_block_las = re.compile(r'^(?:\S+)(?:\s+-\S+)*\s+[^\.]+\.(\d+|)')
+
+def first_block_las(line):
+    """
+    >>> first_block_las('LAsort -v -a foo.1.foo.1.C0')
+    '.1'
+    """
+    mo = re_first_block_las.search(line)
+    try:
+        return int(mo.group(1))
+    except Exception as e:
+        raise Exception('Pattern {!r} does not match line {!r}: {}'.format(
+            re_first_block_las.pattern, line, e))
+
+def get_mjob_data(run_jobs_stream):
+    """Given output of HPC.daligner,
+    return {int: [bash-lines]}
+    """
+    f = run_jobs_stream
+
+    # Copied from scripts_merge()
+    mjob_data = {}
+    for l in f:
+        l = l.strip()
+        first_word = l.split()[0]
+        if first_word not in ("LAsort", "LAmerge"):
+            continue
+        if first_word in ["LAsort"]:
+            # We now run this part w/ daligner, but we still need
+            # a small script for some book-keeping.
+            p_id = first_block_las(l)
+            mjob_data.setdefault( p_id, [] )
+            #mjob_data[p_id].append(  " ".join(l) ) # Already done w/ daligner!
+        elif first_word in ["LAmerge"]:
+            p_id = first_block_las(l)
+            mjob_data.setdefault( p_id, [] )
+            mjob_data[p_id].append(l)
+    return mjob_data
 
 _re_sub_daligner = re.compile(r'^daligner\b', re.MULTILINE)
 def xform_script_for_preads(script):

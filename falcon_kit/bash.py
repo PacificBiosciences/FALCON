@@ -201,53 +201,24 @@ ln -sf ${{db_dir}}/.{db_prefix}.dust.data .
 
 def scripts_merge(config, db_prefix, run_jobs_fn):
     """Yield p_id, bash
+    p_id can be '.123' or just ''
     """
-    mjob_data = {}
     with open(run_jobs_fn) as f:
-        for l in f:
-            l = l.strip().split()
-            if l[0] not in ( "LAsort", "LAmerge", "mv" ):
-                continue
-            if l[0] == "LAsort":
-                # We now run this part w/ daligner, but we still need
-                # a small script for some book-keeping.
-                p_id = int( l[2].split(".")[1] )
-                mjob_data.setdefault( p_id, [] )
-                #mjob_data[p_id].append(  " ".join(l) ) # Already done w/ daligner!
-            if l[0] == "LAmerge":
-                l2 = l[2].split(".")
-                if l2[1][0] == "L":
-                    p_id = int(  l[2].split(".")[2] )
-                    mjob_data.setdefault( p_id, [] )
-                    mjob_data[p_id].append(  " ".join(l) )
-                else:
-                    p_id = int( l[2].split(".")[1] )
-                    mjob_data.setdefault( p_id, [] )
-                    mjob_data[p_id].append(  " ".join(l) )
-            if l[0] == "mv":
-                l2 = l[1].split(".")
-                if l2[1][0] == "L":
-                    p_id = int(  l[1].split(".")[2] )
-                    mjob_data.setdefault( p_id, [] )
-                    mjob_data[p_id].append(  " ".join(l) )
-                else:
-                    p_id = int( l[1].split(".")[1] )
-                    mjob_data.setdefault( p_id, [] )
-                    mjob_data[p_id].append(  " ".join(l) )
+        mjob_data = functional.get_mjob_data(f)
     for p_id in mjob_data:
         bash_lines = mjob_data[p_id]
 
-        #support.make_dirs("%s/m_%05d" % (wd, p_id))
+        #support.make_dirs("%s/m_%06s" % (wd, p_id))
         #support.make_dirs("%s/preads" % (wd))
         #support.make_dirs("%s/las_files" % (wd))
-        #merge_script_file = os.path.abspath("%s/m_%05d/m_%05d.sh" % (wd, p_id, p_id))
+        #merge_script_file = os.path.abspath("%s/m_%06s/m_%06s.sh" % (wd, p_id, p_id))
 
         script = []
         for line in bash_lines:
             script.append(line.replace('&&', ';'))
         script.append("mkdir -p ../las_files")
-        script.append("ln -sf ../m_%05d/%s.%d.las ../las_files" % (p_id, db_prefix, p_id))
-        script.append("ln -sf ./m_%05d/%s.%d.las .. " % (p_id, db_prefix, p_id))
+        script.append("ln -sf ../m_%05d/%s.%s.las ../las_files" % (p_id, db_prefix, p_id))
+        script.append("ln -sf ./m_%05d/%s.%s.las .. " % (p_id, db_prefix, p_id))
         yield p_id, '\n'.join(script + [''])
 
 def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
