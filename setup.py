@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from setuptools import setup, Extension
-
+import subprocess, sys
 import glob
 
 install_requires=[
@@ -12,8 +12,13 @@ install_requires=[
 
 scripts = glob.glob("src/py_scripts/*.py")
 
+try:
+    local_version = '+git.{}'.format(subprocess.check_output('git rev-parse HEAD', shell=True))
+except Exception:
+    local_version = ''
+
 setup(name='falcon_kit',
-      version='0.5',
+      version='0.5' + local_version,
       description='a small toolkit for DNA seqeucne alignment, overlapping, and assembly',
       author='Jason Chin',
       author_email='jchin@pacificbiosciences.com',
