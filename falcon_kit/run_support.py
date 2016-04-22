@@ -131,11 +131,11 @@ def get_dict_from_old_falcon_cfg(config):
     #    if appending == "True":
     #        appending = True
 
-    openending = False
-    if config.has_option(section, 'openending'):
-        openending = config.get(section, 'openending')
-        if openending == "True":
-            openending = True
+    #openending = False
+    #if config.has_option(section, 'openending'):
+    #    openending = config.get(section, 'openending')
+    #    if openending == "True":
+    #        openending = True
 
     input_type = "raw"
     if config.has_option(section, 'input_type'):
@@ -250,7 +250,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "target" : target,
                    "job_type" : job_type,
                    "input_type": input_type,
-                   "openending": openending,
+                   #"openending": openending,
                    "pa_concurrent_jobs" : pa_concurrent_jobs,
                    "ovlp_concurrent_jobs" : ovlp_concurrent_jobs,
                    "cns_concurrent_jobs" : cns_concurrent_jobs,

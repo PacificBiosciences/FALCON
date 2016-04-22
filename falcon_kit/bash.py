@@ -88,29 +88,35 @@ def filter_DBsplit_option(opt):
 def update_dict_entry(d, key, func):
     d[key] = func(d[key])
 
-def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
-    """
-    raw_reads.db will be output into CWD, and might already exist.
-    run_jobs_bfn will be output into CWD.
+def get_last_block(fn):
+    """From existing db, e.g. 'raw_reads.db',
+    return (bool, int)
+    Related to 'openending'. Not currently used.
     """
     last_block = 1
     new_db = True
-    if os.path.exists("raw_reads.db"):
-        with open("raw_reads.db") as f:
+    if os.path.exists(fn):
+        with open(fn) as f:
             for l in f:
                 l = l.strip().split()
                 if l[0] == "blocks" and l[1] == "=":
                     last_block = int(l[2])
                     new_db = False
                     break
+    return (new_db, last_block)
+
+def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
+    """
+    raw_reads.db will be output into CWD, should not already exist.
+    run_jobs_bfn will be output into CWD.
+    """
+    last_block = 1
     config = dict(config) # copy
     update_dict_entry(config, 'pa_DBsplit_option', filter_DBsplit_option)
-    DBsplit = 'DBsplit {pa_DBsplit_option} raw_reads'.format(**config) if new_db else ''
-    openending = config["openending"]
-    if openending == True:
-        count = """$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')"""
-    else:
-        count = """$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')"""
+    DBsplit = 'DBsplit {pa_DBsplit_option} raw_reads'.format(**config)
+    #if openending == True:
+    #    count = """$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')"""
+    count = """$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')"""
     params = dict(config)
     length_cutoff = params.get('length_cutoff')
     if int(length_cutoff) < 0:
@@ -141,13 +147,16 @@ HPC.daligner {pa_HPCdaligner_option} {mdust} -H$CUTOFF raw_reads {last_block}-$L
     # from 'corrected reads' (preads), in which case build_rdb is not run.
 
 def script_build_pdb(config, input_fofn_fn, run_jobs_fn):
+    last_block = 1
+    count = """$(cat preads.db | awk '$1 == "blocks" {print $3}')"""
     params = dict(config)
     update_dict_entry(params, 'ovlp_DBsplit_option', filter_DBsplit_option)
     params.update(locals())
     script = """\
 fasta2DB -pfakemoviename -v preads -f{input_fofn_fn}
 DBsplit {ovlp_DBsplit_option} preads
-HPC.daligner {ovlp_HPCdaligner_option} -H{length_cutoff_pr} preads >| {run_jobs_fn}
+LB={count}
+HPC.daligner {ovlp_HPCdaligner_option} -H{length_cutoff_pr} preads {last_block}-$LB >| {run_jobs_fn}
 """.format(**params)
     return script
 
