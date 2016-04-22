@@ -194,8 +194,8 @@ ln -sf ${{db_dir}}/{db_prefix}.db .
 ln -sf ${{db_dir}}/.{db_prefix}.dust.anno .
 ln -sf ${{db_dir}}/.{db_prefix}.dust.data .
 {daligner_cmd}
-#rm -f *.C?.las
-#rm -f *.N?.las
+rm -f *.C?.las *.C?.S.las
+rm -f *.N?.las *.N?.S.las
 """.format(db_dir=db_dir, db_prefix=db_prefix, daligner_cmd=daligner_cmd)
         yield job_uid, bash
 
