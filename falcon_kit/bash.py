@@ -131,7 +131,9 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
         mdust = ''
     params.update(locals())
     script = """\
-fasta2DB -pfakemoviename -v raw_reads -f{input_fofn_fn}
+fc_fasta2fasta < {input_fofn_fn} >| fc.fofn
+while read fn; do fasta2DB -v raw_reads $fn; done < fc.fofn
+cat fc.fofn | xargs rm -f
 {DBsplit}
 {DBdust}
 LB={count}
@@ -153,7 +155,9 @@ def script_build_pdb(config, input_fofn_fn, run_jobs_fn):
     update_dict_entry(params, 'ovlp_DBsplit_option', filter_DBsplit_option)
     params.update(locals())
     script = """\
-fasta2DB -pfakemoviename -v preads -f{input_fofn_fn}
+fc_fasta2fasta < {input_fofn_fn} >| fc.fofn
+while read fn; do fasta2DB -v preads $fn; done < fc.fofn
+cat fc.fofn | xargs rm -f
 DBsplit {ovlp_DBsplit_option} preads
 LB={count}
 HPC.daligner {ovlp_HPCdaligner_option} -H{length_cutoff_pr} preads {last_block}-$LB >| {run_jobs_fn}
