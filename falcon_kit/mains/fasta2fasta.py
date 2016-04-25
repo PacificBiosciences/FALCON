@@ -16,6 +16,7 @@ import glob
 import gzip
 import logging
 import os
+import re
 import sys
 
 log = logging.getLogger()
@@ -29,9 +30,9 @@ COMPLEMENT = {
 }
 complement = lambda x: (COMPLEMENT[base] for base in x)
 
-zmw = 0 # GLOBAL COUNTER
+zmw = -1 # GLOBAL COUNTER
 
-def WriteSplit(write, seq, split=120):
+def WriteSplit(write, seq, split=80):
     i = 0
     while i < len(seq):
         slice = seq[i:i+split]
@@ -44,7 +45,7 @@ def parse_header(header):
     >>> parse_header('>mine foo bar')
     ('mine', 1, 'foo bar')
     >>> parse_header('>mine/123/5_75 foo bar')
-    ('mine', 123, 'foo bar')
+    ('mine', 123, '5_75 foo bar')
 
     For now, ignore the zmw and instead use a global counter.
     """
@@ -57,6 +58,8 @@ def parse_header(header):
     else:
         extra = ''
     return movie, zmw, extra
+
+re_range = re.compile('^(\d+)_(\d+)\s*(.*)$')
 
 def process_fasta(ifs, movie2write):
     header = ifs.readline().strip()
@@ -73,7 +76,18 @@ def process_fasta(ifs, movie2write):
             line = ifs.readline().strip()
         length = len(seq)
         #log.info('seq:{!r}...({})'.format(seq[:5], length))
-        new_header = '>{movie}/{zmw}/0_{length} {extra}\n'.format(**locals())
+        beg, end = 0, length
+        mo = re_range.search(extra)
+        if mo:
+            beg, end, extra = mo.groups()
+            beg = int(beg)
+            end = int(end)
+            if (end-beg) != length:
+                end = beg + length
+                # Probably never happens tho.
+        if extra:
+            extra = ' ' + extra
+        new_header = '>{movie}/{zmw}/{beg}_{end}{extra}\n'.format(**locals())
         write(new_header)
         WriteSplit(write, seq)
         header = line
