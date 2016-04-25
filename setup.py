@@ -54,6 +54,7 @@ setup(name='falcon_kit',
           'fc_calc_cutoff=falcon_kit.mains.calc_cutoff:main',
           'fc_run=falcon_kit.mains.run:main',
           'fc_run1=falcon_kit.mains.run1:main', # someday, this can replace fc_run
+          'fc_fasta2fasta=falcon_kit.mains.fasta2fasta:main',
           ],
       },
       extras_require = {
