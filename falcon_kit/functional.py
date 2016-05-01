@@ -94,7 +94,7 @@ re_first_block_las = re.compile(r'^(?:\S+)(?:\s+-\S+)*\s+[^\.]+\.(\d+|)')
 def first_block_las(line):
     """
     >>> first_block_las('LAsort -v -a foo.1.foo.1.C0')
-    '.1'
+    1
     """
     mo = re_first_block_las.search(line)
     try:
