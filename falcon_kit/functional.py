@@ -109,6 +109,9 @@ def get_mjob_data(run_jobs_stream):
     """
     f = run_jobs_stream
 
+    # Strip either '&& rm ...' or '; rm ...'
+    re_strip_rm = re.compile(r'^(.*) ((\&\&)|;) .*$')
+
     # Copied from scripts_merge()
     mjob_data = {}
     for l in f:
@@ -125,6 +128,8 @@ def get_mjob_data(run_jobs_stream):
         elif first_word in ["LAmerge"]:
             p_id = first_block_las(l)
             mjob_data.setdefault( p_id, [] )
+            l = re_strip_rm.sub(r'\1', l)
+            # We will have to rm the left-over *.las later.
             mjob_data[p_id].append(l)
     return mjob_data
 
