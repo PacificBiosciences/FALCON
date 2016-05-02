@@ -472,8 +472,8 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
                 }
             }
         }
+        assert(g_best_score != -1);
     }
-    assert(g_best_score != -1);
 
     // reconstruct the sequences
     unsigned int index;
