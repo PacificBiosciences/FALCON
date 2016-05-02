@@ -38,6 +38,8 @@ def _qsub_script(job_data, specific):
         job_name = job_data["job_name"]
         cwd = job_data["cwd"]
         sge_option = job_data["sge_option"]
+        with open(script_fn, 'r') as original: data = original.read()
+        with open(script_fn, 'w') as modified: modified.write("#!/bin/bash" + "\n" + data)
         sge_cmd="qsub -N {job_name} {sge_option} -o {cwd}/sge_log {specific}\
                  -S /bin/bash {script}".format(job_name=job_name,
                                                cwd=os.getcwd(),
