@@ -254,7 +254,7 @@ def task_run_falcon_asm(self):
     script_dir = os.path.join( wd )
     script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
     # Generate las.fofn in run-dir.
-    system('cd {}; find {}/las_files -name "*.las" >| las.fofn'.format(wd, pread_dir))
+    system('cd {}; find {}/m_*/ -name "*.las" >| las.fofn'.format(wd, pread_dir))
     las_fofn_fn = 'las.fofn'
     args = {
         'las_fofn_fn': las_fofn_fn,
@@ -319,8 +319,8 @@ def task_run_consensus(self):
     script_dir = os.path.join( cwd )
     job_done = os.path.join( cwd, "c_%05d_done" % job_id )
     script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
-    db_fn = '../{prefix}'.format(**locals())
-    las_fn = '../las_files/{prefix}.{job_id}.las'.format(**locals())
+    db_fn = os.path.abspath('{cwd}/../{prefix}'.format(**locals()))
+    las_fn = os.path.abspath('{cwd}/../m_{job_id:05d}/{prefix}.{job_id}.las'.format(**locals()))
     args = {
         'db_fn': db_fn,
         'las_fn': las_fn,
