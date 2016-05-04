@@ -21,8 +21,8 @@ def test_get_mjob_data():
     result = f.get_mjob_data(
             example_HPCdaligner)
     assert result
-    eq_(result[1], ['LAmerge -v raw_reads.1 L1.1.1 L1.1.2'])
-    eq_(result[2], ['LAmerge -v raw_reads.2 L1.2.1 L1.2.2'])
+    eq_(result[1], ['LAmerge -v raw_reads.1 L1.1.1 L1.1.2 && rm L1.1.1.las L1.1.2.las'])
+    eq_(result[2], ['LAmerge -v raw_reads.2 L1.2.1 L1.2.2 ; rm L1.2.1.las L1.2.2.las'])
 
 def test_first_block_las():
     line = 'LAsort -v -a -q foo.1.foo.1.C0'
