@@ -1,7 +1,10 @@
 """Most bash-scripting is generated here.
 """
 from . import functional
+import getpass
+import md5
 import os
+import tempfile
 import traceback
 
 BASH='/bin/bash'
@@ -19,33 +22,15 @@ def make_executable(path):
     mode |= (mode & 0444) >> 2    # copy R bits to X
     os.chmod(path, mode)
 
-def write_script_and_wrapper(script, wrapper_fn, job_done):
-    """
-    Write script to a filename based on wrapper_fn, in same directory.
-    Write wrapper to call it,
-     and to write job_done on success and job_done.exit on any exit.
-    'job_done' should be either abspath or relative to dir of wrapper_fn.
-    """
-    job_exit = job_done + '.exit'
-    wdir = os.path.dirname(wrapper_fn)
-    #mkdir(wdir) # To avoid races, callers must do this.
-    root, ext = os.path.splitext(os.path.basename(wrapper_fn))
-    sub_script_bfn = root + '.sub' + ext
+def write_sub_script(ofs, script):
+    # We use shebang + chmod so we can see the sub-script in 'top'.
+    # In order to avoid '/bin/bash: bad interpreter: Text file busy',
+    # we 'touch' the sub-script after chmod.
+    #   http://superuser.com/questions/934300/bin-bash-bad-interpreter-text-file-busy-even-though-the-file-editor-closed
+    ofs.write('#!{}\n'.format(BASH))
+    ofs.write('set -vex\n')
+    ofs.write(script)
 
-    # Try to avoid 'text file busy' in open():
-    #os.listdir(wdir)
-    #os.system('touch {}'.format(os.path.join(wdir, sub_script_bfn)))
-    os.system('rm -f {}'.format(os.path.join(wdir, sub_script_bfn)))
-
-    with open(os.path.join(wdir, sub_script_bfn), 'w') as ofs:
-        # We use shebang + chmod so we can see the sub-script in 'top'.
-        # In order to avoid '/bin/bash: bad interpreter: Text file busy',
-        # we 'touch' the sub-script after chmod.
-        #   http://superuser.com/questions/934300/bin-bash-bad-interpreter-text-file-busy-even-though-the-file-editor-closed
-        ofs.write('#!{}\n'.format(BASH))
-        ofs.write('set -vex\n')
-        ofs.write(script)
-    make_executable(os.path.join(wdir, sub_script_bfn))
     if BUG_avoid_Text_file_busy:
         exe = BASH
     else:
@@ -58,6 +43,24 @@ def write_script_and_wrapper(script, wrapper_fn, job_done):
         # We are trying to avoid this problem:
         #   /bin/bash: bad interpreter: Text file busy
         exe = ''
+    return exe
+
+def write_script_and_wrapper_top(script, wrapper_fn, job_done):
+    """
+    Write script to a filename based on wrapper_fn, in same directory.
+    Write wrapper to call it,
+     and to write job_done on success and job_done.exit on any exit.
+    'job_done' should be either abspath or relative to dir of wrapper_fn.
+    """
+    job_exit = job_done + '.exit'
+    wdir = os.path.dirname(wrapper_fn)
+    #mkdir(wdir) # To avoid races, callers must do this.
+
+    root, ext = os.path.splitext(os.path.basename(wrapper_fn))
+    sub_script_bfn = root + '.sub' + ext
+    with open(os.path.join(wdir, sub_script_bfn), 'w') as ofs:
+        exe = write_sub_script(ofs, script)
+    make_executable(os.path.join(wdir, sub_script_bfn))
 
     wrapper = """
 set -vex
@@ -73,6 +76,46 @@ touch {job_done}
     with open(wrapper_fn, 'w') as ofs:
         ofs.write(wrapper)
     return job_done, job_exit
+
+def select_rundir(wdir, script):
+    tmpdir = tempfile.gettempdir()
+    user = getpass.getuser()
+    digest = md5.md5(script).hexdigest()
+    return '{}/{}/falcontmp/{}/{}'.format(tmpdir, user, wdir, digest)
+
+def write_script_and_wrapper_for_tmp(script, wrapper_fn, job_done):
+    wdir = os.path.dirname(wrapper_fn)
+    root, ext = os.path.splitext(os.path.basename(wrapper_fn))
+    sub_script_bfn = root + '.xsub' + ext
+    with open(os.path.join(wdir, sub_script_bfn), 'w') as ofs:
+        exe = write_sub_script(ofs, script)
+    make_executable(os.path.join(wdir, sub_script_bfn))
+
+    rdir = select_rundir(wdir, script)
+    tmp_wrapper_script = """
+shopt -s dotglob
+rm -rf {rdir}
+mkdir -p {rdir}
+cd {rdir}
+for target in {wdir}/* ; do ln -s $target . ; done
+time {exe} ./{sub_script_bfn}
+for x in ./* ; do if [ -f $x -a ! -L $x ] ; then mv -f $x {wdir} ; fi ; done
+cd {wdir}
+rm -rf {rdir}
+# Presumably, the parent directories might be used by other jobs.
+"""
+    tmp_wrapper_script = tmp_wrapper_script.format(**locals())
+    return write_script_and_wrapper_top(tmp_wrapper_script, wrapper_fn, job_done)
+
+def get_write_script_and_wrapper(config):
+    """Return a function.
+    """
+    if config['use_tmpdir']:
+        # Really, we also want to copy the symlinked db to tmpdir.
+        # Tricky. TODO.
+        return write_script_and_wrapper_for_tmp
+    else:
+        return write_script_and_wrapper_top
 
 def filter_DBsplit_option(opt):
     """We want -a by default, but if we see --no-a[ll], we will not add -a.
@@ -105,7 +148,7 @@ def get_last_block(fn):
                     break
     return (new_db, last_block)
 
-def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
+def script_build_rdb(config, input_fofn_fn, run_jobs_bfn):
     """
     raw_reads.db will be output into CWD, should not already exist.
     run_jobs_bfn will be output into CWD.
@@ -137,10 +180,10 @@ cat fc.fofn | xargs rm -f
 {DBsplit}
 {DBdust}
 LB={count}
-rm -f {run_jobs_fn}
+rm -f {run_jobs_bfn}
 CUTOFF={bash_cutoff}
 echo -n $CUTOFF >| length_cutoff
-HPC.daligner {pa_HPCdaligner_option} {mdust} -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_fn}
+HPC.daligner {pa_HPCdaligner_option} {mdust} -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_bfn}
 """.format(**params)
     return script
     # Note: We dump the 'length_cutoff' file for later reference within the preassembly report
@@ -148,19 +191,19 @@ HPC.daligner {pa_HPCdaligner_option} {mdust} -H$CUTOFF raw_reads {last_block}-$L
     # However, it is not a true dependency because we still have a workflow that starts
     # from 'corrected reads' (preads), in which case build_rdb is not run.
 
-def script_build_pdb(config, input_fofn_fn, run_jobs_fn):
+def script_build_pdb(config, input_fofn_bfn, run_jobs_bfn):
     last_block = 1
     count = """$(cat preads.db | awk '$1 == "blocks" {print $3}')"""
     params = dict(config)
     update_dict_entry(params, 'ovlp_DBsplit_option', filter_DBsplit_option)
     params.update(locals())
     script = """\
-fc_fasta2fasta < {input_fofn_fn} >| fc.fofn
+fc_fasta2fasta < {input_fofn_bfn} >| fc.fofn
 while read fn; do fasta2DB -v preads $fn; done < fc.fofn
 cat fc.fofn | xargs rm -f
 DBsplit {ovlp_DBsplit_option} preads
 LB={count}
-HPC.daligner {ovlp_HPCdaligner_option} -H{length_cutoff_pr} preads {last_block}-$LB >| {run_jobs_fn}
+HPC.daligner {ovlp_HPCdaligner_option} -H{length_cutoff_pr} preads {last_block}-$LB >| {run_jobs_bfn}
 """.format(**params)
     return script
 
@@ -212,17 +255,13 @@ def scripts_merge(config, db_prefix, run_jobs_fn):
     for p_id in mjob_data:
         bash_lines = mjob_data[p_id]
 
-        #support.make_dirs("%s/m_%06s" % (wd, p_id))
-        #support.make_dirs("%s/preads" % (wd))
-        #support.make_dirs("%s/las_files" % (wd))
-        #merge_script_file = os.path.abspath("%s/m_%06s/m_%06s.sh" % (wd, p_id, p_id))
-
         script = []
-        for line in bash_lines:
-            script.append(line.replace('&&', ';'))
-        script.append("mkdir -p ../las_files")
-        script.append("ln -sf ../m_%05d/%s.%s.las ../las_files" % (p_id, db_prefix, p_id))
-        script.append("ln -sf ./m_%05d/%s.%s.las .. " % (p_id, db_prefix, p_id))
+        #for line in bash_lines:
+        #    script.append(line.replace('&&', ';'))
+        #script.append("mkdir -p ../las_files")
+        #script.append("ln -sf ../m_%05d/%s.%s.las ../las_files" % (p_id, db_prefix, p_id))
+        #script.append("ln -sf ./m_%05d/%s.%s.las .. " % (p_id, db_prefix, p_id))
+        #las_fn = '%s.%s.las' % (db_prefix, p_id))
         yield p_id, '\n'.join(script + [''])
 
 def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
