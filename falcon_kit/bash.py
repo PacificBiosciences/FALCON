@@ -256,8 +256,8 @@ def scripts_merge(config, db_prefix, run_jobs_fn):
         bash_lines = mjob_data[p_id]
 
         script = []
-        #for line in bash_lines:
-        #    script.append(line.replace('&&', ';'))
+        for line in bash_lines:
+            script.append(line.replace('&&', ';'))
         #script.append("mkdir -p ../las_files")
         #script.append("ln -sf ../m_%05d/%s.%s.las ../las_files" % (p_id, db_prefix, p_id))
         #script.append("ln -sf ./m_%05d/%s.%s.las .. " % (p_id, db_prefix, p_id))
