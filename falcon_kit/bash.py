@@ -84,7 +84,7 @@ def select_rundir(wdir, script):
     return '{}/{}/falcontmp/{}/{}'.format(tmpdir, user, wdir, digest)
 
 def write_script_and_wrapper_for_tmp(script, wrapper_fn, job_done):
-    wdir = os.path.dirname(wrapper_fn)
+    wdir = os.path.dirname(os.path.abspath(wrapper_fn))
     root, ext = os.path.splitext(os.path.basename(wrapper_fn))
     sub_script_bfn = root + '.xsub' + ext
     with open(os.path.join(wdir, sub_script_bfn), 'w') as ofs:
