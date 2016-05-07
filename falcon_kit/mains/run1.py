@@ -53,7 +53,6 @@ def task_build_rdb(self):
     remove(job_done, db, run_jobs)
     work_dir = self.parameters["work_dir"]
     config = self.parameters["config"]
-    sge_option_da = config["sge_option_da"]
 
     script_fn = os.path.join( work_dir, "prepare_rdb.sh" )
     args = {
@@ -65,8 +64,6 @@ def task_build_rdb(self):
     }
     support.build_rdb(**args)
     self.generated_script_fn = script_fn
-    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-    #    job_type=config['job_type'], sge_option=sge_option_da)
 
 def task_build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
     input_fofn_fn = fn(self.pread_fofn)
@@ -87,8 +84,6 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
     }
     support.build_pdb(**args)
     self.generated_script_fn = script_fn
-    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-    #    job_type=config['job_type'], sge_option=config['sge_option_pda'])
 
 def task_run_db2falcon(self):
     wd = self.parameters["wd"]
@@ -104,8 +99,6 @@ def task_run_db2falcon(self):
     }
     support.run_db2falcon(**args)
     self.generated_script_fn = script_fn
-    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-    #    job_type=config['job_type'], sge_option=config['sge_option_fc'])
 
 def task_run_falcon_asm(self):
     wd = self.parameters["wd"]
@@ -129,8 +122,6 @@ def task_run_falcon_asm(self):
     }
     support.run_falcon_asm(**args)
     self.generated_script_fn = script_fn
-    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-    #    job_type=config['job_type'], sge_option=config['sge_option_fc'])
 
 def task_run_daligner(self):
     job_done = fn(self.job_done)
@@ -140,7 +131,6 @@ def task_run_daligner(self):
     mkdir(cwd)
     db_prefix = self.parameters["db_prefix"]
     config = self.parameters["config"]
-    sge_option_da = config["sge_option_da"]
     script_dir = os.path.join(cwd)
     script_fn =  os.path.join(script_dir , "rj_%s.sh" % (job_uid))
     args = {
@@ -152,8 +142,6 @@ def task_run_daligner(self):
     }
     support.run_daligner(**args)
     self.generated_script_fn = script_fn
-    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-    #    job_type=config['job_type'], sge_option=config['sge_option_da'])
 
 def task_run_las_merge(self):
     script = self.parameters["merge_script"]
@@ -161,7 +149,6 @@ def task_run_las_merge(self):
     cwd = self.parameters["cwd"]
     job_done = fn(self.job_done)
     config = self.parameters["config"]
-    sge_option_la = config["sge_option_la"]
 
     script_dir = os.path.join( cwd )
     script_fn =  os.path.join( script_dir , "rp_%05d.sh" % (job_id))
@@ -173,8 +160,6 @@ def task_run_las_merge(self):
     }
     support.run_las_merge(**args)
     self.generated_script_fn = script_fn
-    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-    #    job_type=config['job_type'], sge_option=config['sge_option_la'])
 
 def task_run_consensus(self):
     out_file_fn = fn(self.out_file)
@@ -197,8 +182,6 @@ def task_run_consensus(self):
     }
     support.run_consensus(**args)
     self.generated_script_fn = script_fn
-    #run_script_and_wait_and_rm_exit(self.URL, script_fn, job_done, self,
-    #    job_type=config['job_type'], sge_option=config['sge_option_cns'])
 
 def mkdir(d):
     if not os.path.isdir(d):
@@ -239,6 +222,7 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, config, pr
                        "cwd": cwd,
                        "job_uid": job_uid,
                        "config": config,
+                       "sge_option": config["sge_option_da"],
                        "db_prefix": db_prefix}
         make_daligner_task = PypeTask(inputs = {"rdb_build_done": rdb_build_done},
                                       outputs = {"job_done": job_done},
@@ -261,6 +245,7 @@ def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
         parameters =  {"merge_script": merge_script,
                        "cwd": os.path.join(wd, "m_%05d" % p_id),
                        "job_id": p_id,
+                       "sge_option": config["sge_option_la"],
                        "config": config}
         make_merge_task = PypeTask(inputs = {"input_dep": input_dep},
                                    outputs = {"job_done": job_done},
@@ -285,6 +270,7 @@ def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
         parameters =  {"cwd": rdir,
                        "job_id": p_id,
                        "prefix": db_prefix,
+                       "sge_option": config["sge_option_cns"],
                        "config": config}
         make_c_task = PypeTask(inputs = {"job_done": job_done},
                                outputs = {"out_file": out_file, "out_done": out_done},
@@ -336,6 +322,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") )
         run_jobs = makePypeLocalFile( os.path.join( rawread_dir, "run_jobs.sh") )
         parameters = {"work_dir": rawread_dir,
+                      "sge_option": config["sge_option_da"],
                       "config": config}
 
         raw_reads_db = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
@@ -416,6 +403,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
     pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "pdb_build_done") )
     parameters = {"work_dir": pread_dir,
+                  "sge_option": config["sge_option_pda"],
                   "config": config}
 
     run_jobs = makePypeLocalFile(os.path.join(pread_dir, 'run_jobs.sh'))
@@ -423,7 +411,8 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     make_build_pdb_task  = PypeTask(inputs = {"pread_fofn": pread_fofn },
                                     outputs = {"pdb_build_done": pdb_build_done,
                                                "preads_db": preads_db,
-                                               "run_jobs": run_jobs},
+                                               "run_jobs": run_jobs,
+                                    },
                                     parameters = parameters,
                                     TaskType = MyFakePypeThreadTaskBase,
                                     URL = "task://localhost/build_pdb")
@@ -436,7 +425,6 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     preads_nblock = support.get_nblock(fn(preads_db))
     #### run daligner
     config["sge_option_da"] = config["sge_option_pda"]
-    config["sge_option_la"] = config["sge_option_pla"]
     daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", pdb_build_done, config, pread_aln=True)
     wf.addTasks(daligner_tasks)
 
@@ -454,6 +442,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     wf.addTask(check_p_da_task)
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
+    config["sge_option_la"] = config["sge_option_pla"]
     merge_tasks, merge_out, _ = create_merge_tasks(fn(run_jobs), pread_dir, "preads", p_da_done, config)
     wf.addTasks( merge_tasks )
 
@@ -479,6 +468,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                outputs =  {"db2falcon_done": db2falcon_done},
                parameters = {"wd": pread_dir,
                              "config": config,
+                             "sge_option": config["sge_option_fc"],
                             },
                TaskType = MyFakePypeThreadTaskBase,
                URL = "task://localhost/db2falcon" )
@@ -490,7 +480,9 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                outputs =  {"falcon_asm_done": falcon_asm_done},
                parameters = {"wd": falcon_asm_dir,
                              "config": config,
-                             "pread_dir": pread_dir},
+                             "pread_dir": pread_dir,
+                             "sge_option": config["sge_option_fc"],
+               },
                TaskType = MyFakePypeThreadTaskBase,
                URL = "task://localhost/falcon" )
     wf.addTask(make_run_falcon_asm(task_run_falcon_asm))
