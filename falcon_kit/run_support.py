@@ -249,7 +249,12 @@ def get_dict_from_old_falcon_cfg(config):
         # in a given refresh.
         stop_all_jobs_on_failure = False
     if config.has_option(section, 'use_tmpdir'):
-        use_tmpdir = config.getboolean(section, 'use_tmpdir')
+        tmpdir = config.get(section, 'use_tmpdir')
+        if '/' in tmpdir:
+            tempfile.tempdir = tmpdir
+            use_tmpdir = True
+        else:
+            use_tmpdir = config.getboolean(section, 'use_tmpdir')
     else:
         use_tmpdir = False
 
