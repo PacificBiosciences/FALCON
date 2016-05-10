@@ -151,7 +151,7 @@ def calc_cutoff_from_reverse_sorted_readlength_counts(rl_counts, target):
     """
     total = sum(pair[0]*pair[1] for pair in rl_counts)
     subtotal = 0
-    assert target <= total, (target, total)
+    assert target <= total, 'Not enough genome coverage (target={} < actual={})'.format(target, total)
     cutoff = 0
     for (rl, count) in rl_counts:
         subtotal += rl*count
