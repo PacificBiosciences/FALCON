@@ -30,7 +30,7 @@ COMPLEMENT = {
 }
 complement = lambda x: (COMPLEMENT[base] for base in x)
 
-zmw = -1 # GLOBAL COUNTER
+zmw_counter = None
 
 def WriteSplit(write, seq, split=80):
     i = 0
@@ -42,17 +42,23 @@ def WriteSplit(write, seq, split=80):
 
 def parse_header(header):
     """
+    >>> zmw_counter=1
     >>> parse_header('>mine foo bar')
     ('mine', 1, 'foo bar')
+    >>> zmw_counter=None
     >>> parse_header('>mine/123/5_75 foo bar')
     ('mine', 123, '5_75 foo bar')
 
     For now, ignore the zmw and instead use a global counter.
     """
-    global zmw
-    zmw += 1
+    global zmw_counter
     parts = header[1:].split('/')
     movie = parts[0]
+    if zmw_counter is None:
+        zmw = int(parts[1])
+    else:
+        zmw = zmw_counter
+        zmw_counter += 1
     if len(parts) > 1:
         extra = parts[-1]
     else:
@@ -210,6 +216,9 @@ def main():
     parser.add_argument('--gzip',
         action='store_true',
         help='Compress intermediate fasta with gzip. (Not currently implemented.)')
+    parser.add_argument('--zmw-start',
+        type=int,
+        help='Ignore the zmw number in the fasta header. Instead, use a global counter, starting at this numer.')
     #parser.add_argument('--clean',
     #    action='store_true',
     #    help='Remove intermediate fasta when done.')
@@ -219,6 +228,8 @@ def main():
     #    help='Pass these arguments along to fasta2DB. These should exclude fasta inputs.')
     #global ARGS
     ARGS = parser.parse_args()
+    global zmw_counter
+    zmw_counter = ARGS.zmw_start
     for obn in fixall(abs_fns(sys.stdin, os.getcwd()), Gzip=ARGS.gzip):
         sys.stdout.write('{}\n'.format(os.path.abspath(obn)))
 
