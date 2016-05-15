@@ -232,6 +232,7 @@ def try_run_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn
         exe_pool.terminate()
 
 def ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
+    assert fofn, 'Must provide file-of-filenames for .fastas'
     if debug:
         n_core = 0
         silent = False
@@ -248,7 +249,7 @@ def parse_args(argv):
     parser.add_argument('--n_core', type=int, default=4,
                         help='number of processes used for generating consensus; '
                         '0 for main process only')
-    parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
+    parser.add_argument('--fofn', type=str, required=True, help='file contains the path of all LAS file to be processed in parallel')
     parser.add_argument('--db', type=str, dest='db_fn', help='read db file path')
     parser.add_argument('--max_diff', type=int, help="max difference of 5' and 3' coverage")
     parser.add_argument('--max_cov', type=int, help="max coverage of 5' or 3' coverage")
