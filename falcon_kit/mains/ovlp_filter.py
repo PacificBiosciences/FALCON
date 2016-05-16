@@ -282,8 +282,6 @@ def parse_args(argv):
     parser.add_argument('--n-core', type=int, default=4,
                         help='number of processes used for generating consensus; '
                         '0 for main process only')
-    parser.add_argument('--fofn', type=str, required=True, help='file contains the path of all LAS file to be processed in parallel')
-    parser.add_argument('--db', type=str, dest='db_fn', help='read db file path')
     parser.add_argument('--max-diff', type=int, help="max difference of 5' and 3' coverage")
     parser.add_argument('--max-ovlp', type=int, dest='max_cov', help="max of 5' or 3' coverage")
     parser.add_argument('--min-ovlp', type=int, dest='min_cov', help="min of 5' or 3' coverage")
@@ -292,6 +290,8 @@ def parse_args(argv):
     parser.add_argument('--stream', action='store_true', help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
     parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
     parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
+    parser.add_argument('db_fn', type=str, help='read db file path')
+    parser.add_argument('fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
     args = parser.parse_args(argv[1:])
     return args
 
