@@ -18,10 +18,10 @@ def only_these_symlinks(dir2paths):
         base2rel = {os.path.basename(path): os.path.relpath(path, d) for path in paths}
         assert len(base2rel) == len(bases), 'Non-unique basename in {}'.format(repr(paths))
         for existing_base in os.listdir(d):
-            existing_path = os.path.join(d, existing_basename)
+            existing_path = os.path.join(d, existing_base)
             if os.path.islink(existing_path):
                 if existing_base in base2rel:
-                    if os.readlink(existing_path) != base2rel(existing_base):
+                    if os.readlink(existing_path) != base2rel[existing_base]:
                         os.unlink(existing_path) # Wrong target (or non-relative) so remove it.
                     else:
                         del base2rel[existing_base] # Just keep it.
