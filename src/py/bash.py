@@ -79,7 +79,9 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
     script = """\
 fasta2DB -v raw_reads -f{input_fofn_fn}
 {DBsplit}
+#DBdust raw_reads.db
 LB={count}
+#HPCdaligner {pa_HPCdaligner_option} -mdust -H{length_cutoff} raw_reads {last_block}-$LB >| {run_jobs_fn}
 HPCdaligner {pa_HPCdaligner_option} -H{length_cutoff} raw_reads {last_block}-$LB >| {run_jobs_fn}
 """.format(**params)
     return script
@@ -121,6 +123,7 @@ db_dir={db_dir}
 ln -sf ${{db_dir}}/.{db_prefix}.bps .
 ln -sf ${{db_dir}}/.{db_prefix}.idx .
 ln -sf ${{db_dir}}/{db_prefix}.db .
+ln -sf ${{db_dir}}/.{db_prefix}.dust.* .
 {daligner_cmd}
 #rm -f *.C?.las
 #rm -f *.N?.las

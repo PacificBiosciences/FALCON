@@ -324,12 +324,15 @@ def task_daligner_gather(self):
     job_rundirs = [os.path.dirname(fn(dal_done)) for dal_done in out_dict.values()]
 
     # Symlink all daligner *.las.
+    cmd = []
     for block, las_path in support.daligner_gather_las(job_rundirs):
             fc_run_logger.warning('block: %s, las_path: %s' %(block, las_path))
             mdir = os.path.join(main_dir, 'm_%05d' %block) # By convention. pbsmrtpipe works differently.
             las_path = os.path.relpath(las_path, mdir)
-            cmd = 'ln -sf {} {}'.format(las_path, mdir)
-            system(cmd)
+            cmd.append( 'ln -sf {} {};'.format(las_path, mdir) )
+    with open("make_link.sh","w") as f:
+        print >>f, "\n".join(cmd)
+    system("bash make_link.sh")
     system("touch %s" %da_done)
 
 def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, config, pread_aln=False):

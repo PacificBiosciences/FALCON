@@ -256,7 +256,10 @@ def main(argv=None):
                     delta_len = len(seq) - len(base_seq)
                     idt = 0.0
                     cov = 0.0
-                    if len(base_seq) > 2000 and len(seq) > 2000:
+                    if len(base_seq) > 500000 or len(seq) > 500000:
+                        idt = 0
+                        cov = 0
+                    elif len(base_seq) > 2000 and len(seq) > 2000:
                         aln_data, x, y = get_aln_data(base_seq, seq)
                         if len( aln_data ) != 0:
                             idt =  1.0-1.0*aln_data[-1][-1] / aln_data[-1][-2]
