@@ -254,7 +254,7 @@ def task_run_falcon_asm(self):
     script_dir = os.path.join( wd )
     script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
     # Generate las.fofn in run-dir.
-    system('cd {}; find {}/m_*/ -name "*.las" >| las.fofn'.format(wd, pread_dir))
+    system('cd {}; find {}/m_*/ -name "preads.*.las" >| las.fofn'.format(wd, pread_dir))
     las_fofn_fn = 'las.fofn'
     args = {
         'las_fofn_fn': las_fofn_fn,
