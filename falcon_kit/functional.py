@@ -85,7 +85,6 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
             (int(k[1][1:]) if k[1].startswith('.') else 0)
         ))
         sorts = [pair2sort[pair] for pair in sorted_pairs]
-        print sorted_pairs
         checks = ["LAcheck {0}.db L1{1}{2}.las || exit 1".format(db_prefix, p1, p2)  for p1, p2 in sorted_pairs] 
         id = tuple(blocks_dali(dali))
         script = '\n'.join([dali] + sorts + checks) + '\n'
