@@ -110,9 +110,22 @@ def get_config(config):
     add('sge_option_cns', 'NA')
     return get_dict_from_old_falcon_cfg(config)
 
-def parse_config(config_fn):
+def dict2config(jdict, section):
     config = ConfigParser.ConfigParser()
-    config.readfp(open(config_fn))
+    if not config.has_section(section):
+        config.add_section(section)
+    for k,v in jdict.iteritems():
+        config.set(section, k, v)
+    return config
+
+def parse_config(config_fn):
+    ext = os.path.splitext(config_fn)[1]
+    if ext in ('.json', '.js'):
+        jdict = json.loads(open(config_fn).read())
+        config = dict2config(jdict, "General")
+    else:
+        config = ConfigParser.ConfigParser()
+        config.readfp(open(config_fn))
     return config
 
 def get_dict_from_old_falcon_cfg(config):

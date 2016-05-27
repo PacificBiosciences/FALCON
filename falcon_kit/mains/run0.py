@@ -436,7 +436,11 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     fc_run_logger = support.setup_logger(logger_config_fn)
 
     fc_run_logger.info("fc_run started with configuration %s", input_config_fn)
-    config = support.get_dict_from_old_falcon_cfg(support.parse_config(input_config_fn))
+    try:
+        config = support.get_dict_from_old_falcon_cfg(support.parse_config(input_config_fn))
+    except Exception:
+        fc_run_logger.exception('Failed to parse config "{}".'.format(input_config_fn))
+        raise
     rawread_dir = os.path.abspath("./0-rawreads")
     pread_dir = os.path.abspath("./1-preads_ovl")
     falcon_asm_dir  = os.path.abspath("./2-asm-falcon")
@@ -632,7 +636,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 def main(argv=sys.argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('config',
-        help='.cfg or .ini')
+        help='.cfg/.ini/.json')
     parser.add_argument('logger',
         nargs='?',
         help='(Optional)JSON config for standard Python logging module')
