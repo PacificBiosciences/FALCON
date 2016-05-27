@@ -5,6 +5,7 @@ from pypeflow.task import PypeTask, PypeThreadTaskBase
 from pypeflow.controller import PypeThreadWorkflow
 from falcon_kit.FastaReader import FastaReader
 from ..util.system import only_these_symlinks
+import argparse
 import collections
 import glob
 import os
@@ -629,11 +630,11 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
 
 def main(argv=sys.argv):
-    print('%s args: %r' %(__name__,argv))
-    if len(argv) < 2 or argv[1].startswith('-'):
-        sys.stderr.write( """
-you need to specify a configuration file"
-usage: fc_run fc_run.cfg [logging.cfg]
-""")
-        sys.exit(2)
-    main1(*argv)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config',
+        help='.cfg or .ini')
+    parser.add_argument('logger',
+        nargs='?',
+        help='(Optional)JSON config for standard Python logging module')
+    args = parser.parse_args(argv[1:])
+    main1(argv[0], args.config, args.logger)

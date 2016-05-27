@@ -4,6 +4,7 @@ from ..util.system import only_these_symlinks
 from pypeflow.pwatcher_bridge import PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask
+import argparse
 import collections
 import glob
 import os
@@ -490,11 +491,11 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
 
 def main(argv=sys.argv):
-    print(argv)
-    if len(argv) < 2 or argv[1].startswith('-'):
-        sys.stderr.write( """
-you need to specify a configuration file"
-usage: fc_run1 fc_run.cfg [logging.cfg]
-""")
-        sys.exit(2)
-    main1(*argv)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config',
+        help='.cfg or .ini')
+    parser.add_argument('logger',
+        nargs='?',
+        help='(Optional)JSON config for standard Python logging module')
+    args = parser.parse_args(argv[1:])
+    main1(argv[0], args.config, args.logger)
