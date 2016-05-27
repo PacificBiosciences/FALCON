@@ -112,7 +112,7 @@ def get_config(config):
 
 def parse_config(config_fn):
     config = ConfigParser.ConfigParser()
-    config.read(config_fn)
+    config.readfp(open(config_fn))
     return config
 
 def get_dict_from_old_falcon_cfg(config):
