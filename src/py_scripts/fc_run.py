@@ -1,4 +1,4 @@
-from falcon_kit.mains.run import main
+from falcon_kit.mains.run0 import main
 import sys
 
 if __name__ == "__main__":
