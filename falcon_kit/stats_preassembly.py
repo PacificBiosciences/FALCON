@@ -98,7 +98,8 @@ def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_
     log.info('stats for corrected reads: %s' %repr(stats_corrected_reads))
 
     kwds = {}
-    kwds['genome_length'] = 0 if genome_length is None else genome_length
+    genome_length = -1 if not genome_length else genome_length
+    kwds['genome_length'] = genome_length
     kwds['length_cutoff'] = 0 if length_cutoff is None else length_cutoff
     kwds['raw_reads'] = stats_raw_reads.nreads
     kwds['raw_bases'] = stats_raw_reads.total
