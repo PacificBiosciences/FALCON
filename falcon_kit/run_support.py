@@ -447,6 +447,15 @@ def daligner_gather_las(job_rundirs):
             block = int(mo.group(1)) # We will merge in the m_* dir of the left block.
             yield block, os.path.join(job_rundir, las_fn)
 
+def get_length_cutoff(length_cutoff, fn):
+    if length_cutoff < 0:
+        try:
+            length_cutoff = int(open(fn).read().strip())
+            logger.info('length_cutoff=%d from %r' %(length_cutoff, fn))
+        except Exception:
+            logger.exception('Unable to read length_cutoff from "%s".' %fn)
+    return length_cutoff # possibly updated
+
 def build_rdb(input_fofn_fn, config, job_done, script_fn, run_jobs_fn):
     run_jobs_fn = os.path.basename(run_jobs_fn)
     script = bash.script_build_rdb(config, input_fofn_fn, run_jobs_fn)

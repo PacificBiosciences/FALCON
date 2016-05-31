@@ -1,12 +1,14 @@
 from .. import run_support as support
 from .. import bash
 from ..util.system import only_these_symlinks
+from falcon_kit import stats_preassembly
 from pypeflow.pwatcher_bridge import PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask
 import argparse
 import collections
 import glob
+import json
 import os
 import re
 import sys
@@ -32,7 +34,6 @@ def system(call, check=False):
     else:
         fc_run_logger.debug(msg)
     return rc
-
 
 def task_make_fofn_abs_raw(self):
     #script_fn = 'noop.sh'
@@ -123,6 +124,28 @@ def task_run_falcon_asm(self):
     }
     support.run_falcon_asm(**args)
     self.generated_script_fn = script_fn
+
+def task_report_pre_assembly(self):
+    # TODO(CD): Bashify this, in case it is slow.
+    i_raw_reads_fofn_fn = fn(self.raw_reads_fofn)
+    i_preads_fofn_fn = fn(self.preads_fofn)
+    i_length_cutoff_fn = fn(self.length_cutoff_fn)
+    o_json_fn = fn(self.pre_assembly_report)
+    cfg = self.parameters
+    genome_length = int(cfg.get('genome_size', 0)) # different name in falcon
+    length_cutoff = int(cfg['length_cutoff'])
+    length_cutoff = support.get_length_cutoff(length_cutoff, i_length_cutoff_fn)
+    kwds = {
+        'i_raw_reads_fofn_fn': i_raw_reads_fofn_fn,
+        'i_preads_fofn_fn': i_preads_fofn_fn,
+        'genome_length': genome_length,
+        'length_cutoff': length_cutoff,
+    }
+    fc_run_logger.info('Report inputs: {}'.format(repr(kwds)))
+    report_dict = stats_preassembly.make_dict(**kwds)
+    content = json.dumps(report_dict, sort_keys=True, indent=4, separators=(',', ': '))
+    fc_run_logger.info('Report stats:\n{}'.format(content))
+    open(o_json_fn, 'w').write(content)
 
 def task_run_daligner(self):
     job_done = fn(self.job_done)
@@ -388,9 +411,23 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
             system("touch %s" % fn(self.cns_done))
         wf.addTask(check_r_cns_task)
 
+        length_cutoff_pfn = makePypeLocalFile(os.path.join(rawread_dir, "length_cutoff"))
+        pre_assembly_report_pfn = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json")) #tho technically it needs pread_fofn
+        make_task = PypeTask(
+                inputs = {"length_cutoff_fn": length_cutoff_pfn,
+                          "raw_reads_fofn": rawread_fofn_plf,
+                          "preads_fofn": pread_fofn, },
+                outputs = {"pre_assembly_report": pre_assembly_report_pfn, },
+                parameters = config,
+                TaskType = MyFakePypeThreadTaskBase,
+                URL = "task://localhost/report_pre_assembly")
+        task = make_task(task_report_pre_assembly)
+        wf.addTask(task)
+
         concurrent_jobs = config["cns_concurrent_jobs"]
         PypeProcWatcherWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
+
 
     if config["target"] == "pre-assembly":
         sys.exit(0)
