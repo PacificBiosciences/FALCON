@@ -115,7 +115,7 @@ def dict2config(jdict, section):
     if not config.has_section(section):
         config.add_section(section)
     for k,v in jdict.iteritems():
-        config.set(section, k, v)
+        config.set(section, k, str(v))
     return config
 
 def parse_config(config_fn):
