@@ -556,13 +556,13 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
             system("touch %s" % fn(self.cns_done))
         wf.addTask(check_r_cns_task)
 
-        length_cutoff_pfn = makePypeLocalFile(os.path.join(rawread_dir, "length_cutoff"))
-        pre_assembly_report_pfn = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json")) #tho technically it needs pread_fofn
+        length_cutoff_plf = makePypeLocalFile(os.path.join(rawread_dir, "length_cutoff"))
+        pre_assembly_report_plf = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json")) #tho technically it needs pread_fofn
         make_task = PypeTask(
-                inputs = {"length_cutoff_fn": length_cutoff_pfn,
+                inputs = {"length_cutoff_fn": length_cutoff_plf,
                           "raw_reads_fofn": rawread_fofn_plf,
                           "preads_fofn": pread_fofn, },
-                outputs = {"pre_assembly_report": pre_assembly_report_pfn, },
+                outputs = {"pre_assembly_report": pre_assembly_report_plf, },
                 parameters = config,
                 TaskType = PypeThreadTaskBase,
                 URL = "task://localhost/report_pre_assembly")
