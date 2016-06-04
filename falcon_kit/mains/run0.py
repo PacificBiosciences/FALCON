@@ -233,7 +233,7 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
 
 def task_report_pre_assembly(self):
     # TODO(CD): Bashify this, in case it is slow.
-    i_raw_reads_fofn_fn = fn(self.raw_reads_fofn)
+    i_raw_reads_db_fn = fn(self.raw_reads_db)
     i_preads_fofn_fn = fn(self.preads_fofn)
     i_length_cutoff_fn = fn(self.length_cutoff_fn)
     o_json_fn = fn(self.pre_assembly_report)
@@ -242,13 +242,13 @@ def task_report_pre_assembly(self):
     length_cutoff = int(cfg['length_cutoff'])
     length_cutoff = support.get_length_cutoff(length_cutoff, i_length_cutoff_fn)
     kwds = {
-        'i_raw_reads_fofn_fn': i_raw_reads_fofn_fn,
+        'i_raw_reads_db_fn': i_raw_reads_db_fn,
         'i_preads_fofn_fn': i_preads_fofn_fn,
         'genome_length': genome_length,
         'length_cutoff': length_cutoff,
     }
     fc_run_logger.info('Report inputs: {}'.format(repr(kwds)))
-    report_dict = stats_preassembly.make_dict(**kwds)
+    report_dict = stats_preassembly.calc_dict(**kwds)
     content = json.dumps(report_dict, sort_keys=True, indent=4, separators=(',', ': '))
     fc_run_logger.info('Report stats:\n{}'.format(content))
     open(o_json_fn, 'w').write(content)
@@ -498,10 +498,10 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         parameters = {"work_dir": rawread_dir,
                       "config": config}
 
-        raw_reads_db = makePypeLocalFile(os.path.join( rawread_dir, "%s.db" % "raw_reads" ))
+        raw_reads_db_plf = makePypeLocalFile(os.path.join(rawread_dir, "%s.db" % "raw_reads"))
         make_build_rdb_task = PypeTask(inputs = {"input_fofn": rawread_fofn_plf},
                                       outputs = {"rdb_build_done": rdb_build_done,
-                                                 "raw_reads_db": raw_reads_db,
+                                                 "raw_reads_db": raw_reads_db_plf,
                                                  "run_jobs": run_jobs,
                                       },
                                       parameters = parameters,
@@ -511,7 +511,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         wf.addTasks([build_rdb_task])
         wf.refreshTargets([rdb_build_done])
 
-        raw_reads_nblock = support.get_nblock(fn(raw_reads_db))
+        raw_reads_nblock = support.get_nblock(fn(raw_reads_db_plf))
         #### run daligner
         daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", rdb_build_done, config)
 
@@ -560,7 +560,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         pre_assembly_report_plf = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json")) #tho technically it needs pread_fofn
         make_task = PypeTask(
                 inputs = {"length_cutoff_fn": length_cutoff_plf,
-                          "raw_reads_fofn": rawread_fofn_plf,
+                          "raw_reads_db": raw_reads_db_plf,
                           "preads_fofn": pread_fofn, },
                 outputs = {"pre_assembly_report": pre_assembly_report_plf, },
                 parameters = config,

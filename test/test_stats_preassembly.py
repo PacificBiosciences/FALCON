@@ -1,5 +1,6 @@
 import falcon_kit.stats_preassembly as M
 import helpers
+from cStringIO import StringIO
 
 def test_stats_dict():
     #Stats = collections.namedtuple('FastaStats', ['nreads', 'total', 'n50', 'p95'])
@@ -33,3 +34,20 @@ def test_stats_dict():
  'seed_p95': 40,
  'seed_reads': 50}
     helpers.equal_dict(result, expected)
+
+sample_DBdump = """\
++ R 2
++ M 0
++ H 17
+@ H 9
+H 9 TestMovie
+L 0 1 1999
+H 8 TestMoov
+L 49 0 2001
+"""
+
+def test_parse_readlengths_from_dbdump():
+    #result = list(M.parse_readlengths_from_dbdump(StringIO(sample_DBdump)))
+    result = list(M.parse_readlengths_from_dbdump_output(sample_DBdump))
+    expected = [1998, 2001]
+    helpers.equal_list(result, expected)

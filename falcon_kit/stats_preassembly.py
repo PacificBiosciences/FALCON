@@ -8,11 +8,12 @@ See FALCON-pbsmrtpipe/pbfalcon/report_preassembly.py for XML version.
 from __future__ import absolute_import
 from __future__ import division
 from .FastaReader import FastaReader
+from .util.io import syscall
 import collections
 import itertools
 import logging
 import os
-import pprint
+import re
 
 log = logging.getLogger(__name__)
 __version__ = '0.1'
@@ -33,6 +34,24 @@ def get_fasta_readlengths(fasta_file):
     lens.sort()
     return lens
 
+def get_db_readlengths(fn):
+    """Use DBdump on a DAZZ_DB.
+    If DBsplit was run, then we see the filtered reads only, since we do not provide '-u' to DBdump.
+    """
+    call = 'DBdump -h {}'.format(fn)
+    return list(parse_readlengths_from_dbdump_output(syscall(call)))
+
+def parse_readlengths_from_dbdump_output(output):
+    """ofs is the output file stream from the DBump command.
+    """
+    re_length = re.compile('^L\s+\d+\s+(\d+)\s+(\d+)$')
+    for line in output.splitlines():
+        mo = re_length.search(line)
+        if mo:
+            beg, end = mo.group(1, 2)
+            beg = int(beg)
+            end = int(end)
+            yield end - beg
 
 class FastaContainer(object):
 
@@ -85,9 +104,16 @@ def stats_from_sorted_readlengths(read_lens):
     return Stats(nreads=nreads, total=total, n50=n50, p95=p95)
 
 def read_lens_from_fofn(fofn_fn):
+    """Return sorted list.
+    """
     fns = [fn.strip() for fn in open(fofn_fn) if fn.strip()]
     # get_fasta_readlengths() returns sorted, so sorting the chain is roughly linear.
     return list(sorted(itertools.chain.from_iterable(get_fasta_readlengths(fn) for fn in fns)))
+
+def read_lens_from_db(db_fn):
+    """Return sorted read-lengths from a DAZZ_DB.
+    """
+    return list(sorted(get_db_readlengths(db_fn)))
 
 def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_length, length_cutoff):
     """All inputs are paths to fasta files.
@@ -125,6 +151,7 @@ def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_
     result = {k:round_if_float(v) for k,v in kwds.iteritems()}
     return result
 
+# DEPRECATED
 def make_dict(
         i_preads_fofn_fn,
         i_raw_reads_fofn_fn,
@@ -132,6 +159,29 @@ def make_dict(
         length_cutoff,
     ):
     raw_reads = read_lens_from_fofn(i_raw_reads_fofn_fn)
+    stats_raw_reads = stats_from_sorted_readlengths(raw_reads)
+
+    seed_reads = cutoff_reads(raw_reads, length_cutoff)
+    stats_seed_reads = stats_from_sorted_readlengths(seed_reads)
+
+    preads = read_lens_from_fofn(i_preads_fofn_fn)
+    stats_preads = stats_from_sorted_readlengths(preads)
+    report_dict = stats_dict(
+            stats_raw_reads=stats_raw_reads,
+            stats_seed_reads=stats_seed_reads,
+            stats_corrected_reads=stats_preads,
+            genome_length=genome_length,
+            length_cutoff=length_cutoff,
+    )
+    return report_dict
+
+def calc_dict(
+        i_preads_fofn_fn,
+        i_raw_reads_db_fn,
+        genome_length,
+        length_cutoff,
+    ):
+    raw_reads = read_lens_from_db(i_raw_reads_db_fn)
     stats_raw_reads = stats_from_sorted_readlengths(raw_reads)
 
     seed_reads = cutoff_reads(raw_reads, length_cutoff)
