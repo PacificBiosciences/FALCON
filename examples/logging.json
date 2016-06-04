@@ -1,0 +1,35 @@
+{
+    "version": 1,
+    "formatters": {
+        "format_full": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        },
+        "format_brief": {
+            "format": "%(levelname)s: %(message)s"
+        }
+    },
+    "filters": {
+    },
+    "handlers": {
+        "handler_file_all": {
+            "class": "logging.FileHandler",
+            "level": "DEBUG",
+            "formatter": "format_full",
+            "filename": "all.log",
+            "mode": "w"
+        },
+        "handler_stream": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "format_brief",
+            "stream": "ext://sys.stderr"
+        }
+    },
+    "loggers": {
+    },
+    "root": {
+        "handlers": ["handler_stream", "handler_file_all"],
+        "level": "NOTSET"
+    },
+    "disable_existing_loggers": false
+}

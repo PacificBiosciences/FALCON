@@ -322,29 +322,17 @@ def get_dict_from_old_falcon_cfg(config):
 
 default_logging_config = """
 [loggers]
-keys=root,pypeflow,fc_run
+keys=root
 
 [handlers]
-keys=stream,file_pypeflow,file_fc
+keys=stream,file_all
 
 [formatters]
 keys=form01,form02
 
 [logger_root]
 level=NOTSET
-handlers=stream
-
-[logger_pypeflow]
-level=DEBUG
-handlers=file_pypeflow
-qualname=pypeflow
-propagate=1
-
-[logger_fc_run]
-level=NOTSET
-handlers=file_fc
-qualname=falcon_kit
-propagate=1
+handlers=stream,file_all
 
 [handler_stream]
 class=StreamHandler
@@ -352,17 +340,11 @@ level=INFO
 formatter=form02
 args=(sys.stderr,)
 
-[handler_file_pypeflow]
+[handler_file_all]
 class=FileHandler
 level=DEBUG
 formatter=form01
-args=('pypeflow.log',)
-
-[handler_file_fc]
-class=FileHandler
-level=DEBUG
-formatter=form01
-args=('fc.log',)
+args=('all.log', 'w')
 
 [formatter_form01]
 format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
@@ -389,10 +371,15 @@ def _setup_logging(logging_config_fn):
     logging.config.fileConfig(logger_fileobj, defaults=defaults, disable_existing_loggers=False)
 
 def setup_logger(logging_config_fn):
-    _setup_logging(logging_config_fn)
     global logger
-    logger = logging.getLogger("fc_run")
-
+    try:
+        _setup_logging(logging_config_fn)
+        logger = logging.getLogger("fc_run")
+        logger.info('Setup logging from file "{}".'.format(logging_config_fn))
+    except Exception:
+        logging.basicConfig()
+        logger = logging.getLogger()
+        logger.exception('Failed to setup logging from file "{}". Using basicConfig().'.format(logging_config_fn))
     try:
         import logging_tree
         logger.info(logging_tree.format.build_description())
