@@ -17,6 +17,7 @@ import pprint
 log = logging.getLogger(__name__)
 __version__ = '0.1'
 
+Stats = collections.namedtuple('FastaStats', ['nreads', 'total', 'n50', 'p95'])
 
 # Copied from pbreports/util.py
 # We want to avoid a dependency on pbreports b/c it needs matplotlib.
@@ -81,8 +82,7 @@ def stats_from_sorted_readlengths(read_lens):
     p95 = percentile(read_lens, 0.95)
     #alt_n50 = pbreports.util.compute_n50(read_lens)
     #log.info('our n50=%s, pbreports=%s' %(n50, alt_n50)) # Ours is more correct when median is between 2 reads.
-    stats = collections.namedtuple('FastaStats', ['nreads', 'total', 'n50', 'p95'])
-    return stats(nreads=nreads, total=total, n50=n50, p95=p95)
+    return Stats(nreads=nreads, total=total, n50=n50, p95=p95)
 
 def read_lens_from_fofn(fofn_fn):
     fns = [fn.strip() for fn in open(fofn_fn) if fn.strip()]
@@ -120,7 +120,10 @@ def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_
     kwds['preassembled_p95'] = stats_corrected_reads.p95
     kwds['preassembled_coverage'] = stats_corrected_reads.total / genome_length
     kwds['preassembled_yield'] = stats_corrected_reads.total / stats_seed_reads.total
-    return kwds
+    def round_if_float(v):
+        return v if type(v) is not float else round(v, 3)
+    result = {k:round_if_float(v) for k,v in kwds.iteritems()}
+    return result
 
 def make_dict(
         i_preads_fofn_fn,
