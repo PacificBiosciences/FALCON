@@ -99,7 +99,8 @@ mkdir -p {rdir}
 cd {rdir}
 for target in {wdir}/* ; do ln -s $target . ; done
 time {exe} ./{sub_script_bfn}
-for x in ./* ; do if [ -f $x -a ! -L $x ] ; then mv -f $x {wdir} ; fi ; done
+shopt -s dotglob
+for x in ./* ; do if [ -f $x -a ! -f {wdir}/$x ] ; then mv -f $x {wdir} ; fi ; done
 cd {wdir}
 rm -rf {rdir}
 # Presumably, the parent directories might be used by other jobs.
