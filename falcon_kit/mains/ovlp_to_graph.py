@@ -79,31 +79,95 @@ class StringGraph(object):
         for e in self.edges:
             self.e_reduce[e] = False
 
+
+    def bfs_nodes(self, n, exclude = None, depth=5):
+        all_nodes = set()
+        all_nodes.add(n)
+        candidate_nodes = set()
+        candidate_nodes.add(n)
+        dp = 1
+        while  dp < depth and len(candidate_nodes) > 0:
+            v = candidate_nodes.pop()
+            for e in v.out_edges :
+                w = e.out_node
+                if w == exclude:
+                    continue
+                if w not in all_nodes:
+                    all_nodes.add(w)
+                    if len(w.out_edges) > 0:
+                        candidate_nodes.add(w)
+            dp += 1
+
+        return all_nodes
+
+
+
     def mark_chimer_edges(self):
 
+        multi_in_nodes = {}
+        multi_out_nodes = {}
         for n_name in self.nodes:
             n = self.nodes[n_name]
+            out_nodes = [ e.out_node for e in n.out_edges if self.e_reduce[(e.in_node.name, e.out_node.name)] == False ]
+            in_nodes = [e.in_node for e in n.in_edges if self.e_reduce[(e.in_node.name, e.out_node.name)] == False]
 
+            if len(out_nodes) >= 2:
+                multi_out_nodes[n_name] = out_nodes
+            if len(in_nodes) >= 2:
+                multi_in_nodes[n_name] = in_nodes
+
+        chimer_candidates = set()
+        out_set = set()
+        in_set = set()
+        for n_name in multi_out_nodes:
+            out_nodes = set(multi_out_nodes[n_name])
+            out_set |= out_nodes
+
+        for n_name in multi_in_nodes:
+            in_nodes = set(multi_in_nodes[n_name])
+            in_set |= in_nodes
+
+        chimer_candidates = out_set & in_set
+
+        chimer_nodes = []
+        chimer_edges = set()
+        for n in chimer_candidates:
             out_nodes = set( [ e.out_node for e in n.out_edges ] )
-            in_nodes = [e.in_node for e in n.in_edges ]
-            is_chimer = True
-            for in_node in in_nodes:
-                for v in [e.out_node for e in in_node.out_edges]:
-                    if v in out_nodes:
-                        is_chimer = False
-                        break
+            test_set = set()
+            for in_node in [e.in_node for e in n.in_edges ]:
+                test_set = test_set | set( [ e.out_node for e in in_node.out_edges ] )
+            test_set -= set([n])
+            if len( out_nodes & test_set ) == 0:
+                flow_node1 = set()
+                flow_node2 = set()
+                for v in list(out_nodes):
+                    flow_node1 |= self.bfs_nodes(v, exclude=n)
+                for v in list(test_set):
+                    flow_node2 |= self.bfs_nodes(v, exclude=n)
+                if len( flow_node1 & flow_node2 ) == 0:
+                    for e in n.out_edges:
+                        v, w =  e.in_node.name, e.out_node.name
+                        if self.e_reduce[ (v, w) ] != True:
+                            self.e_reduce[ (v, w) ] = True
+                            chimer_edges.add( (v, w) )
+                            rv = reverse_end(w)
+                            rw = reverse_end(v)
+                            self.e_reduce[ (rv, rw) ] = True
+                            chimer_edges.add( (rv, rw) )
 
-            if is_chimer == True:
-                for e in n.out_edges:
-                    v, w =  e.in_node.name, e.out_node.name
-                    self.e_reduce[ (v, w) ] = True
-                for e in n.in_edges:
-                    v, w =  e.in_node.name, e.out_node.name
-                    self.e_reduce[ (v, w) ] = True
+                    for e in n.in_edges:
+                        v, w =  e.in_node.name, e.out_node.name
+                        if self.e_reduce[ (v, w) ] != True:
+                            self.e_reduce[ (v, w) ] = True
+                            chimer_edges.add( (v, w) )
+                            rv = reverse_end(w)
+                            rw = reverse_end(v)
+                            self.e_reduce[ (rv, rw) ] = True
+                            chimer_edges.add( (rv, rw) )
+                    chimer_nodes.append( n.name )
+                    chimer_nodes.append( reverse_end(n.name) )
 
-
-            # need to remove the node from the graph rather than just mark the edges are "reduced"?
-
+        return chimer_nodes, chimer_edges
 
     def mark_spur_edge(self):
 
@@ -364,28 +428,6 @@ class StringGraph(object):
                 rtn.append(e)
         rtn.sort(key=lambda e: e.attr["score"])
         return rtn[-1]
-
-
-RCMAP = dict(zip("ACGTacgtNn-","TGCAtgcaNn-"))
-def generate_seq_from_path(sg, seqs, path):
-    subseqs = []
-    r_id, end = path[0].split(":")
-
-    count = 0
-    for i in range( len( path ) -1 ):
-        w_n, v_n = path[i:i+2]
-        edge = sg.edges[ (w_n, v_n ) ]
-        read_id, coor = edge.attr["label"].split(":")
-        b,e = coor.split("-")
-        b = int(b)
-        e = int(e)
-        if b < e:
-            subseqs.append( seqs[read_id][b:e] )
-        else:
-            subseqs.append( "".join( [RCMAP[c] for c in seqs[read_id][e:b][::-1]] ) )
-
-    return "".join(subseqs)
-
 
 def reverse_edge( e ):
     e1, e2 = e
@@ -777,16 +819,20 @@ def generate_string_graph(args):
 
     sg.init_reduce_dict()
 
-    #if not args.disable_chimer_prediction:
-    #    sg.mark_chimer_edges()
-    #sg.mark_spur_edge()
-
-
     sg.mark_tr_edges() # mark those edges that transitive redundant
 
     if DEBUG_LOG_LEVEL > 1:
         print sum( [1 for c in sg.e_reduce.values() if c == True] )
         print sum( [1 for c in sg.e_reduce.values() if c == False] )
+
+    if not args.disable_chimer_bridge_removal:
+        chimer_nodes, chimer_edges = sg.mark_chimer_edges()
+
+        with open("chimers_nodes", "w") as f:
+            for n in chimer_nodes:
+                print >>f, n
+    else:
+        chimer_edges = set() #empty set
 
 
     removed_edges = set()
@@ -818,6 +864,8 @@ def generate_string_graph(args):
             edge_data[ (v, w) ] = (rid, sp, tp, length, score, identity, type_)
             if w in sg.best_in:
                 nxsg.node[w]["best_in"] = v
+        elif (v, w) in chimer_edges:
+            type_ = "C"
         elif (v, w) in removed_edges:
             type_ = "R"
         elif (v, w) in spur_edges:
@@ -825,9 +873,7 @@ def generate_string_graph(args):
         elif sg.e_reduce[(v, w)] == True:
             type_ = "TR"
 
-        line = '%s %s %s %5d %5d %5d %5.2f %s' %(
-                v, w, rid, sp, tp, score, identity, type_)
-        print >>out_f, line
+        print >>out_f, v, w, rid, sp, tp, score, identity, type_
 
 
 
@@ -962,8 +1008,7 @@ def construct_compound_paths(ug, u_edge_data):
 def main(argv=sys.argv):
     import argparse
 
-    parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes')
     parser.add_argument('overlap_file', help='a file that contains the overlap information.')
 
     parser.add_argument('--min_len', type=int, default=4000,
@@ -972,6 +1017,8 @@ def main(argv=sys.argv):
                         help='minimum alignment identity of the reads to be considered for assembling')
     parser.add_argument('--lfc', action="store_true", default=False,
                         help='use local flow constraint method rather than best overlap method to resolve knots in string graph')
+    parser.add_argument('--disable_chimer_bridge_removal', action="store_true", default=False,
+                        help='disable chimer induced bridge removal')
 
     args = parser.parse_args(argv[1:])
 
@@ -1146,55 +1193,69 @@ def main(argv=sys.argv):
     # Currently, we use ad-hoc logic filtering out shorter utg, but we ca
     # add proper alignment comparison later to remove redundant utgs
 
-    utg_spurs = set()
     all_nodes = ug.nodes()
 
     ug2 = ug.copy()
-    spur_edges = set()
-    edges_to_remove = set()
 
-    for n in s_nodes:
-        if ug.in_degree(n) != 0:
+    s_candidates = set( )
+    for v in ug2.nodes():
+        if ug2.in_degree(v) == 0:
+            s_candidates.add(v)
+
+    while len(s_candidates) > 0:
+        n = s_candidates.pop()
+        if ug2.in_degree(n) != 0:
             continue
-        for s, t, v in ug.out_edges(n, keys=True):
-            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
-            if length > 50000 and len(edges) > 3:
+        n_ego_graph = nx.ego_graph( ug2, n, radius = 10 )
+        n_egg_node_set = set( n_ego_graph.nodes() )
+        for b_node in n_ego_graph.nodes():
+            if ug2.in_degree(b_node) <= 1:
                 continue
-            in_degree = len( set( e[0] for e in ug.in_edges(t))  ) # ignore mutli-edges
-            out_degree = len( set( e[1] for e in ug.out_edges(t)) )
-            if in_degree > 1 and out_degree > 0:
-                spur_edges.add( (s, t, v) )
-                edges_to_remove.add( (s, t, v) )
-                u_edge_data[ (s, t, v) ] = length, score, edges, "spur:2"
-                rs = reverse_end(t)
-                rt = reverse_end(s)
-                rv = reverse_end(v)
-                edges_to_remove.add( (rs, rt, rv) )
-                length, score, edges, type_ = u_edge_data[ (rs, rt, rv) ]
-                u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:2"
 
-    for n in t_nodes:
-        if ug.out_degree(n) != 0:
-            continue
-        for s, t, v in ug.in_edges(n, keys=True):
-            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
-            if length > 50000 and len(edges) > 3:
+            with_extern_node = False
+            b_in_nodes = [e[0] for e in ug2.in_edges(b_node)]
+            if len(b_in_nodes) == 1:
                 continue
-            in_degree = len( set( e[0] for e in ug.in_edges(s))  ) # ignore mutli-edges
-            out_degree = len( set( e[1] for e in ug.out_edges(s)) )
-            if in_degree > 0 and out_degree > 1:
-                spur_edges.add( (s, t, v) )
-                edges_to_remove.add( (s, t, v) )
-                u_edge_data[ (s, t, v) ] = length, score, edges, "spur:2"
-                rs = reverse_end(t)
-                rt = reverse_end(s)
-                rv = reverse_end(v)
-                edges_to_remove.add( (rs, rt, rv) )
-                length, score, edges, type_ = u_edge_data[ (rs, rt, rv) ]
-                u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:2"
+            for v in  b_in_nodes:
+                if v not in n_egg_node_set:
+                    with_extern_node = True
+                else:
+                    continue
 
-    for s, t, v in list(edges_to_remove):
-        ug2.remove_edge( s, t, key= v)
+            if with_extern_node:
+                s_path = nx.shortest_path( ug2, n, b_node )
+                v1 = s_path[0]
+                total_length = 0
+                for v2 in s_path[1:]:
+                    for s, t, v in ug2.out_edges(v1, keys=True):
+                        if t != v2:
+                           continue
+                        length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+                        total_length += length
+                    v1 = v2
+                if total_length < 50000:
+                    v1 = s_path[0]
+                    for v2 in s_path[1:]:
+                        for s, t, v in ug2.out_edges(v1, keys=True):
+                            if t != v2:
+                               continue
+                            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+                            rs = reverse_end(t)
+                            rt = reverse_end(s)
+                            rv = reverse_end(v)
+                            try:
+                                ug2.remove_edge( s, t, key= v)
+                                ug2.remove_edge( rs, rt, key= rv)
+                                u_edge_data[ (s, t, v) ] = length, score, edges, "spur:2"
+                                u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:2"
+                            except:
+                                pass
+
+                        if ug2.in_edges(v2) == 0:
+                            s_candidates.add(v2)
+                        v1 = v2
+                    break
+
 
     #phase 2, finding all "consistent" compound paths
     compound_paths = construct_compound_paths(ug2, u_edge_data)
@@ -1240,7 +1301,7 @@ def main(argv=sys.argv):
       <____/         \_____<
     """
     ug_edge_to_remove = set()
-    for s, t, v in ug.edges(keys=True):
+    for s, t, v in ug2.edges(keys=True):
         if ug2.in_degree(s) == 1 and ug2.out_degree(s) == 2 and \
            ug2.in_degree(t) == 2 and ug2.out_degree(t) == 1:
             length, score, path_or_edges, type_ = u_edge_data[ (s, t, v) ]
