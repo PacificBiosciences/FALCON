@@ -1214,47 +1214,53 @@ def main(argv=sys.argv):
 
             with_extern_node = False
             b_in_nodes = [e[0] for e in ug2.in_edges(b_node)]
+
             if len(b_in_nodes) == 1:
                 continue
+
             for v in  b_in_nodes:
                 if v not in n_egg_node_set:
                     with_extern_node = True
-                else:
-                    continue
-
-            if with_extern_node:
-                s_path = nx.shortest_path( ug2, n, b_node )
-                v1 = s_path[0]
-                total_length = 0
-                for v2 in s_path[1:]:
-                    for s, t, v in ug2.out_edges(v1, keys=True):
-                        if t != v2:
-                           continue
-                        length, score, edges, type_ = u_edge_data[ (s, t, v) ]
-                        total_length += length
-                    v1 = v2
-                if total_length < 50000:
-                    v1 = s_path[0]
-                    for v2 in s_path[1:]:
-                        for s, t, v in ug2.out_edges(v1, keys=True):
-                            if t != v2:
-                               continue
-                            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
-                            rs = reverse_end(t)
-                            rt = reverse_end(s)
-                            rv = reverse_end(v)
-                            try:
-                                ug2.remove_edge( s, t, key= v)
-                                ug2.remove_edge( rs, rt, key= rv)
-                                u_edge_data[ (s, t, v) ] = length, score, edges, "spur:2"
-                                u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:2"
-                            except:
-                                pass
-
-                        if ug2.in_edges(v2) == 0:
-                            s_candidates.add(v2)
-                        v1 = v2
                     break
+
+            if not with_extern_node:
+                continue
+
+            s_path = nx.shortest_path( ug2, n, b_node )
+            v1 = s_path[0]
+            total_length = 0
+            for v2 in s_path[1:]:
+                for s, t, v in ug2.out_edges(v1, keys=True):
+                    if t != v2:
+                       continue
+                    length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+                    total_length += length
+                v1 = v2
+
+            if total_length >= 50000:
+                continue
+
+            v1 = s_path[0]
+            for v2 in s_path[1:]:
+                for s, t, v in ug2.out_edges(v1, keys=True):
+                    if t != v2:
+                       continue
+                    length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+                    rs = reverse_end(t)
+                    rt = reverse_end(s)
+                    rv = reverse_end(v)
+                    try:
+                        ug2.remove_edge( s, t, key= v)
+                        ug2.remove_edge( rs, rt, key= rv)
+                        u_edge_data[ (s, t, v) ] = length, score, edges, "spur:2"
+                        u_edge_data[ (rs, rt, rv) ] = length, score, edges, "spur:2"
+                    except Exception:
+                        pass
+
+                if ug2.in_edges(v2) == 0:
+                    s_candidates.add(v2)
+                v1 = v2
+            break
 
 
     #phase 2, finding all "consistent" compound paths
