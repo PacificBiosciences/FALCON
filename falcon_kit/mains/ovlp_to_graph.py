@@ -1008,53 +1008,10 @@ def construct_compound_paths(ug, u_edge_data):
 
     return compound_paths
 
-def main(argv=sys.argv):
-    import argparse
 
-    parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('overlap_file', help='a file that contains the overlap information.')
-
-    parser.add_argument('--min_len', type=int, default=4000,
-                        help='minimum length of the reads to be considered for assembling')
-    parser.add_argument('--min_idt', type=float, default=96,
-                        help='minimum alignment identity of the reads to be considered for assembling')
-    parser.add_argument('--lfc', action="store_true", default=False,
-                        help='use local flow constraint method rather than best overlap method to resolve knots in string graph')
-    parser.add_argument('--disable_chimer_bridge_removal', action="store_true", default=False,
-                        help='disable chimer induced bridge removal')
-
-    args = parser.parse_args(argv[1:])
-    ovlp_to_graph(args)
-
-
-def ovlp_to_graph(args):
-    # transitivity reduction, remove spurs, remove putative edges caused by repeats
-    sg, sg_r, edge_data = generate_string_graph(args)
-
-
-    simple_paths = {}
-    #dual_path = {}
-
-
-    sg2 = nx.DiGraph()
-
-    for v, w in edge_data:
-
-        assert (reverse_end(w), reverse_end(v)) in edge_data
-
-        #if (v, w) in masked_edges:
-        #    continue
-
-        rid, sp, tp, length, score, identity, type_ = edge_data[ (v, w) ]
-        if type_ != "G":
-            continue
-
-        label = "%s:%d-%d" % (rid, sp, tp)
-        sg2.add_edge( v, w, label = label, length = length, score = score)
-
-
+def identify_simple_paths(sg2, edge_data):
     # utg construction phase 1, identify all simple paths
+    simple_paths = dict()
     s_nodes = set()
     t_nodes = set()
     simple_nodes = set()
@@ -1087,8 +1044,8 @@ def ovlp_to_graph(args):
                 print "bug", v,w
                 print oreverse_end(w), reverse_end(v)
 
-    while len(free_edges) != 0:
-        if len(s_nodes) != 0:
+    while free_edges:
+        if s_nodes:
             n = s_nodes.pop()
             if DEBUG_LOG_LEVEL > 1:
                 print "initial utg 1", n
@@ -1151,7 +1108,6 @@ def ovlp_to_graph(args):
                 r_path_score += edge_data[ (rw_, rw) ][4]
                 free_edges.remove( (rw_, rw) )
 
-
                 w = w_
 
             simple_paths[ (v0, w0, path[-1]) ] = path_length, path_score, path
@@ -1164,42 +1120,13 @@ def ovlp_to_graph(args):
 
             #dual_path[ (r_path[0], rw0, rv0) ] = (v0, w0, path[-1])
             #dual_path[ (v0, w0, path[-1]) ] = (r_path[0], rw0, rv0)
+    return simple_paths
 
 
-
-    ug = nx.MultiDiGraph()
-    u_edge_data = {}
-    circular_path = set()
-
-    for s, v, t in simple_paths:
-        length, score, path = simple_paths[ (s, v, t) ]
-        u_edge_data[ (s, t, v) ] = (length, score, path, "simple")
-        if s != t:
-            ug.add_edge(s, t, key = v, type_ = "simple", via = v, length = length, score = score)
-        else:
-            circular_path.add( (s, t, v) )
-
-
-    if DEBUG_LOG_LEVEL > 1:
-        with open("utg_data0","w") as f:
-            for s, t, v in u_edge_data:
-                rs = reverse_end(t)
-                rt = reverse_end(s)
-                rv = reverse_end(v)
-                assert (rs, rt, rv) in u_edge_data
-                length, score, path_or_edges, type_ = u_edge_data[ (s, t, v) ]
-
-                if type_ == "compound":
-                    path_or_edges = "|".join( [ ss+"~"+vv+"~"+tt for ss, tt, vv in path_or_edges ] )
-                else:
-                    path_or_edges = "~".join( path_or_edges )
-                print >>f, s, v, t, type_, length, score, path_or_edges
-
+def identify_spurs(ug):
     # identify spurs in the utg graph
-    # Currently, we use ad-hoc logic filtering out shorter utg, but we ca
+    # Currently, we use ad-hoc logic filtering out shorter utg, but we can
     # add proper alignment comparison later to remove redundant utgs
-
-    all_nodes = ug.nodes()
 
     ug2 = ug.copy()
 
@@ -1267,7 +1194,166 @@ def ovlp_to_graph(args):
                     s_candidates.add(v2)
                 v1 = v2
             break
+    return ug2
 
+
+def construct_c_path_from_utgs(ug, u_edge_data):
+    s_nodes = set()
+    #t_nodes = set()
+    simple_nodes = set()
+    simple_out = set()
+    #simple_in = set()
+
+    all_nodes = ug.nodes()
+    for n in all_nodes:
+        in_degree = len( ug.in_edges(n) )
+        out_degree = len( ug.out_edges(n) )
+        if in_degree == 1 and out_degree == 1:
+            simple_nodes.add(n)
+        else:
+            if out_degree != 0:
+                s_nodes.add(n)
+            #if in_degree != 0:
+            #    t_nodes.add(n)
+        if out_degree == 1:
+            simple_out.add(n)
+        #if in_degree == 1:
+        #    simple_in.add(n)
+
+    c_path = []
+
+    free_edges = set()
+    for s, t, v in ug.edges(keys=True):
+        free_edges.add( (s, t, v) )
+
+    while free_edges:
+        if s_nodes:
+            n = s_nodes.pop()
+        else:
+            e = free_edges.pop()
+            n = e[0]
+
+        for s, t, v in ug.out_edges(n, keys=True):
+            path_start = n
+            path_end = None
+            path_key = None
+            path = []
+            path_length = 0
+            path_score = 0
+            path_nodes = set()
+            path_nodes.add(s)
+            if DEBUG_LOG_LEVEL > 1:
+                print "check 1", s, t, v
+            path_key = t
+            t0 = s
+            while t in simple_out:
+                if t in path_nodes:
+                    break
+                rt = reverse_end(t)
+                if rt in path_nodes:
+                    break
+
+                length, score, path_or_edges, type_ = u_edge_data[ (t0, t, v) ]
+
+
+                """
+                If the next node has two in-edges and the current path has the best overlap,
+                we will extend the contigs. Otherwise, we will terminate the contig extension.
+                This can help reduce some mis-assemblies but it can still construct long contigs
+                when there is an oppertunity (assuming the best overlap has the highest
+                likelihood to be correct.)
+                """
+                if len(ug.in_edges(t, keys=True)) > 1:
+                    best_in_node = sg.node[t]["best_in"]
+
+                    if type_ == "simple" and best_in_node != path_or_edges[-2]:
+                        break
+                    if type_ == "compound":
+                        t_in_nodes = set()
+                        for ss, vv, tt in path_or_edges:
+                            if tt != t:
+                                continue
+                            length, score, path_or_edges, type_ = u_edge_data[ (ss,vv,tt) ]
+                            if path_or_edges[-1] == tt:
+                                t_in_nodes.add(path_or_edges[-2])
+                        if best_in_node not in t_in_nodes:
+                            break
+                # ----------------
+
+                path.append( (t0, t, v) )
+                path_nodes.add(t)
+                path_length += length
+                path_score += score
+                assert len( ug.out_edges( t, keys=True ) ) == 1 # t is "simple_out" node
+                t0, t, v = ug.out_edges( t, keys=True )[0]
+
+            path.append( (t0, t, v) )
+            length, score, path_or_edges, type_ = u_edge_data[ (t0, t, v) ]
+            path_length += length
+            path_score += score
+            path_nodes.add(t)
+            path_end = t
+
+            c_path.append( (path_start, path_key, path_end, path_length, path_score, path, len(path)) )
+            if DEBUG_LOG_LEVEL > 1:
+                print "c_path", path_start, path_key, path_end, path_length, path_score, len(path)
+            for e in path:
+                if e in free_edges:
+                    free_edges.remove( e )
+
+    if DEBUG_LOG_LEVEL > 1:
+        print "left over edges:", len(free_edges)
+    return c_path
+
+
+def ovlp_to_graph(args):
+    # transitivity reduction, remove spurs, remove putative edges caused by repeats
+    sg, sg_r, edge_data = generate_string_graph(args)
+
+    #dual_path = {}
+    sg2 = nx.DiGraph()
+
+    for v, w in edge_data:
+        assert (reverse_end(w), reverse_end(v)) in edge_data
+        #if (v, w) in masked_edges:
+        #    continue
+        rid, sp, tp, length, score, identity, type_ = edge_data[ (v, w) ]
+        if type_ != "G":
+            continue
+        label = "%s:%d-%d" % (rid, sp, tp)
+        sg2.add_edge( v, w, label = label, length = length, score = score)
+
+    simple_paths = identify_simple_paths(sg2, edge_data)
+
+    ug = nx.MultiDiGraph()
+    u_edge_data = {}
+    circular_path = set()
+
+    for s, v, t in simple_paths:
+        length, score, path = simple_paths[ (s, v, t) ]
+        u_edge_data[ (s, t, v) ] = (length, score, path, "simple")
+        if s != t:
+            ug.add_edge(s, t, key = v, type_ = "simple", via = v, length = length, score = score)
+        else:
+            circular_path.add( (s, t, v) )
+
+
+    if DEBUG_LOG_LEVEL > 1:
+        with open("utg_data0","w") as f:
+            for s, t, v in u_edge_data:
+                rs = reverse_end(t)
+                rt = reverse_end(s)
+                rv = reverse_end(v)
+                assert (rs, rt, rv) in u_edge_data
+                length, score, path_or_edges, type_ = u_edge_data[ (s, t, v) ]
+
+                if type_ == "compound":
+                    path_or_edges = "|".join( [ ss+"~"+vv+"~"+tt for ss, tt, vv in path_or_edges ] )
+                else:
+                    path_or_edges = "~".join( path_or_edges )
+                print >>f, s, v, t, type_, length, score, path_or_edges
+
+    ug2 = identify_spurs(ug)
 
     #phase 2, finding all "consistent" compound paths
     compound_paths = construct_compound_paths(ug2, u_edge_data)
@@ -1341,129 +1427,17 @@ def ovlp_to_graph(args):
             print >>f, s, v, t, type_, length, score, path_or_edges
 
     # contig construction from utgs
-
-    s_nodes = set()
-    t_nodes = set()
-    simple_nodes = set()
-    simple_out = set()
-    simple_in = set()
-
-    all_nodes = ug.nodes()
-    for n in all_nodes:
-        in_degree = len( ug.in_edges(n) )
-        out_degree = len( ug.out_edges(n) )
-        if in_degree == 1 and out_degree == 1:
-            simple_nodes.add(n)
-        else:
-            if out_degree != 0:
-                s_nodes.add(n)
-            if in_degree != 0:
-                t_nodes.add(n)
-        if out_degree == 1:
-            simple_out.add(n)
-        if in_degree == 1:
-            simple_in.add(n)
-
-    all_nodes = set(all_nodes)
-    c_path = []
+    c_path = construct_c_path_from_utgs(ug, u_edge_data)
 
     free_edges = set()
     for s, t, v in ug.edges(keys=True):
         free_edges.add( (s, t, v) )
-
-    while len(free_edges) != 0:
-
-        if len(s_nodes) != 0:
-            n = s_nodes.pop()
-        else:
-            e = free_edges.pop()
-            n = e[0]
-
-        for s, t, v in ug.out_edges(n, keys=True):
-            path_start = n
-            path_end = None
-            path_key = None
-            path = []
-            path_length = 0
-            path_score = 0
-            path_nodes = set()
-            path_nodes.add(s)
-            if DEBUG_LOG_LEVEL > 1:
-                print "check 1", s, t, v
-            path_key = t
-            t0 = s
-            while t in simple_out:
-                if t in path_nodes:
-                    break
-                rt = reverse_end(t)
-                if rt in path_nodes:
-                    break
-
-                length, score, path_or_edges, type_ = u_edge_data[ (t0, t, v) ]
-
-
-                """
-                If the next node has two in-edges and the current path has the best overlap,
-                we will extend the contigs. Otherwise, we will terminate the contig extension.
-                This can help reduce some mis-assemblies but it can still construct long contigs
-                when there is an oppertunity (assuming the best overlap has the highest
-                likelihood to be correct.)
-                """
-                if len(ug.in_edges(t, keys=True)) > 1:
-                    best_in_node = sg.node[t]["best_in"]
-
-                    if type_ == "simple" and best_in_node != path_or_edges[-2]:
-                        break
-                    if type_ == "compound":
-                        t_in_nodes = set()
-                        for ss, vv, tt in path_or_edges:
-                            if tt != t:
-                                continue
-                            length, score, path_or_edges, type_ = u_edge_data[ (ss,vv,tt) ]
-                            if path_or_edges[-1] == tt:
-                                t_in_nodes.add(path_or_edges[-2])
-                        if best_in_node not in t_in_nodes:
-                            break
-                # ----------------
-
-
-                path.append( (t0, t, v) )
-                path_nodes.add(t)
-                path_length += length
-                path_score += score
-                assert len( ug.out_edges( t, keys=True ) ) == 1 # t is "simple_out" node
-                t0, t, v = ug.out_edges( t, keys=True )[0]
-
-            path.append( (t0, t, v) )
-            length, score, path_or_edges, type_ = u_edge_data[ (t0, t, v) ]
-            path_length += length
-            path_score += score
-            path_nodes.add(t)
-            path_end = t
-
-            c_path.append( (path_start, path_key, path_end, path_length, path_score, path, len(path)) )
-            if DEBUG_LOG_LEVEL > 1:
-                print "c_path", path_start, path_key, path_end, path_length, path_score, len(path)
-            for e in path:
-                if e in free_edges:
-                    free_edges.remove( e )
-
-    if DEBUG_LOG_LEVEL > 1:
-        print "left over edges:", len(free_edges)
-
-
-
-    free_edges = set()
-    for s, t, v in ug.edges(keys=True):
-        free_edges.add( (s, t, v) )
-
 
     ctg_id = 0
 
     ctg_paths = open("ctg_paths","w")
 
     c_path.sort( key=lambda x: -x[3] )
-
 
     for path_start, path_key, path_end, p_len, p_score, path, n_edges in c_path:
         length = 0
@@ -1506,8 +1480,6 @@ def ovlp_to_graph(args):
             if e in free_edges:
                 free_edges.remove(e)
 
-
-
     for s, t, v in list(circular_path):
         length, score, path, type_ = u_edge_data[ (s, t, v) ]
         print >> ctg_paths, "%6d" % ctg_id, "ctg_circular", s+"~"+v+"~"+t, t, length, score, s+"~"+v+"~"+t
@@ -1515,3 +1487,22 @@ def ovlp_to_graph(args):
 
     ctg_paths.close()
 
+
+def main(argv=sys.argv):
+    import argparse
+
+    parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('overlap_file', help='a file that contains the overlap information.')
+
+    parser.add_argument('--min_len', type=int, default=4000,
+                        help='minimum length of the reads to be considered for assembling')
+    parser.add_argument('--min_idt', type=float, default=96,
+                        help='minimum alignment identity of the reads to be considered for assembling')
+    parser.add_argument('--lfc', action="store_true", default=False,
+                        help='use local flow constraint method rather than best overlap method to resolve knots in string graph')
+    parser.add_argument('--disable_chimer_bridge_removal', action="store_true", default=False,
+                        help='disable chimer induced bridge removal')
+
+    args = parser.parse_args(argv[1:])
+    ovlp_to_graph(args)
