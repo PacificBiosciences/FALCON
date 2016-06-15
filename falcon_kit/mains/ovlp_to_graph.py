@@ -831,6 +831,7 @@ def generate_string_graph(args):
         with open("chimers_nodes", "w") as f:
             for n in chimer_nodes:
                 print >>f, n
+        del chimer_nodes
     else:
         chimer_edges = set() #empty set
 
@@ -873,7 +874,9 @@ def generate_string_graph(args):
         elif sg.e_reduce[(v, w)] == True:
             type_ = "TR"
 
-        print >>out_f, v, w, rid, sp, tp, score, identity, type_
+        line = '%s %s %s %5d %5d %5d %5.2f %s' %(
+                v, w, rid, sp, tp, score, identity, type_)
+        print >>out_f, line
 
 
 
@@ -1008,7 +1011,8 @@ def construct_compound_paths(ug, u_edge_data):
 def main(argv=sys.argv):
     import argparse
 
-    parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes')
+    parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('overlap_file', help='a file that contains the overlap information.')
 
     parser.add_argument('--min_len', type=int, default=4000,
@@ -1021,14 +1025,16 @@ def main(argv=sys.argv):
                         help='disable chimer induced bridge removal')
 
     args = parser.parse_args(argv[1:])
+    ovlp_to_graph(args)
 
 
+def ovlp_to_graph(args):
     # transitivity reduction, remove spurs, remove putative edges caused by repeats
     sg, sg_r, edge_data = generate_string_graph(args)
 
 
     simple_paths = {}
-    dual_path = {}
+    #dual_path = {}
 
 
     sg2 = nx.DiGraph()
@@ -1156,8 +1162,8 @@ def main(argv=sys.argv):
             if DEBUG_LOG_LEVEL > 1:
                 print  path_length, path_score, path
 
-            dual_path[ (r_path[0], rw0, rv0) ] = (v0, w0, path[-1])
-            dual_path[ (v0, w0, path[-1]) ] = (r_path[0], rw0, rv0)
+            #dual_path[ (r_path[0], rw0, rv0) ] = (v0, w0, path[-1])
+            #dual_path[ (v0, w0, path[-1]) ] = (r_path[0], rw0, rv0)
 
 
 
@@ -1207,7 +1213,7 @@ def main(argv=sys.argv):
         if ug2.in_degree(n) != 0:
             continue
         n_ego_graph = nx.ego_graph( ug2, n, radius = 10 )
-        n_egg_node_set = set( n_ego_graph.nodes() )
+        n_ego_node_set = set( n_ego_graph.nodes() )
         for b_node in n_ego_graph.nodes():
             if ug2.in_degree(b_node) <= 1:
                 continue
@@ -1219,7 +1225,7 @@ def main(argv=sys.argv):
                 continue
 
             for v in  b_in_nodes:
-                if v not in n_egg_node_set:
+                if v not in n_ego_node_set:
                     with_extern_node = True
                     break
 
@@ -1293,8 +1299,8 @@ def main(argv=sys.argv):
         rs = reverse_end(t)
         rt = reverse_end(s)
         assert (rs, v, rt) in compound_paths
-        dual_path[ (s, v, t) ] = (rs, v, rt)
-        dual_path[ (rs, v, rt) ] = (s, v, t)
+        #dual_path[ (s, v, t) ] = (rs, v, rt)
+        #dual_path[ (rs, v, rt) ] = (s, v, t)
 
     compound_path_file.close()
 
