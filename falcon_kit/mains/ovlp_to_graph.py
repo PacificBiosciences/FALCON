@@ -1123,10 +1123,11 @@ def identify_simple_paths(sg2, edge_data):
     return simple_paths
 
 
-def identify_spurs(ug):
+def identify_spurs(ug, u_edge_data):
     # identify spurs in the utg graph
     # Currently, we use ad-hoc logic filtering out shorter utg, but we can
     # add proper alignment comparison later to remove redundant utgs
+    # Side-effect: Modifies u_edge_data
 
     ug2 = ug.copy()
 
@@ -1197,7 +1198,9 @@ def identify_spurs(ug):
     return ug2
 
 
-def construct_c_path_from_utgs(ug, u_edge_data):
+def construct_c_path_from_utgs(ug, u_edge_data, sg):
+    # Side-effects: None, I think.
+
     s_nodes = set()
     #t_nodes = set()
     simple_nodes = set()
@@ -1353,7 +1356,7 @@ def ovlp_to_graph(args):
                     path_or_edges = "~".join( path_or_edges )
                 print >>f, s, v, t, type_, length, score, path_or_edges
 
-    ug2 = identify_spurs(ug)
+    ug2 = identify_spurs(ug, u_edge_data)
 
     #phase 2, finding all "consistent" compound paths
     compound_paths = construct_compound_paths(ug2, u_edge_data)
@@ -1427,7 +1430,7 @@ def ovlp_to_graph(args):
             print >>f, s, v, t, type_, length, score, path_or_edges
 
     # contig construction from utgs
-    c_path = construct_c_path_from_utgs(ug, u_edge_data)
+    c_path = construct_c_path_from_utgs(ug, u_edge_data, sg)
 
     free_edges = set()
     for s, t, v in ug.edges(keys=True):
