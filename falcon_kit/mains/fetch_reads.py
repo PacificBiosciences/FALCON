@@ -40,9 +40,9 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
             continue
         
         if ctg_id != "all":
-            ref_out = open( os.path.join( base_dir, "%s_ref.fa" % ctg_id), "w" )
+            ref_out = open( os.path.join( out_dir, "%s_ref.fa" % ctg_id), "w" )
         else:
-            ref_out = open( os.path.join( base_dir, "%s_ref.fa" % s_id), "w" )
+            ref_out = open( os.path.join( out_dir, "%s_ref.fa" % s_id), "w" )
 
         print >>ref_out, ">%s" % s_id
         print >>ref_out, s.sequence
