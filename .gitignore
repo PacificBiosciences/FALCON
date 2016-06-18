@@ -8,3 +8,4 @@ falcon_kit.egg-info/
 *.dylib
 *.dll
 *.egg
+*.eggs
