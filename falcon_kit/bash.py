@@ -108,9 +108,9 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_fn):
     DBsplit = 'DBsplit {pa_DBsplit_option} raw_reads'.format(**config) if new_db else ''
     openending = config["openending"]
     if openending == True:
-        count = """$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')"""
+        count = """$(cat raw_reads.db | LD_LIBRARY_PATH= awk '$1 == "blocks" {print $3-1}')"""
     else:
-        count = """$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')"""
+        count = """$(cat raw_reads.db | LD_LIBRARY_PATH= awk '$1 == "blocks" {print $3}')"""
     params = dict(config)
     length_cutoff = params.get('length_cutoff')
     if int(length_cutoff) < 0:
