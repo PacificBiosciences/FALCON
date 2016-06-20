@@ -156,7 +156,7 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_bfn):
     DBsplit = 'DBsplit {pa_DBsplit_option} raw_reads'.format(**config)
     #if openending == True:
     #    count = """$(cat raw_reads.db | awk '$1 == "blocks" {print $3-1}')"""
-    count = """$(cat raw_reads.db | awk '$1 == "blocks" {print $3}')"""
+    count = """$(cat raw_reads.db | LD_LIBRARY_PATH= awk '$1 == "blocks" {print $3}')"""
     params = dict(config)
     length_cutoff = params.get('length_cutoff')
     if int(length_cutoff) < 0:
@@ -190,7 +190,7 @@ HPC.daligner {pa_HPCdaligner_option} {mdust} -H$CUTOFF raw_reads {last_block}-$L
 
 def script_build_pdb(config, input_fofn_bfn, run_jobs_bfn):
     last_block = 1
-    count = """$(cat preads.db | awk '$1 == "blocks" {print $3}')"""
+    count = """$(cat preads.db | LD_LIBRARY_PATH= awk '$1 == "blocks" {print $3}')"""
     params = dict(config)
     update_dict_entry(params, 'ovlp_DBsplit_option', filter_DBsplit_option)
     params.update(locals())
