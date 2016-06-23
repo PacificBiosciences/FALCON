@@ -227,9 +227,10 @@ def try_run_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn
     try:
         run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, bestn, db_fn)
         io.LOG('finished ovlp_filter')
-    except KeyboardInterrupt:
+    except:
         io.LOG('terminating ovlp_filter workers...')
         exe_pool.terminate()
+        raise
 
 def ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
     if debug:
