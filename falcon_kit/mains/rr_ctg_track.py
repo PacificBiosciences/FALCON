@@ -58,8 +58,7 @@ def run_track_reads(exe_pool, base_dir, file_list, min_len, bestn, db_fn):
     rid_to_ctg = get_rid_to_ctg( os.path.join(asm_dir, "read_maps/read_to_contig_map" ) )
     inputs = []
     for fn in file_list:
-        if len(fn) != 0:
-            inputs.append( (run_tr_stage1, db_fn, fn, min_len, bestn, rid_to_ctg) )
+        inputs.append( (run_tr_stage1, db_fn, fn, min_len, bestn, rid_to_ctg) )
     """
     Aggregate hits from each individual LAS and keep the best n hit.
     Note that this does not guarantee that the final results is globally the best n hits espcially
@@ -127,9 +126,10 @@ def try_run_track_reads(n_core, base_dir, min_len, bestn):
     try:
         run_track_reads(exe_pool, base_dir, file_list, min_len, bestn, db_fn)
         io.LOG('finished track_reads')
-    except KeyboardInterrupt:
+    except:
         io.LOG('terminating track_reads workers...')
         exe_pool.terminate()
+        raise
 
 def track_reads(n_core, base_dir, min_len, bestn, debug, silent, stream):
     if debug:

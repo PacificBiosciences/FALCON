@@ -33,7 +33,7 @@ def get_read_ctg_map(rawread_dir, pread_dir, asm_dir):
     def dump_rawread_ids(self):
         rawread_db = fn( self.rawread_db )
         rawread_id_file = fn( self.rawread_id_file )
-        os.system("DBshow -n %s | tr -d '>' | awk '{print $1}' > %s" % (rawread_db, rawread_id_file) )
+        os.system("DBshow -n %s | tr -d '>' | LD_LIBRARY_PATH= awk '{print $1}' > %s" % (rawread_db, rawread_id_file) )
 
     wf.addTask( dump_rawread_ids )
 
@@ -47,7 +47,7 @@ def get_read_ctg_map(rawread_dir, pread_dir, asm_dir):
     def dump_pread_ids(self):
         pread_db = fn( self.pread_db )
         pread_id_file = fn( self.pread_id_file )
-        os.system("DBshow -n %s | tr -d '>' | awk '{print $1}' > %s" % (pread_db, pread_id_file) )
+        os.system("DBshow -n %s | tr -d '>' | LD_LIBRARY_PATH= awk '{print $1}' > %s" % (pread_db, pread_id_file) )
 
     wf.addTask( dump_pread_ids )
 
