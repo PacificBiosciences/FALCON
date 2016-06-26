@@ -307,7 +307,6 @@ def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
     return consensus_tasks, consensus_out
 
 
-
 def main1(prog_name, input_config_fn, logger_config_fn=None):
     global fc_run_logger
     fc_run_logger = support.setup_logger(logger_config_fn)
@@ -318,6 +317,23 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     except Exception:
         fc_run_logger.exception('Failed to parse config "{}".'.format(input_config_fn))
         raise
+    input_fofn_plf = makePypeLocalFile(config["input_fofn"])
+    #Workflow = PypeProcWatcherWorkflow
+    wf = PypeProcWatcherWorkflow(job_type=config['job_type'])
+    run(wf, config,
+            input_fofn_plf=input_fofn_plf,
+            setNumThreadAllowed=PypeProcWatcherWorkflow.setNumThreadAllowed)
+
+
+def run(wf, config,
+        input_fofn_plf,
+        setNumThreadAllowed,
+        ):
+    """
+    Preconditions (for now):
+    * fc_run_logger
+    * run_support.logger
+    """
     rawread_dir = os.path.abspath("./0-rawreads")
     pread_dir = os.path.abspath("./1-preads_ovl")
     falcon_asm_dir  = os.path.abspath("./2-asm-falcon")
@@ -329,11 +345,8 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
     exitOnFailure=config['stop_all_jobs_on_failure'] # only matter for parallel jobs
     concurrent_jobs = config["pa_concurrent_jobs"]
-    Workflow = PypeProcWatcherWorkflow
-    PypeProcWatcherWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
-    wf = PypeProcWatcherWorkflow(job_type=config['job_type'])
+    setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
 
-    input_fofn_plf = makePypeLocalFile(config["input_fofn"])
     rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, os.path.basename(config["input_fofn"])))
     make_fofn_abs_task = PypeTask(inputs = {"i_fofn": input_fofn_plf},
                                   outputs = {"o_fofn": rawread_fofn_plf},
@@ -353,10 +366,12 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                       "sge_option": config["sge_option_da"],
                       "config": config}
 
+        length_cutoff_plf = makePypeLocalFile(os.path.join(rawread_dir, "length_cutoff"))
         raw_reads_db_plf = makePypeLocalFile(os.path.join(rawread_dir, "%s.db" % "raw_reads"))
         make_build_rdb_task = PypeTask(inputs = {"input_fofn": rawread_fofn_plf},
                                       outputs = {"rdb_build_done": rdb_build_done,
                                                  "raw_reads_db": raw_reads_db_plf,
+                                                 "length_cutoff": length_cutoff_plf,
                                                  "run_jobs": run_jobs,
                                       },
                                       parameters = parameters,
@@ -411,7 +426,6 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
             system("touch %s" % fn(self.cns_done))
         wf.addTask(check_r_cns_task)
 
-        length_cutoff_plf = makePypeLocalFile(os.path.join(rawread_dir, "length_cutoff"))
         pre_assembly_report_plf = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json")) #tho technically it needs pread_fofn
         make_task = PypeTask(
                 inputs = {"length_cutoff_fn": length_cutoff_plf,
@@ -425,11 +439,12 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         wf.addTask(task)
 
         concurrent_jobs = config["cns_concurrent_jobs"]
-        PypeProcWatcherWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
+        setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
 
     if config["target"] == "pre-assembly":
+        log.info("Quitting after stage-0 for 'pre-assembly' target.")
         sys.exit(0)
 
     # build pread database
@@ -499,7 +514,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     wf.addTask(check_p_merge_check_task)
 
     concurrent_jobs = config["ovlp_concurrent_jobs"]
-    PypeProcWatcherWorkflow.setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
+    setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
 
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
@@ -526,9 +541,11 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                              "sge_option": config["sge_option_fc"],
                },
                TaskType = MyFakePypeThreadTaskBase,
-               URL = "task://localhost/falcon" )
+               URL = "task://localhost/falcon_asm" )
     wf.addTask(make_run_falcon_asm(task_run_falcon_asm))
     wf.refreshTargets()
+
+    return falcon_asm_done
 
 
 def main(argv=sys.argv):
