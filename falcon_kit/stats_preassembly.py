@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 """ PreAssembly Report.
 
 See FALCON-pbsmrtpipe/pbfalcon/report_preassembly.py for XML version.
