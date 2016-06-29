@@ -17,7 +17,7 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
     Comments and lines starting with LAmerge are ignored.
 
     E.g., each item will look like:
-      ('.2', '.1', '.2', '.3'): 'daligner ...; LAsort ...; LAmerge ...; rm ...'
+      ('.2', '.1', '.2', '.3'): 'daligner ...; LAsort ...; LAmerge ...; LAcheck ...; rm ...'
 
     Rationale
     ---------
@@ -76,16 +76,22 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
         pair2sort[pair] = line
     _verify_pairs(sorted(pair2dali.keys()), sorted(pair2sort.keys()))
     dali2pairs = collections.defaultdict(set)
+    total_pairs = 0
     for pair, dali in pair2dali.items():
         dali2pairs[dali].add(pair)
+        total_pairs += 1
     result = {}
     for dali, pairs in dali2pairs.items():
-        sorts = [pair2sort[pair] for pair in sorted(pairs, key=lambda k: (
-            (int(k[0][1:]) if k[0].startswith('.') else 0),
-            (int(k[1][1:]) if k[1].startswith('.') else 0)
-        ))]
+        pairs = list(pairs)
+        pairs.sort( key=lambda k: ( (int(k[0][1:]) if k[0].startswith('.') else 0), (int(k[1][1:]) if k[1].startswith('.') else 0) ) )
+        sorts = [pair2sort[pair] for pair in pairs]
         id = tuple(blocks_dali(dali))
-        script = '\n'.join([dali] + sorts) + '\n'
+        if total_pairs == 1:
+            checks = [ "LAcheck -vS {db_prefix} {db_prefix}.1".format( db_prefix = db_prefix )  ] # JC, personally don't like such special case no blocking should be the same as nblock = 1
+        else:
+            checks = [ "LAcheck -vS {db_prefix} L1{p1}{p2}".format( db_prefix = db_prefix, p1=pair[0], p2=pair[1]) for pair in pairs ]
+
+        script = '\n'.join([dali] + sorts + checks) + '\n'
         result[id] = script
     return result
 
