@@ -11,7 +11,6 @@ import tempfile
 import time
 import uuid
 
-job_type = None
 logger = None
 
 def _prepend_env_paths(content, names):
@@ -129,7 +128,6 @@ def parse_config(config_fn):
     return config
 
 def get_dict_from_old_falcon_cfg(config):
-    global job_type  # TODO: Stop using global for wait_for_file().
     job_type = "SGE"
     section = 'General'
     if config.has_option(section, 'job_type'):
