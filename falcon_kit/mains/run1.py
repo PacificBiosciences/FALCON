@@ -237,7 +237,9 @@ def task_daligner_gather(self):
 def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, config, pread_aln=False):
     tasks = []
     tasks_out = {}
-    for job_uid, script in bash.scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, pread_aln):
+    skip_checks = config.get('skip_checks')
+    fc_run_logger.info('Skip LAcheck after daligner? {}'.format(skip_checks))
+    for job_uid, script in bash.scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, pread_aln, skip_checks):
         run_dir = "job_%s" %job_uid
         cwd = os.path.join(wd, run_dir)
         job_done_fn = os.path.abspath(os.path.join(cwd, "job_%s_done" %job_uid))

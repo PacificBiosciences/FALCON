@@ -35,6 +35,28 @@ def test_get_mjob_data():
     eq_(result[1], ['LAmerge -v raw_reads.1 L1.1.1 L1.1.2 && rm L1.1.1.las L1.1.2.las'])
     eq_(result[2], ['LAmerge -v raw_reads.2 L1.2.1 L1.2.2 ; rm L1.2.1.las L1.2.2.las'])
 
+def test_skip_LAcheck():
+    orig = """set -e
+hello there
+LAcheck foo bar
+middle
+LAcheck -vS foo bar
+goodbye
+"""
+    got = f.skip_LAcheck(orig)
+    expected = """set -e
+hello there
+set +e
+LAcheck foo bar
+set -e
+middle
+set +e
+LAcheck -vS foo bar
+set -e
+goodbye
+"""
+    eq_(got, expected)
+
 def test_first_block_las():
     line = 'LAsort -v -a -q foo.1.foo.1.C0'
     result = f.first_block_las(line)

@@ -2,6 +2,7 @@
 """
 import collections
 import re
+import StringIO
 
 def _verify_pairs(pairs1, pairs2):
     if pairs1 != pairs2:
@@ -10,6 +11,27 @@ def _verify_pairs(pairs1, pairs2):
         print('pair2dali:', len(pairs1))
         print('pair2sort:', len(pairs2))
         assert pairs1 == pairs2
+
+def skip_LAcheck(bash):
+    def lines():
+        for line in StringIO.StringIO(bash):
+            if 'LAcheck' in line:
+                yield 'set +e\n'
+                yield line
+                yield 'set -e\n'
+            else:
+                yield line
+    return ''.join(lines())
+
+def get_daligner_job_descriptions_sans_LAcheck(run_jobs_stream, db_prefix):
+    """Strip LAcheck (somehow) from each bash script.
+    (For now, we will run it but not fail on error.)
+    """
+    descs = get_daligner_job_descriptions(run_jobs_stream, db_prefix)
+    result = {}
+    for k,v in descs.iteritems():
+        result[k] = skip_LAcheck(v)
+    return result
 
 def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
     """Return a dict of job-desc-tuple -> HPCdaligner bash-job.

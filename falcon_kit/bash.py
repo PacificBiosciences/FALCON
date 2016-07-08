@@ -215,14 +215,17 @@ time DB2Falcon -U preads
 """.format(**params)
     return script
 
-def scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, pread_aln=False):
+def scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, pread_aln=False, skip_check=False):
     """Yield job_uid, bash
     """
     scripts = {}
     xform_script = functional.get_script_xformer(pread_aln)
     db_dir = os.path.dirname(run_jobs_fn)
+    get_daligner_job_descriptions = (
+            functional.get_daligner_job_descriptions_sans_LAcheck if skip_check else
+            functional.get_daligner_job_descriptions)
     try:
-        job_descs = functional.get_daligner_job_descriptions(open(run_jobs_fn), db_prefix)
+        job_descs = get_daligner_job_descriptions(open(run_jobs_fn), db_prefix)
     except Exception:
         raise Exception('Could not parse job descriptions from file "{}":\n{}'.format(
             run_jobs_fn, traceback.format_exc()))

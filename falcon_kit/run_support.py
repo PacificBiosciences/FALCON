@@ -180,6 +180,10 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'pa_DBsplit_option'):
         pa_DBsplit_option = config.get(section, 'pa_DBsplit_option')
 
+    skip_checks = False
+    if config.has_option(section, 'skip_checks'):
+        skip_checks = config.getboolean(section, 'skip_checks')
+
     dust = False
     if config.has_option(section, 'dust'):
         dust = config.getboolean(section, 'dust')
@@ -296,6 +300,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "pa_HPCdaligner_option": pa_HPCdaligner_option,
                    "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
                    "pa_DBsplit_option": pa_DBsplit_option,
+                   "skip_checks": skip_checks,
                    "dust": dust,
                    "pa_DBdust_option": pa_DBdust_option,
                    "dazcon": dazcon,
