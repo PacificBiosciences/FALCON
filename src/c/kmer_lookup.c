@@ -131,7 +131,7 @@ seq_coor_t get_kmer_bitvector(seq_array sa, unsigned int K) {
 
     for (i = 0; i < K; i++) {
         kmer_bv <<= 2;
-        kmer_bv |= (unsigned int) sa[i];
+        kmer_bv |= (((unsigned int) sa[i]) & 0x03);
     }
 
     return kmer_bv;
