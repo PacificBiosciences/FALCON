@@ -23,17 +23,17 @@ def skip_LAcheck(bash):
                 yield line
     return ''.join(lines())
 
-def get_daligner_job_descriptions_sans_LAcheck(run_jobs_stream, db_prefix):
+def get_daligner_job_descriptions_sans_LAcheck(run_jobs_stream, db_prefix, single=False):
     """Strip LAcheck (somehow) from each bash script.
     (For now, we will run it but not fail on error.)
     """
-    descs = get_daligner_job_descriptions(run_jobs_stream, db_prefix)
+    descs = get_daligner_job_descriptions(run_jobs_stream, db_prefix, single)
     result = {}
     for k,v in descs.iteritems():
         result[k] = skip_LAcheck(v)
     return result
 
-def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
+def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
     """Return a dict of job-desc-tuple -> HPCdaligner bash-job.
 
     Comments and lines starting with LAmerge are ignored.
@@ -52,11 +52,12 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
     For each returned job, the result of
       daligner X A B C; LAsort*
     will then be
-      L.1.X.A, L.1.X.B, and L.1.X.C
+      L1.X.A, L1.X.B, and L1.X.C
     where A, B, or C could be X.
     (In the example, X=2 A=1 B=2.)
 
-    Oddly, b/c of a recent change by GM, if there is only 1 block, then the suffix string is empty.
+    Oddly, b/c of a recent change by GM, if there is only 1 block,
+    then the merged file is named differently. To achieve that, use single=True.
     """
     re_block_dali = re.compile(r'%s(\.\d+|)' %db_prefix)
     def blocks_dali(line):
@@ -102,6 +103,9 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
     for pair, dali in pair2dali.items():
         dali2pairs[dali].add(pair)
         total_pairs += 1
+    if single:
+        assert total_pairs == 1, 'In single-mode, but total_pair={}'.format(total_pairs)
+        assert list(pair2dali.keys())[0] == ('.1', '.1'), repr(pair2dali)
     result = {}
     for dali, pairs in dali2pairs.items():
         pairs = list(pairs)
@@ -109,8 +113,7 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix):
         sorts = [pair2sort[pair] for pair in pairs]
         id = tuple(blocks_dali(dali))
         early_checks = [ "LAcheck -v {db_prefix} *.las".format( db_prefix = db_prefix )  ]
-        if total_pairs == 1:
-            # JC, personally don't like such special case no blocking should be the same as nblock = 1
+        if single:
             checks = [ "LAcheck -vS {db_prefix} {db_prefix}.1".format( db_prefix = db_prefix )  ]
         else:
             checks = [ "LAcheck -vS {db_prefix} L1{p1}{p2}".format( db_prefix = db_prefix, p1=pair[0], p2=pair[1]) for pair in pairs ]
