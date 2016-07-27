@@ -234,12 +234,12 @@ def task_daligner_gather(self):
     only_these_symlinks(links)
     system("touch %s" %da_done)
 
-def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, config, pread_aln=False):
+def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, nblock, config, pread_aln=False):
     tasks = []
     tasks_out = {}
     skip_checks = config.get('skip_checks')
     fc_run_logger.info('Skip LAcheck after daligner? {}'.format(skip_checks))
-    for job_uid, script in bash.scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, pread_aln, skip_checks):
+    for job_uid, script in bash.scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, nblock, pread_aln, skip_checks):
         run_dir = "job_%s" %job_uid
         cwd = os.path.join(wd, run_dir)
         job_done_fn = os.path.abspath(os.path.join(cwd, "job_%s_done" %job_uid))
@@ -385,7 +385,8 @@ def run(wf, config,
 
         raw_reads_nblock = support.get_nblock(fn(raw_reads_db_plf))
         #### run daligner
-        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", rdb_build_done, config)
+        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", rdb_build_done,
+                nblock=raw_reads_nblock, config=config)
 
         wf.addTasks(daligner_tasks)
         r_da_done = makePypeLocalFile( os.path.join( rawread_dir, "da_done") )
@@ -484,7 +485,8 @@ def run(wf, config,
     preads_nblock = support.get_nblock(fn(preads_db))
     #### run daligner
     config["sge_option_da"] = config["sge_option_pda"]
-    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", pdb_build_done, config, pread_aln=True)
+    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", pdb_build_done,
+                nblock=preads_nblock, config=config, pread_aln=True)
     wf.addTasks(daligner_tasks)
 
     p_da_done = makePypeLocalFile(os.path.join( pread_dir, "da_done"))
