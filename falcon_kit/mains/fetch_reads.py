@@ -101,15 +101,13 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
 
                 if ctg_id not in read_out_files:
                     read_out = open( os.path.join( out_dir, "%s_reads.fa" % ctg_id), "w" )
-                    read_out_files[ctg_id] = read_out
+                    read_out_files[ctg_id] = 1
                 else:
-                    read_out = read_out_files[ctg_id]
+                    read_out = open( os.path.join( out_dir, "%s_reads.fa" % ctg_id), "a" )
 
                 print >>read_out, ">"+rid
                 print >>read_out, r.sequence
-
-    for read_out in read_out_files.values():
-        read_out.close()
+                read_out.close()
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description='using the read to contig mapping data to partition the reads grouped by contigs')
