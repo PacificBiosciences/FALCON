@@ -133,15 +133,19 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'job_type'):
         job_type = config.get(section, 'job_type')
 
-    pa_concurrent_jobs = 8
+    default_concurrent_jobs = 8
+    if config.has_option(section, 'default_concurrent_jobs'):
+        default_concurrent_jobs = config.getint(section, 'default_concurrent_jobs')
+
+    pa_concurrent_jobs = default_concurrent_jobs
     if config.has_option(section, 'pa_concurrent_jobs'):
         pa_concurrent_jobs = config.getint(section, 'pa_concurrent_jobs')
 
-    cns_concurrent_jobs = 8
+    cns_concurrent_jobs = default_concurrent_jobs
     if config.has_option(section, 'cns_concurrent_jobs'):
         cns_concurrent_jobs = config.getint(section, 'cns_concurrent_jobs')
 
-    ovlp_concurrent_jobs = 8
+    ovlp_concurrent_jobs = default_concurrent_jobs
     if config.has_option(section, 'ovlp_concurrent_jobs'):
         ovlp_concurrent_jobs = config.getint(section, 'ovlp_concurrent_jobs')
 
