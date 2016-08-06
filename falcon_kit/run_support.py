@@ -184,7 +184,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'pa_DBsplit_option'):
         pa_DBsplit_option = config.get(section, 'pa_DBsplit_option')
 
-    skip_checks = True
+    skip_checks = False
     if config.has_option(section, 'skip_checks'):
         skip_checks = config.getboolean(section, 'skip_checks')
 
