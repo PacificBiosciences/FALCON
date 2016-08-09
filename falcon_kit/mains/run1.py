@@ -321,7 +321,8 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         raise
     input_fofn_plf = makePypeLocalFile(config["input_fofn"])
     #Workflow = PypeProcWatcherWorkflow
-    wf = PypeProcWatcherWorkflow(job_type=config['job_type'])
+    wf = PypeProcWatcherWorkflow(job_type=config['job_type'],
+            job_queue=config['job_queue'])
     run(wf, config,
             input_fofn_plf=input_fofn_plf,
             setNumThreadAllowed=PypeProcWatcherWorkflow.setNumThreadAllowed)

@@ -128,10 +128,15 @@ def parse_config(config_fn):
     return config
 
 def get_dict_from_old_falcon_cfg(config):
-    job_type = "SGE"
     section = 'General'
+
+    job_type = "SGE"
     if config.has_option(section, 'job_type'):
         job_type = config.get(section, 'job_type')
+
+    job_queue = "default"
+    if config.has_option(section, 'job_queue'):
+        job_queue = config.get(section, 'job_queue')
 
     default_concurrent_jobs = 8
     if config.has_option(section, 'default_concurrent_jobs'):
@@ -285,6 +290,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "input_fofn" : input_fofn_fn,
                    "target" : target,
                    "job_type" : job_type,
+                   "job_queue" : job_queue,
                    "input_type": input_type,
                    #"openending": openending,
                    "pa_concurrent_jobs" : pa_concurrent_jobs,
