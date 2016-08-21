@@ -186,22 +186,25 @@ def task_run_las_merge(self):
     self.generated_script_fn = script_fn
 
 def task_run_consensus(self):
+    merge_job_done = fn(self.job_done)
     out_file_fn = fn(self.out_file)
+    out_done = fn(self.out_done)
     job_id = self.parameters["job_id"]
     cwd = self.parameters["cwd"]
     config = self.parameters["config"]
     prefix = self.parameters["prefix"]
     script_dir = os.path.join( cwd )
-    job_done = os.path.join( cwd, "c_%05d_done" % job_id )
     script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
-    db_fn = os.path.abspath('{cwd}/../{prefix}'.format(**locals()))
-    las_fn = os.path.abspath('{cwd}/../m_{job_id:05d}/{prefix}.{job_id}.las'.format(**locals()))
+    db_fn = os.path.abspath('{cwd}/../../{prefix}'.format(**locals())) # ASSUMING 2-levels deep
+    merge_job_dir = os.path.dirname(merge_job_done)
+    # by convention, we assume the name of the .las file
+    las_fn = os.path.abspath('{merge_job_dir}/{prefix}.{job_id}.las'.format(**locals()))
     args = {
         'db_fn': db_fn,
         'las_fn': las_fn,
         'out_file_fn': out_file_fn,
         'config': config,
-        'job_done': job_done,
+        'job_done': out_done,
         'script_fn': script_fn,
     }
     support.run_consensus(**args)
@@ -287,12 +290,12 @@ def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
 def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
     consensus_tasks = []
     consensus_out ={}
-    # Unlike the merge tasks, consensus occurs in a single directory.
-    rdir = os.path.join(wd, 'preads')
-    mkdir(rdir)
     for p_id, job_done in p_ids_merge_job_done:
-        out_file = makePypeLocalFile(os.path.abspath("%s/preads/out.%05d.fasta" % (wd, p_id)))
-        out_done = makePypeLocalFile(os.path.abspath("%s/preads/c_%05d_done" % (wd, p_id)))
+        cns_label = 'cns_%05d' %p_id
+        rdir = os.path.join(wd, 'preads', cns_label)
+        mkdir(rdir)
+        out_file = makePypeLocalFile(os.path.abspath("%s/%s.fasta" % (rdir, cns_label)))
+        out_done = makePypeLocalFile(os.path.abspath("%s/%s_done" % (rdir, cns_label)))
         parameters =  {"cwd": rdir,
                        "job_id": p_id,
                        "prefix": db_prefix,
@@ -302,7 +305,7 @@ def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
                                outputs = {"out_file": out_file, "out_done": out_done},
                                parameters = parameters,
                                TaskType = MyFakePypeThreadTaskBase,
-                               URL = "task://localhost/ct_%05d" % p_id)
+                               URL = "task://localhost/%s" % cns_label)
         c_task = make_c_task(task_run_consensus)
         consensus_tasks.append(c_task)
         consensus_out["cjob_%d" % p_id] = out_done
