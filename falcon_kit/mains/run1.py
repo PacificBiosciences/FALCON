@@ -290,12 +290,14 @@ def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
 def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
     consensus_tasks = []
     consensus_out ={}
+    fasta_plfs = []
     for p_id, job_done in p_ids_merge_job_done:
         cns_label = 'cns_%05d' %p_id
         rdir = os.path.join(wd, 'preads', cns_label)
         mkdir(rdir)
-        out_file = makePypeLocalFile(os.path.abspath("%s/%s.fasta" % (rdir, cns_label)))
         out_done = makePypeLocalFile(os.path.abspath("%s/%s_done" % (rdir, cns_label)))
+        out_file = makePypeLocalFile(os.path.abspath("%s/%s.fasta" % (rdir, cns_label)))
+        fasta_plfs.append(out_file)
         parameters =  {"cwd": rdir,
                        "job_id": p_id,
                        "prefix": db_prefix,
@@ -309,7 +311,21 @@ def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
         c_task = make_c_task(task_run_consensus)
         consensus_tasks.append(c_task)
         consensus_out["cjob_%d" % p_id] = out_done
-    return consensus_tasks, consensus_out
+
+    r_cns_done_plf = makePypeLocalFile(os.path.join(wd, 'preads', "cns_done"))
+    pread_fofn_plf = makePypeLocalFile(os.path.join(wd, 'preads', "input_preads.fofn"))
+
+    @PypeTask( inputs = consensus_out,
+                outputs =  {"cns_done":r_cns_done_plf, "pread_fofn": pread_fofn_plf},
+                TaskType = MyFakePypeThreadTaskBase,
+                URL = "task://localhost/cns_check" )
+    def check_r_cns_task(self):
+        with open(fn(self.pread_fofn),  "w") as f:
+            for fa_fn in sorted(fn(plf) for plf in fasta_plfs):
+                print >>f, fa_fn
+        system("touch %s" % fn(self.cns_done))
+    consensus_tasks.append(check_r_cns_task)
+    return consensus_tasks, pread_fofn_plf
 
 
 def main1(prog_name, input_config_fn, logger_config_fn=None):
@@ -414,30 +430,14 @@ def run(wf, config,
 
         if config["target"] == "overlapping":
             sys.exit(0)
-        consensus_tasks, consensus_out = create_consensus_tasks(rawread_dir, "raw_reads", config, p_ids_merge_job_done)
+        consensus_tasks, pread_fofn_plf = create_consensus_tasks(rawread_dir, "raw_reads", config, p_ids_merge_job_done)
         wf.addTasks( consensus_tasks )
 
-        r_cns_done = makePypeLocalFile( os.path.join( rawread_dir, "cns_done") )
-        pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
-
-        @PypeTask( inputs = consensus_out,
-                   outputs =  {"cns_done":r_cns_done, "pread_fofn": pread_fofn},
-                   TaskType = MyFakePypeThreadTaskBase,
-                   URL = "task://localhost/cns_check" )
-        def check_r_cns_task(self):
-            with open(fn(self.pread_fofn),  "w") as f:
-                fn_list =  glob.glob("%s/preads/out*.fasta" % rawread_dir)
-                fn_list.sort()
-                for fa_fn in fn_list:
-                    print >>f, fa_fn
-            system("touch %s" % fn(self.cns_done))
-        wf.addTask(check_r_cns_task)
-
-        pre_assembly_report_plf = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json")) #tho technically it needs pread_fofn
+        pre_assembly_report_plf = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json"))
         make_task = PypeTask(
                 inputs = {"length_cutoff_fn": length_cutoff_plf,
                           "raw_reads_db": raw_reads_db_plf,
-                          "preads_fofn": pread_fofn, },
+                          "preads_fofn": pread_fofn_plf, },
                 outputs = {"pre_assembly_report": pre_assembly_report_plf, },
                 parameters = config,
                 TaskType = MyFakePypeThreadTaskBase,
@@ -456,9 +456,9 @@ def run(wf, config,
 
     # build pread database
     if config["input_type"] == "preads":
-        pread_fofn = makePypeLocalFile(os.path.join(pread_dir, os.path.basename(config["input_fofn"])))
+        pread_fofn_plf = makePypeLocalFile(os.path.join(pread_dir, os.path.basename(config["input_fofn"])))
         make_fofn_abs_task = PypeTask(inputs = {"i_fofn": rawread_fofn_plf},
-                                     outputs = {"o_fofn": pread_fofn},
+                                     outputs = {"o_fofn": pread_fofn_plf},
                                      parameters = {},
                                      TaskType = MyFakePypeThreadTaskBase)
         fofn_abs_task = make_fofn_abs_task(task_make_fofn_abs_preads)
@@ -472,7 +472,7 @@ def run(wf, config,
 
     run_jobs = makePypeLocalFile(os.path.join(pread_dir, 'run_jobs.sh'))
     preads_db = makePypeLocalFile(os.path.join(pread_dir, 'preads.db')) # Also .preads.*, of course.
-    make_build_pdb_task  = PypeTask(inputs = {"pread_fofn": pread_fofn },
+    make_build_pdb_task  = PypeTask(inputs = {"pread_fofn": pread_fofn_plf },
                                     outputs = {"pdb_build_done": pdb_build_done,
                                                "preads_db": preads_db,
                                                "run_jobs": run_jobs,
