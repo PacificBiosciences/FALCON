@@ -1,6 +1,7 @@
 """Most bash-scripting is generated here.
 """
 from . import functional
+import functools
 import getpass
 import md5
 import os
@@ -77,13 +78,12 @@ touch {job_done}
         ofs.write(wrapper)
     return job_done, job_exit
 
-def select_rundir(wdir, script):
-    tmpdir = tempfile.gettempdir()
+def select_rundir(tmpdir, wdir, script):
     user = getpass.getuser()
     digest = md5.md5(script).hexdigest()
     return '{}/{}/falcontmp/{}/{}'.format(tmpdir, user, wdir, digest)
 
-def write_script_and_wrapper_for_tmp(script, wrapper_fn, job_done):
+def write_script_and_wrapper_for_tmp(tmpdir, script, wrapper_fn, job_done):
     wdir = os.path.dirname(os.path.abspath(wrapper_fn))
     root, ext = os.path.splitext(os.path.basename(wrapper_fn))
     sub_script_bfn = root + '.xsub' + ext
@@ -91,7 +91,7 @@ def write_script_and_wrapper_for_tmp(script, wrapper_fn, job_done):
         exe = write_sub_script(ofs, script)
     make_executable(os.path.join(wdir, sub_script_bfn))
 
-    rdir = select_rundir(wdir, script)
+    rdir = select_rundir(tmpdir, wdir, script)
     tmp_wrapper_script = """
 shopt -s dotglob
 rm -rf {rdir}
@@ -112,10 +112,15 @@ def get_write_script_and_wrapper(config):
     """Return a function.
     For now, we actually use only config['use_tmpdir'], a boolean.
     """
-    if config['use_tmpdir']:
+    use_tmpdir = config.get('use_tmpdir', None)
+    if use_tmpdir:
+        if use_tmpdir is not True and '/' in use_tmpdir:
+            tmpdir = use_tmpdir
+        else:
+            tmpdir = tempfile.gettempdir()
         # Really, we also want to copy the symlinked db to tmpdir.
         # Tricky. TODO.
-        return write_script_and_wrapper_for_tmp
+        return functools.partial(write_script_and_wrapper_for_tmp, tmpdir)
     else:
         return write_script_and_wrapper_top
 
