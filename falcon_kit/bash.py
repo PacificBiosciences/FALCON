@@ -110,6 +110,7 @@ rm -rf {rdir}
 
 def get_write_script_and_wrapper(config):
     """Return a function.
+    For now, we actually use only config['use_tmpdir'], a boolean.
     """
     if config['use_tmpdir']:
         # Really, we also want to copy the symlinked db to tmpdir.
