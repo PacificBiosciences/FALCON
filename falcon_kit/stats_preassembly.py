@@ -9,7 +9,9 @@ from __future__ import absolute_import
 from __future__ import division
 from .FastaReader import FastaReader
 from .util.io import syscall
+from .functional import parse_2columns_of_ints, weighted_average
 import collections
+import glob
 import itertools
 import logging
 import os
@@ -115,7 +117,20 @@ def read_lens_from_db(db_fn):
     """
     return list(sorted(get_db_readlengths(db_fn)))
 
-def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_length, length_cutoff):
+def metric_fragmentation(preads_dir):
+    # https://jira.pacificbiosciences.com/browse/SAT-105
+    #sed -nr 's;>prolog/([0-9]*)[0-9]/.*;\1;p' %s/*.fasta | sort | uniq -c | awk '{print $1}' | sort | uniq -c
+    fastas = ' '.join(glob.glob(preads_dir + '/*.fasta'))
+    call = """perl -e 'while (<>) { if ( m{>[^/]+/(\d+)\d/} ) { $id{$1}++; } }; while (my ($k, $v) = each %%id) { $counts{$v}++; }; while (my ($k, $v) = each %%counts) { print "$v $k\n"; };' %s""" %(fastas)
+    counts = syscall(call)
+    log.info(counts)
+    cols = tuple(parse_2columns_of_ints(counts))
+    log.info(cols)
+    avg = weighted_average(cols)
+    return avg
+
+def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_length, length_cutoff,
+        fragmentation):
     """All inputs are paths to fasta files.
     genome_length and length_cutoff can be None.
     """
@@ -146,6 +161,7 @@ def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_
     kwds['preassembled_p95'] = stats_corrected_reads.p95
     kwds['preassembled_coverage'] = stats_corrected_reads.total / genome_length
     kwds['preassembled_yield'] = stats_corrected_reads.total / stats_seed_reads.total
+    kwds['preassembled_seed_fragmentation'] = fragmentation
     def round_if_float(v):
         return v if type(v) is not float else round(v, 3)
     result = {k:round_if_float(v) for k,v in kwds.iteritems()}
@@ -181,6 +197,8 @@ def calc_dict(
         genome_length,
         length_cutoff,
     ):
+    frag = metric_fragmentation('0-rawreads/preads')
+
     raw_reads = read_lens_from_db(i_raw_reads_db_fn)
     stats_raw_reads = stats_from_sorted_readlengths(raw_reads)
 
@@ -195,5 +213,6 @@ def calc_dict(
             stats_corrected_reads=stats_preads,
             genome_length=genome_length,
             length_cutoff=length_cutoff,
+            fragmentation=frag,
     )
     return report_dict

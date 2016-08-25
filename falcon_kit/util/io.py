@@ -55,6 +55,18 @@ def run_func(args):
         LOG('interrupted %s(%s)' %(func_name, ', '.join(reprarg(a) for a in args)))
         return
 
+def system(call, check=False):
+    LOG('$(%s)' %repr(call))
+    rc = os.system(call)
+    msg = "Call %r returned %d." % (call, rc)
+    if rc:
+        LOG("WARNING: " + msg)
+        if check:
+            raise Exception(msg)
+    else:
+        LOG(msg)
+    return rc
+
 def syscall(cmd):
     """Return stdout, fully captured.
     Wait for subproc to finish.

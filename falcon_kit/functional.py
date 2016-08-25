@@ -1,5 +1,6 @@
 """Purely functional code.
 """
+from __future__ import division
 import collections
 import re
 import StringIO
@@ -228,3 +229,25 @@ def calc_cutoff(target, DBstats_output):
     """
     rl_counts = get_reverse_sorted_readlength_counts_from_DBstats(DBstats_output)
     return calc_cutoff_from_reverse_sorted_readlength_counts(rl_counts, target)
+
+def parse_2columns_of_ints(data):
+    r"""Given 2 columns of integers,
+    space- and line-delimited,
+    yield tuples.
+
+    >>> tuple(parse_2columns_of_ints("1 2\n3 4"))
+    ((1, 2), (3, 4))
+    """
+    for line in data.splitlines():
+        line = line.strip()
+        if not line: continue
+        yield tuple(int(x) for x in line.split())
+
+def weighted_average(cols):
+    """Given tuples of (weight, value),
+    return weighted average.
+
+    >>> weighted_average(((100, 1), (200, 2), (100, 5)))
+    2.5
+    """
+    return sum(w*v for (w,v) in cols) / sum(w for (w,v) in cols)
