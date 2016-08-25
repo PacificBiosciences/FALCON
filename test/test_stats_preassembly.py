@@ -9,8 +9,9 @@ def test_stats_dict():
     stats_corrected_reads = M.Stats(10, 100, 5, 9)
     genome_length = 19
     length_cutoff = 10
+    frag = 1.0
 
-    result = M.stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_length, length_cutoff)
+    result = M.stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_length, length_cutoff, frag)
     expected = {
  'genome_length': 19,
  'length_cutoff': 10,
@@ -20,6 +21,7 @@ def test_stats_dict():
  'preassembled_n50': 5,
  'preassembled_p95': 9,
  'preassembled_reads': 10,
+ 'preassembled_seed_fragmentation': 1.0,
  'preassembled_yield': 0.2,
  'raw_bases': 1000,
  'raw_coverage': 52.632,
