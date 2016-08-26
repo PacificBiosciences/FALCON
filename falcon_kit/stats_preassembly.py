@@ -9,7 +9,7 @@ from __future__ import absolute_import
 from __future__ import division
 from .FastaReader import FastaReader
 from .util.io import syscall
-from .functional import parse_2columns_of_ints, weighted_average
+from . import functional
 import collections
 import glob
 import itertools
@@ -41,19 +41,7 @@ def get_db_readlengths(fn):
     If DBsplit was run, then we see the filtered reads only, since we do not provide '-u' to DBdump.
     """
     call = 'DBdump -h {}'.format(fn)
-    return list(parse_readlengths_from_dbdump_output(syscall(call)))
-
-def parse_readlengths_from_dbdump_output(output):
-    """ofs is the output file stream from the DBump command.
-    """
-    re_length = re.compile('^L\s+\d+\s+(\d+)\s+(\d+)$')
-    for line in output.splitlines():
-        mo = re_length.search(line)
-        if mo:
-            beg, end = mo.group(1, 2)
-            beg = int(beg)
-            end = int(end)
-            yield end - beg
+    return list(functional.parsed_readlengths_from_dbdump_output(syscall(call)))
 
 class FastaContainer(object):
 
@@ -123,14 +111,19 @@ def metric_fragmentation(preads_dir):
     fastas = ' '.join(glob.glob(preads_dir + '/*.fasta'))
     call = """perl -e 'while (<>) { if ( m{>[^/]+/(\d+)\d/} ) { $id{$1}++; } }; while (my ($k, $v) = each %%id) { $counts{$v}++; }; while (my ($k, $v) = each %%counts) { print "$v $k\n"; };' %s""" %(fastas)
     counts = syscall(call)
-    log.info(counts)
-    cols = tuple(parse_2columns_of_ints(counts))
-    log.info(cols)
-    avg = weighted_average(cols)
-    return avg
+    return functional.calc_metric_fragmentation(counts)
+
+def metric_truncation(db, preads_dir):
+    # https://jira.pacificbiosciences.com/browse/SAT-105
+    fastas = ' '.join(glob.glob(preads_dir + '/*.fasta'))
+    call = """perl -e 'while (<>) { if ( m{>[^/]+/0*(\d+)\d/(\d+)_(\d+)} ) { $lengths{$1} += ($3 - $2); } }; while (my ($k, $v) = each %%lengths) { print "$k $v\n"; };' %s""" %(fastas)
+    length_pairs_output = syscall(call)
+    call = 'DBdump -h {}'.format(db)
+    dbdump_output = syscall(call)
+    return functional.calc_metric_truncation(dbdump_output, length_pairs_output)
 
 def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_length, length_cutoff,
-        fragmentation):
+        fragmentation, truncation):
     """All inputs are paths to fasta files.
     genome_length and length_cutoff can be None.
     """
@@ -162,6 +155,7 @@ def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_
     kwds['preassembled_coverage'] = stats_corrected_reads.total / genome_length
     kwds['preassembled_yield'] = stats_corrected_reads.total / stats_seed_reads.total
     kwds['preassembled_seed_fragmentation'] = fragmentation
+    kwds['preassembled_seed_truncation'] = truncation
     def round_if_float(v):
         return v if type(v) is not float else round(v, 3)
     result = {k:round_if_float(v) for k,v in kwds.iteritems()}
@@ -197,7 +191,16 @@ def calc_dict(
         genome_length,
         length_cutoff,
     ):
-    frag = metric_fragmentation('0-rawreads/preads')
+    try:
+        frag = metric_fragmentation('0-rawreads/preads')
+    except:
+        frag = -1.0
+        log.exception('Using arbitrary fragmentation metric: {}'.format(frag))
+    try:
+        trunc = metric_truncation(i_raw_reads_db_fn, '0-rawreads/preads')
+    except:
+        trunc = -1.0
+        log.exception('Using arbitrary truncation metric: {}'.format(trunc))
 
     raw_reads = read_lens_from_db(i_raw_reads_db_fn)
     stats_raw_reads = stats_from_sorted_readlengths(raw_reads)
@@ -214,5 +217,6 @@ def calc_dict(
             genome_length=genome_length,
             length_cutoff=length_cutoff,
             fragmentation=frag,
+            truncation=trunc,
     )
     return report_dict

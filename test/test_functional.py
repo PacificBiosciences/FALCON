@@ -144,3 +144,48 @@ def test_calc_cutoff():
     expected = 2
     got = f.calc_cutoff(target, partial_capture)
     eq_(expected, got)
+
+sample_DBdump_output = """+ R 2
++ M 0
++ H 400
+@ H 8
+H 8 m000_000
+L 0 1899 3899
+H 8 m000_000
+L 1 2080 4080
+H 8 m000_000
+L 2 0 2500
+"""
+def test_parsed_readlengths_from_dbdump_output():
+    lengths = list(f.parsed_readlengths_from_dbdump_output(sample_DBdump_output))
+    helpers.equal_list(lengths, [2000, 2000, 2500])
+def test_mapped_readlengths_from_dbdump_output():
+    mapped = f.mapped_readlengths_from_dbdump_output(sample_DBdump_output)
+    helpers.equal_dict(mapped, {0: 2000, 1: 2000, 2: 2500})
+
+def test_average_difference():
+    dictA = {1: 50, 2:60}
+    dictB = {1: 55, 2:65, 3: 70}
+    avg = f.average_difference(dictA, dictB)
+    eq_(avg, -5.0)
+
+    dictB = {1: 55}
+    assert_raises(Exception, f.average_difference, dictA, dictB)
+
+sample_perl_output = """
+0 1900
+1 1950
+"""
+def test_calc_metric_truncation():
+    # and prove that dbdump can have extra reads, ignored.
+    trunc = f.calc_metric_truncation(sample_DBdump_output, sample_perl_output)
+    eq_(trunc, 75.0)
+
+sample_perl_counts_output = """
+100 1
+200 2
+100 5
+"""
+def test_calc_metric_fragmentation():
+    frag = f.calc_metric_fragmentation(sample_perl_counts_output)
+    eq_(frag, 2.5)

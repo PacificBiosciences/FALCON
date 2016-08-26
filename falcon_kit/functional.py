@@ -251,3 +251,58 @@ def weighted_average(cols):
     2.5
     """
     return sum(w*v for (w,v) in cols) / sum(w for (w,v) in cols)
+
+def parsed_readlengths_from_dbdump_output(output):
+    """Given output text from the DBump command,
+    yield all read-lengths.
+    """
+    re_length = re.compile('^L\s+\d+\s+(\d+)\s+(\d+)$')
+    for line in output.splitlines():
+        mo = re_length.search(line)
+        if mo:
+            beg, end = mo.group(1, 2)
+            beg = int(beg)
+            end = int(end)
+            yield end - beg
+
+def mapped_readlengths_from_dbdump_output(output):
+    """Given output text from the DBump command,
+    return dict of (id => read-length).
+    """
+    lengths = dict()
+    re_length = re.compile('^L\s+(\d+)\s+(\d+)\s+(\d+)$')
+    for line in output.splitlines():
+        mo = re_length.search(line)
+        if mo:
+            idx, beg, end = mo.group(1, 2, 3)
+            idx = int(idx)
+            beg = int(beg)
+            end = int(end)
+            lengths[idx] = (end - beg)
+    return lengths
+
+def average_difference(dictA, dictB):
+    """Return the average difference of
+    values in dictA minus dictB, only
+    using values in dictA.
+    If a value is missing from dictB, raise Exception.
+    """
+    total_diff = 0.0
+    for k,va in dictA.iteritems():
+        vb = dictB[k]
+        total_diff += (va - vb)
+    return total_diff / len(dictA)
+
+def calc_metric_fragmentation(perl_counts_output):
+    # """perl -e 'while (<>) { if ( m{>[^/]+/(\d+)\d/} ) { $id{$1}++; } }; while (my ($k, $v) = each %%id) { $counts{$v}++; }; while (my ($k, $v) = each %%counts) { print "$v $k\n"; };' %s""" %(fastas)
+    cols = tuple(parse_2columns_of_ints(perl_counts_output))
+    avg = weighted_average(cols)
+    return avg
+
+def calc_metric_truncation(dbdump_output, length_pairs_output):
+    # """perl -e 'while (<>) { if ( m{>[^/]+/0*(\d+)\d/(\d+)_(\d+)} ) { $lengths{$1} += ($3 - $2); } }; while (my ($k, $v) = each %%lengths) { print "$k $v\n"; };' %s""" %(fastas)
+    cols = tuple(parse_2columns_of_ints(length_pairs_output))
+    pread_lengths = dict((k,v) for (k,v) in cols)
+    orig_lengths = mapped_readlengths_from_dbdump_output(dbdump_output)
+    avg = -average_difference(pread_lengths, orig_lengths)
+    return avg
