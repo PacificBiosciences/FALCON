@@ -441,7 +441,7 @@ def run(wf, config,
 
         pre_assembly_report_plf = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json"))
         parameters = dict(config)
-        parameters['cwd'] = rawread_dir
+        parameters['cwd'] = os.path.join(rawread_dir, 'report')
         make_task = PypeTask(
                 inputs = {"length_cutoff_fn": length_cutoff_plf,
                           "raw_reads_db": raw_reads_db_plf,
