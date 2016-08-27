@@ -328,3 +328,10 @@ time fc_dedup_a_tigs
 """
     return script.format(**params)
 
+def script_run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_length, length_cutoff, o_json_fn):
+    params = dict()
+    params.update(locals())
+    script = """\
+python -m falcon_kit.mains.report_pre_assembly --genome-length {genome_length} --length-cutoff {length_cutoff} --db {i_raw_reads_db_fn} --preads-fofn {i_preads_fofn_fn} --out {o_json_fn}
+"""
+    return script.format(**params)

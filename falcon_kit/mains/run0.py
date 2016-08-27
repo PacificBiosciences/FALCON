@@ -232,7 +232,7 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
         job_type=config['job_type'], sge_option=config['sge_option_pda'])
 
 def task_report_pre_assembly(self):
-    # TODO(CD): Bashify this, in case it is slow.
+    # TODO(CD): Bashify this, in case it is slow. (Done in run1, and we do not really care here.)
     i_raw_reads_db_fn = fn(self.raw_reads_db)
     i_preads_fofn_fn = fn(self.preads_fofn)
     i_length_cutoff_fn = fn(self.length_cutoff_fn)

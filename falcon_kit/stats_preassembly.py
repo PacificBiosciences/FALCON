@@ -105,18 +105,27 @@ def read_lens_from_db(db_fn):
     """
     return list(sorted(get_db_readlengths(db_fn)))
 
-def metric_fragmentation(preads_dir):
+def abs_filenames(fofn_fn):
+    fofn_dir = os.path.dirname(fofn_fn)
+    def abs_fn(fn):
+        if os.path.isabs(fn):
+            return fn
+        return os.path.join(fofn_dir, fn)
+    fns = [abs_fn(fn.strip()) for fn in open(fofn_fn) if fn.strip()]
+    return fns
+
+def metric_fragmentation(preads_fofn):
     # https://jira.pacificbiosciences.com/browse/SAT-105
     #sed -nr 's;>prolog/([0-9]*)[0-9]/.*;\1;p' %s/*.fasta | sort | uniq -c | awk '{print $1}' | sort | uniq -c
-    fastas = ' '.join(glob.glob(preads_dir + '/*.fasta'))
-    call = """perl -e 'while (<>) { if ( m{>[^/]+/(\d+)\d/} ) { $id{$1}++; } }; while (my ($k, $v) = each %%id) { $counts{$v}++; }; while (my ($k, $v) = each %%counts) { print "$v $k\n"; };' %s""" %(fastas)
+    fastas = abs_filenames(preads_fofn)
+    call = """perl -e 'while (<>) { if ( m{>[^/]+/(\d+)\d/} ) { $id{$1}++; } }; while (my ($k, $v) = each %%id) { $counts{$v}++; }; while (my ($k, $v) = each %%counts) { print "$v $k\n"; };' %s""" %(' '.join(fastas))
     counts = syscall(call)
     return functional.calc_metric_fragmentation(counts)
 
-def metric_truncation(db, preads_dir):
+def metric_truncation(db, preads_fofn):
     # https://jira.pacificbiosciences.com/browse/SAT-105
-    fastas = ' '.join(glob.glob(preads_dir + '/*.fasta'))
-    call = """perl -e 'while (<>) { if ( m{>[^/]+/0*(\d+)\d/(\d+)_(\d+)} ) { $lengths{$1} += ($3 - $2); } }; while (my ($k, $v) = each %%lengths) { print "$k $v\n"; };' %s""" %(fastas)
+    fastas = abs_filenames(preads_fofn)
+    call = """perl -e 'while (<>) { if ( m{>[^/]+/0*(\d+)\d/(\d+)_(\d+)} ) { $lengths{$1} += ($3 - $2); } }; while (my ($k, $v) = each %%lengths) { print "$k $v\n"; };' %s""" %(' '.join(fastas))
     length_pairs_output = syscall(call)
     call = 'DBdump -h {}'.format(db)
     dbdump_output = syscall(call)
@@ -192,12 +201,12 @@ def calc_dict(
         length_cutoff,
     ):
     try:
-        frag = metric_fragmentation('0-rawreads/preads')
+        frag = metric_fragmentation(i_preads_fofn_fn)
     except:
         frag = -1.0
         log.exception('Using arbitrary fragmentation metric: {}'.format(frag))
     try:
-        trunc = metric_truncation(i_raw_reads_db_fn, '0-rawreads/preads')
+        trunc = metric_truncation(i_raw_reads_db_fn, i_preads_fofn_fn)
     except:
         trunc = -1.0
         log.exception('Using arbitrary truncation metric: {}'.format(trunc))

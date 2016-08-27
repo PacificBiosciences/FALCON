@@ -126,7 +126,6 @@ def task_run_falcon_asm(self):
     self.generated_script_fn = script_fn
 
 def task_report_pre_assembly(self):
-    # TODO(CD): Bashify this, in case it is slow.
     i_raw_reads_db_fn = fn(self.raw_reads_db)
     i_preads_fofn_fn = fn(self.preads_fofn)
     i_length_cutoff_fn = fn(self.length_cutoff_fn)
@@ -134,18 +133,25 @@ def task_report_pre_assembly(self):
     cfg = self.parameters
     genome_length = int(cfg.get('genome_size', 0)) # different name in falcon
     length_cutoff = int(cfg['length_cutoff'])
+    # Update length_cutoff if auto-calc (when length_cutoff is negative).
+    # i_length_cutoff_fn was created long ago, so no filesystem issues.
     length_cutoff = support.get_length_cutoff(length_cutoff, i_length_cutoff_fn)
+    cwd = self.parameters['cwd']
+    mkdir(cwd)
+    script_fn = os.path.join(cwd , 'run_report_pre_assembly.sh')
+    job_done = os.path.join(cwd, 'report_pa_done')
     kwds = {
         'i_raw_reads_db_fn': i_raw_reads_db_fn,
         'i_preads_fofn_fn': i_preads_fofn_fn,
         'genome_length': genome_length,
         'length_cutoff': length_cutoff,
+        'o_json_fn': o_json_fn,
+        'job_done': job_done,
+        'script_fn': script_fn,
     }
     fc_run_logger.info('Report inputs: {}'.format(repr(kwds)))
-    report_dict = stats_preassembly.calc_dict(**kwds)
-    content = json.dumps(report_dict, sort_keys=True, indent=4, separators=(',', ': '))
-    fc_run_logger.info('Report stats:\n{}'.format(content))
-    open(o_json_fn, 'w').write(content)
+    support.run_report_pre_assembly(**kwds)
+    self.generated_script_fn = script_fn
 
 def task_run_daligner(self):
     job_done = fn(self.job_done)
@@ -434,12 +440,14 @@ def run(wf, config,
         wf.addTasks( consensus_tasks )
 
         pre_assembly_report_plf = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json"))
+        parameters = dict(config)
+        parameters['cwd'] = rawread_dir
         make_task = PypeTask(
                 inputs = {"length_cutoff_fn": length_cutoff_plf,
                           "raw_reads_db": raw_reads_db_plf,
                           "preads_fofn": pread_fofn_plf, },
                 outputs = {"pre_assembly_report": pre_assembly_report_plf, },
-                parameters = config,
+                parameters = parameters,
                 TaskType = MyFakePypeThreadTaskBase,
                 URL = "task://localhost/report_pre_assembly")
         task = make_task(task_report_pre_assembly)
