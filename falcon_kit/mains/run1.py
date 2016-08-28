@@ -439,9 +439,10 @@ def run(wf, config,
         consensus_tasks, pread_fofn_plf = create_consensus_tasks(rawread_dir, "raw_reads", config, p_ids_merge_job_done)
         wf.addTasks( consensus_tasks )
 
-        pre_assembly_report_plf = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json"))
+        rdir = os.path.join(rawread_dir, 'report')
+        pre_assembly_report_plf = makePypeLocalFile(os.path.join(rdir, "pre_assembly_stats.json"))
         parameters = dict(config)
-        parameters['cwd'] = os.path.join(rawread_dir, 'report')
+        parameters['cwd'] = rdir
         make_task = PypeTask(
                 inputs = {"length_cutoff_fn": length_cutoff_plf,
                           "raw_reads_db": raw_reads_db_plf,

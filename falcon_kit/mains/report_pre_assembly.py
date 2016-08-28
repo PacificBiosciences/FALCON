@@ -15,7 +15,6 @@ def do_report(db, preads_fofn, genome_length, length_cutoff, out):
     )
     report_dict = stats_preassembly.calc_dict(**kwds)
     content = json.dumps(report_dict, sort_keys=True, indent=4, separators=(',', ': '))
-    log.info('Report stats:\n{}'.format(content))
     open(out, 'w').write(content)
 
 def main():

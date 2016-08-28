@@ -15,6 +15,7 @@ import glob
 import itertools
 import logging
 import os
+import pprint
 import re
 
 log = logging.getLogger(__name__)
@@ -228,4 +229,6 @@ def calc_dict(
             fragmentation=frag,
             truncation=trunc,
     )
+    log.info('Calculated pre-assembly stats:\n{}'.format(
+        pprint.pformat(report_dict)))
     return report_dict
