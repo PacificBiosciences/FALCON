@@ -128,7 +128,7 @@ def metric_truncation(db, preads_fofn):
     fastas = abs_filenames(preads_fofn)
     call = """perl -e 'while (<>) { if ( m{>[^/]+/0*(\d+)\d/(\d+)_(\d+)} ) { $lengths{$1} += ($3 - $2); } }; while (my ($k, $v) = each %%lengths) { print "$k $v\n"; };' %s""" %(' '.join(fastas))
     length_pairs_output = syscall(call)
-    call = 'DBdump -h {}'.format(db)
+    call = 'DBdump -rh {}'.format(db)
     dbdump_output = syscall(call)
     return functional.calc_metric_truncation(dbdump_output, length_pairs_output)
 

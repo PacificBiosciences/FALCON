@@ -149,12 +149,15 @@ sample_DBdump_output = """+ R 2
 + M 0
 + H 400
 @ H 8
+R 0
 H 8 m000_000
-L 0 1899 3899
+L 10 1899 3899
+R 1
 H 8 m000_000
-L 1 2080 4080
+L 11 2080 4080
+R 2
 H 8 m000_000
-L 2 0 2500
+L 12 0 2500
 """
 def test_parsed_readlengths_from_dbdump_output():
     lengths = list(f.parsed_readlengths_from_dbdump_output(sample_DBdump_output))

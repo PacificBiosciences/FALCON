@@ -268,17 +268,27 @@ def parsed_readlengths_from_dbdump_output(output):
 def mapped_readlengths_from_dbdump_output(output):
     """Given output text from the DBump command,
     return dict of (id => read-length).
+    There will be alternate lines like these:
+      R #
+      L # # #
+    https://dazzlerblog.wordpress.com/command-guides/dazz_db-command-guide/
     """
     lengths = dict()
+    re_rid = re.compile('^R\s+(\d+)$')
     re_length = re.compile('^L\s+(\d+)\s+(\d+)\s+(\d+)$')
     for line in output.splitlines():
+        mo = re_rid.search(line)
+        if mo:
+            idx = int(mo.group(1))
+            continue
         mo = re_length.search(line)
         if mo:
-            idx, beg, end = mo.group(1, 2, 3)
-            idx = int(idx)
+            well, beg, end = mo.group(1, 2, 3)
+            well = int(idx)
             beg = int(beg)
             end = int(end)
             lengths[idx] = (end - beg)
+            continue
     return lengths
 
 def average_difference(dictA, dictB):
