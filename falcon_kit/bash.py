@@ -3,11 +3,13 @@
 from . import functional
 import functools
 import getpass
+import logging
 import md5
 import os
 import tempfile
 import traceback
 
+LOG=logging.getLogger(__name__)
 BASH='/bin/bash'
 BUG_avoid_Text_file_busy=True
 # http://stackoverflow.com/questions/1384398/usr-bin-perl-bad-interpreter-text-file-busy/
@@ -171,6 +173,11 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_bfn):
             params['seed_coverage'], params['genome_size'], 'raw_reads')
     else:
         bash_cutoff = '{}'.format(length_cutoff)
+    try:
+        cat_fasta = functional.choose_cat_fasta(open(input_fofn_fn).read())
+    except Exception:
+        LOG.exception('Using "cat" by default.')
+        cat_fasta = 'cat '
     DBdust = 'DBdust {} raw_reads'.format(params.get('pa_DBdust_option', ''))
     mdust = '-mdust'
     if not params.get('dust'):
@@ -178,8 +185,9 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_bfn):
         mdust = ''
     params.update(locals())
     script = """\
+set -o pipefail
 #fc_fasta2fasta < {input_fofn_fn} >| fc.fofn
-while read fn; do fasta2DB -v raw_reads $fn; done < {input_fofn_fn}
+while read fn; do  {cat_fasta} $fn | fasta2DB -v raw_reads -i${{fn##*/}}; done < {input_fofn_fn}
 #cat fc.fofn | xargs rm -f
 {DBsplit}
 {DBdust}

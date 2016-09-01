@@ -316,3 +316,24 @@ def calc_metric_truncation(dbdump_output, length_pairs_output):
     orig_lengths = mapped_readlengths_from_dbdump_output(dbdump_output)
     avg = -average_difference(pread_lengths, orig_lengths)
     return avg
+
+def choose_cat_fasta(fofn):
+    """Given the contents of a fasta FOFN,
+    return a command to write the contents of a fasta to stdout,
+    keeping the original file.
+    Raise Exception on error.
+
+    >>> choose_cat_fasta('abc.gz')
+    'zcat '
+    >>> choose_cat_fasta('abc.dexta')
+    'undexta -vkU -w60 -i < '
+    >>> choose_cat_fasta('abc')
+    'cat '
+    """
+    first_line = fofn.splitlines()[0]
+    if first_line.endswith('.gz'):
+        return 'zcat '
+    elif first_line.endswith('.dexta'):
+        return 'undexta -vkU -w60 -i < '
+    else:
+        return 'cat '
