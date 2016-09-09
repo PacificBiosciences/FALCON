@@ -125,6 +125,7 @@ def task_run_falcon_asm(self):
     self.generated_script_fn = script_fn
 
 def task_report_pre_assembly(self):
+    # TODO(CD): Bashify this, in case it is slow.
     i_raw_reads_db_fn = fn(self.raw_reads_db)
     i_preads_fofn_fn = fn(self.preads_fofn)
     i_length_cutoff_fn = fn(self.length_cutoff_fn)
@@ -132,25 +133,18 @@ def task_report_pre_assembly(self):
     cfg = self.parameters
     genome_length = int(cfg.get('genome_size', 0)) # different name in falcon
     length_cutoff = int(cfg['length_cutoff'])
-    # Update length_cutoff if auto-calc (when length_cutoff is negative).
-    # i_length_cutoff_fn was created long ago, so no filesystem issues.
     length_cutoff = support.get_length_cutoff(length_cutoff, i_length_cutoff_fn)
-    cwd = self.parameters['cwd']
-    mkdir(cwd)
-    script_fn = os.path.join(cwd , 'run_report_pre_assembly.sh')
-    job_done = os.path.join(cwd, 'report_pa_done')
     kwds = {
         'i_raw_reads_db_fn': i_raw_reads_db_fn,
         'i_preads_fofn_fn': i_preads_fofn_fn,
         'genome_length': genome_length,
         'length_cutoff': length_cutoff,
-        'o_json_fn': o_json_fn,
-        'job_done': job_done,
-        'script_fn': script_fn,
     }
     fc_run_logger.info('Report inputs: {}'.format(repr(kwds)))
-    support.run_report_pre_assembly(**kwds)
-    self.generated_script_fn = script_fn
+    report_dict = stats_preassembly.calc_dict(**kwds)
+    content = json.dumps(report_dict, sort_keys=True, indent=4, separators=(',', ': '))
+    fc_run_logger.info('Report stats:\n{}'.format(content))
+    open(o_json_fn, 'w').write(content)
 
 def task_run_daligner(self):
     job_done = fn(self.job_done)
@@ -191,25 +185,22 @@ def task_run_las_merge(self):
     self.generated_script_fn = script_fn
 
 def task_run_consensus(self):
-    merge_job_done = fn(self.job_done)
     out_file_fn = fn(self.out_file)
-    out_done = fn(self.out_done)
     job_id = self.parameters["job_id"]
     cwd = self.parameters["cwd"]
     config = self.parameters["config"]
     prefix = self.parameters["prefix"]
     script_dir = os.path.join( cwd )
+    job_done = os.path.join( cwd, "c_%05d_done" % job_id )
     script_fn =  os.path.join( script_dir , "c_%05d.sh" % (job_id))
-    db_fn = os.path.abspath('{cwd}/../../{prefix}'.format(**locals())) # ASSUMING 2-levels deep
-    merge_job_dir = os.path.dirname(merge_job_done)
-    # by convention, we assume the name of the .las file
-    las_fn = os.path.abspath('{merge_job_dir}/{prefix}.{job_id}.las'.format(**locals()))
+    db_fn = os.path.abspath('{cwd}/../{prefix}'.format(**locals()))
+    las_fn = os.path.abspath('{cwd}/../m_{job_id:05d}/{prefix}.{job_id}.las'.format(**locals()))
     args = {
         'db_fn': db_fn,
         'las_fn': las_fn,
         'out_file_fn': out_file_fn,
         'config': config,
-        'job_done': out_done,
+        'job_done': job_done,
         'script_fn': script_fn,
     }
     support.run_consensus(**args)
@@ -242,12 +233,12 @@ def task_daligner_gather(self):
     only_these_symlinks(links)
     system("touch %s" %da_done)
 
-def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, nblock, config, pread_aln=False):
+def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, config, pread_aln=False):
     tasks = []
     tasks_out = {}
     skip_checks = config.get('skip_checks')
     fc_run_logger.info('Skip LAcheck after daligner? {}'.format(skip_checks))
-    for job_uid, script in bash.scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, nblock, pread_aln, skip_checks):
+    for job_uid, script in bash.scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, pread_aln, skip_checks):
         run_dir = "job_%s" %job_uid
         cwd = os.path.join(wd, run_dir)
         job_done_fn = os.path.abspath(os.path.join(cwd, "job_%s_done" %job_uid))
@@ -295,14 +286,12 @@ def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
 def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
     consensus_tasks = []
     consensus_out ={}
-    fasta_plfs = []
+    # Unlike the merge tasks, consensus occurs in a single directory.
+    rdir = os.path.join(wd, 'preads')
+    mkdir(rdir)
     for p_id, job_done in p_ids_merge_job_done:
-        cns_label = 'cns_%05d' %p_id
-        rdir = os.path.join(wd, 'preads', cns_label)
-        mkdir(rdir)
-        out_done = makePypeLocalFile(os.path.abspath("%s/%s_done" % (rdir, cns_label)))
-        out_file = makePypeLocalFile(os.path.abspath("%s/%s.fasta" % (rdir, cns_label)))
-        fasta_plfs.append(out_file)
+        out_file = makePypeLocalFile(os.path.abspath("%s/preads/out.%05d.fasta" % (wd, p_id)))
+        out_done = makePypeLocalFile(os.path.abspath("%s/preads/c_%05d_done" % (wd, p_id)))
         parameters =  {"cwd": rdir,
                        "job_id": p_id,
                        "prefix": db_prefix,
@@ -312,25 +301,11 @@ def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
                                outputs = {"out_file": out_file, "out_done": out_done},
                                parameters = parameters,
                                TaskType = MyFakePypeThreadTaskBase,
-                               URL = "task://localhost/%s" % cns_label)
+                               URL = "task://localhost/ct_%05d" % p_id)
         c_task = make_c_task(task_run_consensus)
         consensus_tasks.append(c_task)
         consensus_out["cjob_%d" % p_id] = out_done
-
-    r_cns_done_plf = makePypeLocalFile(os.path.join(wd, 'preads', "cns_done"))
-    pread_fofn_plf = makePypeLocalFile(os.path.join(wd, 'preads', "input_preads.fofn"))
-
-    @PypeTask( inputs = consensus_out,
-                outputs =  {"cns_done":r_cns_done_plf, "pread_fofn": pread_fofn_plf},
-                TaskType = MyFakePypeThreadTaskBase,
-                URL = "task://localhost/cns_check" )
-    def check_r_cns_task(self):
-        with open(fn(self.pread_fofn),  "w") as f:
-            for fa_fn in sorted(fn(plf) for plf in fasta_plfs):
-                print >>f, fa_fn
-        system("touch %s" % fn(self.cns_done))
-    consensus_tasks.append(check_r_cns_task)
-    return consensus_tasks, pread_fofn_plf
+    return consensus_tasks, consensus_out
 
 
 def main1(prog_name, input_config_fn, logger_config_fn=None):
@@ -345,8 +320,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         raise
     input_fofn_plf = makePypeLocalFile(config["input_fofn"])
     #Workflow = PypeProcWatcherWorkflow
-    wf = PypeProcWatcherWorkflow(job_type=config['job_type'],
-            job_queue=config['job_queue'])
+    wf = PypeProcWatcherWorkflow(job_type=config['job_type'], watcher_type=config['watcher_type'], watcher_directory=config['watcher_directory'])
     run(wf, config,
             input_fofn_plf=input_fofn_plf,
             setNumThreadAllowed=PypeProcWatcherWorkflow.setNumThreadAllowed)
@@ -410,8 +384,7 @@ def run(wf, config,
 
         raw_reads_nblock = support.get_nblock(fn(raw_reads_db_plf))
         #### run daligner
-        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", rdb_build_done,
-                nblock=raw_reads_nblock, config=config)
+        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", rdb_build_done, config)
 
         wf.addTasks(daligner_tasks)
         r_da_done = makePypeLocalFile( os.path.join( rawread_dir, "da_done") )
@@ -435,19 +408,32 @@ def run(wf, config,
 
         if config["target"] == "overlapping":
             sys.exit(0)
-        consensus_tasks, pread_fofn_plf = create_consensus_tasks(rawread_dir, "raw_reads", config, p_ids_merge_job_done)
+        consensus_tasks, consensus_out = create_consensus_tasks(rawread_dir, "raw_reads", config, p_ids_merge_job_done)
         wf.addTasks( consensus_tasks )
 
-        rdir = os.path.join(rawread_dir, 'report')
-        pre_assembly_report_plf = makePypeLocalFile(os.path.join(rdir, "pre_assembly_stats.json"))
-        parameters = dict(config)
-        parameters['cwd'] = rdir
+        r_cns_done = makePypeLocalFile( os.path.join( rawread_dir, "cns_done") )
+        pread_fofn = makePypeLocalFile( os.path.join( pread_dir,  "input_preads.fofn" ) )
+
+        @PypeTask( inputs = consensus_out,
+                   outputs =  {"cns_done":r_cns_done, "pread_fofn": pread_fofn},
+                   TaskType = MyFakePypeThreadTaskBase,
+                   URL = "task://localhost/cns_check" )
+        def check_r_cns_task(self):
+            with open(fn(self.pread_fofn),  "w") as f:
+                fn_list =  glob.glob("%s/preads/out*.fasta" % rawread_dir)
+                fn_list.sort()
+                for fa_fn in fn_list:
+                    print >>f, fa_fn
+            system("touch %s" % fn(self.cns_done))
+        wf.addTask(check_r_cns_task)
+
+        pre_assembly_report_plf = makePypeLocalFile(os.path.join(rawread_dir, "pre_assembly_stats.json")) #tho technically it needs pread_fofn
         make_task = PypeTask(
                 inputs = {"length_cutoff_fn": length_cutoff_plf,
                           "raw_reads_db": raw_reads_db_plf,
-                          "preads_fofn": pread_fofn_plf, },
+                          "preads_fofn": pread_fofn, },
                 outputs = {"pre_assembly_report": pre_assembly_report_plf, },
-                parameters = parameters,
+                parameters = config,
                 TaskType = MyFakePypeThreadTaskBase,
                 URL = "task://localhost/report_pre_assembly")
         task = make_task(task_report_pre_assembly)
@@ -464,9 +450,9 @@ def run(wf, config,
 
     # build pread database
     if config["input_type"] == "preads":
-        pread_fofn_plf = makePypeLocalFile(os.path.join(pread_dir, os.path.basename(config["input_fofn"])))
+        pread_fofn = makePypeLocalFile(os.path.join(pread_dir, os.path.basename(config["input_fofn"])))
         make_fofn_abs_task = PypeTask(inputs = {"i_fofn": rawread_fofn_plf},
-                                     outputs = {"o_fofn": pread_fofn_plf},
+                                     outputs = {"o_fofn": pread_fofn},
                                      parameters = {},
                                      TaskType = MyFakePypeThreadTaskBase)
         fofn_abs_task = make_fofn_abs_task(task_make_fofn_abs_preads)
@@ -480,7 +466,7 @@ def run(wf, config,
 
     run_jobs = makePypeLocalFile(os.path.join(pread_dir, 'run_jobs.sh'))
     preads_db = makePypeLocalFile(os.path.join(pread_dir, 'preads.db')) # Also .preads.*, of course.
-    make_build_pdb_task  = PypeTask(inputs = {"pread_fofn": pread_fofn_plf },
+    make_build_pdb_task  = PypeTask(inputs = {"pread_fofn": pread_fofn },
                                     outputs = {"pdb_build_done": pdb_build_done,
                                                "preads_db": preads_db,
                                                "run_jobs": run_jobs,
@@ -497,8 +483,7 @@ def run(wf, config,
     preads_nblock = support.get_nblock(fn(preads_db))
     #### run daligner
     config["sge_option_da"] = config["sge_option_pda"]
-    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", pdb_build_done,
-                nblock=preads_nblock, config=config, pread_aln=True)
+    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", pdb_build_done, config, pread_aln=True)
     wf.addTasks(daligner_tasks)
 
     p_da_done = makePypeLocalFile(os.path.join( pread_dir, "da_done"))
