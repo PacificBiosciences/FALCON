@@ -1,7 +1,6 @@
 from .. import run_support as support
 from .. import bash
 from ..util.system import only_these_symlinks
-from falcon_kit import stats_preassembly
 from pypeflow.pwatcher_bridge import PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase
 from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
 from pypeflow.task import PypeTask
