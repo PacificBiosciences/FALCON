@@ -1,6 +1,7 @@
 from . import bash
-from pypeflow.util import cd
+#from pypeflow.util import cd
 import ConfigParser
+import contextlib
 import json
 import logging
 import logging.config
@@ -410,6 +411,17 @@ def setup_logger(logging_config_fn):
         pass
 
     return logger
+
+@contextlib.contextmanager
+def cd(newdir):
+    prevdir = os.getcwd()
+    logger.debug('CD: %r <- %r' %(newdir, prevdir))
+    os.chdir(os.path.expanduser(newdir))
+    try:
+        yield
+    finally:
+        logger.debug('CD: %r -> %r' %(newdir, prevdir))
+        os.chdir(prevdir)
 
 def make_fofn_abs(i_fofn_fn, o_fofn_fn):
     """Copy i_fofn to o_fofn, but with relative filenames expanded for the dir of i_fofn.
