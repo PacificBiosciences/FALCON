@@ -56,7 +56,7 @@ def write_script_and_wrapper_top(script, wrapper_fn, job_done):
     'job_done' should be either abspath or relative to dir of wrapper_fn.
     """
     job_exit = job_done + '.exit'
-    wdir = os.path.dirname(wrapper_fn)
+    wdir = os.path.abspath(os.path.dirname(wrapper_fn))
     #mkdir(wdir) # To avoid races, callers must do this.
 
     root, ext = os.path.splitext(os.path.basename(wrapper_fn))
@@ -226,6 +226,19 @@ def script_run_DB2Falcon(config):
 # Given preads.db,
 # write preads4falcon.fasta, in 1-preads_ovl:
 time DB2Falcon -U preads
+""".format(**params)
+    return script
+
+def script_run_DB2Falcon_new(config, preads4falcon_fn, preads_db):
+    """Run in pread_dir.
+    """
+    params = dict(config)
+    params.update(locals())
+    script = """\
+# Given preads.db,
+# write preads4falcon.fasta (implicitly).
+time DB2Falcon -U {preads_db}
+[ -f {preads4falcon_fn} ] || exit 1
 """.format(**params)
     return script
 

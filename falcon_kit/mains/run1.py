@@ -2,8 +2,10 @@ from .. import run_support as support
 from .. import bash
 from ..util.system import only_these_symlinks
 from pypeflow.pwatcher_bridge import PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase
-from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
+from pypeflow.data import makePypeLocalFile, fn
 from pypeflow.task import PypeTask
+#from pypeflow.simple_pwatcher_bridge import (PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase,
+#        makePypeLocalFile, fn, PypeTask)
 import argparse
 import collections
 import glob
@@ -35,16 +37,18 @@ def system(call, check=False):
     return rc
 
 def task_make_fofn_abs_raw(self):
-    #script_fn = 'noop.sh'
-    #open(script_fn, 'w').write('echo NOOP raw')
-    #self.generated_script_fn = script_fn
-    support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
+    script_fn = 'noop.sh'
+    open(script_fn, 'w').write('echo NOOP raw')
+    self.generated_script_fn = script_fn
+    mkdir(os.path.dirname(fn(self.o_fofn)))
+    support.make_fofn_abs(fn(self.i_fofn), fn(self.o_fofn))
 
 def task_make_fofn_abs_preads(self):
-    #script_fn = 'noop.sh'
-    #open(script_fn, 'w').write('echo NOOP preads')
-    #self.generated_script_fn = script_fn
-    support.make_fofn_abs(self.i_fofn.path, self.o_fofn.path)
+    script_fn = 'noop.sh'
+    open(script_fn, 'w').write('echo NOOP preads')
+    self.generated_script_fn = script_fn
+    mkdir(os.path.dirname(fn(self.o_fofn)))
+    support.make_fofn_abs(fn(self.i_fofn), fn(self.o_fofn))
 
 def task_build_rdb(self):
     input_fofn_fn = fn(self.input_fofn)
@@ -67,7 +71,7 @@ def task_build_rdb(self):
     self.generated_script_fn = script_fn
 
 def task_build_pdb(self):  #essential the same as build_rdb() but the subtle differences are tricky to consolidate to one function
-    input_fofn_fn = fn(self.pread_fofn)
+    input_fofn_fn = fn(self.preads_fofn)
     job_done = fn(self.pdb_build_done)
     db = fn(self.preads_db)
     run_jobs = fn(self.run_jobs)
@@ -88,8 +92,11 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
 
 def task_run_db2falcon(self):
     wd = self.parameters["wd"]
+    mkdir(wd)
     #self.p_merge_done
     job_done = fn(self.db2falcon_done)
+    preads4falcon_fn = fn(self.preads4falcon)
+    preads_db = fn(self.preads_db)
     config = self.parameters["config"]
     script_dir = os.path.join(wd)
     script_fn = os.path.join(script_dir ,"run_db2falcon.sh")
@@ -97,8 +104,10 @@ def task_run_db2falcon(self):
         'config': config,
         'job_done': job_done,
         'script_fn': script_fn,
+        'preads4falcon_fn': preads4falcon_fn,
+        'preads_db': preads_db,
     }
-    support.run_db2falcon(**args)
+    support.run_db2falcon_new(**args)
     self.generated_script_fn = script_fn
 
 def task_run_falcon_asm(self):
@@ -108,6 +117,7 @@ def task_run_falcon_asm(self):
     job_done = fn(self.falcon_asm_done)
     config = self.parameters["config"]
     pread_dir = self.parameters["pread_dir"]
+    preads4falcon_fn = fn(self.preads4falcon)
     script_dir = os.path.join( wd )
     script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
     # Generate las.fofn in run-dir.
@@ -115,7 +125,7 @@ def task_run_falcon_asm(self):
     las_fofn_fn = 'las.fofn'
     args = {
         'las_fofn_fn': las_fofn_fn,
-        'preads4falcon_fasta_fn': os.path.join(pread_dir, 'preads4falcon.fasta'),
+        'preads4falcon_fasta_fn': preads4falcon_fn,
         'db_file_fn': db_file,
         'config': config,
         'job_done': job_done,
@@ -173,10 +183,34 @@ def task_run_daligner(self):
     support.run_daligner(**args)
     self.generated_script_fn = script_fn
 
+def read_gathered_las(path):
+    """Return dict of block->[las_paths].
+    For now, these are ws separated on each line of input.
+    """
+    result = collections.defaultdict(list)
+    with open(path) as ifs:
+        for line in ifs:
+            block, las_path = line.split()
+            result[int(block)].append(las_path)
+    #fc_run_logger.warning('path={!r}, result={}'.format(
+    #    path, pprint.pformat(result)))
+    return result
+
 def task_run_las_merge(self):
+    gathered_las_fn = fn(self.gathered_las)
     script = self.parameters["merge_script"]
-    job_id = self.parameters["job_id"]
+    job_id = self.parameters["job_id"] # aka "block"
     cwd = self.parameters["cwd"]
+    mkdir(cwd)
+
+    gathered_dict = read_gathered_las(gathered_las_fn)
+    las_paths = gathered_dict[job_id]
+    for las_path in las_paths:
+        src = os.path.relpath(las_path, cwd)
+        tgt = os.path.join(cwd, os.path.basename(las_path))
+        fc_run_logger.debug('symlink {!r} -> {!r}'.format(src, tgt))
+        os.symlink(src, tgt)
+
     job_done = fn(self.job_done)
     config = self.parameters["config"]
 
@@ -221,9 +255,30 @@ def mkdir(d):
         os.makedirs(d)
 
 def task_daligner_gather(self):
+    """Find all .las leaves so far.
+    """
+    out_dict = self.inputs
+    gathered_fn = fn(self.gathered)
+    nblock = self.parameters['nblock']
+    fc_run_logger.debug('nblock=%d, out_dir:\n%s'%(nblock, out_dict))
+    job_rundirs = [os.path.dirname(fn(dal_done)) for dal_done in out_dict.values()]
+    wdir = os.path.dirname(gathered_fn)
+    mkdir(wdir)
+    with open(gathered_fn, 'w') as ofs:
+        for block, las_path in support.daligner_gather_las(job_rundirs):
+            ofs.write('{} {}\n'.format(block, las_path))
+
+    # Because we need a script always, for now.
+    script_fn = os.path.join(wdir, 'noop.sh')
+    open(script_fn, 'w').write('echo NOOP raw')
+    self.generated_script_fn = script_fn
+def old_task_daligner_gather(self):
+    """Create symlinks in the m_* directories.
+    Kinda messy, and it must run in the base-dir for now.
+    """
     da_done = fn(self.da_done)
     main_dir = os.path.dirname(da_done)
-    out_dict = self.inputDataObjs
+    out_dict = self.inputs
     nblock = self.parameters['nblock']
     fc_run_logger.debug('nblock=%d, out_dir:\n%s'%(nblock, out_dict))
 
@@ -242,6 +297,11 @@ def task_daligner_gather(self):
             links[mdir].append(las_path)
     only_these_symlinks(links)
     system("touch %s" %da_done)
+
+    # Because we need a script always, for now.
+    script_fn = 'noop.sh'
+    open(script_fn, 'w').write('echo NOOP raw')
+    self.generated_script_fn = script_fn
 
 def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, nblock, config, pread_aln=False):
     tasks = []
@@ -269,7 +329,7 @@ def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, nblock, co
         tasks_out[ "ajob_%s" % job_uid ] = job_done
     return tasks, tasks_out
 
-def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
+def create_merge_tasks(run_jobs_fn, wd, db_prefix, gathered_las_plf, config):
     merge_tasks = []
     merge_out = {}
     p_ids_merge_job_done = [] # for consensus
@@ -282,8 +342,10 @@ def create_merge_tasks(run_jobs_fn, wd, db_prefix, input_dep, config):
                        "job_id": p_id,
                        "sge_option": config["sge_option_la"],
                        "config": config}
-        make_merge_task = PypeTask(inputs = {"input_dep": input_dep},
-                                   outputs = {"job_done": job_done},
+        make_merge_task = PypeTask(inputs = {"gathered_las": gathered_las_plf,
+                                   },
+                                   outputs = {"job_done": job_done,
+                                   },
                                    parameters = parameters,
                                    TaskType = MyFakePypeThreadTaskBase,
                                    URL = "task://localhost/m_%05d_%s" % (p_id, db_prefix))
@@ -319,19 +381,24 @@ def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
         consensus_out["cjob_%d" % p_id] = out_done
 
     r_cns_done_plf = makePypeLocalFile(os.path.join(wd, 'preads', "cns_done"))
-    pread_fofn_plf = makePypeLocalFile(os.path.join(wd, 'preads', "input_preads.fofn"))
+    preads_fofn_plf = makePypeLocalFile(os.path.join(wd, 'preads', "input_preads.fofn"))
 
     @PypeTask( inputs = consensus_out,
-                outputs =  {"cns_done":r_cns_done_plf, "pread_fofn": pread_fofn_plf},
+                outputs =  {"cns_done":r_cns_done_plf, "preads_fofn": preads_fofn_plf},
                 TaskType = MyFakePypeThreadTaskBase,
                 URL = "task://localhost/cns_check" )
     def check_r_cns_task(self):
-        with open(fn(self.pread_fofn),  "w") as f:
+        with open(fn(self.preads_fofn),  "w") as f:
             for fa_fn in sorted(fn(plf) for plf in fasta_plfs):
                 print >>f, fa_fn
+        wdir = os.path.dirname(fn(self.cns_done))
+        #mkdir(wdir) We SHOULD need this! TODO
         system("touch %s" % fn(self.cns_done))
+        script_fn = os.path.join(wdir, 'noop.sh')
+        open(script_fn, 'w').write('echo NOOP raw')
+        self.generated_script_fn = script_fn
     consensus_tasks.append(check_r_cns_task)
-    return consensus_tasks, pread_fofn_plf
+    return consensus_tasks, preads_fofn_plf
 
 
 def main1(prog_name, input_config_fn, logger_config_fn=None):
@@ -351,11 +418,13 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
             watcher_type=config['pwatcher_type'],
             watcher_directory=config['pwatcher_directory'])
     run(wf, config,
+            os.path.abspath(input_config_fn),
             input_fofn_plf=input_fofn_plf,
             setNumThreadAllowed=PypeProcWatcherWorkflow.setNumThreadAllowed)
 
 
 def run(wf, config,
+        input_config_fn,
         input_fofn_plf,
         setNumThreadAllowed,
         ):
@@ -377,7 +446,7 @@ def run(wf, config,
     concurrent_jobs = config["pa_concurrent_jobs"]
     setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
 
-    rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, os.path.basename(config["input_fofn"])))
+    rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, 'raw-fofn-abs', os.path.basename(config["input_fofn"])))
     make_fofn_abs_task = PypeTask(inputs = {"i_fofn": input_fofn_plf},
                                   outputs = {"o_fofn": rawread_fofn_plf},
                                   parameters = {},
@@ -394,6 +463,7 @@ def run(wf, config,
         run_jobs = makePypeLocalFile( os.path.join( rawread_dir, "run_jobs.sh") )
         parameters = {"work_dir": rawread_dir,
                       "sge_option": config["sge_option_da"],
+                      "config_fn": input_config_fn,
                       "config": config}
 
         length_cutoff_plf = makePypeLocalFile(os.path.join(rawread_dir, "length_cutoff"))
@@ -417,14 +487,14 @@ def run(wf, config,
                 nblock=raw_reads_nblock, config=config)
 
         wf.addTasks(daligner_tasks)
-        r_da_done = makePypeLocalFile( os.path.join( rawread_dir, "da_done") )
+        r_gathered_las_plf = makePypeLocalFile( os.path.join( rawread_dir, 'raw_gather', 'gathered_las.txt') )
 
         parameters =  {
                 "nblock": raw_reads_nblock,
         }
         make_daligner_gather = PypeTask(
                    inputs = daligner_out,
-                   outputs =  {"da_done":r_da_done},
+                   outputs =  {"gathered": r_gathered_las_plf},
                    parameters = parameters,
                    TaskType = MyFakePypeThreadTaskBase,
                    URL = "task://localhost/rda_check" )
@@ -432,13 +502,13 @@ def run(wf, config,
         wf.addTask(check_r_da_task)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
-        merge_tasks, merge_out, p_ids_merge_job_done = create_merge_tasks(fn(run_jobs), rawread_dir, "raw_reads", r_da_done, config)
+        merge_tasks, merge_out, p_ids_merge_job_done = create_merge_tasks(fn(run_jobs), rawread_dir, "raw_reads", r_gathered_las_plf, config)
         wf.addTasks( merge_tasks )
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
         if config["target"] == "overlapping":
             sys.exit(0)
-        consensus_tasks, pread_fofn_plf = create_consensus_tasks(rawread_dir, "raw_reads", config, p_ids_merge_job_done)
+        consensus_tasks, preads_fofn_plf = create_consensus_tasks(rawread_dir, "raw_reads", config, p_ids_merge_job_done)
         wf.addTasks( consensus_tasks )
 
         rdir = os.path.join(rawread_dir, 'report')
@@ -448,7 +518,7 @@ def run(wf, config,
         make_task = PypeTask(
                 inputs = {"length_cutoff_fn": length_cutoff_plf,
                           "raw_reads_db": raw_reads_db_plf,
-                          "preads_fofn": pread_fofn_plf, },
+                          "preads_fofn": preads_fofn_plf, },
                 outputs = {"pre_assembly_report": pre_assembly_report_plf, },
                 parameters = parameters,
                 TaskType = MyFakePypeThreadTaskBase,
@@ -467,9 +537,9 @@ def run(wf, config,
 
     # build pread database
     if config["input_type"] == "preads":
-        pread_fofn_plf = makePypeLocalFile(os.path.join(pread_dir, os.path.basename(config["input_fofn"])))
+        preads_fofn_plf = makePypeLocalFile(os.path.join(pread_dir, 'preads-fofn-abs', os.path.basename(config["input_fofn"])))
         make_fofn_abs_task = PypeTask(inputs = {"i_fofn": rawread_fofn_plf},
-                                     outputs = {"o_fofn": pread_fofn_plf},
+                                     outputs = {"o_fofn": preads_fofn_plf},
                                      parameters = {},
                                      TaskType = MyFakePypeThreadTaskBase)
         fofn_abs_task = make_fofn_abs_task(task_make_fofn_abs_preads)
@@ -479,11 +549,12 @@ def run(wf, config,
     pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "pdb_build_done") )
     parameters = {"work_dir": pread_dir,
                   "sge_option": config["sge_option_pda"],
+                  "config_fn": input_config_fn,
                   "config": config}
 
     run_jobs = makePypeLocalFile(os.path.join(pread_dir, 'run_jobs.sh'))
     preads_db = makePypeLocalFile(os.path.join(pread_dir, 'preads.db')) # Also .preads.*, of course.
-    make_build_pdb_task  = PypeTask(inputs = {"pread_fofn": pread_fofn_plf },
+    make_build_pdb_task  = PypeTask(inputs = {"preads_fofn": preads_fofn_plf },
                                     outputs = {"pdb_build_done": pdb_build_done,
                                                "preads_db": preads_db,
                                                "run_jobs": run_jobs,
@@ -504,13 +575,13 @@ def run(wf, config,
                 nblock=preads_nblock, config=config, pread_aln=True)
     wf.addTasks(daligner_tasks)
 
-    p_da_done = makePypeLocalFile(os.path.join( pread_dir, "da_done"))
+    p_gathered_las_plf = makePypeLocalFile(os.path.join(pread_dir, 'gathered-las', 'gathered-las.txt'))
     parameters =  {
             "nblock": preads_nblock,
     }
     make_daligner_gather = PypeTask(
                 inputs = daligner_out,
-                outputs =  {"da_done":p_da_done},
+                outputs =  {"gathered": p_gathered_las_plf},
                 parameters = parameters,
                 TaskType = MyFakePypeThreadTaskBase,
                 URL = "task://localhost/pda_check" )
@@ -519,17 +590,22 @@ def run(wf, config,
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
     config["sge_option_la"] = config["sge_option_pla"]
-    merge_tasks, merge_out, _ = create_merge_tasks(fn(run_jobs), pread_dir, "preads", p_da_done, config)
+    merge_tasks, merge_out, _ = create_merge_tasks(fn(run_jobs), pread_dir, 'preads-merge', p_gathered_las_plf, config)
     wf.addTasks( merge_tasks )
 
-    p_merge_done = makePypeLocalFile(os.path.join( pread_dir, "p_merge_done"))
+    p_merge_done = makePypeLocalFile(os.path.join( pread_dir, 'preads-merge', 'p_merge_done'))
 
     @PypeTask( inputs = merge_out,
                outputs =  {"p_merge_done": p_merge_done},
                TaskType = MyFakePypeThreadTaskBase,
                URL = "task://localhost/pmerge_check" )
     def check_p_merge_check_task(self):
+        wdir = os.path.dirname(fn(self.p_merge_done))
+        mkdir(wdir)
         system("touch %s" % fn(self.p_merge_done))
+        script_fn = os.path.join(wdir, 'noop.sh')
+        open(script_fn, 'w').write('echo NOOP raw')
+        self.generated_script_fn = script_fn
     wf.addTask(check_p_merge_check_task)
 
     concurrent_jobs = config["ovlp_concurrent_jobs"]
@@ -538,11 +614,17 @@ def run(wf, config,
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
 
-    db2falcon_done = makePypeLocalFile( os.path.join(pread_dir, "db2falcon_done"))
+    db2falcon_dir = os.path.join(pread_dir, 'db2falcon')
+    db2falcon_done = makePypeLocalFile(os.path.join(db2falcon_dir, 'db2falcon_done'))
+    preads4falcon_plf = makePypeLocalFile(os.path.join(db2falcon_dir, 'preads4falcon.fasta'))
     make_run_db2falcon = PypeTask(
-               inputs = {"p_merge_done": p_merge_done,},
-               outputs =  {"db2falcon_done": db2falcon_done},
-               parameters = {"wd": pread_dir,
+               inputs = {"p_merge_done": p_merge_done,
+                         "preads_db": preads_db,
+                        },
+               outputs =  {"db2falcon_done": db2falcon_done,
+                           "preads4falcon": preads4falcon_plf,
+                          },
+               parameters = {"wd": db2falcon_dir,
                              "config": config,
                              "sge_option": config["sge_option_fc"],
                             },
@@ -550,9 +632,11 @@ def run(wf, config,
                URL = "task://localhost/db2falcon" )
     wf.addTask(make_run_db2falcon(task_run_db2falcon))
 
-    falcon_asm_done = makePypeLocalFile( os.path.join( falcon_asm_dir, "falcon_asm_done") )
+    falcon_asm_done = makePypeLocalFile( os.path.join(falcon_asm_dir, 'falcon_asm_done'))
     make_run_falcon_asm = PypeTask(
-               inputs = {"db2falcon_done": db2falcon_done, "db_file": preads_db},
+               inputs = {"db2falcon_done": db2falcon_done, "db_file": preads_db,
+                         "preads4falcon": preads4falcon_plf,
+                        },
                outputs =  {"falcon_asm_done": falcon_asm_done},
                parameters = {"wd": falcon_asm_dir,
                              "config": config,
