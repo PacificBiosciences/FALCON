@@ -173,7 +173,7 @@ class StringGraph(object):
 
         removed_edges = set()
         for  v in self.nodes:
-            if len(self.nodes[v].out_edges) > 1:
+            if len([e for e in self.nodes[v].out_edges if self.e_reduce[ (e.in_node.name, e.out_node.name) ] != True]) > 1:
                 for out_edge in self.nodes[v].out_edges:
                     w = out_edge.out_node.name
 
@@ -184,7 +184,7 @@ class StringGraph(object):
                         self.e_reduce[(v2, w2)] = True
                         removed_edges.add( (v2, w2) )
 
-            if len(self.nodes[v].in_edges) > 1:
+            if len([e for e in self.nodes[v].in_edges if self.e_reduce[ (e.in_node.name, e.out_node.name) ] != True]) > 1:
                 for in_edge in self.nodes[v].in_edges:
                     w = in_edge.in_node.name
                     if len(self.nodes[w].in_edges) == 0 and self.e_reduce[ (w, v) ] != True:
@@ -835,6 +835,7 @@ def generate_string_graph(args):
     else:
         chimer_edges = set() #empty set
 
+    spur_edges = sg.mark_spur_edge()
 
     removed_edges = set()
     if args.lfc == True:
@@ -842,7 +843,7 @@ def generate_string_graph(args):
     else:
         removed_edges = sg.mark_best_overlap() # mark those edges that are best overlap edges
 
-    spur_edges = sg.mark_spur_edge()
+    spur_edges.update( sg.mark_spur_edge() )
 
     if DEBUG_LOG_LEVEL > 1:
         print sum( [1 for c in sg.e_reduce.values() if c == False] )
@@ -1197,6 +1198,32 @@ def identify_spurs(ug, u_edge_data):
             break
     return ug2
 
+def remove_dup_simple_path(ug, u_edge_data):
+    # identify simple dup path
+    # if there are many multiple simple path of length connect s and t, e.g.  s->v1->t, and s->v2->t, we will only keep one
+    # Side-effect: Modifies u_edge_data
+    ug2 = ug.copy()
+    simple_edges = set()
+    dup_edges = {} 
+    for s, t, v in u_edge_data:
+        length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+        if len(edges) > 3:
+            continue
+        if type_ == "simple":
+            if (s, t) in simple_edges:
+                dup_edges[ (s, t) ].append( v )
+            else:
+                simple_edges.add( (s, t) )
+                dup_edges[ (s, t) ] = [v]
+    for s, t in dup_edges:
+        vl = dup_edges[ (s, t) ]
+        vl.sort()
+        for v in vl[1:]:
+            ug2.remove_edge( s, t, key= v)
+            length, score, edges, type_ = u_edge_data[ (s, t, v) ]
+            u_edge_data[ (s, t, v) ] = length, score, edges, "simple_dup"
+    return ug2
+
 
 def construct_c_path_from_utgs(ug, u_edge_data, sg):
     # Side-effects: None, I think.
@@ -1357,6 +1384,7 @@ def ovlp_to_graph(args):
                 print >>f, s, v, t, type_, length, score, path_or_edges
 
     ug2 = identify_spurs(ug, u_edge_data)
+    ug2 = remove_dup_simple_path(ug2, u_edge_data)
 
     #phase 2, finding all "consistent" compound paths
     compound_paths = construct_compound_paths(ug2, u_edge_data)
@@ -1509,3 +1537,4 @@ def main(argv=sys.argv):
 
     args = parser.parse_args(argv[1:])
     ovlp_to_graph(args)
+
