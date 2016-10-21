@@ -294,6 +294,8 @@ def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
     params.update(locals())
     if config["falcon_sense_skip_contained"]:
         run_consensus = """LA4Falcon -H$CUTOFF -fso {db_fn} {las_fn} | """
+    elif config["falcon_greedy"]:
+        run_consensus = """LA4Falcon -H$CUTOFF -fog  {db_fn} {las_fn} | """
     else:
         run_consensus = """LA4Falcon -H$CUTOFF -fo  {db_fn} {las_fn} | """
     run_consensus += """fc_consensus {falcon_sense_option} >| {out_file_bfn}"""
