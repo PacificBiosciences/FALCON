@@ -133,23 +133,31 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'job_type'):
         job_type = config.get(section, 'job_type')
 
+    job_queue = "default"
+    if config.has_option(section, 'job_queue'):
+        job_queue = config.get(section, 'job_queue')
+
     watcher_type = 'fs_based'
     if config.has_option(section, 'watcher_type'):
         watcher_type = config.get(section, 'watcher_type')
+
+    default_concurrent_jobs = 8
+    if config.has_option(section, 'default_concurrent_jobs'):
+        default_concurrent_jobs = config.getint(section, 'default_concurrent_jobs')
 
     watcher_directory = 'mypwatcher'
     if config.has_option(section, 'watcher_directory'):
         watcher_directory = config.get(section, 'watcher_directory')
 
-    pa_concurrent_jobs = 8
+    pa_concurrent_jobs = default_concurrent_jobs
     if config.has_option(section, 'pa_concurrent_jobs'):
         pa_concurrent_jobs = config.getint(section, 'pa_concurrent_jobs')
 
-    cns_concurrent_jobs = 8
+    cns_concurrent_jobs = default_concurrent_jobs
     if config.has_option(section, 'cns_concurrent_jobs'):
         cns_concurrent_jobs = config.getint(section, 'cns_concurrent_jobs')
 
-    ovlp_concurrent_jobs = 8
+    ovlp_concurrent_jobs = default_concurrent_jobs
     if config.has_option(section, 'ovlp_concurrent_jobs'):
         ovlp_concurrent_jobs = config.getint(section, 'ovlp_concurrent_jobs')
 
@@ -188,7 +196,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'pa_DBsplit_option'):
         pa_DBsplit_option = config.get(section, 'pa_DBsplit_option')
 
-    skip_checks = True
+    skip_checks = False
     if config.has_option(section, 'skip_checks'):
         skip_checks = config.getboolean(section, 'skip_checks')
 
@@ -289,6 +297,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "input_fofn" : input_fofn_fn,
                    "target" : target,
                    "job_type" : job_type,
+                   "job_queue" : job_queue,
                    "input_type": input_type,
                    #"openending": openending,
                    "pa_concurrent_jobs" : pa_concurrent_jobs,
@@ -473,6 +482,10 @@ def run_db2falcon(config, job_done, script_fn):
 def run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn, job_done, script_fn):
     script = bash.script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn)
     bash.get_write_script_and_wrapper(config)(script, script_fn, job_done)
+
+def run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_length, length_cutoff, o_json_fn, job_done, script_fn):
+    script = bash.script_run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_length, length_cutoff, o_json_fn)
+    bash.write_script_and_wrapper_top(script, script_fn, job_done)
 
 def run_daligner(daligner_script, db_prefix, config, job_done, script_fn):
     bash.get_write_script_and_wrapper(config)(daligner_script, script_fn, job_done)
