@@ -125,6 +125,7 @@ def task_run_falcon_asm(self):
     self.generated_script_fn = script_fn
 
 def task_report_pre_assembly(self):
+    # TODO(CD): Bashify this, in case it is slow.
     i_raw_reads_db_fn = fn(self.raw_reads_db)
     i_preads_fofn_fn = fn(self.preads_fofn)
     i_length_cutoff_fn = fn(self.length_cutoff_fn)
@@ -346,7 +347,9 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     input_fofn_plf = makePypeLocalFile(config["input_fofn"])
     #Workflow = PypeProcWatcherWorkflow
     wf = PypeProcWatcherWorkflow(job_type=config['job_type'],
-            job_queue=config['job_queue'])
+            job_queue=config['job_queue'],
+            watcher_type=config['pwatcher_type'],
+            watcher_directory=config['pwatcher_directory'])
     run(wf, config,
             input_fofn_plf=input_fofn_plf,
             setNumThreadAllowed=PypeProcWatcherWorkflow.setNumThreadAllowed)
