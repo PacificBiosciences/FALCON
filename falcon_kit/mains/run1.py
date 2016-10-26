@@ -348,8 +348,8 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     #Workflow = PypeProcWatcherWorkflow
     wf = PypeProcWatcherWorkflow(job_type=config['job_type'],
             job_queue=config['job_queue'],
-            watcher_type=config['watcher_type'],
-            watcher_directory=config['watcher_directory'])
+            watcher_type=config['pwatcher_type'],
+            watcher_directory=config['pwatcher_directory'])
     run(wf, config,
             input_fofn_plf=input_fofn_plf,
             setNumThreadAllowed=PypeProcWatcherWorkflow.setNumThreadAllowed)

@@ -137,17 +137,17 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'job_queue'):
         job_queue = config.get(section, 'job_queue')
 
-    watcher_type = 'fs_based'
-    if config.has_option(section, 'watcher_type'):
-        watcher_type = config.get(section, 'watcher_type')
+    pwatcher_type = 'fs_based'
+    if config.has_option(section, 'pwatcher_type'):
+        pwatcher_type = config.get(section, 'pwatcher_type')
 
     default_concurrent_jobs = 8
     if config.has_option(section, 'default_concurrent_jobs'):
         default_concurrent_jobs = config.getint(section, 'default_concurrent_jobs')
 
-    watcher_directory = 'mypwatcher'
-    if config.has_option(section, 'watcher_directory'):
-        watcher_directory = config.get(section, 'watcher_directory')
+    pwatcher_directory = 'mypwatcher'
+    if config.has_option(section, 'pwatcher_directory'):
+        pwatcher_directory = config.get(section, 'pwatcher_directory')
 
     pa_concurrent_jobs = default_concurrent_jobs
     if config.has_option(section, 'pa_concurrent_jobs'):
@@ -328,8 +328,8 @@ def get_dict_from_old_falcon_cfg(config):
                    "falcon_sense_skip_contained": falcon_sense_skip_contained,
                    "stop_all_jobs_on_failure": stop_all_jobs_on_failure,
                    "use_tmpdir": use_tmpdir,
-                   "watcher_type": watcher_type,
-                   "watcher_directory": watcher_directory,
+                   "pwatcher_type": pwatcher_type,
+                   "pwatcher_directory": pwatcher_directory,
                    TEXT_FILE_BUSY: bash.BUG_avoid_Text_file_busy,
                    }
     provided = dict(config.items(section))
