@@ -107,7 +107,7 @@ def task_run_db2falcon(self):
         'preads4falcon_fn': preads4falcon_fn,
         'preads_db': preads_db,
     }
-    support.run_db2falcon_new(**args)
+    support.run_db2falcon(**args)
     self.generated_script_fn = script_fn
 
 def task_run_falcon_asm(self):

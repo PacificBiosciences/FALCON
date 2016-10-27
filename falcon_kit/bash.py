@@ -217,19 +217,7 @@ HPC.daligner {ovlp_HPCdaligner_option} -H{length_cutoff_pr} preads {last_block}-
 """.format(**params)
     return script
 
-def script_run_DB2Falcon(config):
-    """Run in pread_dir.
-    """
-    params = dict(config)
-    params.update(locals())
-    script = """\
-# Given preads.db,
-# write preads4falcon.fasta, in 1-preads_ovl:
-time DB2Falcon -U preads
-""".format(**params)
-    return script
-
-def script_run_DB2Falcon_new(config, preads4falcon_fn, preads_db):
+def script_run_DB2Falcon(config, preads4falcon_fn, preads_db):
     """Run in pread_dir.
     """
     params = dict(config)

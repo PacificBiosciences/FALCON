@@ -477,12 +477,8 @@ def build_pdb(input_fofn_fn, config, job_done, script_fn, run_jobs_fn):
     script = bash.script_build_pdb(config, input_fofn_fn, run_jobs_fn)
     bash.get_write_script_and_wrapper(config)(script, script_fn, job_done)
 
-def run_db2falcon(config, job_done, script_fn): # TODO: Drop if not used.
-    script = bash.script_run_DB2Falcon(config)
-    bash.get_write_script_and_wrapper(config)(script, script_fn, job_done)
-
-def run_db2falcon_new(config, preads4falcon_fn, preads_db, job_done, script_fn):
-    script = bash.script_run_DB2Falcon_new(config, preads4falcon_fn, preads_db)
+def run_db2falcon(config, preads4falcon_fn, preads_db, job_done, script_fn):
+    script = bash.script_run_DB2Falcon(config, preads4falcon_fn, preads_db)
     bash.get_write_script_and_wrapper(config)(script, script_fn, job_done)
 
 def run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn, job_done, script_fn):
