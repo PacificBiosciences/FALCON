@@ -379,27 +379,38 @@ def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
                                URL = "task://localhost/%s" % cns_label)
         c_task = make_c_task(task_run_consensus)
         consensus_tasks.append(c_task)
-        consensus_out["cjob_%d" % p_id] = out_done
+        #consensus_out["cjob_%d" % p_id] = out_done
+        consensus_out["cjob_%d" % p_id] = out_file
 
     r_cns_done_plf = makePypeLocalFile(os.path.join(wd, 'preads', "cns_done"))
     preads_fofn_plf = makePypeLocalFile(os.path.join(wd, 'preads', "input_preads.fofn"))
 
-    @PypeTask( inputs = consensus_out,
+    make_check_r_cns_task = PypeTask(
+                inputs = consensus_out,
                 outputs =  {"cns_done":r_cns_done_plf, "preads_fofn": preads_fofn_plf},
                 TaskType = MyFakePypeThreadTaskBase,
                 URL = "task://localhost/cns_check" )
-    def check_r_cns_task(self):
-        with open(fn(self.preads_fofn),  "w") as f:
-            for fa_fn in sorted(fn(plf) for plf in fasta_plfs):
-                print >>f, fa_fn
-        wdir = os.path.dirname(fn(self.cns_done))
-        #mkdir(wdir) We SHOULD need this! TODO
-        system("touch %s" % fn(self.cns_done))
-        script_fn = os.path.join(wdir, 'noop.sh')
-        open(script_fn, 'w').write('echo NOOP raw')
-        self.generated_script_fn = script_fn
-    consensus_tasks.append(check_r_cns_task)
+    consensus_tasks.append(make_check_r_cns_task(check_r_cns_task))
     return consensus_tasks, preads_fofn_plf
+
+# PypeTask functions now need to be module-level.
+def check_r_cns_task(self):
+    with open(fn(self.preads_fofn),  "w") as f:
+        for fa_fn in sorted(fn(plf) for plf in self.inputs.values()):
+            print >>f, fa_fn
+    wdir = os.path.dirname(fn(self.cns_done))
+    #mkdir(wdir) We SHOULD need this! TODO
+    system("touch %s" % fn(self.cns_done))
+    script_fn = os.path.join(wdir, 'noop.sh')
+    open(script_fn, 'w').write('echo NOOP raw')
+    self.generated_script_fn = script_fn
+def check_p_merge_check_task(self):
+    wdir = os.path.dirname(fn(self.p_merge_done))
+    mkdir(wdir)
+    system("touch %s" % fn(self.p_merge_done))
+    script_fn = os.path.join(wdir, 'noop.sh')
+    open(script_fn, 'w').write('echo NOOP raw')
+    self.generated_script_fn = script_fn
 
 
 def main1(prog_name, input_config_fn, logger_config_fn=None):
@@ -596,18 +607,11 @@ def run(wf, config,
 
     p_merge_done = makePypeLocalFile(os.path.join( pread_dir, 'preads-merge', 'p_merge_done'))
 
-    @PypeTask( inputs = merge_out,
+    make_check_p_merge_task = PypeTask( inputs = merge_out,
                outputs =  {"p_merge_done": p_merge_done},
                TaskType = MyFakePypeThreadTaskBase,
                URL = "task://localhost/pmerge_check" )
-    def check_p_merge_check_task(self):
-        wdir = os.path.dirname(fn(self.p_merge_done))
-        mkdir(wdir)
-        system("touch %s" % fn(self.p_merge_done))
-        script_fn = os.path.join(wdir, 'noop.sh')
-        open(script_fn, 'w').write('echo NOOP raw')
-        self.generated_script_fn = script_fn
-    wf.addTask(check_p_merge_check_task)
+    wf.addTask(make_check_p_merge_task(check_p_merge_check_task))
 
     concurrent_jobs = config["ovlp_concurrent_jobs"]
     setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
