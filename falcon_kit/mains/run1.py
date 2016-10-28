@@ -10,13 +10,14 @@ import argparse
 import collections
 import glob
 import json
+import logging
 import os
 import re
 import sys
 import time
 
 
-fc_run_logger = None
+fc_run_logger = logging.getLogger(__name__) # default, for remote tasks
 
 def remove(*fns):
     for fn in fns:
