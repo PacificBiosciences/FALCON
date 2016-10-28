@@ -13,7 +13,7 @@ import tempfile
 import time
 import uuid
 
-logger = None
+logger = logging.getLogger(__name__)
 
 def _prepend_env_paths(content, names):
     """
