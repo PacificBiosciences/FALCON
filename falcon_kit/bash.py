@@ -224,9 +224,9 @@ def script_run_DB2Falcon(config, preads4falcon_fn, preads_db):
     params.update(locals())
     script = """\
 # Given preads.db,
-# write preads4falcon.fasta (implicitly).
+# write preads4falcon.fasta (implicitly) in CWD.
 time DB2Falcon -U {preads_db}
-[ -f {preads4falcon_fn} ] || exit 1
+[ -f preads4falcon.fasta ] || exit 1
 """.format(**params)
     return script
 
