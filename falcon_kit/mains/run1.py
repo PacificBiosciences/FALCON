@@ -18,93 +18,96 @@ import time
 
 fc_run_logger = logging.getLogger(__name__) # default, for remote tasks
 
-def create_daligner_tasks(run_jobs_fn, wd, db_prefix, rdb_build_done, nblock, config, pread_aln=False):
+
+def create_daligner_tasks(basedir, scatter_fn):
     tasks = []
     tasks_out = {}
-    skip_checks = config.get('skip_checks')
-    fc_run_logger.info('Skip LAcheck after daligner? {}'.format(skip_checks))
-    for job_uid, script in bash.scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, nblock, pread_aln, skip_checks):
-        run_dir = "job_%s" %job_uid
-        cwd = os.path.join(wd, run_dir)
-        job_done_fn = os.path.abspath(os.path.join(cwd, "job_%s_done" %job_uid))
-        job_done = makePypeLocalFile(job_done_fn)
-        parameters =  {"daligner_script": script,
-                       "cwd": cwd,
-                       "job_uid": job_uid,
-                       "config": config,
-                       "sge_option": config["sge_option_da"],
-                       "db_prefix": db_prefix}
-        make_daligner_task = PypeTask(inputs = {"rdb_build_done": rdb_build_done},
-                                      outputs = {"job_done": job_done},
+    content = json.loads(open(scatter_fn).read()) # array of descriptions
+    for section in content:
+        parameters = section['parameters']
+        inputs = section['inputs']
+        inputs['scatter_fn'] = scatter_fn
+        outputs = section['outputs']
+        URL = section['URL']
+        job_uid = parameters['job_uid']
+        wdir = os.path.join(basedir, 'job_%s' %job_uid)
+        make_daligner_task = PypeTask(inputs = inputs,
+                                      outputs = outputs,
                                       parameters = parameters,
                                       TaskType = MyFakePypeThreadTaskBase,
-                                      URL = "task://localhost/d_%s_%s" %(job_uid, db_prefix))
+                                      URL = URL,
+                                      wdir = wdir,
+        )
         daligner_task = make_daligner_task(pype_tasks.task_run_daligner)
         tasks.append(daligner_task)
-        tasks_out[ "ajob_%s" % job_uid ] = job_done
+        tasks_out[ "ajob_%s" % job_uid ] = daligner_task.outputs['job_done'] # these are relative, so we need the PypeLocalFiles
     return tasks, tasks_out
 
-def create_merge_tasks(run_jobs_fn, wd, db_prefix, gathered_las_plf, config):
-    merge_tasks = []
-    merge_out = {}
-    p_ids_merge_job_done = [] # for consensus
+def create_merge_tasks(basedir, scatter_fn):
+    tasks = []
+    tasks_out = {}
+    p_ids_merge_job_done = {} # for consensus
+    content = json.loads(open(scatter_fn).read()) # array of descriptions
+    for section in content:
+        parameters = section['parameters']
+        inputs = section['inputs']
+        inputs['scatter_fn'] = scatter_fn
+        outputs = section['outputs']
+        URL = section['URL']
+        p_id = parameters['job_id']
+        #merge_script = parameters['merge_script']
+        #sge_option = parameters['sge_option']
+        wdir = os.path.join(basedir, 'm_%05d' %p_id)
+        make_task = PypeTask(inputs = inputs,
+                             outputs = outputs,
+                             parameters = parameters,
+                             TaskType = MyFakePypeThreadTaskBase,
+                             URL = URL,
+                             wdir = wdir,
+        )
+        task = make_task(pype_tasks.task_run_las_merge)
+        tasks.append(task)
+        job_done = task.outputs['job_done'] # these are relative, so we need the PypeLocalFiles
+        tasks_out['mjob_%d' % p_id] = job_done
+        p_ids_merge_job_done[p_id] = job_done
+    return tasks, tasks_out, p_ids_merge_job_done
 
-    merge_scripts = bash.scripts_merge(config, db_prefix, run_jobs_fn)
-    for p_id, merge_script in merge_scripts:
-        job_done = makePypeLocalFile(os.path.abspath("%s/m_%05d/m_%05d_done" % (wd, p_id, p_id)))
-        parameters =  {"merge_script": merge_script,
-                       "cwd": os.path.join(wd, "m_%05d" % p_id),
-                       "job_id": p_id,
-                       "sge_option": config["sge_option_la"],
-                       "config": config}
-        make_merge_task = PypeTask(inputs = {"gathered_las": gathered_las_plf,
-                                   },
-                                   outputs = {"job_done": job_done,
-                                   },
-                                   parameters = parameters,
-                                   TaskType = MyFakePypeThreadTaskBase,
-                                   URL = "task://localhost/m_%05d_%s" % (p_id, db_prefix))
-        merge_task = make_merge_task(pype_tasks.task_run_las_merge)
-        merge_out["mjob_%d" % p_id] = job_done
-        merge_tasks.append(merge_task)
-        p_ids_merge_job_done.append((p_id, job_done))
-    return merge_tasks, merge_out, p_ids_merge_job_done
-
-def create_consensus_tasks(wd, db_prefix, config, p_ids_merge_job_done):
+def create_consensus_tasks(basedir, scatter_fn):
     consensus_tasks = []
     consensus_out ={}
-    fasta_plfs = []
-    for p_id, job_done in p_ids_merge_job_done:
-        cns_label = 'cns_%05d' %p_id
-        rdir = os.path.join(wd, 'preads', cns_label)
-        out_done = makePypeLocalFile(os.path.abspath("%s/%s_done" % (rdir, cns_label)))
-        out_file = makePypeLocalFile(os.path.abspath("%s/%s.fasta" % (rdir, cns_label)))
-        fasta_plfs.append(out_file)
-        parameters =  {"cwd": rdir,
-                       "job_id": p_id,
-                       "prefix": db_prefix,
-                       "sge_option": config["sge_option_cns"],
-                       "config": config}
-        make_c_task = PypeTask(inputs = {"job_done": job_done},
-                               outputs = {"out_file": out_file, "out_done": out_done},
+    content = json.loads(open(scatter_fn).read()) # array of descriptions
+    for section in content:
+        parameters = section['parameters']
+        inputs = section['inputs']
+        inputs['scatter_fn'] = scatter_fn
+        outputs = section['outputs']
+        URL = section['URL']
+        p_id = int(parameters['job_id'])
+        cns_label = 'cns_%05d' %int(p_id)
+        wdir = os.path.join(basedir, 'preads', cns_label)
+        make_c_task = PypeTask(inputs = inputs,
+                               outputs = outputs,
                                parameters = parameters,
                                TaskType = MyFakePypeThreadTaskBase,
-                               URL = "task://localhost/%s" % cns_label)
+                               URL = URL,
+                               wdir = wdir,
+        )
         c_task = make_c_task(pype_tasks.task_run_consensus)
         consensus_tasks.append(c_task)
-        #consensus_out["cjob_%d" % p_id] = out_done
-        consensus_out["cjob_%d" % p_id] = out_file
+        consensus_out["cjob_%d" % p_id] = outputs['out_file']
+    return consensus_tasks, consensus_out
 
-    r_cns_done_plf = makePypeLocalFile(os.path.join(wd, 'preads', "cns_done"))
-    preads_fofn_plf = makePypeLocalFile(os.path.join(wd, 'preads', "input_preads.fofn"))
+def create_consensus_gather_task(wd, consensus_out):
+    r_cns_done_plf = makePypeLocalFile(os.path.join(wd, 'cns_done'))
+    preads_fofn_plf = makePypeLocalFile(os.path.join(wd, 'input_preads.fofn'))
 
-    make_check_r_cns_task = PypeTask(
+    make_cns_gather_task = PypeTask(
                 inputs = consensus_out,
-                outputs =  {"cns_done":r_cns_done_plf, "preads_fofn": preads_fofn_plf},
+                outputs =  {'cns_done': r_cns_done_plf, 'preads_fofn': preads_fofn_plf},
                 TaskType = MyFakePypeThreadTaskBase,
-                URL = "task://localhost/cns_check" )
-    consensus_tasks.append(make_check_r_cns_task(pype_tasks.check_r_cns_task))
-    return consensus_tasks, preads_fofn_plf
+                URL = "task://localhost/cns_gather" )
+    task = make_cns_gather_task(pype_tasks.task_cns_gather)
+    return task, preads_fofn_plf
 
 
 def main1(prog_name, input_config_fn, logger_config_fn=None):
@@ -190,11 +193,32 @@ def run(wf, config,
 
         raw_reads_nblock = support.get_nblock(fn(raw_reads_db_plf))
         #### run daligner
-        daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), rawread_dir, "raw_reads", rdb_build_done,
-                nblock=raw_reads_nblock, config=config)
+        scattered_plf = os.path.join(rawread_dir, 'daligner-scatter', 'scattered.json')
+        make_daligner_scatter = PypeTask(
+                inputs = {
+                    'run_jobs_fn': run_jobs,
+                    'db_build_done': rdb_build_done,
+                },
+                outputs = {
+                    'scatter_fn': scattered_plf,
+                },
+                parameters = {
+                    'db_prefix': 'raw_reads',
+                    'nblock': raw_reads_nblock,
+                    'pread_aln': False,
+                    'config': config,
+                },
+                TaskType = MyFakePypeThreadTaskBase,
+                URL = 'task://localhost/raw-daligner-scatter'
+        )
+        task = make_daligner_scatter(pype_tasks.task_daligner_scatter)
+        wf.addTask(task)
+        wf.refreshTargets(exitOnFailure=exitOnFailure)
+
+        daligner_tasks, daligner_out = create_daligner_tasks(rawread_dir, scattered_plf)
 
         wf.addTasks(daligner_tasks)
-        r_gathered_las_plf = makePypeLocalFile( os.path.join( rawread_dir, 'raw_gather', 'gathered_las.txt') )
+        r_gathered_las_plf = makePypeLocalFile(os.path.join(rawread_dir, 'raw-gather', 'gathered_las.txt'))
 
         parameters =  {
                 "nblock": raw_reads_nblock,
@@ -209,17 +233,61 @@ def run(wf, config,
         wf.addTask(check_r_da_task)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
-        merge_tasks, merge_out, p_ids_merge_job_done = create_merge_tasks(fn(run_jobs), rawread_dir, "raw_reads", r_gathered_las_plf, config)
-        wf.addTasks( merge_tasks )
+        # Merge .las files.
+        scattered_plf = os.path.join(rawread_dir, 'merge-scatter', 'scattered.json')
+        make_task = PypeTask(
+                inputs = {
+                    'run_jobs': run_jobs,
+                    'gathered_las': r_gathered_las_plf,
+                },
+                outputs = {
+                    'scattered': scattered_plf,
+                },
+                parameters = {
+                    'db_prefix': 'raw_reads',
+                    'config': config,
+                },
+                TaskType = MyFakePypeThreadTaskBase,
+                URL = 'task://localhost/raw-merge-scatter'
+        )
+        task = make_task(pype_tasks.task_merge_scatter)
+        wf.addTask(task)
+        wf.refreshTargets(exitOnFailure=exitOnFailure)
+
+        merge_tasks, merge_out, p_ids_merge_job_done = create_merge_tasks(rawread_dir, scattered_plf)
+        wf.addTasks(merge_tasks)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
         if config["target"] == "overlapping":
             sys.exit(0)
-        consensus_tasks, preads_fofn_plf = create_consensus_tasks(rawread_dir, "raw_reads", config, p_ids_merge_job_done)
-        wf.addTasks( consensus_tasks )
+
+        # Produce new FOFN of preads fasta, based on consensus of overlaps.
+        scattered_plf = os.path.join(rawread_dir, 'cns-scatter', 'scattered.json')
+        make_task = PypeTask(
+                inputs = p_ids_merge_job_done,
+                outputs = {
+                    'scattered': scattered_plf,
+                },
+                parameters = {
+                    'db_prefix': 'raw_reads',
+                    'config': config,
+                },
+                TaskType = MyFakePypeThreadTaskBase,
+                URL = 'task://localhost/raw-cns-scatter'
+        )
+        task = make_task(pype_tasks.task_consensus_scatter)
+        wf.addTask(task)
+        wf.refreshTargets(exitOnFailure=exitOnFailure)
+
+        tasks, consensus_out = create_consensus_tasks(rawread_dir, scattered_plf)
+        wf.addTasks(tasks)
+        wf.refreshTargets(exitOnFailure=exitOnFailure)
+
+        task, preads_fofn_plf = create_consensus_gather_task(os.path.join(rawread_dir, 'preads'), consensus_out)
+        wf.addTask(task)
 
         rdir = os.path.join(rawread_dir, 'report')
-        pre_assembly_report_plf = makePypeLocalFile(os.path.join(rdir, "pre_assembly_stats.json"))
+        pre_assembly_report_plf = makePypeLocalFile(os.path.join(rdir, 'pre_assembly_stats.json'))
         parameters = dict(config)
         parameters['cwd'] = rdir
         make_task = PypeTask(
@@ -278,8 +346,30 @@ def run(wf, config,
     preads_nblock = support.get_nblock(fn(preads_db))
     #### run daligner
     config["sge_option_da"] = config["sge_option_pda"]
-    daligner_tasks, daligner_out = create_daligner_tasks(fn(run_jobs), pread_dir, "preads", pdb_build_done,
-                nblock=preads_nblock, config=config, pread_aln=True)
+
+    scattered_plf = os.path.join(pread_dir, 'daligner-scatter', 'scattered.json')
+    make_daligner_scatter = PypeTask(
+            inputs = {
+                'run_jobs_fn': run_jobs,
+                'db_build_done': pdb_build_done,
+            },
+            outputs = {
+                'scatter_fn': scattered_plf,
+            },
+            parameters = {
+                'db_prefix': 'preads',
+                'nblock': preads_nblock,
+                'pread_aln': True,
+                'config': config,
+            },
+            TaskType = MyFakePypeThreadTaskBase,
+            URL = 'task://localhost/preads-daligner-scatter'
+    )
+    task = make_daligner_scatter(pype_tasks.task_daligner_scatter)
+    wf.addTask(task)
+    wf.refreshTargets(exitOnFailure=exitOnFailure)
+
+    daligner_tasks, daligner_out = create_daligner_tasks(pread_dir, scattered_plf)
     wf.addTasks(daligner_tasks)
 
     p_gathered_las_plf = makePypeLocalFile(os.path.join(pread_dir, 'gathered-las', 'gathered-las.txt'))
@@ -296,9 +386,30 @@ def run(wf, config,
     wf.addTask(check_p_da_task)
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
+    # Merge .las files.
     config["sge_option_la"] = config["sge_option_pla"]
-    merge_tasks, merge_out, _ = create_merge_tasks(fn(run_jobs), pread_dir, 'preads-merge', p_gathered_las_plf, config)
-    wf.addTasks( merge_tasks )
+    scattered_plf = os.path.join(pread_dir, 'merge-scatter', 'scattered.json')
+    make_task = PypeTask(
+            inputs = {
+                'run_jobs': run_jobs,
+                'gathered_las': p_gathered_las_plf,
+            },
+            outputs = {
+                'scattered': scattered_plf,
+            },
+            parameters = {
+                'db_prefix': 'preads',
+                'config': config,
+            },
+            TaskType = MyFakePypeThreadTaskBase,
+            URL = 'task://localhost/preads-merge-scatter'
+        )
+    task = make_task(pype_tasks.task_merge_scatter)
+    wf.addTask(task)
+    wf.refreshTargets(exitOnFailure=exitOnFailure)
+
+    merge_tasks, merge_out, _ = create_merge_tasks(pread_dir, scattered_plf)
+    wf.addTasks(merge_tasks)
 
     p_merge_done = makePypeLocalFile(os.path.join( pread_dir, 'preads-merge', 'p_merge_done'))
 
