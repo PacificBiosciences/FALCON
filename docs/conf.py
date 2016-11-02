@@ -1,3 +1,5 @@
+import sys
+import os
 # -*- coding: utf-8 -*-
 #
 # FALCON build configuration file, created by
@@ -49,8 +51,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'FALCON'
-copyright = u'2016, Jason Chin, Greg Concepcion, Sarah Kingan'
-author = u'Jason Chin, Greg Concepcion, Sarah Kingan'
+copyright = u'2016, Jason Chin, Greg Concepcion, Sarah Kingan, Chris Dunn'
+author = u'Jason Chin, Greg Concepcion, Sarah Kingan, Chris Dunn'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -119,7 +121,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -129,6 +131,21 @@ html_theme = 'alabaster'
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
+
+
+#  Build using the RTD theme, if not on RTD.
+#    https://read-the-docs.readthedocs.org/en/latest/theme.html
+#    https://github.com/snide/sphinx_rtd_theme
+#
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+if not on_rtd:  # only import and set the theme if we're building docs locally
+    import sphinx_rtd_theme
+    html_theme = 'sphinx_rtd_theme'
+    html_theme_path = [ "/usr/local/lib/python2.7/site-packages", ]
+
+
+
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
@@ -260,7 +277,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'FALCON.tex', u'FALCON',
-     u'Jason Chin, Greg Concepcion, Sarah Kingan', 'manual'),
+     u'Jason Chin, Greg Concepcion, Sarah Kingan, Chris Dunn', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -317,7 +334,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'FALCON', u'FALCON',
-     author, 'FALCON', 'One line description of project.',
+     author, 'FALCON', 'Diploid aware PacBio Assembler.',
      'Miscellaneous'),
 ]
 
