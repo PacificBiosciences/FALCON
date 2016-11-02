@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-FALCON Documentation
-====================
+FALCON Assembler
+================
 
 .. toctree::
    :hidden:
@@ -23,11 +23,11 @@ FALCON Documentation
 `FALCON <http://github.com/PacificBiosicences/FALCON>`_ is a diploid aware genome assembler designed for Pacific Biosciences long read data.
 
 *  :ref:`About                           <about>` - About Falcon
-*  :ref:`Quick Start                <quick_start>` - Want to start using FALCON immediately?
-*  :ref:`FALCON pipeline              <pipeline>` - How does a FALCON job work?
-*  :ref:`FALCON tutorial              <tutorial>` - Follow an example on how to run FALCON
-*  :ref:`FALCON Parameters          <parameters>` - Descriptions of parameters found in fc_run.cfg
-*  :ref:`FALCON glossary              <glossary>` - Glossary of FALCON jargon
+*  :ref:`Quick Start               <quick_start>` - Want to start using FALCON immediately?
+*  :ref:`Pipeline                     <pipeline>` - How does a FALCON job work?
+*  :ref:`Tutorial                     <tutorial>` - Follow an example on how to run FALCON
+*  :ref:`Parameters                 <parameters>` - Descriptions of parameters found in fc_run.cfg
+*  :ref:`Glossary                     <glossary>` - Glossary of FALCON jargon
 *  :ref:`Frequently Asked Questions        <faq>` - Frequently asked questions
 *  :ref:`Tetiary Analysis             <tertiary>` - What next?
 *  :ref:`References                 <references>` - Further reading
