@@ -103,6 +103,7 @@ def get_config(config):
             config.set(section, name, val)
     add('input_fofn', 'NA')
     add('target', 'assembly')
+    #add('sge_option', 'NA') # Needed for PBS, but not for everything
     add('sge_option_da', 'NA')
     add('sge_option_la', 'NA')
     add('sge_option_pda', 'NA')
@@ -134,6 +135,12 @@ def get_dict_from_old_falcon_cfg(config):
     section = 'General'
     if config.has_option(section, 'job_type'):
         job_type = config.get(section, 'job_type')
+
+    # This was not set in the past, so we must treat is specially.
+    if config.has_option(section, 'sge_option'):
+        sge_option = config.get(section, 'sge_option')
+    else:
+        sge_option = config.get(section, 'sge_option_da')
 
     job_queue = "default"
     if config.has_option(section, 'job_queue'):
@@ -310,6 +317,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "seed_coverage" : seed_coverage,
                    "length_cutoff" : length_cutoff,
                    "length_cutoff_pr" : length_cutoff_pr,
+                   "sge_option": sge_option,
                    "sge_option_da": config.get(section, 'sge_option_da'),
                    "sge_option_la": config.get(section, 'sge_option_la'),
                    "sge_option_pda": config.get(section, 'sge_option_pda'),
