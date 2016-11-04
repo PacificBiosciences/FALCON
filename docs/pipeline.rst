@@ -48,9 +48,9 @@ Step 1: Overlap detection and error correction of raw reads
 -----------------------------------------------------------
 
 The first step of the pipeline is to identify all overlaps in the raw reads. Currently this is all performed with
-a modified version of Gene Myers' Daligner_.
+a modified version of Gene Myers' dazzlerblog_.
 
-In order to identify overlaps, your :term:`raw reads` must first be converted from fasta format into a Dazzler_
+In order to identify overlaps, your :term:`raw reads` must first be converted from fasta format into a dazzler
 database. This is a very I/O intensive process and will be run from the node where ``fc_run.py`` was executed. If this
 is an issue, you should submit the command with a wrapper script to your grid directly.
 
@@ -70,8 +70,6 @@ leveraging the overlap information. In the ``0-rawreads/preads`` directory you w
 performing the error correction. The process basically consists of using ``LA4Falcon`` with a length cutoff and piping the
 output to :ref:`fc_consensus.py <fc_consensus>` to generate a fasta file with corrected reads.
 
-One can use :ref:`cns_concurrent_jobs` to control the maximum number of concurrent consensus jobs submitted to the job
-management system. The ``out.XXXXX.fasta`` files produced are used as input for the next step in the pipeline.
 
 .. code-block:: bash
 
@@ -90,26 +88,34 @@ management system. The ``out.XXXXX.fasta`` files produced are used as input for 
         ├── prepare_rdb.sh            # env wrapper script
         └── prepare_rdb.sub.sh        # driver script for this step in the pipeline
 
+The following parameters affect this step directly:
+:ref:`sge_option_da`,
+:ref:`sge_option_la`,
+:ref:`pa_concurrent_jobs`,
+:ref:`cns_concurrent_jobs`,
+:ref:`pa_HPCDaligner_option`,
+:ref:`pa_DBSplit_option`,
+:ref:`falcon_sense_option`
 
-
-.. _Daligner: http://dazzlerblog.wordpress.com
+.. _dazzlerblog: http://dazzlerblog.wordpress.com
 .. _Dazzler: https://dazzlerblog.wordpress.com/2014/06/01/the-dazzler-db/
 
 
 Step 2: Overlap detection of corrected reads
 --------------------------------------------
 
-Starting from the error corrected reads generated in the first step of the pipeline, we now need to perform an
-additional overlap detection step. Depending on how well the error correction step proceeded as well as the how much
+The only conceptual difference between the first and second overlap detection steps is that consensus calling is
+only performed in the case of the initial raw read correction. After :term:`pread` overlap detection, it's simply a
+matter of extracting the information from the corrected reads database with ``DB2Falcon -U preads``.
+
+Starting from the error corrected reads generated in the first step of the pipeline, we now perform an
+additional overlap detection. Depending on how well the error correction step proceeded as well as the how much
 initial coverage was fed into the pipeline, the input data for this step should be significantly reduced at this
 point. Thus, while still time consuming, the corrected read overlap detection step should proceed significantly faster.
 
 The commands in this step of the pipeline are very similar to before albeit with different parameter settings to account
-for the corrected nature of the :term:`pread`s. See ``1-preads_ovl/prepare_pdb.sub.sh`` for details on the parameters.
-
-The only conceptual difference between the first and second overlap detection steps is that consensus calling is
-only performed in the case of the initial raw read correction. After :term:`pread` overlap detection, it's simply a matter of
-extracting the information from the corrected reads database ``DB2Falcon -U preads``.
+for the corrected nature of the :term:`preads <pread>`. See the driver script ``prepare_pdb.sub.sh`` for details on
+actual parameter settings used.
 
 .. code-block:: bash
 
@@ -129,6 +135,12 @@ extracting the information from the corrected reads database ``DB2Falcon -U prea
         ├── prepare_pdb.sub.sh      # driver script for this step of the pipeline
         └── input_preads.fofn       # list of your out.XXXXX.fasta's from previous step
 
+The following parameters affect this step directly:
+:ref:`sge_option_pda`,
+:ref:`sge_option_pla`,
+:ref:`ovlp_concurrent_jobs`,
+:ref:`ovlp_DBsplit_option`,
+:ref:`ovlp_HPCdaligner_option`
 
 Step 3: String Graph assembly
 -----------------------------
@@ -170,7 +182,10 @@ fasta file, ``a_ctg.fa`` that consists of all of the structural variants from th
         ├── run_falcon_asm.sh            # env wrapper script
         └── run_falcon_asm.sub.sh        # Assembly driver script
 
-
+The following parameters affect this step directly:
+:ref:`sge_option_fc`,
+:ref:`overlap_filtering_setting`,
+:ref:`length_cutoff_pr`
 
 Supplementary Information
 -------------------------
@@ -179,13 +194,21 @@ Supplemental command reference
 
 Dazzler commands
 ----------------
-These commands are part of Gene Meyer's Dazzler Suite of tools
+
+These commands are part of Gene Meyer's Dazzler Suite of tools `Dazzler Blog <http://dazzlerblog.wordpress.com>`_
+FALCON relies on a slightly modified version of Gene Meyer's code that can be found
+`here <https://github.com/cschin/DALIGNER>`_
 
 .. _daligner:
 
 daligner
 ++++++++
-info
+``daligner`` is controlled by :ref:`pa_HPCdaligner_option` and :ref:`ovlp_HPCdaligner_option`.
+
+To limit memory, one can use the ``-M`` option. For human assembly, we've tested with ``-M 32`` for using 32G RAM for
+each daligner. Other possibilities are under investigation.
+
+For more details on daligner options, see the `Dazzler Blog <http://dazzlerblog.wordpress.com>`
 
 .. _DB2Falcon:
 
@@ -302,7 +325,25 @@ info
 
 fc_graph_to_contig
 ++++++++++++++++++
-info
+
+The final step in the generation of draft contigs is to find a single path for each contig graph and to generate
+sequence accordingly. In the case that a contig graph is not a :term:`simple path`, we find the end-to-end path that
+has the most overlapped bases. This is called as the :term:`primary contig`. For each :ref:`compound path` within the
+graph, if an alternative path different from primary one is possible, we will construct the :ref:`associated contig`.
+In the case where the :term:`associated contigs` are induced by sequencing error, the identity of the
+alternative contig and the :term:`primary contig` will be high ( > 99% identity most of time).
+In the case where there are true structural variations, there are typically bigger differences between the
+:term:`associated contigs <associate contig>` and the :term:`primary contigs <primary contig>`.
+
+Essentially, the script ``fc_graph_to_contig`` generates contigs given sequence data and the final assembly graph.
+Currently it generates :ref:`primary contigs <primary contig>` as well as all
+:ref:`associated contigs <associated contig>` without any filtering. Some post-processing to remove duplicate
+:ref:`associated contigs <associated contig>` induced by errors will generally be necessary.
+
+
+
+
+
 
 .. _fc_ovlp_to_graph:
 

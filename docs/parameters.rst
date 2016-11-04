@@ -75,8 +75,8 @@ If "preads", then pre-assembly stage is skipped and input is assumed to be pread
 
 .. _default_concurrent_jobs:
 
-default_conconcurrent_jobs
-""""""""""""""""""""""""""
+default_concurrent_jobs
+"""""""""""""""""""""""
 (int) maximum concurrency
 This applies even to "local" (non-distributed) jobs.
 
@@ -93,6 +93,10 @@ cns_concurrent_jobs
 """""""""""""""""""
 
 Concurrency settings for consensus calling
+
+One can use cns_concurrent_jobs to control the maximum number of concurrent consensus jobs submitted to the
+job management system. The ``out.XXXXX.fasta`` files produced are used as input for the next step in the pipeline.
+
 
 .. _ovlp_concurrent_jobs:
 
