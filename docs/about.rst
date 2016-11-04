@@ -25,7 +25,6 @@ genomic region on an p-contig.
 assembly. It then produces a set of **primary contigs** and phased **haplotigs** which
 represent divergent haplotyes.
 
-ADD FIGURE B AND C FROM PAPER
 
 References
 ----------
