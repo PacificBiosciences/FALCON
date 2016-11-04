@@ -18,7 +18,7 @@ which represent the backbone of the genome sequence, as well as **associate cont
 which represent divergent allelic variants. Each a-contig is associated with a homologous
 genomic region on an p-contig.
 
-ADD FIGURE A FROM PAPER
+.. image:: Fig1.png
 
 ``FALCON-Unzip`` is a true diploid assembler. It takes the genome assembly graph from 
 ``FALCON`` and phases the reads based on heterozygous SNPs identified in the initial 
