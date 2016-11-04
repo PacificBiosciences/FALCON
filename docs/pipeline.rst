@@ -30,7 +30,8 @@ Each step is performed in it's own subdirectory within the FALCON job
 
 The assembly process is driven by the script ``fc_run.py`` which should be run on a head node as it needs to persist
 throughout the entire assembly process.
-It takes as input a single :ref:`config <Configuration>` file typically named ``fc_run.cfg`` and can be configured to
+It takes as input a single :ref:`config <Configuration>` file typically named ``fc_run.cfg``, which references a list 
+of fasta input files. The config file can be configured to
 run locally, or submit to a job scheduler. However, if your dataset is anything larger than a bacterial sized
 genome and unless you've tuned your system specifically for the organism you're trying to assemble, then most likely you
 should be running on a cluster in order to more effectively leverage your computational resources.
