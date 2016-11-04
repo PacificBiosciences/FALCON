@@ -1,6 +1,244 @@
 .. _parameters:
-
+##########
 Parameters
+##########
+
+.. _fc_run_cfg:
+
+fc_run.cfg
 ==========
 
-TODO
+
+.. _input_fofn:
+
+input_fofn
+""""""""""
+(str) filename for the file-of-filenames
+Each line is fasta filename.
+Any relative paths are relative to the location of the input_fofn.
+
+.. _genome_size:
+
+genome_size
+"""""""""""
+(int) estimated number of base-pairs in haplotype
+
+.. _seed_coverage:
+
+seed-coverage
+"""""""""""""
+(int) requested coverage for auto-calculated cutoff
+
+.. _length_cutoff:
+
+length_cutoff
+"""""""""""""
+(int) minimum length of seed-reads used for pre-assembly stage
+If '-1', then auto-calculate the cutoff based on genome_size and seed_coverage.
+
+.. _length_cutoff_pr:
+
+length_cutoff_pr
+""""""""""""""""
+(int) minimum length of seed-reads used after pre-assembly, for the "overlap" stage
+
+
+.. _target:
+
+target
+""""""
+(str) "assembly" or "preads"
+If "preads", then pre-assembly stage is skipped and input is assumed to be preads.
+
+
+.. _default_concurrent_jobs:
+
+default_conconcurrent_jobs
+""""""""""""""""""""""""""
+(int) maximum concurrency
+This applies even to "local" (non-distributed) jobs.
+
+.. _pa_concurrent_jobs:
+
+pa_concurrent_jobs
+""""""""""""""""""
+
+Concurrency settings for pre-assembly
+
+.. _cns_concurrent_jobs:
+
+cns_concurrent_jobs
+"""""""""""""""""""
+
+Concurrency settings for consensus calling
+
+.. _ovlp_concurrent_jobs:
+
+ovlp_concurrent_jobs
+""""""""""""""""""""
+
+Concurrency settings for Overlap detection
+
+.. _job_type:
+
+job_type
+""""""""
+(str) grid submission system, or "local"
+case-insensitive
+Supported types include: "sge", "lsf", "pbs", "torque", "slurm", "local"
+
+
+.. _job_queue:
+
+job_queue
+"""""""""
+(str) grid job-queue name
+Can be overridden with section-specific sge_option_*
+
+
+.. _sge_option_da:
+
+sge_option_da
+"""""""""""""
+Grid concurrency settings for initial daligner steps
+
+.. _sge_option_la:
+
+sge_option_la
+"""""""""""""
+Grid concurrency settings for initial las-merging
+
+.. _sge_option_cns:
+
+sge_option_cns
+""""""""""""""
+Grid concurrency settings for error correction consensus calling
+
+.. _sge_option_pda:
+
+sge_option_pda
+""""""""""""""
+Grid concurrency settings for daligner on preads
+
+.. _sge_option_pla:
+
+sge_option_pla
+""""""""""""""
+Grid concurrency settings for las-merging on preads
+
+.. _sge_option_fc:
+
+sge_option_fc
+"""""""""""""
+Grid concurrency settings for stage 2 ``2-asm-falcon``
+
+.. _pa_DBdust_option:
+
+pa_DBdust_option
+""""""""""""""""
+Passed to ``DBdust``. Used only if ``dust = true``.
+
+.. _pa_DBsplit_option:
+
+pa_DBsplit_option
+"""""""""""""""""
+Passed to ``DBsplit`` during pre-assembly stage.
+
+
+.. _pa_HPCdaligner_option:
+
+pa_HPCdaligner_option
+"""""""""""""""""""""
+Passed to ``HPC.daligner`` during pre-assembly stage.
+We will add ``-H`` based on``length_cutoff``.
+
+.. _pa_dazcon_option:
+
+pa_dazcon_option
+""""""""""""""""
+Passed to ``dazcon``. Used only if ``dazcon = true``.
+
+
+.. _falcon_sense_option:
+
+falcon_sense_option
+"""""""""""""""""""
+Passed to ``fc_consensus``.
+Ignored if ``dazcon = true``.
+
+.. _falcon_sense_skip_contained:
+
+falcon_sense_skip_contained
+"""""""""""""""""""""""""""
+Causes ``-s`` to be passed to ``LA4Falcon``. Rarely needed.
+
+.. _ovlp_DBsplit_option:
+
+ovlp_DBsplit_option
+"""""""""""""""""""
+Passed to ``DBsplit`` during overlap stage.
+
+.. _ovlp_HPCdaligner_option:
+
+ovlp_HPCdaligner_option
+"""""""""""""""""""""""
+
+Passed to ``HPC.daligner`` during overlap stage.
+
+.. _overlap_filtering_setting:
+
+overlap_filtering_setting
+"""""""""""""""""""""""""
+Passed to ``fc_ovlp_filter`` during assembly stage.
+
+.. _fc_ovlp_to_graph_option:
+
+fc_ovlp_to_graph_option
+"""""""""""""""""""""""
+Passed to ``fc_ovlp_to_graph``.
+
+.. _skip_checks:
+
+skip_checks
+"""""""""""
+(boolean string)
+If "true", then skip ``LAcheck`` during ``LAmerge``/``LAsort``.
+(Actually, ``LAcheck`` is run, but failures are ignored.)
+When ``daligner`` bugs are finally fixed, this will be unnecessary.
+
+
+.. _dust:
+
+dust
+""""
+(boolean string)
+If true, then run ``DBdust`` before pre-assembly.
+
+
+.. _dazcon:
+
+dazcon
+""""""
+(boolean string)
+If true, then use ``dazcon`` (from pbdagcon repo).
+
+
+.. _stop_all_jobs_on_failure:
+
+stop_all_jobs_on_failure
+""""""""""""""""""""""""
+(boolean string) DEPRECATED
+This was used for the old pypeFLOW refresh-loop, used by ``run0.py``.
+(This is *not* the option to let jobs currently in SGE (etc) to keep running, which is still TODO.)
+
+.. _use_tmpdir:
+
+use_tmpdir
+""""""""""
+(boolean string) whether to run each job in ``TMPDIR`` and copy results back to nfs
+If "true", use ``TMPDIR``. (Actually, ``tempfile.tmpdir``. See standard Python docs: https://docs.python.org/2/library/tempfile.html )
+If the value looks like a path, then it is used instead of ``TMPDIR``.
+
+Example Config Files
+====================
+Links to some fc_run.cfg's
