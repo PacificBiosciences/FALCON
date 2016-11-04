@@ -1,3 +1,10 @@
+.. image:: falcon_icon2.png
+   :height: 200px
+   :width: 200 px
+   :alt: Falcon Assembler
+   :align: right
+
+
 Glossary
 ========
 

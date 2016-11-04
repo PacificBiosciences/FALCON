@@ -3,8 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+
+.. image:: falcon_icon2.png
+   :height: 200px
+   :width: 200 px
+   :alt: Falcon Assembler
+   :align: right
+
+
 FALCON Assembler
 ================
+
 
 .. toctree::
    :hidden:
