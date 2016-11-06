@@ -231,19 +231,11 @@ def get_dict_from_old_falcon_cfg(config):
 
     falcon_sense_skip_contained = False
     if config.has_option(section, 'falcon_sense_skip_contained'):
-        falcon_sense_skip_contained = config.get(section, 'falcon_sense_skip_contained')
-        if falcon_sense_skip_contained in ["True", "true", "1"]:
-            falcon_sense_skip_contained = True
-        else:
-            falcon_sense_skip_contained = False
+        falcon_sense_skip_contained = config.getboolean(section, 'falcon_sense_skip_contained')
 
-    falcon_greedy = False
-    if config.has_option(section, 'falcon_greedy'):
-        falcon_greedy = config.get(section, 'falcon_greedy')
-        if falcon_greedy in ["True", "true", "1"]:
-            falcon_greedy = True
-        else:
-            falcon_greedy = False
+    falcon_sense_greedy = False
+    if config.has_option(section, 'falcon_sense_greedy'):
+        falcon_sense_greedy = config.getboolean(section, 'falcon_sense_greedy')
 
     genome_size = 0
     if config.has_option(section, 'genome_size'):
@@ -336,7 +328,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "fc_ovlp_to_graph_option": fc_ovlp_to_graph_option,
                    "falcon_sense_option": falcon_sense_option,
                    "falcon_sense_skip_contained": falcon_sense_skip_contained,
-                   "falcon_greedy": falcon_greedy,
+                   "falcon_sense_greedy": falcon_sense_greedy,
                    "stop_all_jobs_on_failure": stop_all_jobs_on_failure,
                    "use_tmpdir": use_tmpdir,
                    "pwatcher_type": pwatcher_type,
