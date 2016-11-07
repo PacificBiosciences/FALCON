@@ -10,7 +10,6 @@
 FALCON Pipeline
 ===============
 
-
 A FALCON job can be broken down into 3 steps:
 
 1. Overlap detection and :term:`error correction` of rawreads
@@ -199,98 +198,88 @@ These commands are part of Gene Meyer's Dazzler Suite of tools `Dazzler Blog <ht
 FALCON relies on a slightly modified version of Gene Meyer's code that can be found
 `here <https://github.com/cschin/DALIGNER>`_
 
+
 .. _daligner:
 
-daligner
-++++++++
-``daligner`` is controlled by :ref:`pa_HPCdaligner_option` and :ref:`ovlp_HPCdaligner_option`.
+:doc:`daligner`
+    ``daligner`` is controlled by :ref:`pa_HPCdaligner_option` and :ref:`ovlp_HPCdaligner_option`.
 
-To limit memory, one can use the ``-M`` option. For human assembly, we've tested with ``-M 32`` for using 32G RAM for
-each daligner. Other possibilities are under investigation.
+    To limit memory, one can use the ``-M`` option. For human assembly, we've tested with ``-M 32`` for using 32G RAM for
+    each daligner. Other possibilities are under investigation.
 
-For more details on daligner options, see the `Dazzler Blog <http://dazzlerblog.wordpress.com>`
+    For more details on daligner options, see the `Dazzler Blog <http://dazzlerblog.wordpress.com>`
+
+
 
 .. _DB2Falcon:
 
-DB2Falcon
-+++++++++
-Used to dump dazzler preads.db into FASTA format for subsequent :term:`String Graph` assembly
+:doc:`DB2Falcon`
+    Used to dump dazzler preads.db into FASTA format for subsequent :term:`String Graph` assembly
 
 .. _DB2Fasta:
 
-DB2Fasta
-++++++++
-info
+:doc:`DB2Fasta`
+    info
 
 .. _DBdump:
 
-DBdump
-++++++
-info
+:doc:`DBdump`
+    info
 
 .. _DBdust:
 
-DBdust
-++++++
+:doc:`DBdust`
+    stuff
 
 .. _DBsplit:
 
-DBsplit
-+++++++
-The total number of jobs that are run is determined by how one "splits" the sequence database. You should read
-Gene Myers's blog `Dazzler Blog <http://dazzlerblog.wordpress.com>` carefully to understand how the tuning options,
-:ref:`pa_DBsplit_option` and :ref:`pa_HPCdaligner_option` work. Generally, for large genomes, you should use
-``-s400`` (400Mb sequence per block) in :ref:`pa_DBsplit_option`. This will make a smaller number of jobs but each
-job will run longer. However, if you have a job scheduler which limits how long a job can run, it might be
-desirable to have a smaller number for the ``-s`` option.
+:doc:`DBsplit`
+    The total number of jobs that are run is determined by how one "splits" the sequence database. You should read
+    Gene Myers's blog `Dazzler Blog <http://dazzlerblog.wordpress.com>` carefully to understand how the tuning options,
+    :ref:`pa_DBsplit_option` and :ref:`pa_HPCdaligner_option` work. Generally, for large genomes, you should use
+    ``-s400`` (400Mb sequence per block) in :ref:`pa_DBsplit_option`. This will make a smaller number of jobs but each
+    job will run longer. However, if you have a job scheduler which limits how long a job can run, it might be
+    desirable to have a smaller number for the ``-s`` option.
 
 .. _DBstats:
-DBstats
-+++++++
+
+:doc:`DBstats`
+    info
 
 .. _fasta2DB:
 
-fasta2DB
-++++++++
-info
+:doc:`fasta2DB`
+    info
 
 .. _HPC.daligner:
 
-HPC.daligner
-++++++++++++
-info
+:doc:`HPC.daligner`
+    info
 
 .. _LA4Falcon:
 
-LA4Falcon
-+++++++++
-Output data from a Dazzler DB into fasta format for FALCON. You can supply the argument ``-H`` with an integer value
-to filter reads below a given threshold.
+:doc:`LA4Falcon`
+    Output data from a Dazzler DB into fasta format for FALCON. You can supply the argument ``-H`` with an integer value
+    to filter reads below a given threshold.
 
 .. _LAcheck:
 
-LAcheck
-+++++++
-
-Check integrity of alignment files.
+:doc:`LAcheck`
+    Check integrity of alignment files.
 
 .. _LAmerge:
 
-LAmerge
-+++++++
-
-The total number of jobs that are run is determined by how one "splits" the sequence database. You should read
-Gene Myers's blog ( http://dazzlerblog.wordpress.com ) carefully to know how to tune the option pa_DBsplit_option
-and pa_HPCdaligner_option. Generally, for large genomes, you should use -s400 (400Mb sequence per block) in
-pa_DBsplit_option. This will make a smaller number of jobs but each job will run longer. However, if you have a job
-queue system which limits how long a job can run, it might be desirable to have a smaller number for the -s option.
+:doc:`LAmerge`
+    The total number of jobs that are run is determined by how one "splits" the sequence database. You should read
+    Gene Myers's blog ( http://dazzlerblog.wordpress.com ) carefully to know how to tune the option pa_DBsplit_option
+    and pa_HPCdaligner_option. Generally, for large genomes, you should use -s400 (400Mb sequence per block) in
+    pa_DBsplit_option. This will make a smaller number of jobs but each job will run longer. However, if you have a job
+    queue system which limits how long a job can run, it might be desirable to have a smaller number for the -s option.
 
 .. _LAsort:
 
-LAsort
-++++++
-
-Sort alignment files
+:doc:`LAsort`
+    Sort alignment files
 
 
 FALCON Commands
@@ -298,63 +287,40 @@ FALCON Commands
 
 .. _fc_run:
 
-fc_run
-++++++
-
-This script drives the entire assembly process
+:doc:`fc_run`
+    This script drives the entire assembly process
 
 .. _fc_consensus:
 
-fc_consensus
-++++++++++++
-
-``fc_consensus`` has many options. You can use the parameter :ref:`falcon_sense_option` to control it.
-In most cases, the ``--min_cov`` and ``--max_n_read`` are the most important options. ``--min_cov`` controls
-when a seed read gets trimmed or broken due to low coverage. ``--max_n_read`` puts a cap on the number of reads
-used for error correction. In highly repetitive genome, you will need to make the value for ``--max_n_read``
-smaller to make sure the consensus code does not waste time aligning repeats. The longest proper overlaps are used
-for correction to reduce the probability of collapsed repeats.
+:doc:`fc_consensus`
+    ``fc_consensus`` has many options. You can use the parameter :ref:`falcon_sense_option` to control it.
+    In most cases, the ``--min_cov`` and ``--max_n_read`` are the most important options. ``--min_cov`` controls
+    when a seed read gets trimmed or broken due to low coverage. ``--max_n_read`` puts a cap on the number of reads
+    used for error correction. In highly repetitive genome, you will need to make the value for ``--max_n_read``
+    smaller to make sure the consensus code does not waste time aligning repeats. The longest proper overlaps are used
+    for correction to reduce the probability of collapsed repeats.
 
 .. _fc_dedup_a_tigs:
 
-fc_dedup_a_tigs
-+++++++++++++++
-info
+:doc:`fc_dedup_a_tigs`
+    info
 
 .. _fc_graph_to_contig:
 
-fc_graph_to_contig
-++++++++++++++++++
-
-The final step in the generation of draft contigs is to find a single path for each contig graph and to generate
-sequence accordingly. In the case that a contig graph is not a :term:`simple path`, we find the end-to-end path that
-has the most overlapped bases. This is called as the :term:`primary contig`. For each :ref:`compound path` within the
-graph, if an alternative path different from primary one is possible, we will construct the :ref:`associated contig`.
-In the case where the :term:`associated contigs` are induced by sequencing error, the identity of the
-alternative contig and the :term:`primary contig` will be high ( > 99% identity most of time).
-In the case where there are true structural variations, there are typically bigger differences between the
-:term:`associated contigs <associate contig>` and the :term:`primary contigs <primary contig>`.
-
-Essentially, the script ``fc_graph_to_contig`` generates contigs given sequence data and the final assembly graph.
-Currently it generates :ref:`primary contigs <primary contig>` as well as all
-:ref:`associated contigs <associated contig>` without any filtering. Some post-processing to remove duplicate
-:ref:`associated contigs <associated contig>` induced by errors will generally be necessary.
-
-
-
-
-
-
+:doc:`fc_graph_to_contig <fc_graph_to_contig>`
+    Generate contigs based on assembly graph
+    
 .. _fc_ovlp_to_graph:
 
-fc_ovlp_to_graph
-++++++++++++++++
-info
+:doc:`fc_ovlp_to_graph <fc_ovlp_to_graph>`
+    Generate an assembly graph given a list of overlapping preads.
+
+
 
 .. _fc_ovlp_filter:
 
-fc_ovlp_filter
-++++++++++++++
+:doc:`fc_ovlp_filter <fc_ovlp_to_graph>`
+    Filter overlaps based on given criteria
 
 
 Troubleshooting FALCON jobs

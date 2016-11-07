@@ -4,11 +4,11 @@
    :alt: Falcon Assembler
    :align: right
 
+.. _glossary:
+
 
 Glossary
 ========
-
-.. glossary::
 
     compound path
         multi-paths from a single source to a single sink in a graph
