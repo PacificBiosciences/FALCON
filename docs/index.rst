@@ -21,6 +21,7 @@ FALCON Assembler
    about
    quick_start
    pipeline
+   commands
    tutorial
    parameters
    glossary
@@ -33,8 +34,9 @@ FALCON Assembler
 
 *  :ref:`About                           <about>` - About Falcon
 *  :ref:`Quick Start               <quick_start>` - Want to start using FALCON immediately?
-*  :ref:`Pipeline                     <pipeline>` - How does a FALCON job work?
 *  :ref:`Tutorial                     <tutorial>` - Follow an example on how to run FALCON
+*  :ref:`Pipeline                     <pipeline>` - How does a FALCON job work?
+*  :ref:`Commands                     <commands>` - Information on the different commands used
 *  :ref:`Parameters                 <parameters>` - Descriptions of parameters found in fc_run.cfg
 *  :ref:`Glossary                     <glossary>` - Glossary of FALCON jargon
 *  :ref:`Frequently Asked Questions        <faq>` - Frequently asked questions

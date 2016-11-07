@@ -12,9 +12,9 @@ FALCON Pipeline
 
 A FALCON job can be broken down into 3 steps:
 
-1. Overlap detection and :term:`error correction` of rawreads
-2. Overlap detection between corrected reads (:term:`pread`)
-3. :term:`String Graph` assembly of corrected reads
+1. :ref:`Overlap detection and error correction of rawreads <step_one>`
+2. :ref:`Overlap detection between corrected reads <step_two>`
+3. :ref:`String Graph assembly of corrected reads <step_three>`
 
 Each step is performed in it's own subdirectory within the FALCON job
 
@@ -42,6 +42,7 @@ probably spend some time in the :ref:`configuration` section to understand what 
 Some example configuration files can be found :ref:`here <configuration>`
 
 
+.. _step_one:
 
 Step 1: Overlap detection and error correction of raw reads
 -----------------------------------------------------------
@@ -59,9 +60,9 @@ all vs all nature of the search this is the most time consuming step in the asse
 actual steps of this part of the pipeline you should take a look at `0-rawreads/prepare_rdb.sub.sh`.
 Essentially it consists of running:
 
-1. ``fasta2DB`` to format the database
-2. ``DBSplit`` to partition the database
-3. ``HPC.daligner`` to generate the ``daligner`` commands necessary for all-vs-all comparison
+1. :ref:`fasta2DB <fasta2DB>` to format the database
+2. :ref:`DBsplit <DBsplit>` to partition the database
+3. :ref:`HPC.daligner <HPC.daligner>` to generate the :ref:`daligner` commands necessary for all-vs-all comparison
 
 After overlaps have been detected, you will be left with many directories full of alignment files ``*.las`` containing
 the information about the overlaps. After merging the alignment files, the next step is to error correct the reads
@@ -88,17 +89,20 @@ output to :ref:`fc_consensus.py <fc_consensus>` to generate a fasta file with co
         └── prepare_rdb.sub.sh        # driver script for this step in the pipeline
 
 The following parameters affect this step directly:
-:ref:`sge_option_da`,
-:ref:`sge_option_la`,
-:ref:`pa_concurrent_jobs`,
-:ref:`cns_concurrent_jobs`,
-:ref:`pa_HPCDaligner_option`,
-:ref:`pa_DBSplit_option`,
-:ref:`falcon_sense_option`
+
+* :ref:`sge_option_da <sge_option_da>`
+* :ref:`sge_option_la <sge_option_la>`
+* :ref:`pa_concurrent_jobs <pa_concurrent_jobs>`
+* :ref:`cns_concurrent_jobs <cns_concurrent_jobs>`
+* :ref:`pa_HPCDaligner_option <pa_HPCDaligner_option>`
+* :ref:`pa_DBsplit_option <pa_DBsplit_option>`
+* :ref:`falcon_sense_option <falcon_sense_option>`
 
 .. _dazzlerblog: http://dazzlerblog.wordpress.com
 .. _Dazzler: https://dazzlerblog.wordpress.com/2014/06/01/the-dazzler-db/
 
+
+.. _step_two:
 
 Step 2: Overlap detection of corrected reads
 --------------------------------------------
@@ -135,11 +139,15 @@ actual parameter settings used.
         └── input_preads.fofn       # list of your out.XXXXX.fasta's from previous step
 
 The following parameters affect this step directly:
-:ref:`sge_option_pda`,
-:ref:`sge_option_pla`,
-:ref:`ovlp_concurrent_jobs`,
-:ref:`ovlp_DBsplit_option`,
-:ref:`ovlp_HPCdaligner_option`
+
+* :ref:`sge_option_pda <sge_option_pda>`
+* :ref:`sge_option_pla <sge_option_pla>`
+* :ref:`ovlp_concurrent_jobs <ovlp_concurrent_jobs>`
+* :ref:`ovlp_DBsplit_option <ovlp_DBsplit_option>`
+* :ref:`ovlp_HPCdaligner_option <ovlp_HPCdaligner_option>`
+
+
+.. _step_three:
 
 Step 3: String Graph assembly
 -----------------------------
@@ -147,10 +155,10 @@ Step 3: String Graph assembly
 The final step of the FALCON Assembly pipeline is generation of the final :term:`String Graph` assembly and output in
 fasta format. There are 4 commands being run in the final phase of the FALCON assembly pipeline:
 
-1. ``fc_ovlp_filter`` Filters overlaps based on the criteria you provided in fc_run.cfg
-2. ``fc_ovlp_to_graph`` constructs an overlap graph of reads larger than the ``--min_len`` threshold provided
-3. ``fc_graph_to_contig`` generates fasta files for contigs from the overlap graph.
-4. ``fc_dedup_a_tigs`` removes duplicated associated contigs
+1. :ref:`fc_ovlp_filter <fc_ovlp_filter>` Filters overlaps based on the criteria provided in fc_run.cfg
+2. :ref:`fc_ovlp_to_graph <fc_ovlp_to_graph>` constructs an overlap graph of reads larger than the length cutoff
+3. :ref:`fc_graph_to_contig <fc_graph_to_contig>` generates fasta files for contigs from the overlap graph.
+4. :ref:`fc_dedup_a_tigs <fc_dedup_a_tigs>` removes duplicate associated contigs
 
 You can see the details on the parameters used by inspecting ``2-asm_falcon/run_falcon_asm.sub.sh``
 This step of the pipeline is very fast relative to the overlap detection steps. Sometimes it may be useful to run
@@ -182,146 +190,7 @@ fasta file, ``a_ctg.fa`` that consists of all of the structural variants from th
         └── run_falcon_asm.sub.sh        # Assembly driver script
 
 The following parameters affect this step directly:
-:ref:`sge_option_fc`,
-:ref:`overlap_filtering_setting`,
-:ref:`length_cutoff_pr`
 
-Supplementary Information
--------------------------
-Supplemental command reference
-
-
-Dazzler commands
-----------------
-
-These commands are part of Gene Meyer's Dazzler Suite of tools `Dazzler Blog <http://dazzlerblog.wordpress.com>`_
-FALCON relies on a slightly modified version of Gene Meyer's code that can be found
-`here <https://github.com/cschin/DALIGNER>`_
-
-
-.. _daligner:
-
-:doc:`daligner`
-    ``daligner`` is controlled by :ref:`pa_HPCdaligner_option` and :ref:`ovlp_HPCdaligner_option`.
-
-    To limit memory, one can use the ``-M`` option. For human assembly, we've tested with ``-M 32`` for using 32G RAM for
-    each daligner. Other possibilities are under investigation.
-
-    For more details on daligner options, see the `Dazzler Blog <http://dazzlerblog.wordpress.com>`
-
-
-
-.. _DB2Falcon:
-
-:doc:`DB2Falcon`
-    Used to dump dazzler preads.db into FASTA format for subsequent :term:`String Graph` assembly
-
-.. _DB2Fasta:
-
-:doc:`DB2Fasta`
-    info
-
-.. _DBdump:
-
-:doc:`DBdump`
-    info
-
-.. _DBdust:
-
-:doc:`DBdust`
-    stuff
-
-.. _DBsplit:
-
-:doc:`DBsplit`
-    The total number of jobs that are run is determined by how one "splits" the sequence database. You should read
-    Gene Myers's blog `Dazzler Blog <http://dazzlerblog.wordpress.com>` carefully to understand how the tuning options,
-    :ref:`pa_DBsplit_option` and :ref:`pa_HPCdaligner_option` work. Generally, for large genomes, you should use
-    ``-s400`` (400Mb sequence per block) in :ref:`pa_DBsplit_option`. This will make a smaller number of jobs but each
-    job will run longer. However, if you have a job scheduler which limits how long a job can run, it might be
-    desirable to have a smaller number for the ``-s`` option.
-
-.. _DBstats:
-
-:doc:`DBstats`
-    info
-
-.. _fasta2DB:
-
-:doc:`fasta2DB`
-    info
-
-.. _HPC.daligner:
-
-:doc:`HPC.daligner`
-    info
-
-.. _LA4Falcon:
-
-:doc:`LA4Falcon`
-    Output data from a Dazzler DB into fasta format for FALCON. You can supply the argument ``-H`` with an integer value
-    to filter reads below a given threshold.
-
-.. _LAcheck:
-
-:doc:`LAcheck`
-    Check integrity of alignment files.
-
-.. _LAmerge:
-
-:doc:`LAmerge`
-    The total number of jobs that are run is determined by how one "splits" the sequence database. You should read
-    Gene Myers's blog ( http://dazzlerblog.wordpress.com ) carefully to know how to tune the option pa_DBsplit_option
-    and pa_HPCdaligner_option. Generally, for large genomes, you should use -s400 (400Mb sequence per block) in
-    pa_DBsplit_option. This will make a smaller number of jobs but each job will run longer. However, if you have a job
-    queue system which limits how long a job can run, it might be desirable to have a smaller number for the -s option.
-
-.. _LAsort:
-
-:doc:`LAsort`
-    Sort alignment files
-
-
-FALCON Commands
----------------
-
-.. _fc_run:
-
-:doc:`fc_run`
-    This script drives the entire assembly process
-
-.. _fc_consensus:
-
-:doc:`fc_consensus`
-    ``fc_consensus`` has many options. You can use the parameter :ref:`falcon_sense_option` to control it.
-    In most cases, the ``--min_cov`` and ``--max_n_read`` are the most important options. ``--min_cov`` controls
-    when a seed read gets trimmed or broken due to low coverage. ``--max_n_read`` puts a cap on the number of reads
-    used for error correction. In highly repetitive genome, you will need to make the value for ``--max_n_read``
-    smaller to make sure the consensus code does not waste time aligning repeats. The longest proper overlaps are used
-    for correction to reduce the probability of collapsed repeats.
-
-.. _fc_dedup_a_tigs:
-
-:doc:`fc_dedup_a_tigs`
-    info
-
-.. _fc_graph_to_contig:
-
-:doc:`fc_graph_to_contig <fc_graph_to_contig>`
-    Generate contigs based on assembly graph
-    
-.. _fc_ovlp_to_graph:
-
-:doc:`fc_ovlp_to_graph <fc_ovlp_to_graph>`
-    Generate an assembly graph given a list of overlapping preads.
-
-
-
-.. _fc_ovlp_filter:
-
-:doc:`fc_ovlp_filter <fc_ovlp_to_graph>`
-    Filter overlaps based on given criteria
-
-
-Troubleshooting FALCON jobs
----------------------------
+* :ref:`sge_option_fc <sge_option_fc>`
+* :ref:`overlap_filtering_setting <overlap_filtering_setting>`
+* :ref:`length_cutoff_pr <length_cutoff_pr>`
