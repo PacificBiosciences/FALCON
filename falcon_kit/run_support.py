@@ -1,5 +1,4 @@
 from . import bash
-#from pypeflow.util import cd
 import ConfigParser
 import contextlib
 import json

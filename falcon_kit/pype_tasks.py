@@ -1,12 +1,14 @@
 # PypeTask functions now need to be module-level.
 from . import run_support as support
 from . import bash # for scattering
-from pypeflow.simple_pwatcher_bridge import fn # not really needed
+#from pypeflow.simple_pwatcher_bridge import fn # not really needed
 import collections
 import json
 import logging
 import os.path
 LOG = logging.getLogger(__name__)
+
+def fn(p): return p
 
 def system(call, check=False):
     LOG.debug('$(%s)' %repr(call))
