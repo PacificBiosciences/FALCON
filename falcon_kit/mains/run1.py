@@ -45,8 +45,7 @@ def create_daligner_tasks(basedir, scatter_fn):
 
 def create_merge_tasks(basedir, scatter_fn):
     tasks = []
-    tasks_out = {}
-    p_ids_merge_job_done = {} # for consensus
+    p_ids_merged_las = {} # for consensus
     content = json.loads(open(scatter_fn).read()) # array of descriptions
     for section in content:
         parameters = section['parameters']
@@ -67,10 +66,9 @@ def create_merge_tasks(basedir, scatter_fn):
         )
         task = make_task(pype_tasks.task_run_las_merge)
         tasks.append(task)
-        job_done = task.outputs['job_done'] # these are relative, so we need the PypeLocalFiles
-        tasks_out['mjob_%d' % p_id] = job_done
-        p_ids_merge_job_done[p_id] = job_done
-    return tasks, tasks_out, p_ids_merge_job_done
+        las_fn = task.outputs['merged_las'] # these are relative, so we need the PypeLocalFiles
+        p_ids_merged_las[p_id] = las_fn
+    return tasks, p_ids_merged_las
 
 def create_consensus_tasks(basedir, scatter_fn):
     consensus_tasks = []
@@ -97,13 +95,27 @@ def create_consensus_tasks(basedir, scatter_fn):
         consensus_out['cjob_%d' % p_id] = outputs['out_file']
     return consensus_tasks, consensus_out
 
-def create_consensus_gather_task(wd, consensus_out):
-    r_cns_done_plf = makePypeLocalFile(os.path.join(wd, 'cns_done'))
+def create_merge_gather_task(wd, inputs):
+    las_fofn_plf = makePypeLocalFile(os.path.join(wd, 'las.fofn'))
+    las_fopfn_plf = makePypeLocalFile(os.path.join(wd, 'las.fopfn'))
+
+    make_task = PypeTask(inputs = inputs, # p_ids_merged_las
+                         outputs =  {'las_fofn': las_fofn_plf,
+                                     'las_fopfn': las_fopfn_plf,
+                         },
+                         TaskType = MyFakePypeThreadTaskBase,
+    )
+    #                     URL = 'task://localhost/pmerge_gather')
+    task = make_task(pype_tasks.task_merge_gather)
+    return task, las_fofn_plf, las_fopfn_plf
+
+def create_consensus_gather_task(wd, inputs):
+    # Happens only in stage-0.
     preads_fofn_plf = makePypeLocalFile(os.path.join(wd, 'input_preads.fofn'))
 
     make_cns_gather_task = PypeTask(
-                inputs = consensus_out,
-                outputs =  {'cns_done': r_cns_done_plf, 'preads_fofn': preads_fofn_plf},
+                inputs = inputs, # consensus_out
+                outputs =  {'preads_fofn': preads_fofn_plf},
                 TaskType = MyFakePypeThreadTaskBase,
                 URL = 'task://localhost/cns_gather' )
     task = make_cns_gather_task(pype_tasks.task_cns_gather)
@@ -254,8 +266,10 @@ def run(wf, config,
         wf.addTask(task)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
-        merge_tasks, merge_out, p_ids_merge_job_done = create_merge_tasks(rawread_dir, scattered_plf)
+        merge_tasks, p_ids_merged_las = create_merge_tasks(rawread_dir, scattered_plf)
         wf.addTasks(merge_tasks)
+        task, _, las_fopfn_plf = create_merge_gather_task(os.path.join(rawread_dir, 'merge-gather'), p_ids_merged_las)
+        wf.addTask(task)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
         if config['target'] == 'overlapping':
@@ -264,7 +278,9 @@ def run(wf, config,
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
         scattered_plf = os.path.join(rawread_dir, 'cns-scatter', 'scattered.json')
         make_task = PypeTask(
-                inputs = p_ids_merge_job_done,
+                inputs = {
+                    'gathered': las_fopfn_plf,
+                },
                 outputs = {
                     'scattered': scattered_plf,
                 },
@@ -402,22 +418,16 @@ def run(wf, config,
                 'config': config,
             },
             TaskType = MyFakePypeThreadTaskBase,
-            URL = 'task://localhost/preads-merge-scatter'
+            #URL = 'task://localhost/preads-merge-scatter'
         )
     task = make_task(pype_tasks.task_merge_scatter)
     wf.addTask(task)
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
-    merge_tasks, merge_out, _ = create_merge_tasks(pread_dir, scattered_plf)
+    merge_tasks, p_ids_merged_las = create_merge_tasks(pread_dir, scattered_plf)
     wf.addTasks(merge_tasks)
-
-    p_merge_gathered = makePypeLocalFile(os.path.join(pread_dir, 'preads-merge', 'p_merge_gathered'))
-
-    make_task = PypeTask( inputs = merge_out,
-               outputs =  {'p_merge_gathered': p_merge_gathered},
-               TaskType = MyFakePypeThreadTaskBase,
-               URL = 'task://localhost/pmerge_gather' )
-    wf.addTask(make_task(pype_tasks.task_p_merge_gather))
+    task, las_fofn_plf, las_fopfn_plf = create_merge_gather_task(os.path.join(pread_dir, 'merge-gather'), p_ids_merged_las)
+    wf.addTask(task)
 
     concurrent_jobs = config['ovlp_concurrent_jobs']
     setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
@@ -429,7 +439,7 @@ def run(wf, config,
     db2falcon_done = makePypeLocalFile(os.path.join(db2falcon_dir, 'db2falcon_done'))
     preads4falcon_plf = makePypeLocalFile(os.path.join(db2falcon_dir, 'preads4falcon.fasta'))
     make_run_db2falcon = PypeTask(
-               inputs = {'p_merge_gathered': p_merge_gathered,
+               inputs = {'las_fofn_plf': las_fofn_plf,
                          'preads_db': preads_db,
                         },
                outputs =  {'db2falcon_done': db2falcon_done,
@@ -447,6 +457,7 @@ def run(wf, config,
     make_run_falcon_asm = PypeTask(
                inputs = {'db2falcon_done': db2falcon_done, 'db_file': preads_db,
                          'preads4falcon': preads4falcon_plf,
+                         'las_fofn': las_fofn_plf,
                         },
                outputs =  {'falcon_asm_done': falcon_asm_done},
                parameters = {'wd': falcon_asm_dir,
