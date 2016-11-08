@@ -267,17 +267,17 @@ def scripts_merge(config, db_prefix, run_jobs_fn):
     """
     with open(run_jobs_fn) as f:
         mjob_data = functional.get_mjob_data(f)
+    #las_fns = functional.get_las_filenames(mjob_data, db_prefix) # ok, but tricky
     for p_id in mjob_data:
         bash_lines = mjob_data[p_id]
 
         script = []
         for line in bash_lines:
             script.append(line.replace('&&', ';'))
-        #script.append("mkdir -p ../las_files")
-        #script.append("ln -sf ../m_%05d/%s.%s.las ../las_files" % (p_id, db_prefix, p_id))
-        #script.append("ln -sf ./m_%05d/%s.%s.las .. " % (p_id, db_prefix, p_id))
-        #las_fn = '%s.%s.las' % (db_prefix, p_id))
-        yield p_id, '\n'.join(script + [''])
+        #las_fn = las_fns[p_id]
+        # We already know the output .las filename by convention.
+        las_fn = '%s.%s.las' % (db_prefix, p_id)
+        yield p_id, '\n'.join(script + ['']), las_fn
 
 def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
     """config: falcon_sense_option, length_cutoff

@@ -137,6 +137,45 @@ def first_block_las(line):
         raise Exception('Pattern {!r} does not match line {!r}: {}'.format(
             re_first_block_las.pattern, line, e))
 
+def get_las_filenames(mjob_data, db_prefix):
+    """Given result of get_mjob_data(),
+    return {int: final_las_filename}
+    """
+    # This is our best guess.
+    # (We might not even need this, since we know the output filename of each merge-task by convention.)
+    # Eventually, we need to re-write HPC.daligner.
+    result = {}
+    re_LAmerge = re.compile(r'^LAmerge\s+(?:\-\S+\s+)(\S+)')
+    re_LAcheck = re.compile(r'^LAcheck\s+(?:\-\S+\s+)\S+\s+(\S+)')
+    for p_id, bash_lines in mjob_data.iteritems():
+        if not bash_lines:
+            # The daligner+LAsort+LAmerge job produced the final .las
+            # for this block. We will symlink it later.
+            las_fn = '{}.{}.las'.format(db_prefix, p_id)
+            result[p_id] = las_fn
+            continue
+        # Find the last line which can tell us the final .las name.
+        i = len(bash_lines) - 1
+        while bash_lines[i].split()[0] not in ('LAmerge', 'LAcheck'):
+            i -= 1
+        # Now we will raise an exception if there were none. But in theory, there
+        # must be at least an LAsort.
+        first_word = bash_lines[i].split()[0]
+        if first_word == 'LAmerge':
+            regex = re_LAmerge
+        elif first_word == 'LAcheck':
+            regex = re_LAcheck
+        else:
+            raise Exception('first_word={!r} in line#{} of {!r}'.format(
+                first_word, i, bash_lines))
+        mo = regex.search(bash_lines[i])
+        if not mo:
+            raise Exception('Regex {!r} failed on {!r}'.format(
+                re_las_name.pattern, bash_lines[i]))
+        las_fn = mo.group(1) + '.las'
+        result[p_id] = las_fn
+    return result
+
 def get_mjob_data(run_jobs_stream):
     """Given output of HPC.daligner,
     return {int: [bash-lines]}
