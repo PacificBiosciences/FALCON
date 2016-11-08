@@ -11,7 +11,7 @@ LOG = logging.getLogger(__name__)
 def system(call, check=False):
     LOG.debug('$(%s)' %repr(call))
     rc = os.system(call)
-    msg = "Call %r returned %d." % (call, rc)
+    msg = 'Call %r returned %d.' % (call, rc)
     if rc:
         LOG.warning(msg)
         if check:
@@ -51,10 +51,10 @@ def task_build_rdb(self):
     db = fn(self.raw_reads_db)
     run_jobs = fn(self.run_jobs)
     remove(job_done, db, run_jobs)
-    work_dir = self.parameters["work_dir"]
-    config = self.parameters["config"]
+    work_dir = self.parameters['work_dir']
+    config = self.parameters['config']
 
-    script_fn = os.path.join( work_dir, "prepare_rdb.sh" )
+    script_fn = os.path.join( work_dir, 'prepare_rdb.sh' )
     args = {
         'input_fofn_fn': input_fofn_fn,
         'config': config,
@@ -71,10 +71,10 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
     db = fn(self.preads_db)
     run_jobs = fn(self.run_jobs)
     remove(job_done, db, run_jobs)
-    work_dir = self.parameters["work_dir"]
-    config = self.parameters["config"]
+    work_dir = self.parameters['work_dir']
+    config = self.parameters['config']
 
-    script_fn = os.path.join( work_dir, "prepare_pdb.sh" )
+    script_fn = os.path.join( work_dir, 'prepare_pdb.sh' )
     args = {
         'input_fofn_fn': input_fofn_fn,
         'config': config,
@@ -86,15 +86,15 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
     self.generated_script_fn = script_fn
 
 def task_run_db2falcon(self):
-    wd = self.parameters["wd"]
+    wd = self.parameters['wd']
     mkdir(wd)
-    #self.p_merge_done
+    #self.p_merge_gathered
     job_done = fn(self.db2falcon_done)
     preads4falcon_fn = fn(self.preads4falcon)
     preads_db = fn(self.preads_db)
-    config = self.parameters["config"]
+    config = self.parameters['config']
     script_dir = os.path.join(wd)
-    script_fn = os.path.join(script_dir ,"run_db2falcon.sh")
+    script_fn = os.path.join(script_dir ,'run_db2falcon.sh')
     args = {
         'config': config,
         'job_done': job_done,
@@ -106,15 +106,15 @@ def task_run_db2falcon(self):
     self.generated_script_fn = script_fn
 
 def task_run_falcon_asm(self):
-    wd = self.parameters["wd"]
+    wd = self.parameters['wd']
     #self.db2falcon_done
     db_file = fn(self.db_file)
     job_done = fn(self.falcon_asm_done)
-    config = self.parameters["config"]
-    pread_dir = self.parameters["pread_dir"]
+    config = self.parameters['config']
+    pread_dir = self.parameters['pread_dir']
     preads4falcon_fn = fn(self.preads4falcon)
     script_dir = os.path.join( wd )
-    script_fn =  os.path.join( script_dir ,"run_falcon_asm.sh" )
+    script_fn =  os.path.join( script_dir ,'run_falcon_asm.sh' )
     # Generate las.fofn in run-dir.
     system('cd {}; find {}/m_*/ -name "preads.*.las" >| las.fofn'.format(wd, pread_dir))
     las_fofn_fn = 'las.fofn'
@@ -159,14 +159,14 @@ def task_report_pre_assembly(self):
 
 def task_run_daligner(self):
     job_done = fn(self.job_done)
-    daligner_script = self.parameters["daligner_script"]
-    job_uid = self.parameters["job_uid"]
-    cwd = self.parameters["cwd"]
+    daligner_script = self.parameters['daligner_script']
+    job_uid = self.parameters['job_uid']
+    cwd = self.parameters['cwd']
     #mkdir(cwd)
-    db_prefix = self.parameters["db_prefix"]
-    config = self.parameters["config"]
+    db_prefix = self.parameters['db_prefix']
+    config = self.parameters['config']
     script_dir = os.path.join(cwd)
-    script_fn = os.path.join(script_dir , "rj_%s.sh" % (job_uid))
+    script_fn = os.path.join(script_dir , 'rj_%s.sh' % (job_uid))
     args = {
         'daligner_script': daligner_script,
         'db_prefix': db_prefix,
@@ -193,9 +193,9 @@ def read_gathered_las(path):
 def task_run_las_merge(self):
     job_done = fn(self.job_done)
     gathered_las_fn = fn(self.gathered_las)
-    script = self.parameters["merge_script"]
-    job_id = self.parameters["job_id"] # aka "block"
-    cwd = self.parameters["cwd"]
+    script = self.parameters['merge_script']
+    job_id = self.parameters['job_id'] # aka 'block'
+    cwd = self.parameters['cwd']
     mkdir(cwd)
 
     gathered_dict = read_gathered_las(gathered_las_fn)
@@ -206,10 +206,10 @@ def task_run_las_merge(self):
         LOG.debug('symlink {!r} -> {!r}'.format(src, tgt))
         os.symlink(src, tgt)
 
-    config = self.parameters["config"]
+    config = self.parameters['config']
 
     script_dir = os.path.join( cwd )
-    script_fn =  os.path.join( script_dir , "rp_%05d.sh" % (job_id))
+    script_fn =  os.path.join( script_dir , 'rp_%05d.sh' % (job_id))
     args = {
         'script': script,
         'config': config,
@@ -223,13 +223,13 @@ def task_run_consensus(self):
     merge_job_done = fn(self.job_done)
     out_file_fn = fn(self.out_file)
     out_done = fn(self.out_done)
-    job_id = self.parameters["job_id"]
-    cwd = self.parameters["cwd"]
-    config = self.parameters["config"]
-    prefix = self.parameters["prefix"]
+    job_id = self.parameters['job_id']
+    cwd = self.parameters['cwd']
+    config = self.parameters['config']
+    prefix = self.parameters['prefix']
     p_id = int(job_id)
     script_dir = os.path.join( cwd )
-    script_fn =  os.path.join( script_dir , "c_%05d.sh" % (p_id))
+    script_fn =  os.path.join( script_dir , 'c_%05d.sh' % (p_id))
     db_fn = os.path.abspath('{cwd}/../../{prefix}'.format(**locals())) # ASSUMING 2-levels deep. TODO: DB should be an input.
     merge_job_dir = os.path.dirname(merge_job_done)
     # by convention, we assume the name of the .las file #TODO: That should be an output of task_run_merge.
@@ -261,15 +261,15 @@ def task_daligner_scatter(self):
     func_name = '{}.{}'.format(func.__module__, func.__name__)
     for job_uid, script in bash.scripts_daligner(run_jobs_fn, db_prefix, db_build_done, nblock, pread_aln, skip_checks):
         job_done_fn = 'job_%s_done' %job_uid
-        parameters =  {"daligner_script": script,
-                       "job_uid": job_uid,
-                       "config": config,
-                       "sge_option": config["sge_option_da"],
-                       "db_prefix": db_prefix}
-        inputs = {"db_build_done": db_build_done}
-        outputs = {"job_done": job_done_fn}
+        parameters =  {'daligner_script': script,
+                       'job_uid': job_uid,
+                       'config': config,
+                       'sge_option': config['sge_option_da'],
+                       'db_prefix': db_prefix}
+        inputs = {'db_build_done': db_build_done}
+        outputs = {'job_done': job_done_fn}
         python_function = func_name,
-        URL = "task://localhost/d_%s_%s" %(job_uid, db_prefix)
+        URL = 'task://localhost/d_%s_%s' %(job_uid, db_prefix)
         daligner_task = {
                 'inputs': inputs,
                 'outputs': outputs,
@@ -294,16 +294,16 @@ def task_merge_scatter(self):
     merge_scripts = bash.scripts_merge(config, db_prefix, run_jobs_fn)
     tasks = []
     for p_id, merge_script in merge_scripts:
-        parameters =  {"merge_script": merge_script,
-                       "job_id": p_id,
-                       "config": config,
-                       "sge_option": config["sge_option_la"],
+        parameters =  {'merge_script': merge_script,
+                       'job_id': p_id,
+                       'config': config,
+                       'sge_option': config['sge_option_la'],
                       }
         job_done_fn = 'm_%05d_done' % p_id
-        inputs = {"gathered_las": gathered_las_fn}
-        outputs = {"job_done": job_done_fn}
+        inputs = {'gathered_las': gathered_las_fn}
+        outputs = {'job_done': job_done_fn}
         python_function = func_name,
-        URL = "task://localhost/m_%05d_%s" %(p_id, db_prefix)
+        URL = 'task://localhost/m_%05d_%s' %(p_id, db_prefix)
         task_desc = {
                 'inputs': inputs,
                 'outputs': outputs,
@@ -357,8 +357,8 @@ def task_consensus_scatter(self):
                 'URL': URL,
         }
         tasks.append(task_desc)
-        #consensus_out["cjob_%d" % p_id] = out_done
-        #consensus_out["cjob_%d" % p_id] = out_file
+        #consensus_out['cjob_%d' % p_id] = out_done
+        #consensus_out['cjob_%d' % p_id] = out_file
     content = json.dumps(tasks, sort_keys=True, indent=4, separators=(',', ': '))
     open(scatter_fn, 'w').write(content)
 
@@ -382,20 +382,20 @@ def task_daligner_gather(self):
     #self.generated_script_fn = script_fn
 
 def task_cns_gather(self):
-    with open(fn(self.preads_fofn),  "w") as f:
+    with open(fn(self.preads_fofn),  'w') as f:
         for fa_fn in sorted(fn(plf) for plf in self.inputs.values()):
             print >>f, fa_fn
     wdir = os.path.dirname(fn(self.cns_done))
     #mkdir(wdir)
-    system("touch %s" % fn(self.cns_done))
+    system('touch %s' % fn(self.cns_done))
     #script_fn = os.path.join(wdir, 'noop.sh')
     #open(script_fn, 'w').write('echo NOOP raw')
     #self.generated_script_fn = script_fn
 
-def check_p_merge_check_task(self):
-    wdir = os.path.dirname(fn(self.p_merge_done))
+def task_p_merge_gather(self):
+    wdir = os.path.dirname(fn(self.p_merge_gathered))
     mkdir(wdir)
-    system("touch %s" % fn(self.p_merge_done))
+    system('touch %s' % fn(self.p_merge_gathered))
     #script_fn = os.path.join(wdir, 'noop.sh')
     #open(script_fn, 'w').write('echo NOOP raw')
     #self.generated_script_fn = script_fn

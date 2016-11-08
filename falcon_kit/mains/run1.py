@@ -40,7 +40,7 @@ def create_daligner_tasks(basedir, scatter_fn):
         )
         daligner_task = make_daligner_task(pype_tasks.task_run_daligner)
         tasks.append(daligner_task)
-        tasks_out[ "ajob_%s" % job_uid ] = daligner_task.outputs['job_done'] # these are relative, so we need the PypeLocalFiles
+        tasks_out['ajob_%s' % job_uid] = daligner_task.outputs['job_done'] # these are relative, so we need the PypeLocalFiles
     return tasks, tasks_out
 
 def create_merge_tasks(basedir, scatter_fn):
@@ -94,7 +94,7 @@ def create_consensus_tasks(basedir, scatter_fn):
         )
         c_task = make_c_task(pype_tasks.task_run_consensus)
         consensus_tasks.append(c_task)
-        consensus_out["cjob_%d" % p_id] = outputs['out_file']
+        consensus_out['cjob_%d' % p_id] = outputs['out_file']
     return consensus_tasks, consensus_out
 
 def create_consensus_gather_task(wd, consensus_out):
@@ -105,7 +105,7 @@ def create_consensus_gather_task(wd, consensus_out):
                 inputs = consensus_out,
                 outputs =  {'cns_done': r_cns_done_plf, 'preads_fofn': preads_fofn_plf},
                 TaskType = MyFakePypeThreadTaskBase,
-                URL = "task://localhost/cns_gather" )
+                URL = 'task://localhost/cns_gather' )
     task = make_cns_gather_task(pype_tasks.task_cns_gather)
     return task, preads_fofn_plf
 
@@ -114,13 +114,13 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     global fc_run_logger
     fc_run_logger = support.setup_logger(logger_config_fn)
 
-    fc_run_logger.info("fc_run started with configuration %s", input_config_fn)
+    fc_run_logger.info('fc_run started with configuration %s', input_config_fn)
     try:
         config = support.get_dict_from_old_falcon_cfg(support.parse_config(input_config_fn))
     except Exception:
         fc_run_logger.exception('Failed to parse config "{}".'.format(input_config_fn))
         raise
-    input_fofn_plf = makePypeLocalFile(config["input_fofn"])
+    input_fofn_plf = makePypeLocalFile(config['input_fofn'])
     #Workflow = PypeProcWatcherWorkflow
     wf = PypeProcWatcherWorkflow(job_type=config['job_type'],
             job_queue=config['job_queue'],
@@ -143,22 +143,22 @@ def run(wf, config,
     * fc_run_logger
     * run_support.logger
     """
-    rawread_dir = os.path.abspath("./0-rawreads")
-    pread_dir = os.path.abspath("./1-preads_ovl")
-    falcon_asm_dir  = os.path.abspath("./2-asm-falcon")
-    script_dir = os.path.abspath("./scripts")
-    sge_log_dir = os.path.abspath("./sge_log")
+    rawread_dir = os.path.abspath('./0-rawreads')
+    pread_dir = os.path.abspath('./1-preads_ovl')
+    falcon_asm_dir  = os.path.abspath('./2-asm-falcon')
+    script_dir = os.path.abspath('./scripts')
+    sge_log_dir = os.path.abspath('./sge_log')
 
     for d in (rawread_dir, pread_dir, falcon_asm_dir, script_dir, sge_log_dir):
         support.make_dirs(d)
 
     exitOnFailure=config['stop_all_jobs_on_failure'] # only matter for parallel jobs
-    concurrent_jobs = config["pa_concurrent_jobs"]
+    concurrent_jobs = config['pa_concurrent_jobs']
     setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
 
-    rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, 'raw-fofn-abs', os.path.basename(config["input_fofn"])))
-    make_fofn_abs_task = PypeTask(inputs = {"i_fofn": input_fofn_plf},
-                                  outputs = {"o_fofn": rawread_fofn_plf},
+    rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, 'raw-fofn-abs', os.path.basename(config['input_fofn'])))
+    make_fofn_abs_task = PypeTask(inputs = {'i_fofn': input_fofn_plf},
+                                  outputs = {'o_fofn': rawread_fofn_plf},
                                   parameters = {},
                                   TaskType = MyFakePypeThreadTaskBase)
     fofn_abs_task = make_fofn_abs_task(pype_tasks.task_make_fofn_abs_raw)
@@ -166,23 +166,23 @@ def run(wf, config,
     wf.addTasks([fofn_abs_task])
     wf.refreshTargets([fofn_abs_task])
 
-    if config["input_type"] == "raw":
+    if config['input_type'] == 'raw':
         #### import sequences into daligner DB
-        sleep_done = makePypeLocalFile( os.path.join( rawread_dir, "sleep_done") )
-        rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, "rdb_build_done") )
-        run_jobs = makePypeLocalFile( os.path.join( rawread_dir, "run_jobs.sh") )
-        parameters = {"work_dir": rawread_dir,
-                      "sge_option": config["sge_option_da"],
-                      "config_fn": input_config_fn,
-                      "config": config}
+        sleep_done = makePypeLocalFile( os.path.join( rawread_dir, 'sleep_done') )
+        rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, 'rdb_build_done') )
+        run_jobs = makePypeLocalFile( os.path.join( rawread_dir, 'run_jobs.sh') )
+        parameters = {'work_dir': rawread_dir,
+                      'sge_option': config['sge_option_da'],
+                      'config_fn': input_config_fn,
+                      'config': config}
 
-        length_cutoff_plf = makePypeLocalFile(os.path.join(rawread_dir, "length_cutoff"))
-        raw_reads_db_plf = makePypeLocalFile(os.path.join(rawread_dir, "%s.db" % "raw_reads"))
-        make_build_rdb_task = PypeTask(inputs = {"input_fofn": rawread_fofn_plf},
-                                      outputs = {"rdb_build_done": rdb_build_done,
-                                                 "raw_reads_db": raw_reads_db_plf,
-                                                 "length_cutoff": length_cutoff_plf,
-                                                 "run_jobs": run_jobs,
+        length_cutoff_plf = makePypeLocalFile(os.path.join(rawread_dir, 'length_cutoff'))
+        raw_reads_db_plf = makePypeLocalFile(os.path.join(rawread_dir, '%s.db' % 'raw_reads'))
+        make_build_rdb_task = PypeTask(inputs = {'input_fofn': rawread_fofn_plf},
+                                      outputs = {'rdb_build_done': rdb_build_done,
+                                                 'raw_reads_db': raw_reads_db_plf,
+                                                 'length_cutoff': length_cutoff_plf,
+                                                 'run_jobs': run_jobs,
                                       },
                                       parameters = parameters,
                                       TaskType = MyFakePypeThreadTaskBase)
@@ -221,14 +221,14 @@ def run(wf, config,
         r_gathered_las_plf = makePypeLocalFile(os.path.join(rawread_dir, 'raw-gather', 'gathered_las.txt'))
 
         parameters =  {
-                "nblock": raw_reads_nblock,
+                'nblock': raw_reads_nblock,
         }
         make_daligner_gather = PypeTask(
                    inputs = daligner_out,
-                   outputs =  {"gathered": r_gathered_las_plf},
+                   outputs =  {'gathered': r_gathered_las_plf},
                    parameters = parameters,
                    TaskType = MyFakePypeThreadTaskBase,
-                   URL = "task://localhost/rda_check" )
+                   URL = 'task://localhost/rda_check' )
         check_r_da_task = make_daligner_gather(pype_tasks.task_daligner_gather)
         wf.addTask(check_r_da_task)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
@@ -258,7 +258,7 @@ def run(wf, config,
         wf.addTasks(merge_tasks)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
-        if config["target"] == "overlapping":
+        if config['target'] == 'overlapping':
             sys.exit(0)
 
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
@@ -291,52 +291,52 @@ def run(wf, config,
         parameters = dict(config)
         parameters['cwd'] = rdir
         make_task = PypeTask(
-                inputs = {"length_cutoff_fn": length_cutoff_plf,
-                          "raw_reads_db": raw_reads_db_plf,
-                          "preads_fofn": preads_fofn_plf, },
-                outputs = {"pre_assembly_report": pre_assembly_report_plf, },
+                inputs = {'length_cutoff_fn': length_cutoff_plf,
+                          'raw_reads_db': raw_reads_db_plf,
+                          'preads_fofn': preads_fofn_plf, },
+                outputs = {'pre_assembly_report': pre_assembly_report_plf, },
                 parameters = parameters,
                 TaskType = MyFakePypeThreadTaskBase,
-                URL = "task://localhost/report_pre_assembly")
+                URL = 'task://localhost/report_pre_assembly')
         task = make_task(pype_tasks.task_report_pre_assembly)
         wf.addTask(task)
 
-        concurrent_jobs = config["cns_concurrent_jobs"]
+        concurrent_jobs = config['cns_concurrent_jobs']
         setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
 
-    if config["target"] == "pre-assembly":
-        log.info("Quitting after stage-0 for 'pre-assembly' target.")
+    if config['target'] == 'pre-assembly':
+        log.info('Quitting after stage-0 for "pre-assembly" target.')
         sys.exit(0)
 
     # build pread database
-    if config["input_type"] == "preads":
-        preads_fofn_plf = makePypeLocalFile(os.path.join(pread_dir, 'preads-fofn-abs', os.path.basename(config["input_fofn"])))
-        make_fofn_abs_task = PypeTask(inputs = {"i_fofn": rawread_fofn_plf},
-                                     outputs = {"o_fofn": preads_fofn_plf},
+    if config['input_type'] == 'preads':
+        preads_fofn_plf = makePypeLocalFile(os.path.join(pread_dir, 'preads-fofn-abs', os.path.basename(config['input_fofn'])))
+        make_fofn_abs_task = PypeTask(inputs = {'i_fofn': rawread_fofn_plf},
+                                     outputs = {'o_fofn': preads_fofn_plf},
                                      parameters = {},
                                      TaskType = MyFakePypeThreadTaskBase)
         fofn_abs_task = make_fofn_abs_task(pype_tasks.task_make_fofn_abs_preads)
         wf.addTasks([fofn_abs_task])
         wf.refreshTargets([fofn_abs_task])
 
-    pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, "pdb_build_done") )
-    parameters = {"work_dir": pread_dir,
-                  "sge_option": config["sge_option_pda"],
-                  "config_fn": input_config_fn,
-                  "config": config}
+    pdb_build_done = makePypeLocalFile( os.path.join( pread_dir, 'pdb_build_done') )
+    parameters = {'work_dir': pread_dir,
+                  'sge_option': config['sge_option_pda'],
+                  'config_fn': input_config_fn,
+                  'config': config}
 
     run_jobs = makePypeLocalFile(os.path.join(pread_dir, 'run_jobs.sh'))
     preads_db = makePypeLocalFile(os.path.join(pread_dir, 'preads.db')) # Also .preads.*, of course.
-    make_build_pdb_task  = PypeTask(inputs = {"preads_fofn": preads_fofn_plf },
-                                    outputs = {"pdb_build_done": pdb_build_done,
-                                               "preads_db": preads_db,
-                                               "run_jobs": run_jobs,
+    make_build_pdb_task  = PypeTask(inputs = {'preads_fofn': preads_fofn_plf },
+                                    outputs = {'pdb_build_done': pdb_build_done,
+                                               'preads_db': preads_db,
+                                               'run_jobs': run_jobs,
                                     },
                                     parameters = parameters,
                                     TaskType = MyFakePypeThreadTaskBase,
-                                    URL = "task://localhost/build_pdb")
+                                    URL = 'task://localhost/build_pdb')
     build_pdb_task = make_build_pdb_task(pype_tasks.task_build_pdb)
 
     wf.addTasks([build_pdb_task])
@@ -345,7 +345,7 @@ def run(wf, config,
 
     preads_nblock = support.get_nblock(fn(preads_db))
     #### run daligner
-    config["sge_option_da"] = config["sge_option_pda"]
+    config['sge_option_da'] = config['sge_option_pda']
 
     scattered_plf = os.path.join(pread_dir, 'daligner-scatter', 'scattered.json')
     make_daligner_scatter = PypeTask(
@@ -374,20 +374,20 @@ def run(wf, config,
 
     p_gathered_las_plf = makePypeLocalFile(os.path.join(pread_dir, 'gathered-las', 'gathered-las.txt'))
     parameters =  {
-            "nblock": preads_nblock,
+            'nblock': preads_nblock,
     }
     make_daligner_gather = PypeTask(
                 inputs = daligner_out,
-                outputs =  {"gathered": p_gathered_las_plf},
+                outputs =  {'gathered': p_gathered_las_plf},
                 parameters = parameters,
                 TaskType = MyFakePypeThreadTaskBase,
-                URL = "task://localhost/pda_check" )
+                URL = 'task://localhost/pda_check' )
     check_p_da_task = make_daligner_gather(pype_tasks.task_daligner_gather)
     wf.addTask(check_p_da_task)
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
     # Merge .las files.
-    config["sge_option_la"] = config["sge_option_pla"]
+    config['sge_option_la'] = config['sge_option_pla']
     scattered_plf = os.path.join(pread_dir, 'merge-scatter', 'scattered.json')
     make_task = PypeTask(
             inputs = {
@@ -411,15 +411,15 @@ def run(wf, config,
     merge_tasks, merge_out, _ = create_merge_tasks(pread_dir, scattered_plf)
     wf.addTasks(merge_tasks)
 
-    p_merge_done = makePypeLocalFile(os.path.join( pread_dir, 'preads-merge', 'p_merge_done'))
+    p_merge_gathered = makePypeLocalFile(os.path.join(pread_dir, 'preads-merge', 'p_merge_gathered'))
 
-    make_check_p_merge_task = PypeTask( inputs = merge_out,
-               outputs =  {"p_merge_done": p_merge_done},
+    make_task = PypeTask( inputs = merge_out,
+               outputs =  {'p_merge_gathered': p_merge_gathered},
                TaskType = MyFakePypeThreadTaskBase,
-               URL = "task://localhost/pmerge_check" )
-    wf.addTask(make_check_p_merge_task(pype_tasks.check_p_merge_check_task))
+               URL = 'task://localhost/pmerge_gather' )
+    wf.addTask(make_task(pype_tasks.task_p_merge_gather))
 
-    concurrent_jobs = config["ovlp_concurrent_jobs"]
+    concurrent_jobs = config['ovlp_concurrent_jobs']
     setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
 
     wf.refreshTargets(exitOnFailure=exitOnFailure)
@@ -429,33 +429,33 @@ def run(wf, config,
     db2falcon_done = makePypeLocalFile(os.path.join(db2falcon_dir, 'db2falcon_done'))
     preads4falcon_plf = makePypeLocalFile(os.path.join(db2falcon_dir, 'preads4falcon.fasta'))
     make_run_db2falcon = PypeTask(
-               inputs = {"p_merge_done": p_merge_done,
-                         "preads_db": preads_db,
+               inputs = {'p_merge_gathered': p_merge_gathered,
+                         'preads_db': preads_db,
                         },
-               outputs =  {"db2falcon_done": db2falcon_done,
-                           "preads4falcon": preads4falcon_plf,
+               outputs =  {'db2falcon_done': db2falcon_done,
+                           'preads4falcon': preads4falcon_plf,
                           },
-               parameters = {"wd": db2falcon_dir,
-                             "config": config,
-                             "sge_option": config["sge_option_fc"],
+               parameters = {'wd': db2falcon_dir,
+                             'config': config,
+                             'sge_option': config['sge_option_fc'],
                             },
                TaskType = MyFakePypeThreadTaskBase,
-               URL = "task://localhost/db2falcon" )
+               URL = 'task://localhost/db2falcon' )
     wf.addTask(make_run_db2falcon(pype_tasks.task_run_db2falcon))
 
     falcon_asm_done = makePypeLocalFile( os.path.join(falcon_asm_dir, 'falcon_asm_done'))
     make_run_falcon_asm = PypeTask(
-               inputs = {"db2falcon_done": db2falcon_done, "db_file": preads_db,
-                         "preads4falcon": preads4falcon_plf,
+               inputs = {'db2falcon_done': db2falcon_done, 'db_file': preads_db,
+                         'preads4falcon': preads4falcon_plf,
                         },
-               outputs =  {"falcon_asm_done": falcon_asm_done},
-               parameters = {"wd": falcon_asm_dir,
-                             "config": config,
-                             "pread_dir": pread_dir,
-                             "sge_option": config["sge_option_fc"],
+               outputs =  {'falcon_asm_done': falcon_asm_done},
+               parameters = {'wd': falcon_asm_dir,
+                             'config': config,
+                             'pread_dir': pread_dir,
+                             'sge_option': config['sge_option_fc'],
                },
                TaskType = MyFakePypeThreadTaskBase,
-               URL = "task://localhost/falcon_asm" )
+               URL = 'task://localhost/falcon_asm' )
     wf.addTask(make_run_falcon_asm(pype_tasks.task_run_falcon_asm))
     wf.refreshTargets()
 
