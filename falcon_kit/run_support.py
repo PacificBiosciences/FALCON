@@ -491,31 +491,31 @@ def get_length_cutoff(length_cutoff, fn):
 def build_rdb(input_fofn_fn, config, job_done, script_fn, run_jobs_fn):
     run_jobs_fn = os.path.basename(run_jobs_fn)
     script = bash.script_build_rdb(config, input_fofn_fn, run_jobs_fn)
-    bash.get_write_script_and_wrapper(config)(script, script_fn, job_done)
+    bash.write_script(script, script_fn, job_done)
 
 def build_pdb(input_fofn_fn, config, job_done, script_fn, run_jobs_fn):
     run_jobs_fn = os.path.basename(run_jobs_fn)
     script = bash.script_build_pdb(config, input_fofn_fn, run_jobs_fn)
-    bash.get_write_script_and_wrapper(config)(script, script_fn, job_done)
+    bash.write_script(script, script_fn, job_done)
 
 def run_db2falcon(config, preads4falcon_fn, preads_db, job_done, script_fn):
     script = bash.script_run_DB2Falcon(config, preads4falcon_fn, preads_db)
-    bash.get_write_script_and_wrapper(config)(script, script_fn, job_done)
+    bash.write_script(script, script_fn, job_done)
 
 def run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn, job_done, script_fn):
     script = bash.script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn)
-    bash.get_write_script_and_wrapper(config)(script, script_fn, job_done)
+    bash.write_script(script, script_fn, job_done)
 
 def run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_length, length_cutoff, o_json_fn, job_done, script_fn):
     script = bash.script_run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_length, length_cutoff, o_json_fn)
     bash.write_script_and_wrapper_top(script, script_fn, job_done)
 
 def run_daligner(daligner_script, db_prefix, config, job_done, script_fn):
-    bash.get_write_script_and_wrapper(config)(daligner_script, script_fn, job_done)
+    bash.write_script(daligner_script, script_fn, job_done)
 
 def run_las_merge(script, job_done, config, script_fn):
-    bash.get_write_script_and_wrapper(config)(script, script_fn, job_done)
+    bash.write_script(script, script_fn, job_done)
 
 def run_consensus(db_fn, las_fn, out_file_fn, config, job_done, script_fn):
     script = bash.script_run_consensus(config, db_fn, las_fn, os.path.basename(out_file_fn))
-    bash.get_write_script_and_wrapper(config)(script, script_fn, job_done)
+    bash.write_script(script, script_fn, job_done)

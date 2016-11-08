@@ -48,6 +48,12 @@ def write_sub_script(ofs, script):
         exe = ''
     return exe
 
+def write_script(script, script_fn, job_done_fn=None):
+    if job_done_fn:
+        script += '\ntouch {}'.format(job_done_fn)
+    with open(script_fn, 'w') as ofs:
+        exe = write_sub_script(ofs, script)
+
 def write_script_and_wrapper_top(script, wrapper_fn, job_done):
     """
     Write script to a filename based on wrapper_fn, in same directory.
