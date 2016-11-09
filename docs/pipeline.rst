@@ -27,8 +27,8 @@ Each step is performed in it's own subdirectory within the FALCON job
         ├── scripts
         └── sge_log        # Job scheduler logs
 
-The assembly process is driven by the script ``fc_run.py`` which should be run on a head node as it needs to persist
-throughout the entire assembly process.
+The assembly process is driven by the script ``fc_run.py`` which should be sent to the scheduler or run on a head node 
+as it needs to persist throughout the entire assembly process.
 It takes as input a single :ref:`config <Configuration>` file typically named ``fc_run.cfg``, which references a list 
 of fasta input files. The config file can be configured to
 run locally, or submit to a job scheduler. However, if your dataset is anything larger than a bacterial sized
@@ -47,8 +47,8 @@ Some example configuration files can be found :ref:`here <configuration>`
 Step 1: Overlap detection and error correction of raw reads
 -----------------------------------------------------------
 
-The first step of the pipeline is to identify all overlaps in the raw reads. Currently this is all performed with
-a modified version of Gene Myers' dazzlerblog_.
+The first step of the pipeline is to identify all overlaps in the raw reads. Currently this is performed with
+a modified version of Gene Myers' DALIGNER_.
 
 In order to identify overlaps, your :term:`raw reads` must first be converted from fasta format into a dazzler
 database. This is a very I/O intensive process and will be run from the node where ``fc_run.py`` was executed. If this
@@ -64,9 +64,10 @@ Essentially it consists of running:
 2. :ref:`DBsplit <DBsplit>` to partition the database
 3. :ref:`HPC.daligner <HPC.daligner>` to generate the :ref:`daligner` commands necessary for all-vs-all comparison
 
-After overlaps have been detected, you will be left with many directories full of alignment files ``*.las`` containing
-the information about the overlaps. After merging the alignment files, the next step is to error correct the reads
-leveraging the overlap information. In the ``0-rawreads/preads`` directory you will find a series of scripts for
+After overlaps have been detected, you will be left with many ``job_*`` directories full of alignment files ``*.las`` 
+containing the information about the overlaps. After merging the alignment files (see ``m_*`` directories), the 
+next step is to error correct the reads leveraging the overlap information. In the ``0-rawreads/preads`` directory you 
+will find a series of scripts for
 performing the error correction. The process basically consists of using ``LA4Falcon`` with a length cutoff and piping the
 output to :ref:`fc_consensus.py <fc_consensus>` to generate a fasta file with corrected reads.
 
@@ -98,7 +99,7 @@ The following parameters affect this step directly:
 * :ref:`pa_DBsplit_option <pa_DBsplit_option>`
 * :ref:`falcon_sense_option <falcon_sense_option>`
 
-.. _dazzlerblog: http://dazzlerblog.wordpress.com
+.. _DALIGNER: http://dazzlerblog.wordpress.com
 .. _Dazzler: https://dazzlerblog.wordpress.com/2014/06/01/the-dazzler-db/
 
 
