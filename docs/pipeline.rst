@@ -108,18 +108,18 @@ The following parameters affect this step directly:
 Step 2: Overlap detection of corrected reads
 --------------------------------------------
 
-The only conceptual difference between the first and second overlap detection steps is that consensus calling is
-only performed in the case of the initial raw read correction. After :term:`pread` overlap detection, it's simply a
+The only conceptual difference between the first and second overlap steps is that consensus calling is
+not performed in the second step. After :term:`pread` overlap detection, it's simply a
 matter of extracting the information from the corrected reads database with ``DB2Falcon -U preads``.
 
-Starting from the error corrected reads generated in the first step of the pipeline, we now perform an
-additional overlap detection. Depending on how well the error correction step proceeded as well as the how much
-initial coverage was fed into the pipeline, the input data for this step should be significantly reduced at this
-point. Thus, while still time consuming, the corrected read overlap detection step should proceed significantly faster.
+Depending on how well the error-correction step proceeded as well as the how much
+initial coverage was fed into the pipeline (e.g. :ref:`length_cutoff <length_cutoff>`), the input data for this 
+step should be significantly reduced and thus, the second overlap detection step 
+will proceed significantly faster.
 
 The commands in this step of the pipeline are very similar to before albeit with different parameter settings to account
-for the corrected nature of the :term:`preads <pread>`. See the driver script ``prepare_pdb.sub.sh`` for details on
-actual parameter settings used.
+for the reduced error-rate of the :term:`preads <pread>`. See the driver script ``prepare_pdb.sub.sh`` for 
+details on actual parameter settings used.
 
 .. code-block:: bash
 
@@ -153,8 +153,9 @@ The following parameters affect this step directly:
 Step 3: String Graph assembly
 -----------------------------
 
-The final step of the FALCON Assembly pipeline is generation of the final :term:`String Graph` assembly and output in
-fasta format. There are 4 commands being run in the final phase of the FALCON assembly pipeline:
+The final step of the FALCON Assembly pipeline is generation of the final :term:`String Graph` assembly and 
+output of contig sequences in
+fasta format. Four commands are run in the final phase of FALCON:
 
 1. :ref:`fc_ovlp_filter <fc_ovlp_filter>` Filters overlaps based on the criteria provided in fc_run.cfg
 2. :ref:`fc_ovlp_to_graph <fc_ovlp_to_graph>` constructs an overlap graph of reads larger than the length cutoff
