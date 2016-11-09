@@ -17,8 +17,28 @@ Parameters
 Configuration
 =============
 
-Links to some fc_run.cfg's
+Here are some example ``fc_run.cfg`` and ``fc_unzip.cfg`` files. We make no guarantee that they will work with your
+dataset and cluster configuration. We merely provide them as starting points that have proven themselves on internal
+datasets. Alot of your success will depend purely on the quality of the input data prior to even engaging the FALCON
+pipeline. Also, these particular configs were designed to work in our SGE compute cluster, so some tuning will likely
+be necessary on your part. You should consult with your HPC administrator to assist in tuning to your cluster.
 
+.. _fc_run.cfg:
+
+fc_run.cfg
+~~~~~~~~~~
+
+:download:`fc_run_fungal.cfg <cfgs/fc_run_fungal.cfg>` - Has worked well on a 40Mb fungal genome
+
+:download:`fc_run_human.cfg <cfgs/fc_run_human.cfg>` - Has worked well on at least one human dataset
+
+
+.. _fc_unzip.cfg:
+
+fc_unzip.cfg
+~~~~~~~~~~~~
+
+:download:`fc_unzip.cfg <cfgs/fc_unzip.cfg>` - General all purpose unzip config
 
 
 Available Parameters

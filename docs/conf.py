@@ -51,8 +51,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'FALCON'
-copyright = u'2016, Jason Chin, Greg Concepcion, Sarah Kingan, Chris Dunn'
-author = u'Jason Chin, Greg Concepcion, Sarah Kingan, Chris Dunn'
+copyright = u'2016, Greg Concepcion, Sarah Kingan, Chris Dunn, Jason Chin'
+author = u'Greg Concepcion, Sarah Kingan, Chris Dunn, Jason Chin'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -277,7 +277,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'FALCON.tex', u'FALCON',
-     u'Jason Chin, Greg Concepcion, Sarah Kingan, Chris Dunn', 'manual'),
+     u'Greg Concepcion, Sarah Kingan, Chris Dunn, Jason Chin', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

@@ -53,3 +53,24 @@ Installation is very simple, as you are going to install FALCON_unzip into your 
     $ cd FALCON_unzip
     $ pip install --user ./
 
+
+Usage
+~~~~~
+
+FALCON_unzip operates on a completed FALCON job directory. All that's needed is to create an :ref:`fc_unzip.cfg` and place
+it at the ``$ROOT`` of your FALCON job. Then invoke with :ref:`fc_unzip.py`:
+
+.. code-block:: bash
+
+    falcon_jobdir$ export PATH=/path/to/FALCON-integrate/fc_env/bin:$PATH
+    falcon_jobdir$ fc_unzip.py fc_unzip.cfg
+
+*Note: FALCON_unzip also depends on several commands that are bundled with SMRTAnalysis 3.0.x, not currently
+available for the public. The workaround is to download each tool independently and link the binaries to a path that
+you set as in :ref:`fc_unzip.cfg` as your ``smrt_bin`` parameter.
+
+1. `samtools <https://github.com/samtools/samtools>`_
+2. `pbalign <https://github.com/PacificBiosciences/pbalign>`_
+3. `pbbam <https://github.com/PacificBiosciences/pbbam>`_
+4. `variantCaller <https://github.com/PacificBiosciences/GenomicConsensus>`_
+
