@@ -19,7 +19,7 @@ Configuration
 
 Here are some example ``fc_run.cfg`` and ``fc_unzip.cfg`` files. We make no guarantee that they will work with your
 dataset and cluster configuration. We merely provide them as starting points that have proven themselves on internal
-datasets. Alot of your success will depend purely on the quality of the input data prior to even engaging the FALCON
+datasets. A lot of your success will depend purely on the quality of the input data prior to even engaging the FALCON
 pipeline. Also, these particular configs were designed to work in our SGE compute cluster, so some tuning will likely
 be necessary on your part. You should consult with your HPC administrator to assist in tuning to your cluster.
 
@@ -31,6 +31,19 @@ fc_run.cfg
 :download:`fc_run_fungal.cfg <cfgs/fc_run_fungal.cfg>` - Has worked well on a 40Mb fungal genome
 
 :download:`fc_run_human.cfg <cfgs/fc_run_human.cfg>` - Has worked well on at least one human dataset
+
+:download:`fc_run_bird.cfg <cfgs/fc_run_bird.cfg>` - Has worked well on at least one avian dataset
+
+:download:`fc_run_yeast.cfg <cfgs/fc_run_yeast.cfg>` - Has worked well on at least one yeast dataset
+
+:download:`fc_run_dipteran.cfg <cfgs/fc_run_dipertan.cfg>` - Has worked well on at least one dipteran (insect) dataset
+
+:download:`fc_run_mammal.cfg <cfgs/fc_run_mammal.cfg>` - Has worked well on at least one mammalian dataset
+
+:download:`fc_run_plant.cfg <cfgs/fc_run_plant.cfg>` - Has worked well on at least one plant (Ranunculales) dataset
+
+:download:`fc_run_arabidopsis.cfg <cfgs/fc_run_arabidopsis.cfg>` - Configuration for arabidopsis assembly in Chin et al. 
+2016 
 
 
 .. _fc_unzip.cfg:
