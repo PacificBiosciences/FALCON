@@ -166,7 +166,7 @@ def run(wf, config,
 
     exitOnFailure=config['stop_all_jobs_on_failure'] # only matter for parallel jobs
     concurrent_jobs = config['pa_concurrent_jobs']
-    setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
+    wf.max_jobs = concurrent_jobs
 
     rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, 'raw-fofn-abs', os.path.basename(config['input_fofn'])))
     make_fofn_abs_task = PypeTask(inputs = {'i_fofn': input_fofn_plf},
@@ -318,7 +318,7 @@ def run(wf, config,
         wf.addTask(task)
 
         concurrent_jobs = config['cns_concurrent_jobs']
-        setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
+        wf.max_jobs = concurrent_jobs
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
 
@@ -430,7 +430,7 @@ def run(wf, config,
     wf.addTask(task)
 
     concurrent_jobs = config['ovlp_concurrent_jobs']
-    setNumThreadAllowed(concurrent_jobs, concurrent_jobs)
+    wf.max_jobs = concurrent_jobs
 
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
