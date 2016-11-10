@@ -95,7 +95,6 @@ The following parameters affect this step directly:
 * :ref:`sge_option_la <sge_option_la>`
 * :ref:`pa_concurrent_jobs <pa_concurrent_jobs>`
 * :ref:`cns_concurrent_jobs <cns_concurrent_jobs>`
-* :ref:`pa_HPCDaligner_option <pa_HPCDaligner_option>`
 * :ref:`pa_DBsplit_option <pa_DBsplit_option>`
 * :ref:`falcon_sense_option <falcon_sense_option>`
 

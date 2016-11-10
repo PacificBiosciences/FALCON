@@ -6,9 +6,7 @@
 
 .. _glossary:
 
-
-Glossary
-========
+.. glossary::
 
    associated contig
       Alternate configuration (phase) of a portion of a primary contig*. See :ref:`this <primary_vs_associated>`
@@ -28,6 +26,8 @@ Glossary
       A subread that begins at one adapter sequence and ends at another adapter sequence. A
       full-pass subread does not begin or end in the middle of an insert sequence.
 
+   haplotig
+      Contig from specific haplotype
    pread
       Pre-assembled Reads, error corrected reads through the pre-assembly process.
 
