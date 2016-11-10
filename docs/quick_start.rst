@@ -65,12 +65,20 @@ it at the ``$ROOT`` of your FALCON job. Then invoke with :ref:`fc_unzip.py`:
     falcon_jobdir$ export PATH=/path/to/FALCON-integrate/fc_env/bin:$PATH
     falcon_jobdir$ fc_unzip.py fc_unzip.cfg
 
-*Note: FALCON_unzip also depends on several commands that are bundled with SMRTAnalysis 3.0.x, not currently
+`*Note: FALCON_unzip also depends on several commands that are bundled with SMRTAnalysis 3.0.x, not currently
 available for the public. The workaround is to download each tool independently and link the binaries to a path that
-you set as in :ref:`fc_unzip.cfg` as your ``smrt_bin`` parameter.
+you set in :ref:`fc_unzip.cfg` as your ``smrt_bin`` parameter.
 
 1. `samtools <https://github.com/samtools/samtools>`_
 2. `pbalign <https://github.com/PacificBiosciences/pbalign>`_
-3. `pbbam <https://github.com/PacificBiosciences/pbbam>`_
+3. `GenomicConsensus v1.1.0@654d0276d4a03f269cd1a14ddd7dfd0f54bede45 <https://github.com/PacificBiosciences/GenomicConsensus/tree/654d0276d4a03f269cd1a14ddd7dfd0f54bede45>`_
 4. `variantCaller <https://github.com/PacificBiosciences/GenomicConsensus>`_
 
+`*`*Note: the script ``makePbi.py`` is only available from GenomicConsensus 1.1.0 and earlier. To sync the branch
+that has this script, follow these steps:
+
+.. code-block:: bash
+
+    $ git clone https://github.com/PacificBiosciences/GenomicConsensus.git
+    $ cd GenomicConsensus
+    $ git reset --hard 654d0276d4a03f269cd1a14ddd7dfd0f54bede45
