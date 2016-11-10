@@ -27,9 +27,9 @@ Each step is performed in it's own subdirectory within the FALCON job
         ├── scripts
         └── sge_log        # Job scheduler logs
 
-The assembly process is driven by the script ``fc_run.py`` which should be sent to the scheduler or run on a head node 
+The assembly process is driven by the script :ref:`fc_run.py` which should be sent to the scheduler or run on a head node
 as it needs to persist throughout the entire assembly process.
-It takes as input a single :ref:`config <Configuration>` file typically named ``fc_run.cfg``, which references a list 
+It takes as input a single :ref:`config <Configuration>` file typically named :ref:`fc_run.cfg`, which references a list
 of fasta input files. The config file can be configured to
 run locally, or submit to a job scheduler. However, if your dataset is anything larger than a bacterial sized
 genome and unless you've tuned your system specifically for the organism you're trying to assemble, then most likely you
@@ -157,7 +157,7 @@ The final step of the FALCON Assembly pipeline is generation of the final :term:
 output of contig sequences in
 fasta format. Four commands are run in the final phase of FALCON:
 
-1. :ref:`fc_ovlp_filter <fc_ovlp_filter>` Filters overlaps based on the criteria provided in fc_run.cfg
+1. :ref:`fc_ovlp_filter <fc_ovlp_filter>` Filters overlaps based on the criteria provided in :ref:`fc_run.cfg`
 2. :ref:`fc_ovlp_to_graph <fc_ovlp_to_graph>` constructs an overlap graph of reads larger than the length cutoff
 3. :ref:`fc_graph_to_contig <fc_graph_to_contig>` generates fasta files for contigs from the overlap graph.
 4. :ref:`fc_dedup_a_tigs <fc_dedup_a_tigs>` removes duplicate associated contigs
