@@ -7,8 +7,12 @@
    :align: right
 
 
-FALCON Pipeline
-===============
+########
+Pipeline
+########
+
+FALCON
+======
 
 A FALCON job can be broken down into 3 steps:
 
@@ -195,3 +199,11 @@ The following parameters affect this step directly:
 * :ref:`sge_option_fc <sge_option_fc>`
 * :ref:`overlap_filtering_setting <overlap_filtering_setting>`
 * :ref:`length_cutoff_pr <length_cutoff_pr>`
+
+
+FALCON_unzip
+============
+
+FALCON_unzip operates from a completed FALCON job directory. There are x steps to the FALCON_unzip pipeline
+
+1. Read tracking
