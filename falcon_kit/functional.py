@@ -9,6 +9,8 @@ def _verify_pairs(pairs1, pairs2):
     if pairs1 != pairs2:
         print('pair2dali:', pairs1)
         print('pair2sort:', pairs2)
+        print('dali-sort:', set(pairs1) - set(pairs2))
+        print('sort-dali:', set(pairs2) - set(pairs1))
         print('pair2dali:', len(pairs1))
         print('pair2sort:', len(pairs2))
         assert pairs1 == pairs2
@@ -86,13 +88,14 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
     pair2dali = {}
     for line in lines_dali:
         blocks = blocks_dali(line)
-        for block in blocks:
-            pair = (blocks[0], block)
+        block0 = blocks[0]
+        for block in blocks[1:]:
+            pair = (block0, block)
             pair2dali[pair] = line
-            if block != blocks[0]:
+            if block != block0:
                 # Then we have a reverse comparison too.
                 # https://dazzlerblog.wordpress.com/2014/07/10/dalign-fast-and-sensitive-detection-of-all-pairwise-local-alignments/
-                rpair = (block, blocks[0])
+                rpair = (block, block0)
                 pair2dali[rpair] = line
     pair2sort = {}
     for line in lines_sort:

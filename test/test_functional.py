@@ -27,6 +27,15 @@ def test_get_daligner_job_descriptions_small():
     helpers.equal_multiline(result[('.1', '.1')], "daligner -v -h1 -t50 -H1 -e0.99 -l1 -s1000 preads.1 preads.1\nLAcheck -v preads *.las\nLAsort -v preads.1.preads.1.C0 preads.1.preads.1.N0 preads.1.preads.1.C1 preads.1.preads.1.N1 preads.1.preads.1.C2 preads.1.preads.1.N2 preads.1.preads.1.C3 preads.1.preads.1.N3 && LAmerge -v preads.1 preads.1.preads.1.C0.S preads.1.preads.1.N0.S preads.1.preads.1.C1.S preads.1.preads.1.N1.S preads.1.preads.1.C2.S preads.1.preads.1.N2.S preads.1.preads.1.C3.S preads.1.preads.1.N3.S\nLAcheck -vS preads preads.1\n")
     eq_(len(result), 1)
 
+example_se161 = os.path.join(thisdir, 'se161.sh')
+
+def test_get_daligner_job_descriptions_se161():
+    # when there is only 1 block, a special case
+    example_HPCdaligner = open(example_se161)
+    result = f.get_daligner_job_descriptions(
+            example_HPCdaligner, 'raw_reads', single=False)
+    assert result
+
 def test_get_mjob_data():
     example_HPCdaligner = open(example_HPCdaligner_fn)
     result = f.get_mjob_data(
