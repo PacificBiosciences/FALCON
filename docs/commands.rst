@@ -108,7 +108,9 @@ FALCON relies on a slightly modified version of Gene Meyer's code that can be fo
 
 
 `daligner <https://dazzlerblog.wordpress.com/command-guides/daligner-command-reference-guide>`_:
-    ``daligner`` is controlled by :ref:`pa_HPCdaligner_option <pa_HPCdaligner_option>` and :ref:`ovlp_HPCdaligner_option <ovlp_HPCdaligner_option>`.
+    Compare subject sequences to target sequences
+    ``daligner`` is controlled by :ref:`pa_HPCdaligner_option <pa_HPCdaligner_option>` and
+    :ref:`ovlp_HPCdaligner_option <ovlp_HPCdaligner_option>`.
 
     To limit memory, one can use the ``-M`` option. For human assembly, we've tested with ``-M 32`` for using 32G RAM for
     each daligner. Other possibilities are under investigation.

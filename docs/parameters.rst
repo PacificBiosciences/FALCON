@@ -140,12 +140,12 @@ job_queue <str>
 .. _sge_option_da:
 
 sge_option_da <str>
-   Grid concurrency settings for initial daligner steps
+   Grid concurrency settings for initial daligner steps ``0-rawreads/``
 
 .. _sge_option_la:
 
 sge_option_la <str>
-   Grid concurrency settings for initial las-merging
+   Grid concurrency settings for initial las-merging ``0-rawreads/``
 
 .. _sge_option_cns:
 
@@ -155,17 +155,17 @@ sge_option_cns <str>
 .. _sge_option_pda:
 
 sge_option_pda <str>
-   Grid concurrency settings for daligner on preads
+   Grid concurrency settings for daligner on preads ``1-preads_ovl/``
 
 .. _sge_option_pla:
 
 sge_option_pla <str>
-   Grid concurrency settings for las-merging on preads
+   Grid concurrency settings for las-merging on preads in ``1-preads_ovl/``
 
 .. _sge_option_fc:
 
 sge_option_fc <str>
-   Grid concurrency settings for stage 2 ``2-asm-falcon``
+   Grid concurrency settings for stage 2 in ``2-asm-falcon/``
 
 .. _pa_DBdust_option:
 
