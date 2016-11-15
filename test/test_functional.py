@@ -30,7 +30,6 @@ def test_get_daligner_job_descriptions_small():
 example_se161 = os.path.join(thisdir, 'se161.sh')
 
 def test_get_daligner_job_descriptions_se161():
-    # when there is only 1 block, a special case
     example_HPCdaligner = open(example_se161)
     result = f.get_daligner_job_descriptions(
             example_HPCdaligner, 'raw_reads', single=False)
