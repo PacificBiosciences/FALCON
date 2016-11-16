@@ -36,14 +36,16 @@ fc_run.cfg
 
 :download:`fc_run_yeast.cfg <cfgs/fc_run_yeast.cfg>` - Has worked well on at least one yeast dataset
 
-:download:`fc_run_dipteran.cfg <cfgs/fc_run_dipertan.cfg>` - Has worked well on at least one dipteran (insect) dataset
+:download:`fc_run_dipteran.cfg <cfgs/fc_run_diptertan.cfg>` - Has worked well on at least one dipteran (insect) dataset
 
 :download:`fc_run_mammal.cfg <cfgs/fc_run_mammal.cfg>` - Has worked well on at least one mammalian dataset
 
 :download:`fc_run_plant.cfg <cfgs/fc_run_plant.cfg>` - Has worked well on at least one plant (Ranunculales) dataset
 
-:download:`fc_run_arabidopsis.cfg <cfgs/fc_run_arabidopsis.cfg>` - Configuration for arabidopsis assembly in Chin et al. 
-2016 
+:download:`fc_run_arabidopsis.cfg <cfgs/fc_run_arabidopsis.cfg>` - Configuration for arabidopsis assembly in Chin et al. 2016 
+
+:download:`fc_run_ecoli.cfg <cfgs/fc_run_ecoli.cfg>` - Configuration for e-coli example data 
+
 
 
 .. _fc_unzip.cfg:
