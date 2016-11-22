@@ -1,9 +1,9 @@
 from .. import run_support as support
 from .. import bash, pype_tasks
 from ..util.system import only_these_symlinks
-from pypeflow.pwatcher_bridge import PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase
-from pypeflow.data import makePypeLocalFile, fn
-from pypeflow.task import PypeTask
+#from pypeflow.pwatcher_bridge import PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase
+#from pypeflow.data import makePypeLocalFile, fn
+#from pypeflow.task import PypeTask
 from pypeflow.simple_pwatcher_bridge import (PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase,
         makePypeLocalFile, fn, PypeTask)
 import argparse
@@ -133,7 +133,6 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         fc_run_logger.exception('Failed to parse config "{}".'.format(input_config_fn))
         raise
     input_fofn_plf = makePypeLocalFile(config['input_fofn'])
-    #Workflow = PypeProcWatcherWorkflow
     wf = PypeProcWatcherWorkflow(job_type=config['job_type'],
             job_queue=config['job_queue'],
             sge_option=config.get('sge_option', ''),
@@ -142,13 +141,12 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     run(wf, config,
             os.path.abspath(input_config_fn),
             input_fofn_plf=input_fofn_plf,
-            setNumThreadAllowed=PypeProcWatcherWorkflow.setNumThreadAllowed)
+    )
 
 
 def run(wf, config,
         input_config_fn,
         input_fofn_plf,
-        setNumThreadAllowed,
         ):
     """
     Preconditions (for now):
