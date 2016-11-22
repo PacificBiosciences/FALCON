@@ -1,6 +1,8 @@
-from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
-from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
-from pypeflow.controller import PypeWorkflow, PypeMPWorkflow, PypeThreadWorkflow
+#from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
+#from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
+#from pypeflow.controller import PypeWorkflow, PypeMPWorkflow, PypeThreadWorkflow
+from pypeflow.simple_pwatcher_bridge import (PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase,
+        makePypeLocalFile, fn, PypeTask)
 from falcon_kit.FastaReader import FastaReader
 from falcon_kit.fc_asm_graph import AsmGraph
 import argparse
@@ -20,8 +22,16 @@ def get_read_ctg_map(rawread_dir, pread_dir, asm_dir):
     read_map_dir = os.path.abspath(os.path.join(asm_dir, "read_maps"))
     make_dirs(read_map_dir)
 
-    PypeMPWorkflow.setNumThreadAllowed(12, 12)
-    wf = PypeMPWorkflow()
+    wf = PypeProcWatcherWorkflow(
+            max_jobs=12,
+    )
+    """
+            job_type=config['job_type'],
+            job_queue=config['job_queue'],
+            sge_option=config.get('sge_option', ''),
+            watcher_type=config['pwatcher_type'],
+            watcher_directory=config['pwatcher_directory'])
+    """
 
     rawread_db = makePypeLocalFile( os.path.join( rawread_dir, "raw_reads.db" ) )
     rawread_id_file = makePypeLocalFile( os.path.join( read_map_dir, "raw_read_ids" ) )
