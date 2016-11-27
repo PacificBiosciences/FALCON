@@ -1,7 +1,4 @@
 from __future__ import absolute_import
-#from pypeflow.data import PypeLocalFile, makePypeLocalFile, fn
-#from pypeflow.task import PypeTask, PypeThreadTaskBase, PypeTaskBase
-#from pypeflow.controller import PypeWorkflow, PypeMPWorkflow, PypeThreadWorkflow
 from pypeflow.simple_pwatcher_bridge import (PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase,
         makePypeLocalFile, fn, PypeTask)
 PypeThreadTaskBase = MyFakePypeThreadTaskBase
@@ -84,8 +81,7 @@ def get_read_ctg_map(rawread_dir, pread_dir, asm_dir):
     task = PypeTask(
               inputs = {'rawread_db': rawread_db},
               outputs = {'rawread_id_file': rawread_id_file},
-              TaskType = PypeThreadTaskBase,
-              URL = 'task://localhost/dump_rawread_ids')
+    )
     wf.addTask(task(dump_rawread_ids))
 
     pread_db = makePypeLocalFile(os.path.join(pread_dir, 'preads.db'))
@@ -94,8 +90,7 @@ def get_read_ctg_map(rawread_dir, pread_dir, asm_dir):
     task = PypeTask(
                inputs = {'pread_db': pread_db},
                outputs = {'pread_id_file': pread_id_file},
-               TaskType = PypeThreadTaskBase,
-               URL = 'task://localhost/dump_pread_ids' )
+    )
     wf.addTask(task(dump_pread_ids))
 
     wf.refreshTargets() # block
@@ -115,8 +110,7 @@ def get_read_ctg_map(rawread_dir, pread_dir, asm_dir):
     task = PypeTask(
               inputs = inputs,
               outputs = {'read_to_contig_map': read_to_contig_map},
-              TaskType = PypeThreadTaskBase,
-              URL = 'task://localhost/get_ctg_read_map')
+    )
     wf.addTask(task(generate_read_to_ctg_map))
 
     wf.refreshTargets() # block
