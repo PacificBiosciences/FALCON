@@ -6,6 +6,9 @@
 
 .. _glossary:
 
+Glossary
+========
+
 .. glossary::
 
    associated contig
@@ -28,6 +31,7 @@
 
    haplotig
       Contig from specific haplotype
+
    pread
       Pre-assembled Reads, error corrected reads through the pre-assembly process.
 

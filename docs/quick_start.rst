@@ -11,7 +11,9 @@ Installation
 ^^^^^^^^^^^^
 
 By far, the quickest way to get up and running with FALCON is to ensure you have python 2.7.x installed and in your
-path, then follow these simple instructions to clone and install the FALCON-integrate_ github repository:
+path, then follow these simple instructions to clone and install the FALCON-integrate_ github repository. This includes
+proper versions of all necessary dependencies. Alternatively, you can install the FALCON github package manually,
+but you will need to do some legwork to make sure you have the right versions of all dependencies installed.
 
 .. code-block:: bash
 
@@ -30,7 +32,7 @@ Usage
 ^^^^^
 
 To run a job with your newly installed FALCON-integrate package, simply add the ``fc_env/bin`` directory to your
-``$PATH`` and call invoke :doc:`fc_run.py` with your ``fc_run.cfg`` as the argument.
+``$PATH`` and invoke :doc:`fc_run.py` with your ``fc_run.cfg`` as the argument.
 
 .. code-block:: bash
 

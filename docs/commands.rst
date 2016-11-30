@@ -106,6 +106,7 @@ FALCON relies on a slightly modified version of Gene Meyer's code that can be fo
 `here <https://github.com/cschin/DALIGNER>`_, but is also bundled with the
 `FALCON-integrate <https://github.com/PacificBiosciences/FALCON-integrate.git>`_ github repository.
 
+.. _dazzdaligner:
 
 `daligner <https://dazzlerblog.wordpress.com/command-guides/daligner-command-reference-guide>`_:
     Compare subject sequences to target sequences
@@ -117,15 +118,23 @@ FALCON relies on a slightly modified version of Gene Meyer's code that can be fo
 
     For more details on daligner options, see the `Dazzler Blog <http://dazzlerblog.wordpress.com>`_
 
+.. _dazzDB2fasta:
+
 `DB2fasta <https://dazzlerblog.wordpress.com/command-guides/dazz_db-command-guide>`_:
     The set of .fasta files for the given DB are recreated from the DB exactly as they were input.
+
+.. _dazzDBdump:
 
 `DBdump <https://dazzlerblog.wordpress.com/command-guides/dazz_db-command-guide>`_:
     Like DBshow, DBdump allows one to display a subset of the reads in the DB and select which information to show
     about them including any mask tracks.
 
+.. _dazzDBdust:
+
 `DBdust <https://dazzlerblog.wordpress.com/command-guides/dazz_db-command-guide>`_:
     Runs the symmetric DUST algorithm over the reads in the untrimmed DB
+
+.. _dazzDBsplit:
 
 `DBsplit <https://dazzlerblog.wordpress.com/command-guides/dazz_db-command-guide>`_:
     The total number of jobs that are run is determined by how one "splits" the sequence database. You should read
@@ -135,24 +144,38 @@ FALCON relies on a slightly modified version of Gene Meyer's code that can be fo
     job will run longer. However, if you have a job scheduler which limits how long a job can run, it might be
     desirable to have a smaller number for the ``-s`` option.
 
+.. _dazzDBstats:
+
 `DBstats <https://dazzlerblog.wordpress.com/command-guides/dazz_db-command-guide>`_:
     Show overview statistics for all the reads in the trimmed data base <path>.db
+
+.. _dazzfasta2DB:
 
 `fasta2DB <https://dazzlerblog.wordpress.com/command-guides/dazz_db-command-guide>`_:
     Convert a fasta to a dazzler DB.
 
+.. _dazzHPC.daligner:
+
 `HPC.daligner <https://dazzlerblog.wordpress.com/command-guides/daligner-command-reference-guide>`_:
     Generates overlap script to run all necessary daligner, LAsort and LAmerge commands
+
+.. _dazzLA4Falcon:
 
 `LA4Falcon <cmds/LA4Falcon>`_:
     Output data from a Dazzler DB into fasta format for FALCON. You can supply the argument ``-H`` with an integer value
     to filter reads below a given threshold.
 
+.. _dazzLAcheck:
+
 `LAcheck <https://dazzlerblog.wordpress.com/command-guides/daligner-command-reference-guide>`_:
     Check integrity of alignment files.
 
+.. _dazzLAmerge:
+
 `LAmerge <https://dazzlerblog.wordpress.com/command-guides/daligner-command-reference-guide>`_:
     Merge the .las files <parts> into a singled sorted file
+
+.. _dazzLAsort:
 
 `LAsort <https://dazzlerblog.wordpress.com/command-guides/daligner-command-reference-guide>`_:
     Sort alignment files

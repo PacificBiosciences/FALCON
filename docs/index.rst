@@ -27,7 +27,6 @@ FALCON Assembler
    glossary
    faq
    tertiary
-   references
 
 
 `FALCON <http://github.com/PacificBiosicences/FALCON>`_ is a diploid aware genome assembler designed for Pacific Biosciences long read data.
@@ -41,4 +40,3 @@ FALCON Assembler
 *  :ref:`Glossary                     <glossary>` - Glossary of FALCON jargon
 *  :ref:`Frequently Asked Questions        <faq>` - Frequently asked questions
 *  :ref:`Tetiary Analysis             <tertiary>` - What next?
-*  :ref:`References                 <references>` - Further reading

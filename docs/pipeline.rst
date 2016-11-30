@@ -61,12 +61,12 @@ is an issue, you should submit the command with a wrapper script to your grid di
 Once the database has been created and partitioned according to the parameters set in your
 :ref:`fc_run.cfg <configuration>`, an all vs all comparison of the reads must be performed. Accordingly, due to the
 all vs all nature of the search this is the most time consuming step in the assembly process. To walk through the
-actual steps of this part of the pipeline you should take a look at `0-rawreads/prepare_rdb.sub.sh`.
+actual steps of this part of the pipeline you should take a look at ``0-rawreads/prepare_rdb.sub.sh``.
 Essentially it consists of running:
 
-1. :ref:`fasta2DB <fasta2DB>` to format the database
-2. :ref:`DBsplit <DBsplit>` to partition the database
-3. :ref:`HPC.daligner <HPC.daligner>` to generate the :ref:`daligner` commands necessary for all-vs-all comparison
+1. :ref:`fasta2DB <dazzfasta2DB>` to format the database
+2. :ref:`DBsplit <dazzDBsplit>` to partition the database
+3. :ref:`HPC.daligner <dazzHPC.daligner>` to generate the :ref:`daligner` commands necessary for all-vs-all comparison
 
 After overlaps have been detected, you will be left with many ``job_*`` directories full of alignment files ``*.las`` 
 containing the information about the overlaps. After merging the alignment files (see ``m_*`` directories), the 
@@ -160,10 +160,10 @@ The final step of the FALCON Assembly pipeline is generation of the final :term:
 output of contig sequences in
 fasta format. Four commands are run in the final phase of FALCON:
 
-1. :ref:`fc_ovlp_filter <fc_ovlp_filter>` Filters overlaps based on the criteria provided in :ref:`fc_run.cfg`
-2. :ref:`fc_ovlp_to_graph <fc_ovlp_to_graph>` constructs an overlap graph of reads larger than the length cutoff
-3. :ref:`fc_graph_to_contig <fc_graph_to_contig>` generates fasta files for contigs from the overlap graph.
-4. :ref:`fc_dedup_a_tigs <fc_dedup_a_tigs>` removes duplicate associated contigs
+1. :ref:`fc_ovlp_filter <fc_ovlp_filter.py>` - Filters overlaps based on the criteria provided in :ref:`fc_run.cfg`
+2. :ref:`fc_ovlp_to_graph <fc_ovlp_to_graph.py>` - Constructs an overlap graph of reads larger than the length cutoff
+3. :ref:`fc_graph_to_contig <fc_graph_to_contig.py>` - Generates fasta files for contigs from the overlap graph.
+4. :ref:`fc_dedup_a_tigs <fc_dedup_a_tigs.py>` - Removes duplicate associated contigs
 
 You can see the details on the parameters used by inspecting ``2-asm_falcon/run_falcon_asm.sub.sh``
 This step of the pipeline is very fast relative to the overlap detection steps. Sometimes it may be useful to run
@@ -204,6 +204,62 @@ The following parameters affect this step directly:
 FALCON_unzip
 ============
 
-FALCON_unzip operates from a completed FALCON job directory. There are x steps to the FALCON_unzip pipeline
+`FALCON_unzip`_ operates from a completed FALCON job directory. After tracking the raw reads to contig,
+A FALCON_unzip job can be broken down into 3 steps
 
-1. Read tracking
+1. :ref:`Identify SNPs and assign phases <unzip_step_one>`
+2. :ref:`Annotate Assembly graph with Phases <unzip_step_two>`
+3. :ref:`Graph building <unzip_step_three>`
+
+.. code-block:: bash
+
+        3-unzip/
+        ├── 0-phasing/                  # Contig phasing jobs
+        ├── 1-hasm/                     # Contig Graph assembly information
+        ├── read_maps/                  # rawread_to_contigs; read_to_contig_map
+        ├── reads/                      # raw read fastas for each contig
+        ├── all_h_ctg_edges             # haplotig edge list
+        ├── all_h_ctg.fa                # phased haplotigs
+        ├── all_h_ctg.fa.stats          # haplotig stats
+        ├── all_h_ctg_ids               # haplotig id index
+        ├── all_p_ctg_edges             # primary contig edge list
+        ├── all_p_ctg.fa                # partially phased primary contigs
+        ├── all_p_ctg.fa.stats          # primary contig stats
+        └── all_phased_reads            # table of all phased raw reads
+
+
+.. _FALCON_unzip:: https://github.com/PacificBiosciences/FALCON_unzip
+
+.. _unzip_step_one:
+
+Step 1: Identify SNPs and assign phases
+---------------------------------------
+
+Inside of ``0-phasing/`` you vill find a number of directories for each contig. Each contains the scripts
+to map the raw reads to the contigs and subsequently identify SNPs. The generated SNP tables can
+subsequently be used to assign phases to reads.
+
+
+.. _unzip_step_two:
+
+Step 2: Graph annotation and haplotig
+-------------------------------------
+
+Inside of ``1-hasm/`` you can find the driver script ``hasm.sh`` which contains the commands necessary to
+filter overlaps and traverse the assembly graph paths and subsequently output phased contig sequence.
+Assembly Graphs for each contig as well as fasta files for the partially phased primary contigs and fully phased
+haplotigs can be found in each ``1-hasm/XXXXXXF`` directory.
+
+
+.. _unzip_step_three:
+
+Step 3: Call Consensus (Optional)
+---------------------------------
+
+Finally, the ``FALCON_unzip`` pipeline can optionally be used to run quiver and call high quality consensus. This step
+takes as input the primary contig and haplotig sequences output in the previous step. For convenience, these files
+have all been concatenated together into ``3-unzip/all_p_ctg.fa`` and ``3-unzip/all_h_ctg.fa`` respectively.
+The final consensus output can be found in ``falcon_jobdir/4-quiver/cns_output/*.fast[a|q]``.
+In order to run the consensus step as part of the FALCON_unzip pipeline, You need to provide the :ref:`input_bam_fofn`
+:ref:`fc_unzip.cfg` option in order for this to work.
+

@@ -20,7 +20,7 @@ genomic region on an p-contig.
 
 ``FALCON-Unzip`` is a true diploid assembler. It takes the genome assembly graph from 
 ``FALCON`` and phases the reads based on heterozygous SNPs identified in the initial 
-assembly. It then produces a set of :term:`primary contigs <primary contig>` and phased
+assembly. It then produces a set of partially phased :term:`primary contigs <primary contig>` and fully phased
 :term:`haplotigs <haplotig>` which represent divergent haplotyes.
 
 .. image:: Fig1.png
