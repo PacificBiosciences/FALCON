@@ -37,14 +37,12 @@ def task_make_fofn_abs_raw(self):
     script_fn = 'noop.sh'
     open(script_fn, 'w').write('echo NOOP raw')
     self.generated_script_fn = script_fn
-    mkdir(os.path.dirname(fn(self.o_fofn)))
     support.make_fofn_abs(fn(self.i_fofn), fn(self.o_fofn))
 
 def task_make_fofn_abs_preads(self):
     script_fn = 'noop.sh'
     open(script_fn, 'w').write('echo NOOP preads')
     self.generated_script_fn = script_fn
-    mkdir(os.path.dirname(fn(self.o_fofn)))
     support.make_fofn_abs(fn(self.i_fofn), fn(self.o_fofn))
 
 def task_build_rdb(self):
@@ -89,7 +87,6 @@ def task_build_pdb(self):  #essential the same as build_rdb() but the subtle dif
 
 def task_run_db2falcon(self):
     wd = self.parameters['wd']
-    mkdir(wd)
     #self.las_fofn # TODO: Are there any implicit dependencies, or can we drop this?
     job_done = fn(self.db2falcon_done)
     preads4falcon_fn = fn(self.preads4falcon)
@@ -141,7 +138,6 @@ def task_report_pre_assembly(self):
     # i_length_cutoff_fn was created long ago, so no filesystem issues.
     length_cutoff = support.get_length_cutoff(length_cutoff, i_length_cutoff_fn)
     cwd = self.parameters['cwd']
-    mkdir(cwd)
     script_fn = os.path.join(cwd , 'run_report_pre_assembly.sh')
     job_done = os.path.join(cwd, 'report_pa_done')
     kwds = {
@@ -162,7 +158,6 @@ def task_run_daligner(self):
     daligner_script = self.parameters['daligner_script']
     job_uid = self.parameters['job_uid']
     cwd = self.parameters['cwd']
-    #mkdir(cwd)
     db_prefix = self.parameters['db_prefix']
     config = self.parameters['config']
     script_dir = os.path.join(cwd)
@@ -196,7 +191,6 @@ def task_run_las_merge(self):
     script = self.parameters['merge_script']
     job_id = self.parameters['job_id'] # aka 'block'
     cwd = self.parameters['cwd']
-    mkdir(cwd)
 
     gathered_dict = read_gathered_las(gathered_las_fn)
     las_paths = gathered_dict[job_id]
@@ -369,8 +363,6 @@ def task_daligner_gather(self):
     nblock = self.parameters['nblock']
     LOG.debug('nblock=%d, out_dir:\n%s'%(nblock, out_dict))
     job_rundirs = [os.path.dirname(fn(dal_done)) for dal_done in out_dict.values()]
-    wdir = os.path.dirname(gathered_fn)
-    #mkdir(wdir)
     with open(gathered_fn, 'w') as ofs:
         for block, las_path in support.daligner_gather_las(job_rundirs):
             ofs.write('{} {}\n'.format(block, las_path))

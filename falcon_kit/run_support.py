@@ -509,7 +509,7 @@ def run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn, job_
 
 def run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_length, length_cutoff, o_json_fn, job_done, script_fn):
     script = bash.script_run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_length, length_cutoff, o_json_fn)
-    bash.write_script_and_wrapper(script, script_fn, job_done)
+    bash.write_script(script, script_fn, job_done)
 
 def run_daligner(daligner_script, db_prefix, config, job_done, script_fn):
     bash.write_script(daligner_script, script_fn, job_done)

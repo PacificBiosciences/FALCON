@@ -125,7 +125,9 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
             job_queue=config['job_queue'],
             sge_option=config.get('sge_option', ''),
             watcher_type=config['pwatcher_type'],
-            watcher_directory=config['pwatcher_directory'])
+            watcher_directory=config['pwatcher_directory'],
+            use_tmpdir=config.get('use_tmpdir'),
+    )
     run(wf, config,
             os.path.abspath(input_config_fn),
             input_fofn_plf=input_fofn_plf,
