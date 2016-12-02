@@ -215,6 +215,7 @@ def task_run_las_merge(self):
 
 def task_run_consensus(self):
     las_fn = fn(self.las)
+    las_dir = os.path.dirname(las_fn)
     out_file_fn = fn(self.out_file)
     out_done = 'out.done' #fn(self.out_done)
     job_id = self.parameters['job_id']
@@ -222,9 +223,9 @@ def task_run_consensus(self):
     config = self.parameters['config']
     prefix = self.parameters['prefix']
     p_id = int(job_id)
-    script_dir = os.path.join( cwd )
-    script_fn =  os.path.join( script_dir , 'c_%05d.sh' % (p_id))
-    db_fn = os.path.abspath('{cwd}/../../{prefix}'.format(**locals())) # ASSUMING 2-levels deep. TODO: DB should be an input.
+    script_dir = os.path.join(cwd)
+    script_fn = os.path.join(script_dir, 'c_%05d.sh' % (p_id))
+    db_fn = os.path.abspath('{las_dir}/../{prefix}'.format(**locals())) # TODO(CD): DB should be an input.
     #merge_job_dir = os.path.dirname(merged_las_fn)
     #las_fn = os.path.abspath('{merge_job_dir}/{prefix}.{job_id}.las'.format(**locals()))
     args = {
