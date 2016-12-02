@@ -55,7 +55,7 @@ def write_script(script, script_fn, job_done_fn=None):
         exe = write_sub_script(ofs, script)
 
 def write_script_and_wrapper_top(script, wrapper_fn, job_done):
-    """
+    """NOT USED.
     Write script to a filename based on wrapper_fn, in same directory.
     Write wrapper to call it,
      and to write job_done on success and job_done.exit on any exit.
@@ -92,6 +92,8 @@ def select_rundir(tmpdir, wdir, script):
     return '{}/{}/falcontmp/{}/{}'.format(tmpdir, user, wdir, digest)
 
 def write_script_and_wrapper_for_tmp(tmpdir, script, wrapper_fn, job_done):
+    """NOT USED. This will be done in pypeFLOW.
+    """
     wdir = os.path.dirname(os.path.abspath(wrapper_fn))
     root, ext = os.path.splitext(os.path.basename(wrapper_fn))
     sub_script_bfn = root + '.xsub' + ext
@@ -117,7 +119,8 @@ rm -rf {rdir}
     return write_script_and_wrapper_top(tmp_wrapper_script, wrapper_fn, job_done)
 
 def get_write_script_and_wrapper(config):
-    """Return a function.
+    """NOT USED. This will be done in pypeFLOW.
+    Return a function.
     For now, we actually use only config['use_tmpdir'], a boolean.
     """
     use_tmpdir = config.get('use_tmpdir', None)

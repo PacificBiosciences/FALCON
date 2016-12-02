@@ -39,7 +39,9 @@ def update_env_in_script(fn, names):
         ofs.write(content)
 
 def use_tmpdir_for_files(basenames, src_dir, link_dir):
-    """Generate script to copy db files to tmpdir (for speed).
+    """NOT USED. Kept only for reference. This will be done in pypeFLOW.
+
+    Generate script to copy db files to tmpdir (for speed).
     - Choose tmp_dir, based on src_dir name.
     - rsync basenames into tmp_dir  # after 'flock', per file
     - symlink from link_dir into tmp_dir.
@@ -291,7 +293,7 @@ def get_dict_from_old_falcon_cfg(config):
         tmpdir = config.get(section, 'use_tmpdir')
         if '/' in tmpdir:
             tempfile.tempdir = tmpdir
-            use_tmpdir = True
+            use_tmpdir = tmpdir
         else:
             use_tmpdir = config.getboolean(section, 'use_tmpdir')
     else:
@@ -507,7 +509,7 @@ def run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn, job_
 
 def run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_length, length_cutoff, o_json_fn, job_done, script_fn):
     script = bash.script_run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_length, length_cutoff, o_json_fn)
-    bash.write_script_and_wrapper_top(script, script_fn, job_done)
+    bash.write_script_and_wrapper(script, script_fn, job_done)
 
 def run_daligner(daligner_script, db_prefix, config, job_done, script_fn):
     bash.write_script(daligner_script, script_fn, job_done)
