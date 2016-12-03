@@ -215,7 +215,7 @@ def task_run_las_merge(self):
 
 def task_run_consensus(self):
     las_fn = fn(self.las)
-    las_dir = os.path.dirname(las_fn)
+    db_fn = fn(self.db)
     out_file_fn = fn(self.out_file)
     out_done = 'out.done' #fn(self.out_done)
     job_id = self.parameters['job_id']
@@ -225,7 +225,6 @@ def task_run_consensus(self):
     p_id = int(job_id)
     script_dir = os.path.join(cwd)
     script_fn = os.path.join(script_dir, 'c_%05d.sh' % (p_id))
-    db_fn = os.path.abspath('{las_dir}/../{prefix}'.format(**locals())) # TODO(CD): DB should be an input.
     #merge_job_dir = os.path.dirname(merged_las_fn)
     #las_fn = os.path.abspath('{merge_job_dir}/{prefix}.{job_id}.las'.format(**locals()))
     args = {
@@ -312,9 +311,10 @@ def task_merge_scatter(self):
     content = json.dumps(tasks, sort_keys=True, indent=4, separators=(',', ': '))
     open(scatter_fn, 'w').write(content)
 def task_consensus_scatter(self):
-    scatter_fn = self.scattered
+    scattered_fn = self.scattered
     gathered_fn = self.gathered
-    wd = os.path.dirname(scatter_fn)
+    db_fn = self.db
+    wd = os.path.dirname(scattered_fn)
     par = self.parameters
     db_prefix = par['db_prefix']
     config = par['config']
@@ -339,6 +339,7 @@ def task_consensus_scatter(self):
                        'sge_option': config['sge_option_cns'],
         }
         inputs =  {'las': las_fn,
+                   'db': db_fn,
         }
         outputs = {'out_file': out_file_fn,
                    #'out_done': out_done_fn,
@@ -354,7 +355,7 @@ def task_consensus_scatter(self):
         }
         tasks.append(task_desc)
     content = json.dumps(tasks, sort_keys=True, indent=4, separators=(',', ': '))
-    open(scatter_fn, 'w').write(content)
+    open(scattered_fn, 'w').write(content)
 
 def task_daligner_gather(self):
     """Find all .las leaves so far.

@@ -263,6 +263,7 @@ def run(wf, config,
         make_task = PypeTask(
                 inputs = {
                     'gathered': las_fopfn_plf,
+                    'db': raw_reads_db_plf,
                 },
                 outputs = {
                     'scattered': scattered_plf,
