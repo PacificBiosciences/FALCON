@@ -390,3 +390,50 @@ def task_merge_gather(self):
     #pread_dir = os.path.dirname(wdir) # by convention, for now
     # Generate las.fofn in run-dir. # No longer needed!
     #system('find {}/m_*/ -name "preads.*.las" >| {}'.format(pread_dir, las_fofn_fn))
+
+
+def task_dump_rawread_ids(self):
+    rawread_db = fn(self.rawread_db)
+    rawread_id_file = fn(self.rawread_id_file)
+    system("DBshow -n %s | tr -d '>' | LD_LIBRARY_PATH= awk '{print $1}' > %s" % (rawread_db, rawread_id_file))
+
+def task_dump_pread_ids(self):
+    pread_db = fn(self.pread_db)
+    pread_id_file = fn(self.pread_id_file)
+    system("DBshow -n %s | tr -d '>' | LD_LIBRARY_PATH= awk '{print $1}' > %s" % (pread_db, pread_id_file))
+
+def task_generate_read_to_ctg_map(self):
+    from .fc_asm_graph import AsmGraph
+    rawread_id_file = fn(self.rawread_id_file)
+    pread_id_file = fn(self.pread_id_file)
+    read_to_contig_map = fn(self.read_to_contig_map)
+
+    pread_did_to_rid = open(pread_id_file).read().split('\n')
+    rid_to_oid = open(rawread_id_file).read().split('\n')
+
+    asm_G = AsmGraph(fn(self.sg_edges_list),
+                        fn(self.utg_data),
+                        fn(self.ctg_paths))
+
+    pread_to_contigs = {}
+
+    with open(read_to_contig_map, 'w') as f:
+        for ctg in asm_G.ctg_data:
+            if ctg[-1] == 'R':
+                continue
+            ctg_g = asm_G.get_sg_for_ctg(ctg)
+            for n in ctg_g.nodes():
+                pid = int(n.split(':')[0])
+
+                rid = pread_did_to_rid[pid].split('/')[1]
+                rid = int(int(rid)/10)
+                oid = rid_to_oid[rid]
+                k = (pid, rid, oid)
+                pread_to_contigs.setdefault(k, set())
+                pread_to_contigs[k].add(ctg)
+
+
+        for k in pread_to_contigs:
+            pid, rid, oid = k
+            for ctg in list(pread_to_contigs[ k ]):
+                print >>f, '%09d %09d %s %s' % (pid, rid, oid, ctg)

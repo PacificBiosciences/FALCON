@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from pypeflow.simple_pwatcher_bridge import (PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase,
         makePypeLocalFile, fn, PypeTask)
 PypeThreadTaskBase = MyFakePypeThreadTaskBase
-from falcon_kit.fc_asm_graph import AsmGraph
+from .. import pype_tasks
 import argparse
 import glob
 import logging
@@ -11,54 +11,12 @@ import subprocess as sp
 import shlex
 import os
 
+LOG = logging.getLogger(__name__)
+
 def make_dirs(d):
     if not os.path.isdir(d):
+        LOG.debug('mkdirs {}'.format(d))
         os.makedirs(d)
-
-def dump_rawread_ids(self):
-    rawread_db = fn(self.rawread_db)
-    rawread_id_file = fn(self.rawread_id_file)
-    os.system("DBshow -n %s | tr -d '>' | LD_LIBRARY_PATH= awk '{print $1}' > %s" % (rawread_db, rawread_id_file))
-
-def dump_pread_ids(self):
-    pread_db = fn(self.pread_db)
-    pread_id_file = fn(self.pread_id_file)
-    os.system("DBshow -n %s | tr -d '>' | LD_LIBRARY_PATH= awk '{print $1}' > %s" % (pread_db, pread_id_file))
-
-def generate_read_to_ctg_map(self):
-    rawread_id_file = fn(self.rawread_id_file)
-    pread_id_file = fn(self.pread_id_file)
-    read_to_contig_map = fn(self.read_to_contig_map)
-
-    pread_did_to_rid = open(pread_id_file).read().split('\n')
-    rid_to_oid = open(rawread_id_file).read().split('\n')
-
-    asm_G = AsmGraph(fn(self.sg_edges_list),
-                        fn(self.utg_data),
-                        fn(self.ctg_paths))
-
-    pread_to_contigs = {}
-
-    with open(read_to_contig_map, 'w') as f:
-        for ctg in asm_G.ctg_data:
-            if ctg[-1] == 'R':
-                continue
-            ctg_g = asm_G.get_sg_for_ctg(ctg)
-            for n in ctg_g.nodes():
-                pid = int(n.split(':')[0])
-
-                rid = pread_did_to_rid[pid].split('/')[1]
-                rid = int(int(rid)/10)
-                oid = rid_to_oid[rid]
-                k = (pid, rid, oid)
-                pread_to_contigs.setdefault(k, set())
-                pread_to_contigs[k].add(ctg)
-
-
-        for k in pread_to_contigs:
-            pid, rid, oid = k
-            for ctg in list(pread_to_contigs[ k ]):
-                print >>f, '%09d %09d %s %s' % (pid, rid, oid, ctg)
 
 def get_read_ctg_map(rawread_dir, pread_dir, asm_dir):
     read_map_dir = os.path.abspath(os.path.join(asm_dir, 'read_maps'))
@@ -82,7 +40,7 @@ def get_read_ctg_map(rawread_dir, pread_dir, asm_dir):
               inputs = {'rawread_db': rawread_db},
               outputs = {'rawread_id_file': rawread_id_file},
     )
-    wf.addTask(task(dump_rawread_ids))
+    wf.addTask(task(pype_tasks.task_dump_rawread_ids))
 
     pread_db = makePypeLocalFile(os.path.join(pread_dir, 'preads.db'))
     pread_id_file = makePypeLocalFile(os.path.join(read_map_dir, 'dump_pread_ids', 'pread_ids'))
@@ -91,7 +49,7 @@ def get_read_ctg_map(rawread_dir, pread_dir, asm_dir):
                inputs = {'pread_db': pread_db},
                outputs = {'pread_id_file': pread_id_file},
     )
-    wf.addTask(task(dump_pread_ids))
+    wf.addTask(task(pype_tasks.task_dump_pread_ids))
 
     wf.refreshTargets() # block
 
@@ -111,7 +69,7 @@ def get_read_ctg_map(rawread_dir, pread_dir, asm_dir):
               inputs = inputs,
               outputs = {'read_to_contig_map': read_to_contig_map},
     )
-    wf.addTask(task(generate_read_to_ctg_map))
+    wf.addTask(task(pype_tasks.task_generate_read_to_ctg_map))
 
     wf.refreshTargets() # block
 

@@ -455,3 +455,6 @@ def main(argv=sys.argv):
         help='(Optional)JSON config for standard Python logging module')
     args = parser.parse_args(argv[1:])
     main1(argv[0], args.config, args.logger)
+
+if __name__ == '__main__':
+    main()
