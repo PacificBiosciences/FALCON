@@ -79,19 +79,29 @@ output to :ref:`fc_consensus.py <fc_consensus>` to generate a fasta file with co
 .. code-block:: bash
 
     0-rawreads/
-        ├── pre_assembly_stats.json   # pre-assembly stats
-        ├── cns_done                  # consensus sentinel file
-        ├── preads/                   # sub-dir for error correction
-        ├── m_*/                      # dirs for all of the LA4Merge jobs
-        ├── da_done                   # daligner sentinel file
         ├── job_*                     # dirs for all of the daligner jobs
-        ├── length_cutoff             # text file with just the length cutoff
+        ├── m_*/                      # dirs for all of the LA4Merge jobs
+        ├── preads/                   # sub-dir for preads generation
+        ├── report/		      # pre-assembly stats
+        ├── length_cutoff             # text file with length cutoff for seed reads
         ├── raw_reads.db              # dazzler DB file
-        ├── rdb_build_done            # database construction sentinel file
-        ├── run_jobs.sh               # listing of all overlap step commands
         ├── input.fofn                # list if your input *.fasta files
+        ├── cns-scatter/	      # dir of scripts for falcon-consensus jobs
+        ├── daligner-scatter/	      # dir of scripts for daligner jobs
+        ├── merge-scatter/	      # dir of scripts for LAMerge jobs
+        ├── merge-gather/	      # dir of scripts for gathering LAMerge inputs
+	├── raw-gather/	      	      # dir of scripts for gathering daligner jobs for merging
+        ├── raw-fofn-abs	      # dir of scripts for gathering raw reads inputs
+        ├── pwatcher.dir	      # dir of individual pipeline jobs stderr and stdout 
+        ├── rdb_build_done            # database construction sentinel file
         ├── prepare_rdb.sh            # env wrapper script
-        └── prepare_rdb.sub.sh        # driver script for this step in the pipeline
+        ├── run_jobs.sh               # listing of all overlap step commands
+        ├── run.sh		      # masker job script
+        ├── run.sh.done		      # sentinel file for all jobs
+        ├── task.json		      # json file specifying inputs, outputs, and params
+        └── task.sh		      # script to run json file
+
+
 
 The following parameters affect this step directly:
 
@@ -127,20 +137,23 @@ details on actual parameter settings used.
 .. code-block:: bash
 
     1-preads_ovl/
-        ├── db2falcon_done          # sentinel file for final preads4falcon.fasta output
-        ├── preads4falcon.fasta     # final corrected reads used in Assembly Graph
-        ├── run_db2falcon.sh        # env wrapper script
-        ├── run_db2falcon.sub.sh    # script to output preads from dazzler DB
-        ├── p_merge_done            # sentinel file for *.las merging completion
+        ├── job_*/ 		    # directories for daligner jobs
         ├── m_*/                    # directories for LA4Merge jobs
-        ├── da_done                 # sentinel file for completion of daligner jobs
-        ├── job_*/                  # directories for daligner jobs
+        ├── db2falcon/	      	    # dir of scripts for formatting preads for falcon
+        ├── gathered-las/	    # dir of scripts for gathering daligner jobs
+        ├── merge-gather/	    # dir of scripts for gathering LAMerge inputs
+        ├── merge-scatter/	    # dir of scripts for LAMerge jobs
+        ├── daligner-scatter/	    # dir of scripts for daligner jobs
         ├── pdb_build_done          # sentinel file for pread DB building
         ├── preads.db               # preads dazzler DB
         ├── run_jobs.sh             # listing of all pread overlap job commands
         ├── prepare_pdb.sh          # env wrapper script
-        ├── prepare_pdb.sub.sh      # driver script for this step of the pipeline
-        └── input_preads.fofn       # list of your out.XXXXX.fasta's from previous step
+        ├── pwatcher.dir	    # dir of individual pipeline jobs stderr and stdout 
+        ├── run_jobs.sh             # listing of all overlap step commands
+        ├── run.sh		    # masker job script
+        ├── run.sh.done		    # sentinel file for all jobs
+        ├── task.json		    # json file specifying inputs, outputs, and params
+        └── task.sh		    # script to run json file
 
 The following parameters affect this step directly:
 
