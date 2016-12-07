@@ -200,3 +200,9 @@ sample_perl_counts_output = """
 def test_calc_metric_fragmentation():
     frag = f.calc_metric_fragmentation(sample_perl_counts_output)
     eq_(frag, 2.5)
+
+def test_args_from_line():
+    line = 'LAmerge -v preads.1 preads.1.preads.1.C0.S preads.1.preads.1.N0.S'
+    expected = ['preads.1', 'preads.1.preads.1.C0.S', 'preads.1.preads.1.N0.S']
+    result = list(f.yield_args_from_line(line))
+    helpers.equal_list(result, expected)

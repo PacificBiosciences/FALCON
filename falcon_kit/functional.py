@@ -208,6 +208,15 @@ def get_mjob_data(run_jobs_stream):
             mjob_data[p_id].append(l)
     return mjob_data
 
+def yield_args_from_line(bash_line):
+    """Given a line of LAmerge, etc.,
+    return [output_las_fn, input_las_fn0, input_las_fn1, ...]
+    """
+    for word in bash_line.split():
+        if word.startswith('-') or word in ('LAcheck', 'LAmerge', 'LAsort'):
+            continue
+        yield word
+
 _re_sub_daligner = re.compile(r'^daligner\b', re.MULTILINE)
 def xform_script_for_preads(script):
     daligner_exe = 'daligner_p'
