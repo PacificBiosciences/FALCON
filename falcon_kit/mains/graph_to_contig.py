@@ -258,11 +258,11 @@ def main(argv=None):
                     delta_len = len(seq) - len(base_seq)
                     idt = 0.0
                     cov = 0.0
-                    if len(base_seq) > 2000 and len(seq) > 2000:
-                        aln_data, x, y = get_aln_data(base_seq, seq)
-                        if len( aln_data ) != 0:
-                            idt =  1.0-1.0*aln_data[-1][-1] / aln_data[-1][-2]
-                            cov = 1.0*(aln_data[-1][3]-aln_data[-1][2])/aln_data[-1][4]
+                    #if len(base_seq) > 2000 and len(seq) > 2000:
+                    #    aln_data, x, y = get_aln_data(base_seq, seq)
+                    #    if len( aln_data ) != 0:
+                    #        idt =  1.0-1.0*aln_data[-1][-1] / aln_data[-1][-2]
+                    #        cov = 1.0*(aln_data[-1][3]-aln_data[-1][2])/aln_data[-1][4]
 
                     atig_output.append( (v, w, atig_path, total_length, total_score, seq, atig_path_edges, delta_len, idt, cov) )
 
