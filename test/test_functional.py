@@ -206,3 +206,5 @@ def test_args_from_line():
     expected = ['preads.1', 'preads.1.preads.1.C0.S', 'preads.1.preads.1.N0.S']
     result = list(f.yield_args_from_line(line))
     helpers.equal_list(result, expected)
+    bash_lines = [line]
+    las_files = [word + '.las' for word in f.yield_args_from_line(line) for line in bash_lines if line.startswith('LAmerge')][1:]

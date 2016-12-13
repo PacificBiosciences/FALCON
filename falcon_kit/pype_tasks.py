@@ -195,7 +195,11 @@ def task_run_las_merge(self):
     gathered_dict = read_gathered_las(gathered_las_fn)
     las_paths = gathered_dict[job_id]
     for las_path in las_paths:
-        src = os.path.relpath(las_path, cwd)
+        assert os.path.isabs(las_path)
+        if os.path.commonprefix([las_path, cwd]) == '/':
+            src = las_path
+        else:
+            src = os.path.relpath(las_path, cwd)
         tgt = os.path.join(cwd, os.path.basename(las_path))
         LOG.debug('symlink {!r} -> {!r}'.format(src, tgt))
         os.symlink(src, tgt)

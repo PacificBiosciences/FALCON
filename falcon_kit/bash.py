@@ -276,17 +276,43 @@ def scripts_merge(config, db_prefix, run_jobs_fn):
     """
     with open(run_jobs_fn) as f:
         mjob_data = functional.get_mjob_data(f)
+    bash_funcs = """
+# Get the real path of a link, following all links (since 'readlink -f' is not on OSX).
+# http://stackoverflow.com/questions/7665/how-to-resolve-symbolic-links-in-a-shell-script/697552
+realpath() {
+    local r=$1; local t=$(readlink $r)
+    while [ $t ]; do
+        r=$(cd $(dirname $r) && cd $(dirname $t) && pwd -P)/$(basename $t)
+        t=$(readlink $r)
+    done
+    echo $r
+}
+rmfollow() {
+    local path=$(realpath $1)
+    rm -f "${path}"
+}
+"""
     #las_fns = functional.get_las_filenames(mjob_data, db_prefix) # ok, but tricky
     for p_id in mjob_data:
+        #las_fn = las_fns[p_id]
+        # We already know the output .las filename by convention.
+        las_fn = '%s.%s.las' % (db_prefix, p_id)
+
         bash_lines = mjob_data[p_id]
 
         script = []
         for line in bash_lines:
-            script.append(line.replace('&&', ';'))
-        #las_fn = las_fns[p_id]
-        # We already know the output .las filename by convention.
-        las_fn = '%s.%s.las' % (db_prefix, p_id)
-        yield p_id, '\n'.join(script + ['']), las_fn
+            script.append(line) # Assume we no longer have "&& rm".
+        for line in bash_lines:
+            if not line.startswith('LAmerge'):
+                continue
+            las_files = [word + '.las' for word in functional.yield_args_from_line(line)]
+            assert las_fn == os.path.basename(las_files[0])
+            script.extend('rmfollow {}'.format(fn) for fn in las_files[1:])
+            break
+
+        content = bash_funcs + '\n'.join(script + [''])
+        yield p_id, content, las_fn
 
 def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
     """config: falcon_sense_option, length_cutoff
