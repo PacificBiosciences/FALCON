@@ -344,6 +344,9 @@ def run(wf, config,
 
     preads_nblock = support.get_nblock(fn(preads_db))
     #### run daligner
+    concurrent_jobs = config['ovlp_concurrent_jobs']
+    wf.max_jobs = concurrent_jobs
+
     config['sge_option_da'] = config['sge_option_pda']
 
     scattered_plf = os.path.join(pread_dir, 'daligner-scatter', 'scattered.json')
@@ -406,9 +409,6 @@ def run(wf, config,
     wf.addTasks(merge_tasks)
     task, las_fofn_plf, las_fopfn_plf = create_merge_gather_task(os.path.join(pread_dir, 'merge-gather'), p_ids_merged_las)
     wf.addTask(task)
-
-    concurrent_jobs = config['ovlp_concurrent_jobs']
-    wf.max_jobs = concurrent_jobs
 
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
