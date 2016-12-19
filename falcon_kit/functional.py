@@ -33,7 +33,10 @@ def get_daligner_job_descriptions_sans_LAcheck(run_jobs_stream, db_prefix, singl
     descs = get_daligner_job_descriptions(run_jobs_stream, db_prefix, single)
     result = {}
     for k,v in descs.iteritems():
-        result[k] = skip_LAcheck(v)
+        bash = skip_LAcheck(v)
+        bash = bash.replace('LAsort', 'python -m falcon_kit.mains.LAsort {}'.format(db_prefix))
+        bash = bash.replace('LAmerge', 'python -m falcon_kit.mains.LAmerge {}'.format(db_prefix))
+        result[k] = bash
     return result
 
 def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):

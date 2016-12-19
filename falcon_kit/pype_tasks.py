@@ -256,7 +256,7 @@ def task_daligner_scatter(self):
     LOG.info('Skip LAcheck after daligner? {}'.format(skip_checks))
     func = task_run_daligner
     func_name = '{}.{}'.format(func.__module__, func.__name__)
-    for job_uid, script in bash.scripts_daligner(run_jobs_fn, db_prefix, db_build_done, nblock, pread_aln, skip_checks):
+    for job_uid, script in bash.scripts_daligner(run_jobs_fn, db_prefix, db_build_done, nblock, pread_aln, skip_check=skip_checks):
         job_done_fn = 'job_%s_done' %job_uid
         parameters =  {'daligner_script': script,
                        'job_uid': job_uid,
