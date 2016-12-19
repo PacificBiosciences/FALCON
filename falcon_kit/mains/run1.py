@@ -262,6 +262,9 @@ def run(wf, config,
             sys.exit(0)
 
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
+        concurrent_jobs = config['cns_concurrent_jobs']
+        wf.max_jobs = concurrent_jobs
+
         scattered_plf = os.path.join(rawread_dir, 'cns-scatter', 'scattered.json')
         make_task = PypeTask(
                 inputs = {
@@ -301,8 +304,6 @@ def run(wf, config,
         task = make_task(pype_tasks.task_report_pre_assembly)
         wf.addTask(task)
 
-        concurrent_jobs = config['cns_concurrent_jobs']
-        wf.max_jobs = concurrent_jobs
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
 
