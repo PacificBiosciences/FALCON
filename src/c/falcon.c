@@ -147,6 +147,8 @@ align_tags_t * get_align_tags( char * aln_q_seq,
             p_j = j;
             p_jj = jj;
             p_q_base = aln_q_seq[k];
+        } else {
+            break; // when there is a big alignment gap > UINT8_MAX, stop to extned the tagging string
         }
     }
     // sentinal at the end
