@@ -105,8 +105,9 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#assessing-run-performance">Assessing Run Performance</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#raw-coverage">Raw Coverage</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#preassembled-reads">Preassembled Reads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#raw-and-pread-coverage-and-quality">Raw and Pread Coverage and Quality</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#contig-stats">Contig Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#assembly-graph-and-pread-overlaps">Assembly Graph and Pread Overlaps</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#troubleshooting-run">Troubleshooting Run</a></li>
@@ -282,8 +283,8 @@ $ find 0-rawreads/ -name <span class="s2">&quot;m_*done&quot;</span> <span class
 </div>
 <div class="section" id="assessing-run-performance">
 <h2>Assessing Run Performance<a class="headerlink" href="#assessing-run-performance" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="raw-coverage">
-<h3>Raw Coverage<a class="headerlink" href="#raw-coverage" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="raw-and-pread-coverage-and-quality">
+<h3>Raw and Pread Coverage and Quality<a class="headerlink" href="#raw-and-pread-coverage-and-quality" title="Permalink to this headline">¶</a></h3>
 <p>The <em>E. coli</em> subreads
 are a total of 1.01 Gb of data in 105,451 reads. (<a class="reference download internal" href="_downloads/countFasta.pl" download=""><code class="xref download docutils literal"><span class="pre">countFasta.pl</span></code></a>
 is a useful script by Joseph Fass and Brad Sickler at UC Davis for calculating total sequence
@@ -312,7 +313,7 @@ Distribution of Read Lengths <span class="o">(</span>Bin <span class="nv">size</
 raw read length cut off of 500bp in the <a class="reference internal" href="commands.html#dazzdbsplit"><span class="std std-ref">DBsplit</span></a> options. This file can
 also be used to plot a histogram (add link to plot and R Code) of raw read lengths (Count~Bin), a CDF of the raw read counts
 (% Reads~Bin) or bases (% Bases~Bin), and determine the raw read N50 (Average where % Bases = 50).</p>
-<p>The genome of this <em>E. coli</em> strain is 4.65 Mb long, yielded a raw read coverage of ~207 fold.
+<p>The genome of this <em>E. coli</em> strain is 4.65 Mb long for a raw read coverage of ~207 fold.
 Confirm this with the preassembly report:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ cat 0-rawreads/report/pre_assembly_stats.json
 
@@ -347,9 +348,49 @@ fragmentation, truncation, and yield stats summarize the quality of pread assemb
 A good preassembled yield should be greater than 50%. Note that if an automated seed read length
 is used for this data (22486), preassembled seed read truncation is ~6kb, indicating that many of the longest
 raw reads are not supported by the rest of the data.</p>
+<p>You can similarly summarize the contents of the dazzler database for preads using DBstats
+and plotting in R (links).</p>
 </div>
-<div class="section" id="preassembled-reads">
-<h3>Preassembled Reads<a class="headerlink" href="#preassembled-reads" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="contig-stats">
+<h3>Contig Stats<a class="headerlink" href="#contig-stats" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>When your run is complete, you can summarize your assembly stats using the countFasta.pl script:</dt>
+<dd><div class="first last highlight-bash"><div class="highlight"><pre><span></span>$ countFasta.pl p_ctg.fa &gt; p_ctg.stats
+$ countFasta.pl a_ctg.fa &gt; a_ctg.stats
+$ tail p_ctg.stats
+
+Total length of sequence:       <span class="m">4635395</span> bp
+Total number of sequences:      1
+N25 stats:                      25% of total sequence length is contained in the <span class="m">1</span> sequences &gt;<span class="o">=</span> <span class="m">4635395</span> bp
+N50 stats:                      50% of total sequence length is contained in the <span class="m">1</span> sequences &gt;<span class="o">=</span> <span class="m">4635395</span> bp
+N75 stats:                      75% of total sequence length is contained in the <span class="m">1</span> sequences &gt;<span class="o">=</span> <span class="m">4635395</span> bp
+Total GC count:                 <span class="m">2352187</span> bp
+GC %:                           50.74 %
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="assembly-graph-and-pread-overlaps">
+<h3>Assembly Graph and Pread Overlaps<a class="headerlink" href="#assembly-graph-and-pread-overlaps" title="Permalink to this headline">¶</a></h3>
+<p>Assembly contiguity can be enhanced by adjusting a few parameters in the last stage of the
+assembly process. You can try a grid of pread length cut offs for the filtering of the final
+overlaps in the assembly graph. To try different length cut off, rename your 2-asm-falcon dir,
+modify the config file, rename the log and mypwatcher directory, and restart falcon:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ mv 2-asm-falcon 2-asm-falcon_12kb
+$ mv mypwatcher/ mypwatcher0/
+$ mv all.log all0.log
+$ qsub run_falcon.sh
+</pre></div>
+</div>
+<p>TRY THIS OR TRY SHELL SCRIPT IN 2- DIR</p>
+<p>The other parameter to adjust is the number of overlaps in the assembly graph. First, look
+at a histogram of the number of overlaps on the 5&#8217; and 3&#8217; end of each read. Run the falcon utility:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> 2-asm-falcon
+$ fc_ovlp_stats.py --fofn 1-preads_ovl/merge-gather/las.fofn &gt; ovlp.stats
+</pre></div>
+</div>
+<p>Add R code for overlap Hists</p>
 </div>
 </div>
 <div class="section" id="troubleshooting-run">
