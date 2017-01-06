@@ -1,0 +1,449 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tutorial &mdash; FALCON 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="about.html"/>
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="FALCON 0.5 documentation" href="index.html"/>
+        <link rel="next" title="Parameters" href="parameters.html"/>
+        <link rel="prev" title="Commands" href="commands.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FALCON
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Falcon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Commands</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#input-files">Input Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#download-e-coli-dataset">1. Download <em>E. coli</em> dataset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#create-fofn">2. Create FOFN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#download-configuration-file">3. Download configuration file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#running-falcon">Running Falcon</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#assessing-run-progress">Assessing Run Progress</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#counting-complete-jobs">Counting Complete Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#determing-what-jobs-are-running">Determing What Jobs are Running</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#assessing-run-performance">Assessing Run Performance</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#raw-coverage">Raw Coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#preassembled-reads">Preassembled Reads</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting-run">Troubleshooting Run</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tertiary.html">Tertiary</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">FALCON</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Tutorial</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/tutorial.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <a class="reference internal image-reference" href="_images/falcon_icon2.png"><img alt="Falcon Assembler" class="align-right" src="_images/falcon_icon2.png" style="width: 200px; height: 200px;" /></a>
+<div class="section" id="tutorial">
+<span id="id1"></span><h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>In this section we will run the FALCON pipeline on an <em>E. coli</em> dataset.
+We will work through the commands and results and give you ideas of how to assess
+the perfomance of FALCON on your dataset so you can modify parameters and trouble-shoot more
+effectively. This tutorial is a beginners guide to FALCON but assumes bioinformatics fluency.</p>
+<div class="section" id="input-files">
+<h2>Input Files<a class="headerlink" href="#input-files" title="Permalink to this headline">¶</a></h2>
+<p>You will need three types of files to get started, your PacBio data in fasta format (can be one or many files), a
+text file telling FALCON where to find your fasta files, and a <a class="reference internal" href="parameters.html#configuration"><span class="std std-ref">configuration</span></a> file.
+All files except the fasta
+files must be in your job directory.</p>
+<div class="section" id="download-e-coli-dataset">
+<h3>1. Download <em>E. coli</em> dataset<a class="headerlink" href="#download-e-coli-dataset" title="Permalink to this headline">¶</a></h3>
+<p>An example <em>E. coli</em> dataset can be download from <a class="reference external" href="https://downloads.pacbcloud.com/public/data/git-sym/">here</a>. and then unpacked. e.g.:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ wget https://downloads.pacbcloud.com/public/data/git-sym/ecoli.m140913_050931_42139_c100713652400000001823152404301535_s1_p0.subreads.tar.gz
+$ tar -xvzf ecoli.m140913_050931_42139_c100713652400000001823152404301535_s1_p0.subreads.tar.gz
+</pre></div>
+</div>
+<p>You should find three fasta files of ~350 Mb each in the newly created subdirectory.</p>
+</div>
+<div class="section" id="create-fofn">
+<h3>2. Create FOFN<a class="headerlink" href="#create-fofn" title="Permalink to this headline">¶</a></h3>
+<p>Next, create a &#8220;file-of-file-names&#8221;, (&#8220;fofn&#8221;) with the full path of each fasta file, one per line.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>/my/path/to/data/ecoli.1.subreads.fasta
+/my/path/to/data/ecoli.2.subreads.fasta
+/my/path/to/data/ecoli.3.subreads.fasta
+</pre></div>
+</div>
+</div>
+<div class="section" id="download-configuration-file">
+<h3>3. Download configuration file<a class="headerlink" href="#download-configuration-file" title="Permalink to this headline">¶</a></h3>
+<p>If you are running on a cluster with a scheduler use this a starting point:
+<a class="reference download internal" href="_downloads/fc_run_ecoli.cfg" download=""><code class="xref download docutils literal"><span class="pre">fc_run_ecoli.cfg</span></code></a>
+If you are running your job locally, try this file:
+<a class="reference download internal" href="_downloads/fc_run_ecoli_local.cfg" download=""><code class="xref download docutils literal"><span class="pre">fc_run_ecoli_local.cfg</span></code></a></p>
+<p>These config files are meant to be starting points only! You will need to make adjustments according
+to your particular compute setup.</p>
+<p>Note that I have manually specified a seed read length cutoff of
+15kb rather than using an automated cut off (<a class="reference internal" href="parameters.html#length-cutoff"><span class="std std-ref">length_cutoff</span></a> = -1, with calculated
+length cut off = 22486). The
+raw read coverage is very high (&gt;200X); by reducing the seed read length cutoff, we avoid enriching
+our seed reads for erroneous chimeric (and very long) reads. Try running the assembly using
+the automated seed read length cut off, you should get a fragmented (28 contigs) and
+incomplete assembly (&lt; 900Mb).</p>
+</div>
+</div>
+<div class="section" id="running-falcon">
+<h2>Running Falcon<a class="headerlink" href="#running-falcon" title="Permalink to this headline">¶</a></h2>
+<p>I send all of my FALCON jobs to the scheduler for ease of tracking job progress. Here is an example
+bash script <code class="docutils literal"><span class="pre">run_falcon.sh</span></code> that submits to an <a class="reference external" href="http://gridscheduler.sourceforge.net/htmlman/manuals.html">SGE</a> cluster:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1">#$ -S /bin/bash</span>
+<span class="c1">#$ -N myJob</span>
+<span class="c1">#$ -cwd</span>
+<span class="c1">#$ -q myqueue</span>
+
+<span class="c1"># load dependencies</span>
+module load python/2.7.9 gcc/4.9.2
+
+<span class="c1"># source build</span>
+<span class="nb">cd</span> /path/to/my/build/FALCON-integrate
+<span class="nb">source</span> env.sh
+
+<span class="c1"># navigate to job directory</span>
+<span class="nb">cd</span> /path/to/my/job_dir
+
+<span class="c1"># run it!</span>
+fc_run.py fc_run.cfg
+</pre></div>
+</div>
+<p>To initiate the FALCON run, I just submit my job to the scheduler with a qsub command:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ qsub run_falcon.sh
+</pre></div>
+</div>
+<p>Alternatively, you can add the <code class="docutils literal"><span class="pre">fc_env/bin</span></code> directory to your
+<code class="docutils literal"><span class="pre">$PATH</span></code> and invoke <span class="xref doc">fc_run.py</span> at the command line with your <code class="docutils literal"><span class="pre">fc_run.cfg</span></code> as the argument.
+Note that this shell needs to persist through the entire assembly process so you may need
+to use a window manager like <a class="reference external" href="https://www.gnu.org/software/screen/manual/screen.html">screen</a> to maintain your connection.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>falcon_jobdir$ <span class="nb">export</span> <span class="nv">PYTHONUSERBASE</span><span class="o">=</span>/path/to/FALCON-integrate/fc_env
+falcon_jobdir$ <span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PYTHONUSERBASE</span>/bin:<span class="nv">$PATH</span>
+falcon_jobdir$ fc_run.py fc_run.cfg
+</pre></div>
+</div>
+</div>
+<div class="section" id="assessing-run-progress">
+<h2>Assessing Run Progress<a class="headerlink" href="#assessing-run-progress" title="Permalink to this headline">¶</a></h2>
+<p>Refer to the pipeline document for detailed summary of FALCON job directory structure,
+sequence of commands, and output files created.</p>
+<div class="section" id="counting-complete-jobs">
+<h3>Counting Complete Jobs<a class="headerlink" href="#counting-complete-jobs" title="Permalink to this headline">¶</a></h3>
+<p>The majority of run-time is spent during the daligner phases, performing the alignments and
+then sorting and merging them. To determine how many jobs are performed for each step, refer to <code class="docutils literal"><span class="pre">0-rawreads/run_jobs.sh</span></code>.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ grep <span class="s1">&#39;^#&#39;</span> run_jobs.sh
+
+    <span class="c1"># Daligner jobs (60)</span>
+    <span class="c1"># Initial sort jobs (400)</span>
+    <span class="c1"># Check initial .las files jobs (80) (optional but recommended)</span>
+    <span class="c1"># Remove initial .las files</span>
+    <span class="c1"># Level 1 merge jobs (20)</span>
+    <span class="c1"># Check level 2 .las files jobs (20) (optional but recommended)</span>
+    <span class="c1"># Remove level 1 .las files (optional)</span>
+</pre></div>
+</div>
+<p>To determine how many jobs have completed, count the sentinel files that indicate a job is complete.
+For example:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ find 0-rawreads -n <span class="s2">&quot;job*done&quot;</span> <span class="p">|</span> wc -l
+60
+
+$ find 0-rawreads/ -name <span class="s2">&quot;m_*done&quot;</span> <span class="p">|</span> wc -l
+20
+</pre></div>
+</div>
+</div>
+<div class="section" id="determing-what-jobs-are-running">
+<h3>Determing What Jobs are Running<a class="headerlink" href="#determing-what-jobs-are-running" title="Permalink to this headline">¶</a></h3>
+<p>TO BE DONE</p>
+</div>
+</div>
+<div class="section" id="assessing-run-performance">
+<h2>Assessing Run Performance<a class="headerlink" href="#assessing-run-performance" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="raw-coverage">
+<h3>Raw Coverage<a class="headerlink" href="#raw-coverage" title="Permalink to this headline">¶</a></h3>
+<p>The <em>E. coli</em> subreads
+are a total of 1.01 Gb of data in 105,451 reads. (<a class="reference download internal" href="_downloads/countFasta.pl" download=""><code class="xref download docutils literal"><span class="pre">countFasta.pl</span></code></a>
+is a useful script by Joseph Fass and Brad Sickler at UC Davis for calculating total sequence
+length and other assembly metrics).</p>
+<p>You can confirm that your dazzler database was correctly constructed using a utility from the <a class="reference external" href="https://dazzlerblog.wordpress.com/command-guides/dazz_db-command-guide/">dazzler</a> suite:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ DBstats raw_reads.db &gt; raw_reads.stats
+$ head raw_reads.stats
+
+Statistics <span class="k">for</span> all reads of length <span class="m">500</span> bases or more
+
+        90,747 reads        out of         105,451  <span class="o">(</span> 86.1%<span class="o">)</span>
+        964,281,429 base pairs   out of   1,013,118,375  <span class="o">(</span> 95.2%<span class="o">)</span>
+
+        10,626 average <span class="nb">read</span> length
+        6,805 standard deviation
+
+Base composition: 0.248<span class="o">(</span>A<span class="o">)</span> 0.242<span class="o">(</span>C<span class="o">)</span> 0.263<span class="o">(</span>G<span class="o">)</span> 0.246<span class="o">(</span>T<span class="o">)</span>
+
+Distribution of Read Lengths <span class="o">(</span>Bin <span class="nv">size</span> <span class="o">=</span> 1,000<span class="o">)</span>
+
+        Bin:      Count  % Reads  % Bases     Average
+        45,000:     <span class="m">1</span>      0.0      0.0       45611
+</pre></div>
+</div>
+<p>You can see that we discarded 13.9% of the raw bases and 4.8% of the reads by employing a
+raw read length cut off of 500bp in the <a class="reference internal" href="commands.html#dazzdbsplit"><span class="std std-ref">DBsplit</span></a> options. This file can
+also be used to plot a histogram (add link to plot and R Code) of raw read lengths (Count~Bin), a CDF of the raw read counts
+(% Reads~Bin) or bases (% Bases~Bin), and determine the raw read N50 (Average where % Bases = 50).</p>
+<p>The genome of this <em>E. coli</em> strain is 4.65 Mb long, yielded a raw read coverage of ~207 fold.
+Confirm this with the preassembly report:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ cat 0-rawreads/report/pre_assembly_stats.json
+
+<span class="s2">&quot;genome_length&quot;</span>: 4652500,
+<span class="s2">&quot;length_cutoff&quot;</span>: 15000,
+<span class="s2">&quot;preassembled_bases&quot;</span>: 350302363,
+<span class="s2">&quot;preassembled_coverage&quot;</span>: 75.293,
+<span class="s2">&quot;preassembled_mean&quot;</span>: 10730.33,
+<span class="s2">&quot;preassembled_n50&quot;</span>: 16120,
+<span class="s2">&quot;preassembled_p95&quot;</span>: 22741,
+<span class="s2">&quot;preassembled_reads&quot;</span>: 32646,
+<span class="s2">&quot;preassembled_seed_fragmentation&quot;</span>: 1.451,       <span class="c1"># number split preads / seed reads</span>
+<span class="s2">&quot;preassembled_seed_truncation&quot;</span>: 4453.782,       <span class="c1"># ave bp lost per pread due to low cov</span>
+<span class="s2">&quot;preassembled_yield&quot;</span>: 0.758,                    <span class="c1"># total pread bp / seed read bp</span>
+<span class="s2">&quot;raw_bases&quot;</span>: 964281429,
+<span class="s2">&quot;raw_coverage&quot;</span>: 207.261,
+<span class="s2">&quot;raw_mean&quot;</span>: 10626.042,
+<span class="s2">&quot;raw_n50&quot;</span>: 14591,
+<span class="s2">&quot;raw_p95&quot;</span>: 23194,
+<span class="s2">&quot;raw_reads&quot;</span>: 90747,
+<span class="s2">&quot;seed_bases&quot;</span>: 461851093,
+<span class="s2">&quot;seed_coverage&quot;</span>: 99.269,                        <span class="c1"># raw base coverage depth on seed reads</span>
+<span class="s2">&quot;seed_mean&quot;</span>: 20029.103,
+<span class="s2">&quot;seed_n50&quot;</span>: 19855,
+<span class="s2">&quot;seed_p95&quot;</span>: 28307,
+<span class="s2">&quot;seed_reads&quot;</span>: 23059
+</pre></div>
+</div>
+<p>A note on these statistics: in the process of created preads, seeds reads with insufficient
+raw read coverage (usually due to base errors) will be split or truncated. The preassembled seed
+fragmentation, truncation, and yield stats summarize the quality of pread assembly.
+A good preassembled yield should be greater than 50%. Note that if an automated seed read length
+is used for this data (22486), preassembled seed read truncation is ~6kb, indicating that many of the longest
+raw reads are not supported by the rest of the data.</p>
+</div>
+<div class="section" id="preassembled-reads">
+<h3>Preassembled Reads<a class="headerlink" href="#preassembled-reads" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="troubleshooting-run">
+<h2>Troubleshooting Run<a class="headerlink" href="#troubleshooting-run" title="Permalink to this headline">¶</a></h2>
+<p>If you find your run has died you will need to refer to the log file to determine at what
+stage it failed. For example:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ grep <span class="s1">&#39;ERROR&#39;</span> all.log
+
+2016-11-21 03:21:39,482 - pypeflow.simple_pwatcher_bridge - ERROR - Task Node<span class="o">(</span>0-rawreads/m_00210<span class="o">)</span> failed with exit-code<span class="o">=</span>99
+2016-11-21 03:21:39,482 - pypeflow.simple_pwatcher_bridge - ERROR - Failed to clean-up FakeThread: <span class="nv">jobid</span><span class="o">=</span>Pcfbdb8b3c50d5e <span class="nv">status</span><span class="o">=</span><span class="s1">&#39;EXIT &#39;</span>
+</pre></div>
+</div>
+<p>First, try deleting all directories that failed. You will also need to rename <code class="docutils literal"><span class="pre">all.log</span></code> and <code class="docutils literal"><span class="pre">mypwatcher/</span></code> directory
+to resume the run and preserve their contents for your reference.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ rm -rf 0-rawreads/m_00210
+$ mv mypwatcher/ mypwatcher0/
+$ mv all.log all0.log
+$ qsub run_falcon.sh
+</pre></div>
+</div>
+<p>You can find out more details about the failed jobs in <code class="docutils literal"><span class="pre">mypwatcher/</span></code> to diagnose the problem.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ less mypwatcher/jobs/Pcfbdb8b3c50d5e/stderr
+$ less mypwatcher/jobs/Pcfbdb8b3c50d5e/stdout
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="parameters.html" class="btn btn-neutral float-right" title="Parameters" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="commands.html" class="btn btn-neutral" title="Commands" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Greg Concepcion, Sarah Kingan, Chris Dunn, Jason Chin.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

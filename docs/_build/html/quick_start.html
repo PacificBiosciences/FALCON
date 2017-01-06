@@ -1,0 +1,294 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Quick Start Guide &mdash; FALCON 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="about.html"/>
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="FALCON 0.5 documentation" href="index.html"/>
+        <link rel="next" title="Pipeline" href="pipeline.html"/>
+        <link rel="prev" title="About Falcon" href="about.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FALCON
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Falcon</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#falcon">FALCON</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#falcon-unzip">FALCON_unzip</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">Usage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tertiary.html">Tertiary</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">FALCON</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Quick Start Guide</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/quick_start.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="quick-start-guide">
+<span id="quick-start"></span><h1>Quick Start Guide<a class="headerlink" href="#quick-start-guide" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="falcon">
+<h2>FALCON<a class="headerlink" href="#falcon" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h3>
+<p>By far, the quickest way to get up and running with FALCON is to ensure you have python 2.7.x installed and in your
+path, then follow these simple instructions to clone and install the <a class="reference external" href="https://github.com/PacificBiosciences/FALCON-integrate">FALCON-integrate</a> github repository. This includes
+proper versions of all necessary dependencies. Alternatively, you can install the FALCON github package manually,
+but you will need to do some legwork to make sure you have the right versions of all dependencies installed.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ git clone git://github.com/PacificBiosciences/FALCON-integrate.git
+$ <span class="nb">cd</span> FALCON-integrate
+$ make init
+$ <span class="nb">source</span> env.sh
+$ make config-edit-user
+$ make -j all
+$ make <span class="nb">test</span>  <span class="c1"># to run a simple one</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h3>
+<p>To run a job with your newly installed FALCON-integrate package, simply add the <code class="docutils literal"><span class="pre">fc_env/bin</span></code> directory to your
+<code class="docutils literal"><span class="pre">$PATH</span></code> and invoke <span class="xref doc">fc_run.py</span> with your <code class="docutils literal"><span class="pre">fc_run.cfg</span></code> as the argument.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>falcon_jobdir$ <span class="nb">export</span> <span class="nv">PYTHONUSERBASE</span><span class="o">=</span>/path/to/FALCON-integrate/fc_env
+falcon_jobdir$ <span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PYTHONUSERBASE</span>/bin:<span class="nv">$PATH</span>
+falcon_jobdir$ fc_run.py fc_run.cfg
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="falcon-unzip">
+<h2>FALCON_unzip<a class="headerlink" href="#falcon-unzip" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id1">
+<h3>Installation<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>Installation is very simple, as you are going to install FALCON_unzip into your previously created FALCON <code class="docutils literal"><span class="pre">fc_env</span></code>.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ git clone https://github.com/PacificBiosciences/FALCON_unzip.git
+$ <span class="nb">export</span> <span class="nv">PYTHONUSERBASE</span><span class="o">=</span>/path/to/FALCON-integrate/fc_env
+$ <span class="nb">cd</span> FALCON_unzip
+$ python setup.py install --prefix<span class="o">=</span>/path/to/FALCON-integrate/fc_env
+</pre></div>
+</div>
+</div>
+<div class="section" id="id2">
+<h3>Usage<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>FALCON_unzip operates on a completed FALCON job directory. All that&#8217;s needed is to create an <a class="reference internal" href="parameters.html#fc-unzip-cfg"><span class="std std-ref">fc_unzip.cfg</span></a> and place
+it at the <code class="docutils literal"><span class="pre">$ROOT</span></code> of your FALCON job. Then invoke with <span class="xref std std-ref">fc_unzip.py</span>:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>falcon_jobdir$ <span class="nb">export</span> <span class="nv">PYTHONUSERBASE</span><span class="o">=</span>/path/to/FALCON-integrate/fc_env
+falcon_jobdir$ <span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PYTHONUSERBASE</span>/bin:<span class="nv">$PATH</span>
+falcon_jobdir$ fc_unzip.py fc_unzip.cfg
+</pre></div>
+</div>
+<p><cite>* Note: FALCON_unzip also depends on several commands that are bundled with SMRTAnalysis 3.0.x, not currently
+available for the public. The workaround is to download each tool independently and link the binaries to a path that
+you set in :ref:`fc_unzip.cfg</cite> as your <code class="docutils literal"><span class="pre">smrt_bin</span></code> parameter.</p>
+<ol class="arabic simple">
+<li><a class="reference external" href="https://github.com/samtools/samtools">samtools</a></li>
+<li><a class="reference external" href="https://github.com/PacificBiosciences/pbalign">pbalign</a></li>
+<li><a class="reference external" href="https://github.com/PacificBiosciences/GenomicConsensus/tree/654d0276d4a03f269cd1a14ddd7dfd0f54bede45">GenomicConsensus v1.1.0&#64;654d0276d4a03f269cd1a14ddd7dfd0f54bede45</a></li>
+</ol>
+<p><cite>** Note: the script ``makePbi.py`</cite> is only available from GenomicConsensus 1.1.0 and earlier. To sync the branch
+that has this script, follow these steps:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ git clone https://github.com/PacificBiosciences/GenomicConsensus.git
+$ <span class="nb">cd</span> GenomicConsensus
+$ git reset --hard 654d0276d4a03f269cd1a14ddd7dfd0f54bede45
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pipeline.html" class="btn btn-neutral float-right" title="Pipeline" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="about.html" class="btn btn-neutral" title="About Falcon" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Greg Concepcion, Sarah Kingan, Chris Dunn, Jason Chin.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

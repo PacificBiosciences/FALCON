@@ -1,0 +1,261 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Glossary &mdash; FALCON 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="about.html"/>
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="FALCON 0.5 documentation" href="index.html"/>
+        <link rel="next" title="Frequently Asked Questions" href="faq.html"/>
+        <link rel="prev" title="Parameters" href="parameters.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FALCON
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Falcon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tertiary.html">Tertiary</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">FALCON</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Glossary</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/glossary.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <a class="reference internal image-reference" href="_images/falcon_icon2.png"><img alt="Falcon Assembler" class="align-right" src="_images/falcon_icon2.png" style="width: 200px; height: 200px;" /></a>
+<div class="section" id="glossary">
+<span id="id1"></span><h1>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h1>
+<dl class="glossary docutils">
+<dt id="term-associated-contig">associated contig</dt>
+<dd>Alternate configuration (phase) of a portion of a primary contig*. See <a class="reference internal" href="faq.html#primary-vs-associated"><span class="std std-ref">this</span></a>
+discussion on primary vs associated contigs</dd>
+<dt id="term-compound-path">compound path</dt>
+<dd>multi-paths from a single source to a single sink in a graph</dd>
+<dt id="term-contig">contig</dt>
+<dd>contiguous sequence output from a genome assembler</dd>
+<dt id="term-error-correction">error correction</dt>
+<dd>The process of combining data from multiple raw sequences with random error profile
+together to eliminate the errors.</dd>
+<dt id="term-full-pass-subread">full-pass subread</dt>
+<dd>A subread that begins at one adapter sequence and ends at another adapter sequence. A
+full-pass subread does not begin or end in the middle of an insert sequence.</dd>
+<dt id="term-haplotig">haplotig</dt>
+<dd>Contig from specific haplotype</dd>
+<dt id="term-pread">pread</dt>
+<dd>Pre-assembled Reads, error corrected reads through the pre-assembly process.</dd>
+<dt id="term-pre-assembly">pre-assembly</dt>
+<dd>Error correction process assembling raw sequences to generate high qualityy consensus for the
+final step of assembly.</dd>
+<dt id="term-primary-contig">primary contig</dt>
+<dd>contig which captures a contiguous part of a genome regardless the variations due to the
+variation between haplotypes associated contig generated by alternative paths from a portion
+in the primary contig</dd>
+<dt id="term-proper-overlap">proper overlap</dt>
+<dd>read overlaps without unaligned overhangs:</dd>
+<dt id="term-quiver">Quiver</dt>
+<dd>A highly accurate consensus and variant caller that can generate 99.999% accurate consensus
+sequences using local realignment and the full range of quality scores associated with
+Pacific Biosciences reads. Part of the SMRT® Analysis suite.</dd>
+<dt id="term-rawreads">rawreads</dt>
+<dd>Uncorrected raw SMRTcell movie data</dd>
+<dt id="term-simple-path">simple path</dt>
+<dd>a path without any branches in the assembly graph</dd>
+<dt id="term-string-graph">string graph</dt>
+<dd>see <a class="reference external" href="http://bioinformatics.oxfordjournals.org/content/21/suppl_2/ii79.abstract">The fragment assembly string graph</a>
+by Eugene W. Myers, 2005</dd>
+<dt id="term-subread">subread</dt>
+<dd>Each polymerase read is partitioned to form one or more subreads, which contain sequence
+from a single pass of a polymerase on a single strand of an insert within a SMRTbell™
+template and no adapter sequences. The subreads contain the full set of quality values and
+kinetic measurements. Subreads are useful for applications like de novo assembly,
+resequencing, base modification analysis, and so on.</dd>
+</dl>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="faq.html" class="btn btn-neutral float-right" title="Frequently Asked Questions" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="parameters.html" class="btn btn-neutral" title="Parameters" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Greg Concepcion, Sarah Kingan, Chris Dunn, Jason Chin.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

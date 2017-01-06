@@ -1,0 +1,449 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Pipeline &mdash; FALCON 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="about.html"/>
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="FALCON 0.5 documentation" href="index.html"/>
+        <link rel="next" title="Commands" href="commands.html"/>
+        <link rel="prev" title="Quick Start Guide" href="quick_start.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FALCON
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Falcon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick Start Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Pipeline</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#falcon">FALCON</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#step-1-overlap-detection-and-error-correction-of-raw-reads">Step 1: Overlap detection and error correction of raw reads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-2-overlap-detection-of-corrected-reads">Step 2: Overlap detection of corrected reads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-3-string-graph-assembly">Step 3: String Graph assembly</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#falcon-unzip">FALCON_unzip</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#step-1-identify-snps-and-assign-phases">Step 1: Identify SNPs and assign phases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-2-graph-annotation-and-haplotig">Step 2: Graph annotation and haplotig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-3-call-consensus-optional">Step 3: Call Consensus (Optional)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tertiary.html">Tertiary</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">FALCON</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Pipeline</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/pipeline.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <a class="reference internal image-reference" href="_images/falcon_icon2.png" id="pipeline"><img alt="Falcon Assembler" class="align-right" id="pipeline" src="_images/falcon_icon2.png" style="width: 200px; height: 200px;" /></a>
+<div class="section" id="id1">
+<h1>Pipeline<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="falcon">
+<h2>FALCON<a class="headerlink" href="#falcon" title="Permalink to this headline">¶</a></h2>
+<p>A FALCON job can be broken down into 3 steps:</p>
+<ol class="arabic simple">
+<li><a class="reference internal" href="#step-one"><span class="std std-ref">Overlap detection and error correction of rawreads</span></a></li>
+<li><a class="reference internal" href="#step-two"><span class="std std-ref">Overlap detection between corrected reads</span></a></li>
+<li><a class="reference internal" href="#step-three"><span class="std std-ref">String Graph assembly of corrected reads</span></a></li>
+</ol>
+<p>Each step is performed in it&#8217;s own subdirectory within the FALCON job</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>falcon_job/
+    ├── 0-rawreads     <span class="c1"># Raw read error correction directory</span>
+    ├── 1-preads_ovl   <span class="c1"># Corrected read overlap detection</span>
+    ├── 2-asm-falcon   <span class="c1"># String Graph Assembly</span>
+    ├── scripts
+    └── sge_log        <span class="c1"># Job scheduler logs</span>
+</pre></div>
+</div>
+<p>The assembly process is driven by the script <a class="reference internal" href="cmds/fc_run.html#fc-run-py"><span class="std std-ref">fc_run.py</span></a> which should be sent to the scheduler or run on a head node
+as it needs to persist throughout the entire assembly process.
+It takes as input a single <a class="reference internal" href="parameters.html#configuration"><span class="std std-ref">config</span></a> file typically named <a class="reference internal" href="parameters.html#fc-run-cfg"><span class="std std-ref">fc_run.cfg</span></a>, which references a list
+of fasta input files. The config file can be configured to
+run locally, or submit to a job scheduler. However, if your dataset is anything larger than a bacterial sized
+genome and unless you&#8217;ve tuned your system specifically for the organism you&#8217;re trying to assemble, then most likely you
+should be running on a cluster in order to more effectively leverage your computational resources.</p>
+<p>The configuration file also allows you to control other aspects of your job such as how your compute resources are
+distributed as well as set many parameters to help you reach an &#8220;optimized&#8221; assembly according to the nature of
+your input data. Unfortunately at this point there is no &#8220;magic&#8221; way to auto-tune the parameters so you should
+probably spend some time in the <a class="reference internal" href="parameters.html#configuration"><span class="std std-ref">Configuration</span></a> section to understand what options are available to you.
+Some example configuration files can be found <a class="reference internal" href="parameters.html#configuration"><span class="std std-ref">here</span></a></p>
+<div class="section" id="step-1-overlap-detection-and-error-correction-of-raw-reads">
+<span id="step-one"></span><h3>Step 1: Overlap detection and error correction of raw reads<a class="headerlink" href="#step-1-overlap-detection-and-error-correction-of-raw-reads" title="Permalink to this headline">¶</a></h3>
+<p>The first step of the pipeline is to identify all overlaps in the raw reads. Currently this is performed with
+a modified version of Gene Myers&#8217; <a class="reference external" href="http://dazzlerblog.wordpress.com">DALIGNER</a>.</p>
+<p>In order to identify overlaps, your <span class="xref std std-term">raw reads</span> must first be converted from fasta format into a dazzler
+database. This is a very I/O intensive process and will be run from the node where <code class="docutils literal"><span class="pre">fc_run.py</span></code> was executed. If this
+is an issue, you should submit the command with a wrapper script to your grid directly.</p>
+<p>Once the database has been created and partitioned according to the parameters set in your
+<a class="reference internal" href="parameters.html#configuration"><span class="std std-ref">fc_run.cfg</span></a>, an all vs all comparison of the reads must be performed. Accordingly, due to the
+all vs all nature of the search this is the most time consuming step in the assembly process. To walk through the
+actual steps of this part of the pipeline you should take a look at <code class="docutils literal"><span class="pre">0-rawreads/prepare_rdb.sub.sh</span></code>.
+Essentially it consists of running:</p>
+<ol class="arabic simple">
+<li><a class="reference internal" href="commands.html#dazzfasta2db"><span class="std std-ref">fasta2DB</span></a> to format the database</li>
+<li><a class="reference internal" href="commands.html#dazzdbsplit"><span class="std std-ref">DBsplit</span></a> to partition the database</li>
+<li><a class="reference internal" href="commands.html#dazzhpc-daligner"><span class="std std-ref">HPC.daligner</span></a> to generate the <span class="xref std std-ref">daligner</span> commands necessary for all-vs-all comparison</li>
+</ol>
+<p>After overlaps have been detected, you will be left with many <code class="docutils literal"><span class="pre">job_*</span></code> directories full of alignment files <code class="docutils literal"><span class="pre">*.las</span></code>
+containing the information about the overlaps. After merging the alignment files (see <code class="docutils literal"><span class="pre">m_*</span></code> directories), the
+next step is to error correct the reads leveraging the overlap information. In the <code class="docutils literal"><span class="pre">0-rawreads/preads</span></code> directory you
+will find a series of scripts for
+performing the error correction. The process basically consists of using <code class="docutils literal"><span class="pre">LA4Falcon</span></code> with a length cutoff and piping the
+output to <a class="reference internal" href="cmds/fc_consensus.html#fc-consensus"><span class="std std-ref">fc_consensus.py</span></a> to generate a fasta file with corrected reads.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>0-rawreads/
+    ├── job_*                     <span class="c1"># dirs for all of the daligner jobs</span>
+    ├── m_*/                      <span class="c1"># dirs for all of the LA4Merge jobs</span>
+    ├── preads/                   <span class="c1"># sub-dir for preads generation</span>
+    ├── report/                   <span class="c1"># pre-assembly stats</span>
+    ├── length_cutoff             <span class="c1"># text file with length cutoff for seed reads</span>
+    ├── raw_reads.db              <span class="c1"># dazzler DB file</span>
+    ├── input.fofn                <span class="c1"># list if your input *.fasta files</span>
+    ├── cns-scatter/              <span class="c1"># dir of scripts for falcon-consensus jobs</span>
+    ├── daligner-scatter/         <span class="c1"># dir of scripts for daligner jobs</span>
+    ├── merge-scatter/            <span class="c1"># dir of scripts for LAMerge jobs</span>
+    ├── merge-gather/             <span class="c1"># dir of scripts for gathering LAMerge inputs</span>
+    ├── raw-gather/               <span class="c1"># dir of scripts for gathering daligner jobs for merging</span>
+    ├── raw-fofn-abs              <span class="c1"># dir of scripts for gathering raw reads inputs</span>
+    ├── pwatcher.dir              <span class="c1"># dir of individual pipeline jobs stderr and stdout</span>
+    ├── rdb_build_done            <span class="c1"># database construction sentinel file</span>
+    ├── prepare_rdb.sh            <span class="c1"># env wrapper script</span>
+    ├── run_jobs.sh               <span class="c1"># listing of all overlap step commands</span>
+    ├── run.sh                    <span class="c1"># masker job script</span>
+    ├── run.sh.done               <span class="c1"># sentinel file for all jobs</span>
+    ├── task.json                 <span class="c1"># json file specifying inputs, outputs, and params</span>
+    └── task.sh                   <span class="c1"># script to run json file</span>
+</pre></div>
+</div>
+<p>The following parameters affect this step directly:</p>
+<ul class="simple">
+<li><a class="reference internal" href="parameters.html#sge-option-da"><span class="std std-ref">sge_option_da</span></a></li>
+<li><a class="reference internal" href="parameters.html#sge-option-la"><span class="std std-ref">sge_option_la</span></a></li>
+<li><a class="reference internal" href="parameters.html#pa-concurrent-jobs"><span class="std std-ref">pa_concurrent_jobs</span></a></li>
+<li><a class="reference internal" href="parameters.html#cns-concurrent-jobs"><span class="std std-ref">cns_concurrent_jobs</span></a></li>
+<li><a class="reference internal" href="parameters.html#pa-dbsplit-option"><span class="std std-ref">pa_DBsplit_option</span></a></li>
+<li><a class="reference internal" href="parameters.html#falcon-sense-option"><span class="std std-ref">falcon_sense_option</span></a></li>
+</ul>
+</div>
+<div class="section" id="step-2-overlap-detection-of-corrected-reads">
+<span id="step-two"></span><h3>Step 2: Overlap detection of corrected reads<a class="headerlink" href="#step-2-overlap-detection-of-corrected-reads" title="Permalink to this headline">¶</a></h3>
+<p>The only conceptual difference between the first and second overlap steps is that consensus calling is
+not performed in the second step. After <a class="reference internal" href="glossary.html#term-pread"><span class="xref std std-term">pread</span></a> overlap detection, it&#8217;s simply a
+matter of extracting the information from the corrected reads database with <code class="docutils literal"><span class="pre">DB2Falcon</span> <span class="pre">-U</span> <span class="pre">preads</span></code>.</p>
+<p>Depending on how well the error-correction step proceeded as well as the how much
+initial coverage was fed into the pipeline (e.g. <a class="reference internal" href="parameters.html#length-cutoff"><span class="std std-ref">length_cutoff</span></a>), the input data for this
+step should be significantly reduced and thus, the second overlap detection step
+will proceed significantly faster.</p>
+<p>The commands in this step of the pipeline are very similar to before albeit with different parameter settings to account
+for the reduced error-rate of the <a class="reference internal" href="glossary.html#term-pread"><span class="xref std std-term">preads</span></a>. See the driver script <code class="docutils literal"><span class="pre">prepare_pdb.sub.sh</span></code> for
+details on actual parameter settings used.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>1-preads_ovl/
+    ├── job_*/                  <span class="c1"># directories for daligner jobs</span>
+    ├── m_*/                    <span class="c1"># directories for LA4Merge jobs</span>
+    ├── db2falcon/              <span class="c1"># dir of scripts for formatting preads for falcon</span>
+    ├── gathered-las/           <span class="c1"># dir of scripts for gathering daligner jobs</span>
+    ├── merge-gather/           <span class="c1"># dir of scripts for gathering LAMerge inputs</span>
+    ├── merge-scatter/          <span class="c1"># dir of scripts for LAMerge jobs</span>
+    ├── daligner-scatter/       <span class="c1"># dir of scripts for daligner jobs</span>
+    ├── pdb_build_done          <span class="c1"># sentinel file for pread DB building</span>
+    ├── preads.db               <span class="c1"># preads dazzler DB</span>
+    ├── run_jobs.sh             <span class="c1"># listing of all pread overlap job commands</span>
+    ├── prepare_pdb.sh          <span class="c1"># env wrapper script</span>
+    ├── pwatcher.dir            <span class="c1"># dir of individual pipeline jobs stderr and stdout</span>
+    ├── run_jobs.sh             <span class="c1"># listing of all overlap step commands</span>
+    ├── run.sh                  <span class="c1"># masker job script</span>
+    ├── run.sh.done             <span class="c1"># sentinel file for all jobs</span>
+    ├── task.json               <span class="c1"># json file specifying inputs, outputs, and params</span>
+    └── task.sh                 <span class="c1"># script to run json file</span>
+</pre></div>
+</div>
+<p>The following parameters affect this step directly:</p>
+<ul class="simple">
+<li><a class="reference internal" href="parameters.html#sge-option-pda"><span class="std std-ref">sge_option_pda</span></a></li>
+<li><a class="reference internal" href="parameters.html#sge-option-pla"><span class="std std-ref">sge_option_pla</span></a></li>
+<li><a class="reference internal" href="parameters.html#ovlp-concurrent-jobs"><span class="std std-ref">ovlp_concurrent_jobs</span></a></li>
+<li><a class="reference internal" href="parameters.html#ovlp-dbsplit-option"><span class="std std-ref">ovlp_DBsplit_option</span></a></li>
+<li><a class="reference internal" href="parameters.html#ovlp-hpcdaligner-option"><span class="std std-ref">ovlp_HPCdaligner_option</span></a></li>
+</ul>
+</div>
+<div class="section" id="step-3-string-graph-assembly">
+<span id="step-three"></span><h3>Step 3: String Graph assembly<a class="headerlink" href="#step-3-string-graph-assembly" title="Permalink to this headline">¶</a></h3>
+<p>The final step of the FALCON Assembly pipeline is generation of the final <a class="reference internal" href="glossary.html#term-string-graph"><span class="xref std std-term">String Graph</span></a> assembly and
+output of contig sequences in
+fasta format. Four commands are run in the final phase of FALCON:</p>
+<ol class="arabic simple">
+<li><a class="reference internal" href="commands.html#fc-ovlp-filter-py"><span class="std std-ref">fc_ovlp_filter</span></a> - Filters overlaps based on the criteria provided in <a class="reference internal" href="parameters.html#fc-run-cfg"><span class="std std-ref">fc_run.cfg</span></a></li>
+<li><a class="reference internal" href="commands.html#fc-ovlp-to-graph-py"><span class="std std-ref">fc_ovlp_to_graph</span></a> - Constructs an overlap graph of reads larger than the length cutoff</li>
+<li><a class="reference internal" href="commands.html#fc-graph-to-contig-py"><span class="std std-ref">fc_graph_to_contig</span></a> - Generates fasta files for contigs from the overlap graph.</li>
+<li><a class="reference internal" href="commands.html#fc-dedup-a-tigs-py"><span class="std std-ref">fc_dedup_a_tigs</span></a> - Removes duplicate associated contigs</li>
+</ol>
+<p>You can see the details on the parameters used by inspecting <code class="docutils literal"><span class="pre">2-asm_falcon/run_falcon_asm.sub.sh</span></code>
+This step of the pipeline is very fast relative to the overlap detection steps. Sometimes it may be useful to run
+several iterations of this step with different parameter settings in order to identify a &#8220;best&#8221; assembly.</p>
+<p>The final output of this step is a fasta file of all of the primary contigs, <code class="docutils literal"><span class="pre">p_ctg.fa</span></code> as well as an associated contig
+fasta file, <code class="docutils literal"><span class="pre">a_ctg.fa</span></code> that consists of all of the structural variants from the primary contig assembly.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>2-asm-falcon/
+    ├── a_ctg_all.fa                 <span class="c1"># all associated contigs, including duplicates</span>
+    ├── a_ctg_base.fa                <span class="c1">#</span>
+    ├── a_ctg_base_tiling_path       <span class="c1">#</span>
+    ├── a_ctg.fa                     <span class="c1"># De-duplicated associated fasta file</span>
+    ├── a_ctg_tiling_path            <span class="c1"># tiling path informaiton for each associated contig</span>
+    ├── falcon_asm_done              <span class="c1"># FALCON Assembly sentinal file</span>
+    ├── p_ctg.fa                     <span class="c1"># Fasta file of all primary contigs</span>
+    ├── p_ctg_tiling_path            <span class="c1"># Tiling path of preads through each primary contig</span>
+    ├── c_path                       <span class="c1">#</span>
+    ├── ctg_paths                    <span class="c1"># corrected read paths for each contig</span>
+    ├── fc_ovlp_to_graph.log         <span class="c1"># logfile for process of converting overlaps to assembly graph</span>
+    ├── utg_data                     <span class="c1">#</span>
+    ├── sg_edges_list                <span class="c1"># list of all edges</span>
+    ├── chimers_nodes                <span class="c1">#</span>
+    ├── preads.ovl                   <span class="c1"># List of all overlaps between preads</span>
+    ├── las.fofn                     <span class="c1"># List of *.las files for input</span>
+    ├── run_falcon_asm.sh            <span class="c1"># env wrapper script</span>
+    └── run_falcon_asm.sub.sh        <span class="c1"># Assembly driver script</span>
+</pre></div>
+</div>
+<p>The following parameters affect this step directly:</p>
+<ul class="simple">
+<li><a class="reference internal" href="parameters.html#sge-option-fc"><span class="std std-ref">sge_option_fc</span></a></li>
+<li><a class="reference internal" href="parameters.html#overlap-filtering-setting"><span class="std std-ref">overlap_filtering_setting</span></a></li>
+<li><a class="reference internal" href="parameters.html#length-cutoff-pr"><span class="std std-ref">length_cutoff_pr</span></a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="falcon-unzip">
+<h2>FALCON_unzip<a class="headerlink" href="#falcon-unzip" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="#falcon-unzip">FALCON_unzip</a> operates from a completed FALCON job directory. After tracking the raw reads to contig,
+A FALCON_unzip job can be broken down into 3 steps</p>
+<ol class="arabic simple">
+<li><a class="reference internal" href="#unzip-step-one"><span class="std std-ref">Identify SNPs and assign phases</span></a></li>
+<li><a class="reference internal" href="#unzip-step-two"><span class="std std-ref">Annotate Assembly graph with Phases</span></a></li>
+<li><a class="reference internal" href="#unzip-step-three"><span class="std std-ref">Graph building</span></a></li>
+</ol>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>3-unzip/
+├── 0-phasing/                  <span class="c1"># Contig phasing jobs</span>
+├── 1-hasm/                     <span class="c1"># Contig Graph assembly information</span>
+├── read_maps/                  <span class="c1"># rawread_to_contigs; read_to_contig_map</span>
+├── reads/                      <span class="c1"># raw read fastas for each contig</span>
+├── all_h_ctg_edges             <span class="c1"># haplotig edge list</span>
+├── all_h_ctg.fa                <span class="c1"># phased haplotigs</span>
+├── all_h_ctg.fa.stats          <span class="c1"># haplotig stats</span>
+├── all_h_ctg_ids               <span class="c1"># haplotig id index</span>
+├── all_p_ctg_edges             <span class="c1"># primary contig edge list</span>
+├── all_p_ctg.fa                <span class="c1"># partially phased primary contigs</span>
+├── all_p_ctg.fa.stats          <span class="c1"># primary contig stats</span>
+└── all_phased_reads            <span class="c1"># table of all phased raw reads</span>
+</pre></div>
+</div>
+<div class="section" id="step-1-identify-snps-and-assign-phases">
+<span id="unzip-step-one"></span><h3>Step 1: Identify SNPs and assign phases<a class="headerlink" href="#step-1-identify-snps-and-assign-phases" title="Permalink to this headline">¶</a></h3>
+<p>Inside of <code class="docutils literal"><span class="pre">0-phasing/</span></code> you vill find a number of directories for each contig. Each contains the scripts
+to map the raw reads to the contigs and subsequently identify SNPs. The generated SNP tables can
+subsequently be used to assign phases to reads.</p>
+</div>
+<div class="section" id="step-2-graph-annotation-and-haplotig">
+<span id="unzip-step-two"></span><h3>Step 2: Graph annotation and haplotig<a class="headerlink" href="#step-2-graph-annotation-and-haplotig" title="Permalink to this headline">¶</a></h3>
+<p>Inside of <code class="docutils literal"><span class="pre">1-hasm/</span></code> you can find the driver script <code class="docutils literal"><span class="pre">hasm.sh</span></code> which contains the commands necessary to
+filter overlaps and traverse the assembly graph paths and subsequently output phased contig sequence.
+Assembly Graphs for each contig as well as fasta files for the partially phased primary contigs and fully phased
+haplotigs can be found in each <code class="docutils literal"><span class="pre">1-hasm/XXXXXXF</span></code> directory.</p>
+</div>
+<div class="section" id="step-3-call-consensus-optional">
+<span id="unzip-step-three"></span><h3>Step 3: Call Consensus (Optional)<a class="headerlink" href="#step-3-call-consensus-optional" title="Permalink to this headline">¶</a></h3>
+<p>Finally, the <code class="docutils literal"><span class="pre">FALCON_unzip</span></code> pipeline can optionally be used to run quiver and call high quality consensus. This step
+takes as input the primary contig and haplotig sequences output in the previous step. For convenience, these files
+have all been concatenated together into <code class="docutils literal"><span class="pre">3-unzip/all_p_ctg.fa</span></code> and <code class="docutils literal"><span class="pre">3-unzip/all_h_ctg.fa</span></code> respectively.
+The final consensus output can be found in <code class="docutils literal"><span class="pre">falcon_jobdir/4-quiver/cns_output/*.fast[a|q]</span></code>.
+In order to run the consensus step as part of the FALCON_unzip pipeline, You need to provide the <span class="xref std std-ref">input_bam_fofn</span>
+<a class="reference internal" href="parameters.html#fc-unzip-cfg"><span class="std std-ref">fc_unzip.cfg</span></a> option in order for this to work.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="commands.html" class="btn btn-neutral float-right" title="Commands" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="quick_start.html" class="btn btn-neutral" title="Quick Start Guide" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Greg Concepcion, Sarah Kingan, Chris Dunn, Jason Chin.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

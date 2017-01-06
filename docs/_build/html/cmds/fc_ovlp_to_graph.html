@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>fc_ovlp_to_graph.py &mdash; FALCON 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="../about.html"/>
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="FALCON 0.5 documentation" href="../index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> FALCON
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About Falcon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quick_start.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline.html">FALCON Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tertiary.html">Tertiary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">FALCON</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>fc_ovlp_to_graph.py</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/cmds/fc_ovlp_to_graph.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="fc-ovlp-to-graph-py">
+<span id="ovlp-to-graph"></span><h1>fc_ovlp_to_graph.py<a class="headerlink" href="#fc-ovlp-to-graph-py" title="Permalink to this headline">¶</a></h1>
+<p>Here is the usage information for running fc_ovlp_to_graph.py:</p>
+<div class="code bash highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">fc_ovlp_to_graph</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">min_len</span> <span class="n">MIN_LEN</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">min_idt</span> <span class="n">MIN_IDT</span><span class="p">]</span>
+                           <span class="p">[</span><span class="o">--</span><span class="n">lfc</span><span class="p">]</span>
+                           <span class="n">overlap_file</span>
+
+<span class="n">a</span> <span class="n">example</span> <span class="n">string</span> <span class="n">graph</span> <span class="n">assembler</span> <span class="n">that</span> <span class="ow">is</span> <span class="n">desinged</span> <span class="k">for</span> <span class="n">handling</span> <span class="n">diploid</span> <span class="n">genomes</span>
+
+<span class="n">positional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="n">overlap_file</span>       <span class="n">a</span> <span class="n">file</span> <span class="n">that</span> <span class="n">contains</span> <span class="n">the</span> <span class="n">overlap</span> <span class="n">information</span><span class="o">.</span>
+
+<span class="n">optional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>         <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
+  <span class="o">--</span><span class="n">min_len</span> <span class="n">MIN_LEN</span>  <span class="n">minimum</span> <span class="n">length</span> <span class="n">of</span> <span class="n">the</span> <span class="n">reads</span> <span class="n">to</span> <span class="n">be</span> <span class="n">considered</span> <span class="k">for</span>
+                     <span class="n">assembling</span>
+  <span class="o">--</span><span class="n">min_idt</span> <span class="n">MIN_IDT</span>  <span class="n">minimum</span> <span class="n">alignment</span> <span class="n">identity</span> <span class="n">of</span> <span class="n">the</span> <span class="n">reads</span> <span class="n">to</span> <span class="n">be</span> <span class="n">considered</span>
+                     <span class="k">for</span> <span class="n">assembling</span>
+  <span class="o">--</span><span class="n">lfc</span>              <span class="n">use</span> <span class="n">local</span> <span class="n">flow</span> <span class="n">constraint</span> <span class="n">method</span> <span class="n">rather</span> <span class="n">than</span> <span class="n">best</span> <span class="n">overlap</span>
+                     <span class="n">method</span> <span class="n">to</span> <span class="n">resolve</span> <span class="n">knots</span> <span class="ow">in</span> <span class="n">string</span> <span class="n">graph</span>
+</pre></div>
+</div>
+<p>In some case, you might want to lower the min_idt to keep more overlap or increase min_len to reduce the number of
+overlap used for constructing the contig after the overlap filtering step. The <code class="docutils literal"><span class="pre">--lfc</span></code> toggles the rule for resolving
+local knots in the graph. If <code class="docutils literal"><span class="pre">--lfc</span></code> is not specified, &#8220;the best overlapped edge&#8221; will be kept when there are multiple
+in- or out- edges from a node while the others will be removed.</p>
+<p>The first stage of the assembly is to construct the initial string graph and classify each edges in the string graph.
+<code class="docutils literal"><span class="pre">sg_edges_list</span></code> contained the information of the information of the edges in the full string graph and the
+classification. For example, 5 edges are shown in the five lines of the file below</p>
+<div class="code bash highlight-default"><div class="highlight"><pre><span></span>$ head -5 sg_edges_list
+000017363:B 000007817:E 000007817 10841 28901 10841 99.52 TR
+000015379:E 000004331:B 000004331 6891 0 18178 99.35 TR
+000006813:B 000000681:E 000000681 7609 23795 7616 99.72 TR
+000002258:E 000002505:B 000002505 5850 0 17215 99.62 TR
+000013449:B 000012565:B 000012565 3317 0 20570 99.72 G
+</pre></div>
+</div>
+<p>The first two columns indicates the in and out node of the edge. The node notation contains two files operated by :.
+The first field is the read identifier. The second field is either B or E. B is the <code class="docutils literal"><span class="pre">5'</span></code> end of the read and E is the
+<code class="docutils literal"><span class="pre">3'</span></code> end of the reads. The next three field indicates the corresponding sequences of the edges. In this example, the
+edge in the first line contains the sequence from read <code class="docutils literal"><span class="pre">000007817</span></code> base <code class="docutils literal"><span class="pre">[10841,</span> <span class="pre">28901)</span></code>. If the second coordinate is
+smaller than the first one, it means the corresponded sequence is reverse complimented. The next two column are the
+number of overlapped base and the overlap identity. The final column is the classification. Currently, there are 4
+different types <code class="docutils literal"><span class="pre">G</span></code>, <code class="docutils literal"><span class="pre">TR</span></code>, <code class="docutils literal"><span class="pre">R</span></code>, and <code class="docutils literal"><span class="pre">S</span></code>. An edge with type <code class="docutils literal"><span class="pre">G</span></code> is used for the final string graph. A <code class="docutils literal"><span class="pre">TR</span></code>
+means the edge is transitive reducible. <code class="docutils literal"><span class="pre">R</span></code> means the edge is removed during the local repeat resolution and <code class="docutils literal"><span class="pre">S</span></code>
+means the edge is likely to be a &#8220;spur&#8221; which only one ends is connected.</p>
+<p>The initial string graph is further to be simplified into a set of &#8220;unitig&#8221; edges. The <code class="docutils literal"><span class="pre">utg_data</span></code> file contains the
+details of each unitig. Each line in the file represents a unitig. The first three fields are &#8220;start node&#8221;, &#8220;via node&#8221;,
+and &#8220;end node&#8221;. Two untigs might have the same &#8220;start node&#8221; and &#8220;end node&#8221;, so we need another &#8220;via node&#8221; to uniquely
+identify the unitigs. Here is an example of the utg_data files:</p>
+<div class="code bash highlight-default"><div class="highlight"><pre><span></span>$ head -10 utg_data
+000015696:B 000009028:B 000016941:B contained 16438 134865 000015696:B~000006612:B~000002456:B~000014643:B~000007407:B~000015939:E~000009028:B~000016941:B
+000010623:B 000015633:B 000014991:B contained 30158 18666 000010623:B~000015633:B~000014991:B
+000015636:B 000002245:B 000010757:E contained 15402 40356 000015636:B~000002245:B~000010757:E
+000014184:E NA 000012028:E compound 14895 56928 000014184:E~000012765:E~000012028:E|000014184:E~000007953:B~000012028:E
+000010757:B NA 000015636:E compound 15402 40356 000010757:B~000002245:E~000015636:E|000010757:B~000014783:E~000015636:E
+000014184:E 000007953:B 000012028:E contained 14792 32932 000014184:E~000007953:B~000012028:E
+000010623:B NA 000014991:B compound 30148 163627 000010623:B~000015633:B~000014991:B|000010623:B~000001407:B~000014991:B
+000012028:B 000012765:B 000014184:B contained 19137 56928 000012028:B~000000382:E~000012765:B~000014184:B
+000016941:B 000003353:B 000008783:B simple 88381 615439 000016941:B~000003353:B~000010261:B~000011789:E~000017006:B~000016307:B~...
+000014991:B 000013790:E 000002926:B simple 392373 2274104 000014991:B~000013790:E~000004614:B~000003329:B~000004898:B~000000461:B~000017105:E~...
+</pre></div>
+</div>
+<p>The forth field indicates the type of the unitigs, the fifth field is the estimate length of the unitig and the six
+field is the total number of overlapped bases in the unitig. There are three kinds of unitigs: &#8220;simple&#8221;, &#8220;contained&#8221;,
+and &#8220;compound&#8221;. &#8220;Simple&#8221; unitigs are those unitigs which are just a simple path (every node has one in- and one
+out-edge except the begining and ending nodes of the path.) It is represented by a list of nodes which each node
+is separated by ~ characters in the 7th column. The &#8220;contained&#8221; contigs are simple path but those unitigs are also
+part of other &#8220;compound&#8221; paths. The &#8220;compound&#8221; unitigs represents bubble-like subgraph in the graph. While it is not
+&#8220;simple&#8221;, it has well defined in- and out- nodes and they are treated as a single unit when the contigs are
+constructed. The structure inside a &#8220;compound&#8221; unitig can be from biological nature or sequencing/alignment errors.
+Each edge in the &#8220;compound&#8221; unitig subgraph are encoded explicitly as a collection of simple contained unitigs in
+the 7th column. The contained unitigs within a compound unitig are separated by the <code class="docutils literal"><span class="pre">|</span></code> character.</p>
+<p>The file ctg_paths encodes the graph for each contig after the unitigs are analyzed and put into contigs. Each line
+has 7 columns. The first column is the contig ID. The contig ID are just the serial numbers followed by R or F.
+Two contigs with same serial number but different endings are &#8220;dual&#8221; to each other. Namely, they are constructed
+from &#8220;dual&#8221; edges and they are mostly reverse complemented to each other except near the ends of the contigs.
+The second column is the type of contig. If a unitig is circular (the beginning node and the ending node are the
+same), then it will be marked as <code class="docutils literal"><span class="pre">ctg_circular</span></code>. Everything else will be <code class="docutils literal"><span class="pre">ctg_linear</span></code>. In some case, even a contig
+is marked as <code class="docutils literal"><span class="pre">ctg_linear</span></code>, it can be still a circular contig if the beginning node and the ending node are the
+same but it is not a &#8220;simple&#8221; path. One can detect that by checking the beginning and ending nodes if necessary.</p>
+<p>The third field indicates the first unitig in the contig in the form of begin_node~via_node~end_node. The fourth
+field is the ending node of the contig. The 5th and 6th fields are the estimated length and the overlapped
+based of the contig respectively. The final column are the unitigs in the contig. The three node format unitig
+IDs are separated by <code class="docutils literal"><span class="pre">|</span></code></p>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Greg Concepcion, Sarah Kingan, Chris Dunn, Jason Chin.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
