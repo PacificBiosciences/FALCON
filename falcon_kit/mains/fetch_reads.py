@@ -1,10 +1,12 @@
 from falcon_kit.FastaReader import FastaReader
 import argparse
+import logging
 import os
 import glob
 import sys
 import re
 
+LOG = logging.getLogger(__name__)
 
 def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
     read_fofn = fofn
@@ -84,8 +86,9 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
     with open(read_fofn, 'r') as f:
         for r_fn in f:
             r_fn = r_fn.strip()
-            read_fa_file = FastaReader(r_fn) # TODO(CD): What about .dexta?
-            for r in read_fa_file:
+            try:
+              read_fa_file = FastaReader(r_fn) # TODO(CD): What about .dexta?
+              for r in read_fa_file:
                 rid = r.name.split()[0]
                 if rid not in read_set:
                     ctg_id = 'unassigned'
@@ -104,6 +107,11 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
                 print >>read_out, '>'+rid
                 print >>read_out, r.sequence
                 read_out.close()
+            except ValueError as exc:
+                #LOG.error(exc)
+                LOG.error('Filename: {!r} from {!r} in {!r}'.format(
+                    r_fn, read_fofn, os.getcwd()))
+                raise
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description='using the read to contig mapping data to partition the reads grouped by contigs')
@@ -126,4 +134,6 @@ def main(argv=sys.argv):
     fetch_ref_and_reads(**vars(args))
 
 if __name__ == '__main__':
+    logging.basicConfig()
+    LOG.setLevel(logging.DEBUG)
     main()
