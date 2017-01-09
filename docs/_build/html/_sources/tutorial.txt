@@ -130,7 +130,7 @@ Assessing Run Progress
 Refer to the pipeline document for detailed summary of FALCON job directory structure, 
 sequence of commands, and output files created.
 
-Counting Complete Jobs
+Counting Completed Jobs
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The majority of run-time is spent during the daligner phases, performing the alignments and 
@@ -158,12 +158,6 @@ For example:
 	
 	$ find 0-rawreads/ -name "m_*done" | wc -l
 	20
-
-Determing What Jobs are Running
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TO BE DONE
-
 
 
 Assessing Run Performance
@@ -204,8 +198,7 @@ You can confirm that your dazzler database was correctly constructed using a uti
 
 You can see that we discarded 13.9% of the raw bases and 4.8% of the reads by employing a 
 raw read length cut off of 500bp in the :ref:`DBsplit <dazzDBsplit>` options. This file can
-also be used to plot a histogram (add link to plot and R Code) of raw read lengths (Count~Bin), a CDF of the raw read counts
-(% Reads~Bin) or bases (% Bases~Bin), and determine the raw read N50 (Average where % Bases = 50).
+also be used to plot a :ref:`histogram <RHists>` of raw read lengths.
 
 The genome of this *E. coli* strain is 4.65 Mb long for a raw read coverage of ~207 fold.
 Confirm this with the preassembly report:
@@ -246,12 +239,13 @@ is used for this data (22486), preassembled seed read truncation is ~6kb, indica
 raw reads are not supported by the rest of the data.
 
 You can similarly summarize the contents of the dazzler database for preads using DBstats 
-and plotting in R (links).
+and plotting in :ref:`R <RHists>`.
 
 Contig Stats
 ~~~~~~~~~~~~
 
 When your run is complete, you can summarize your assembly stats using the countFasta.pl script:
+
  .. code-block:: bash
 	
 	$ countFasta.pl p_ctg.fa > p_ctg.stats
@@ -271,7 +265,8 @@ Assembly Graph and Pread Overlaps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Assembly contiguity can be enhanced by adjusting a few parameters in the last stage of the 
-assembly process. You can try a grid of pread length cut offs for the filtering of the final
+assembly process. You can try a grid of :ref:`pread length cut offs <length_cutoff_pr>` for 
+the filtering of the final
 overlaps in the assembly graph. To try different length cut off, rename your 2-asm-falcon dir,
 modify the config file, rename the log and mypwatcher directory, and restart falcon:
 

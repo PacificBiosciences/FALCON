@@ -1,0 +1,230 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Example R Code &mdash; FALCON 0.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="about.html"/>
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="FALCON 0.5 documentation" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FALCON
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Falcon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tertiary.html">Tertiary</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">FALCON</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Example R Code</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/Rhists.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <a class="reference internal image-reference" href="_images/RawReadHist.png" id="rhists"><img alt="Raw Read Histogram" class="align-center" id="rhists" src="_images/RawReadHist.png" style="width: 700px; height: 700px;" /></a>
+<a class="reference internal image-reference" href="_images/PReadHist.png"><img alt="PRead Histogram" class="align-center" src="_images/PReadHist.png" style="width: 700px; height: 700px;" /></a>
+<div class="section" id="example-r-code">
+<h1>Example R Code<a class="headerlink" href="#example-r-code" title="Permalink to this headline">¶</a></h1>
+<div class="highlight-R"><div class="highlight"><pre><span></span><span class="kp">setwd</span><span class="p">(</span><span class="s">&quot;my/dir&quot;</span><span class="p">)</span>
+<span class="kp">raw</span><span class="o">&lt;-</span>read.table<span class="p">(</span><span class="s">&quot;raw_reads.stats.txt&quot;</span><span class="p">,</span> header<span class="o">=</span><span class="bp">T</span><span class="p">)</span>
+preads<span class="o">&lt;-</span>read.table<span class="p">(</span><span class="s">&quot;preads.stats.txt&quot;</span><span class="p">,</span>header<span class="o">=</span><span class="bp">T</span><span class="p">)</span>
+
+pdf<span class="p">(</span>file<span class="o">=</span><span class="s">&quot;RawReadHist.pdf&quot;</span><span class="p">,</span> width<span class="o">=</span><span class="m">11</span><span class="p">,</span> height<span class="o">=</span><span class="m">8.5</span><span class="p">)</span>
+par<span class="p">(</span>oma<span class="o">=</span><span class="kt">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">0</span><span class="p">),</span> cex<span class="o">=</span><span class="m">1.6</span><span class="p">,</span> las<span class="o">=</span><span class="m">1</span><span class="p">,</span> mar<span class="o">=</span><span class="kt">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">))</span>
+plot<span class="p">(</span>data<span class="o">=</span><span class="kp">raw</span><span class="p">,</span> Count<span class="o">~</span>Bin<span class="p">,</span> type<span class="o">=</span><span class="s">&quot;h&quot;</span><span class="p">,</span>col<span class="o">=</span><span class="s">&quot;DeepSkyBlue&quot;</span><span class="p">,</span> lwd<span class="o">=</span><span class="m">5</span><span class="p">,</span>
+        ylab<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> xlab<span class="o">=</span><span class="s">&quot;Read Length&quot;</span><span class="p">,</span> main<span class="o">=</span><span class="s">&quot;Raw Reads&quot;</span><span class="p">)</span>
+mtext<span class="p">(</span><span class="s">&quot;Read Count&quot;</span><span class="p">,</span> side<span class="o">=</span><span class="m">2</span><span class="p">,</span> cex<span class="o">=</span><span class="m">1.7</span><span class="p">,</span> las<span class="o">=</span><span class="m">3</span><span class="p">,</span> line<span class="o">=</span><span class="m">4</span><span class="p">)</span>
+dev.off<span class="p">()</span>
+
+pdf<span class="p">(</span>file<span class="o">=</span><span class="s">&quot;PreadHist.pdf&quot;</span><span class="p">,</span> width<span class="o">=</span><span class="m">11</span><span class="p">,</span> height<span class="o">=</span><span class="m">8.5</span><span class="p">)</span>
+par<span class="p">(</span>oma<span class="o">=</span><span class="kt">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">0</span><span class="p">),</span> cex<span class="o">=</span><span class="m">1.6</span><span class="p">,</span> las<span class="o">=</span><span class="m">1</span><span class="p">,</span> mar<span class="o">=</span><span class="kt">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">))</span>
+plot<span class="p">(</span>data<span class="o">=</span>preads<span class="p">,</span> Count<span class="o">~</span>Bin<span class="p">,</span> type<span class="o">=</span><span class="s">&quot;h&quot;</span><span class="p">,</span>col<span class="o">=</span><span class="s">&quot;ForestGreen&quot;</span><span class="p">,</span> lwd<span class="o">=</span><span class="m">5</span><span class="p">,</span>
+        ylab<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> xlab<span class="o">=</span><span class="s">&quot;Read Length&quot;</span><span class="p">,</span> main<span class="o">=</span><span class="s">&quot;Preassembled Reads&quot;</span><span class="p">)</span>
+mtext<span class="p">(</span><span class="s">&quot;Read Count&quot;</span><span class="p">,</span> side<span class="o">=</span><span class="m">2</span><span class="p">,</span> cex<span class="o">=</span><span class="m">1.7</span><span class="p">,</span> las<span class="o">=</span><span class="m">3</span><span class="p">,</span> line<span class="o">=</span><span class="m">4</span><span class="p">)</span>
+dev.off<span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-input-files">
+<h1>Example Input Files<a class="headerlink" href="#example-input-files" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference download internal" href="_downloads/raw_reads.stats.txt" download=""><code class="xref download docutils literal"><span class="pre">raw_reads.stats.txt</span></code></a></p>
+<p><a class="reference download internal" href="_downloads/preads.stats.txt" download=""><code class="xref download docutils literal"><span class="pre">preads.stats.txt</span></code></a></p>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Greg Concepcion, Sarah Kingan, Chris Dunn, Jason Chin.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

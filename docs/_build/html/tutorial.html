@@ -100,8 +100,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#running-falcon">Running Falcon</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#assessing-run-progress">Assessing Run Progress</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#counting-complete-jobs">Counting Complete Jobs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#determing-what-jobs-are-running">Determing What Jobs are Running</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#counting-completed-jobs">Counting Completed Jobs</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#assessing-run-performance">Assessing Run Performance</a><ul>
@@ -251,8 +250,8 @@ falcon_jobdir$ fc_run.py fc_run.cfg
 <h2>Assessing Run Progress<a class="headerlink" href="#assessing-run-progress" title="Permalink to this headline">¶</a></h2>
 <p>Refer to the pipeline document for detailed summary of FALCON job directory structure,
 sequence of commands, and output files created.</p>
-<div class="section" id="counting-complete-jobs">
-<h3>Counting Complete Jobs<a class="headerlink" href="#counting-complete-jobs" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="counting-completed-jobs">
+<h3>Counting Completed Jobs<a class="headerlink" href="#counting-completed-jobs" title="Permalink to this headline">¶</a></h3>
 <p>The majority of run-time is spent during the daligner phases, performing the alignments and
 then sorting and merging them. To determine how many jobs are performed for each step, refer to <code class="docutils literal"><span class="pre">0-rawreads/run_jobs.sh</span></code>.</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ grep <span class="s1">&#39;^#&#39;</span> run_jobs.sh
@@ -275,10 +274,6 @@ $ find 0-rawreads/ -name <span class="s2">&quot;m_*done&quot;</span> <span class
 20
 </pre></div>
 </div>
-</div>
-<div class="section" id="determing-what-jobs-are-running">
-<h3>Determing What Jobs are Running<a class="headerlink" href="#determing-what-jobs-are-running" title="Permalink to this headline">¶</a></h3>
-<p>TO BE DONE</p>
 </div>
 </div>
 <div class="section" id="assessing-run-performance">
@@ -311,8 +306,7 @@ Distribution of Read Lengths <span class="o">(</span>Bin <span class="nv">size</
 </div>
 <p>You can see that we discarded 13.9% of the raw bases and 4.8% of the reads by employing a
 raw read length cut off of 500bp in the <a class="reference internal" href="commands.html#dazzdbsplit"><span class="std std-ref">DBsplit</span></a> options. This file can
-also be used to plot a histogram (add link to plot and R Code) of raw read lengths (Count~Bin), a CDF of the raw read counts
-(% Reads~Bin) or bases (% Bases~Bin), and determine the raw read N50 (Average where % Bases = 50).</p>
+also be used to plot a <a class="reference internal" href="Rhists.html#rhists"><span class="std std-ref">histogram</span></a> of raw read lengths.</p>
 <p>The genome of this <em>E. coli</em> strain is 4.65 Mb long for a raw read coverage of ~207 fold.
 Confirm this with the preassembly report:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ cat 0-rawreads/report/pre_assembly_stats.json
@@ -349,13 +343,13 @@ A good preassembled yield should be greater than 50%. Note that if an automated 
 is used for this data (22486), preassembled seed read truncation is ~6kb, indicating that many of the longest
 raw reads are not supported by the rest of the data.</p>
 <p>You can similarly summarize the contents of the dazzler database for preads using DBstats
-and plotting in R (links).</p>
+and plotting in <a class="reference internal" href="Rhists.html#rhists"><span class="std std-ref">R</span></a>.</p>
 </div>
 <div class="section" id="contig-stats">
 <h3>Contig Stats<a class="headerlink" href="#contig-stats" title="Permalink to this headline">¶</a></h3>
-<dl class="docutils">
-<dt>When your run is complete, you can summarize your assembly stats using the countFasta.pl script:</dt>
-<dd><div class="first last highlight-bash"><div class="highlight"><pre><span></span>$ countFasta.pl p_ctg.fa &gt; p_ctg.stats
+<p>When your run is complete, you can summarize your assembly stats using the countFasta.pl script:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>$ countFasta.pl p_ctg.fa &gt; p_ctg.stats
 $ countFasta.pl a_ctg.fa &gt; a_ctg.stats
 $ tail p_ctg.stats
 
@@ -368,13 +362,13 @@ Total GC count:                 <span class="m">2352187</span> bp
 GC %:                           50.74 %
 </pre></div>
 </div>
-</dd>
-</dl>
+</div></blockquote>
 </div>
 <div class="section" id="assembly-graph-and-pread-overlaps">
 <h3>Assembly Graph and Pread Overlaps<a class="headerlink" href="#assembly-graph-and-pread-overlaps" title="Permalink to this headline">¶</a></h3>
 <p>Assembly contiguity can be enhanced by adjusting a few parameters in the last stage of the
-assembly process. You can try a grid of pread length cut offs for the filtering of the final
+assembly process. You can try a grid of <a class="reference internal" href="parameters.html#length-cutoff-pr"><span class="std std-ref">pread length cut offs</span></a> for
+the filtering of the final
 overlaps in the assembly graph. To try different length cut off, rename your 2-asm-falcon dir,
 modify the config file, rename the log and mypwatcher directory, and restart falcon:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ mv 2-asm-falcon 2-asm-falcon_12kb
