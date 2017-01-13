@@ -109,7 +109,12 @@
 <li class="toctree-l3"><a class="reference internal" href="#assembly-graph-and-pread-overlaps">Assembly Graph and Pread Overlaps</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#troubleshooting-run">Troubleshooting Run</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting-run">Troubleshooting Run</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#simple-restart">Simple Restart</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#directory-cleanup-and-restart">Directory Cleanup and Restart</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#manual-running-of-failed-jobs">Manual Running of Failed Jobs</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
@@ -369,7 +374,10 @@ GC %:                           50.74 %
 <p>Assembly contiguity can be enhanced by adjusting a few parameters in the last stage of the
 assembly process. You can try a grid of <a class="reference internal" href="parameters.html#length-cutoff-pr"><span class="std std-ref">pread length cut offs</span></a> for
 the filtering of the final
-overlaps in the assembly graph. To try different length cut off, rename your 2-asm-falcon dir,
+overlaps in the assembly graph. In a general sense, longer pread length cut offs will increase the</p>
+<blockquote>
+<div>contiguity (contig N50) in your assembly, but may result in shorter over all assembly length.</div></blockquote>
+<p>To try different length cut off, rename your 2-asm-falcon dir,
 modify the config file, rename the log and mypwatcher directory, and restart falcon:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ mv 2-asm-falcon 2-asm-falcon_12kb
 $ mv mypwatcher/ mypwatcher0/
@@ -377,28 +385,44 @@ $ mv all.log all0.log
 $ qsub run_falcon.sh
 </pre></div>
 </div>
-<p>TRY THIS OR TRY SHELL SCRIPT IN 2- DIR</p>
 <p>The other parameter to adjust is the number of overlaps in the assembly graph. First, look
 at a histogram of the number of overlaps on the 5&#8217; and 3&#8217; end of each read. Run the falcon utility:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> 2-asm-falcon
 $ fc_ovlp_stats.py --fofn 1-preads_ovl/merge-gather/las.fofn &gt; ovlp.stats
 </pre></div>
 </div>
-<p>Add R code for overlap Hists</p>
+<p>Then plot <a class="reference internal" href="OvlpHists.html#ovlphists"><span class="std std-ref">histograms</span></a> of the number of 5&#8217; and 3&#8217; overlaps between preads in R.
+This can inform your parameters for <a class="reference internal" href="parameters.html#sge-option-fc"><span class="std std-ref">sge_option_fc</span></a> where <code class="docutils literal"><span class="pre">min_cov</span></code> and <code class="docutils literal"><span class="pre">max_cov</span></code>
+should flank the bulk of the distribution. For repetative genomes, a second mode in the <a class="reference internal" href="repeatOvlp.html#repeatovlp"><span class="std std-ref">distribution</span></a>
+may appear, containing preads ending or begining in repetative material. It is best to choose a <code class="docutils literal"><span class="pre">max_cov</span></code>
+that removes these repetative overlaps.</p>
 </div>
 </div>
 <div class="section" id="troubleshooting-run">
 <h2>Troubleshooting Run<a class="headerlink" href="#troubleshooting-run" title="Permalink to this headline">¶</a></h2>
-<p>If you find your run has died you will need to refer to the log file to determine at what
-stage it failed. For example:</p>
+<p>If you find your run has died here are some suggestions of how to restart,
+in order of increasing difficulty:</p>
+<div class="section" id="simple-restart">
+<h3>Simple Restart<a class="headerlink" href="#simple-restart" title="Permalink to this headline">¶</a></h3>
+<p>Simply rename your log file and <code class="docutils literal"><span class="pre">mypwatcher</span></code> directory and restart the pipeline. Renaming these
+files preserves them for you reference, and by removing the original mypwatcher directory
+the pipeline, when restarted, will scan your job directory for completed jobs and pick up where it left off:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ mv mypwatcher/ mypwatcher0/
+$ mv all.log all0.log
+$ qsub run_falcon.sh
+</pre></div>
+</div>
+</div>
+<div class="section" id="directory-cleanup-and-restart">
+<h3>Directory Cleanup and Restart<a class="headerlink" href="#directory-cleanup-and-restart" title="Permalink to this headline">¶</a></h3>
+<p>First, determine which job caused the run to fail. For example:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ grep <span class="s1">&#39;ERROR&#39;</span> all.log
 
 2016-11-21 03:21:39,482 - pypeflow.simple_pwatcher_bridge - ERROR - Task Node<span class="o">(</span>0-rawreads/m_00210<span class="o">)</span> failed with exit-code<span class="o">=</span>99
 2016-11-21 03:21:39,482 - pypeflow.simple_pwatcher_bridge - ERROR - Failed to clean-up FakeThread: <span class="nv">jobid</span><span class="o">=</span>Pcfbdb8b3c50d5e <span class="nv">status</span><span class="o">=</span><span class="s1">&#39;EXIT &#39;</span>
 </pre></div>
 </div>
-<p>First, try deleting all directories that failed. You will also need to rename <code class="docutils literal"><span class="pre">all.log</span></code> and <code class="docutils literal"><span class="pre">mypwatcher/</span></code> directory
-to resume the run and preserve their contents for your reference.</p>
+<p>Delete all directories that failed, then rename the log file and <code class="docutils literal"><span class="pre">mypwatcher</span></code> as above:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ rm -rf 0-rawreads/m_00210
 $ mv mypwatcher/ mypwatcher0/
 $ mv all.log all0.log
@@ -409,6 +433,35 @@ $ qsub run_falcon.sh
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ less mypwatcher/jobs/Pcfbdb8b3c50d5e/stderr
 $ less mypwatcher/jobs/Pcfbdb8b3c50d5e/stdout
 </pre></div>
+</div>
+</div>
+<div class="section" id="manual-running-of-failed-jobs">
+<h3>Manual Running of Failed Jobs<a class="headerlink" href="#manual-running-of-failed-jobs" title="Permalink to this headline">¶</a></h3>
+<p>If your job still fails, try manually running the problematic jobs. Search in the job
+directory for the shell script containing the individual tasks and try manually running
+the shell script or individual tasks:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ ls job_0000
+
+job_0000_done  L1.19.5.las  L1.19.7.las  L1.5.19.las  L1.7.19.las   raw_reads.db  run.sh       task.json
+L1.19.4.las    L1.19.6.las  L1.4.19.las  L1.6.19.las  pwatcher.dir  rj_0000.sh    run.sh.done  task.sh
+
+$ head job_0000/rj_0000.sh -n 12
+
+<span class="c1">#!/bin/bash</span>
+<span class="nb">set</span> -vex
+
+<span class="nv">db_dir</span><span class="o">=</span>/lustre/hpcprod/skingan/FALCON_tutorial/ecoli/0-rawreads
+ln -sf <span class="si">${</span><span class="nv">db_dir</span><span class="si">}</span>/.raw_reads.bps .
+ln -sf <span class="si">${</span><span class="nv">db_dir</span><span class="si">}</span>/.raw_reads.idx .
+ln -sf <span class="si">${</span><span class="nv">db_dir</span><span class="si">}</span>/raw_reads.db .
+ln -sf <span class="si">${</span><span class="nv">db_dir</span><span class="si">}</span>/.raw_reads.dust.anno .
+ln -sf <span class="si">${</span><span class="nv">db_dir</span><span class="si">}</span>/.raw_reads.dust.data .
+daligner -v -t16 -H22486 -e0.7 -s1000 raw_reads.19 raw_reads.4 raw_reads.5 raw_reads.6 raw_reads.7
+LAcheck -v raw_reads *.las
+LAsort -v raw_reads.4.raw_reads.19.C0 raw_reads.4.raw_reads.19.N0 raw_reads.4.raw_reads.19.C1 raw_reads.4.raw_reads.19.N1 raw_reads.4.raw_reads.19.C2 raw_reads.4.raw_reads.19.N2 raw_reads.4.raw_reads.19.C3 raw_reads.4.raw_reads.19.N3 <span class="o">&amp;&amp;</span> LAmerge -v L1.4.19 raw_reads.4.raw_reads.19.C0.S raw_reads.4.raw_reads.19.N0.S raw_reads.4.raw_reads.19.C1.S raw_reads.4.raw_reads.19.N1.S raw_reads.4.raw_reads.19.C2.S raw_reads.4.raw_reads.19.N2.S raw_reads.4.raw_reads.19.C3.S raw_reads.4.raw_reads.19.N3.S
+</pre></div>
+</div>
+<p>Once these jobs have run to completion, you can try restarting the pipeline.</p>
 </div>
 </div>
 </div>

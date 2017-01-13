@@ -6,7 +6,7 @@
    :alt: Raw Read Histogram
    :align: center
 
-.. image:: PReadHist.png
+.. image:: PreadHist.png
    :height: 700px
    :width: 700 px
    :alt: PRead Histogram

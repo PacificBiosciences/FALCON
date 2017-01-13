@@ -267,7 +267,9 @@ Assembly Graph and Pread Overlaps
 Assembly contiguity can be enhanced by adjusting a few parameters in the last stage of the 
 assembly process. You can try a grid of :ref:`pread length cut offs <length_cutoff_pr>` for 
 the filtering of the final
-overlaps in the assembly graph. To try different length cut off, rename your 2-asm-falcon dir,
+overlaps in the assembly graph. In a general sense, longer pread length cut offs will increase the
+ contiguity (contig N50) in your assembly, but may result in shorter over all assembly length. 
+To try different length cut off, rename your 2-asm-falcon dir,
 modify the config file, rename the log and mypwatcher directory, and restart falcon:
 
 .. code-block:: bash
@@ -277,7 +279,6 @@ modify the config file, rename the log and mypwatcher directory, and restart fal
 	$ mv all.log all0.log
 	$ qsub run_falcon.sh
 
-TRY THIS OR TRY SHELL SCRIPT IN 2- DIR
 
 The other parameter to adjust is the number of overlaps in the assembly graph. First, look
 at a histogram of the number of overlaps on the 5' and 3' end of each read. Run the falcon utility:
@@ -287,16 +288,38 @@ at a histogram of the number of overlaps on the 5' and 3' end of each read. Run 
 	$ cd 2-asm-falcon
 	$ fc_ovlp_stats.py --fofn 1-preads_ovl/merge-gather/las.fofn > ovlp.stats
 	
-Add R code for overlap Hists
-
+Then plot :ref:`histograms <OvlpHists>` of the number of 5' and 3' overlaps between preads in R.
+This can inform your parameters for :ref:`sge_option_fc <sge_option_fc>` where ``min_cov`` and ``max_cov``
+should flank the bulk of the distribution. For repetative genomes, a second mode in the :ref:`distribution <RepeatOvlp>`
+may appear, containing preads ending or begining in repetative material. It is best to choose a ``max_cov``
+that removes these repetative overlaps.
 
 
 
 Troubleshooting Run
 -------------------
 
-If you find your run has died you will need to refer to the log file to determine at what 
-stage it failed. For example:
+If you find your run has died here are some suggestions of how to restart,
+in order of increasing difficulty:
+
+Simple Restart
+~~~~~~~~~~~~~~
+
+Simply rename your log file and ``mypwatcher`` directory and restart the pipeline. Renaming these
+files preserves them for you reference, and by removing the original mypwatcher directory
+the pipeline, when restarted, will scan your job directory for completed jobs and pick up where it left off:
+
+.. code-block:: bash
+
+	$ mv mypwatcher/ mypwatcher0/
+	$ mv all.log all0.log
+	$ qsub run_falcon.sh
+
+
+Directory Cleanup and Restart
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+First, determine which job caused the run to fail. For example:
 
 .. code-block:: bash
 	
@@ -305,8 +328,7 @@ stage it failed. For example:
 	2016-11-21 03:21:39,482 - pypeflow.simple_pwatcher_bridge - ERROR - Task Node(0-rawreads/m_00210) failed with exit-code=99
 	2016-11-21 03:21:39,482 - pypeflow.simple_pwatcher_bridge - ERROR - Failed to clean-up FakeThread: jobid=Pcfbdb8b3c50d5e status='EXIT '
 
-First, try deleting all directories that failed. You will also need to rename ``all.log`` and ``mypwatcher/`` directory
-to resume the run and preserve their contents for your reference.
+Delete all directories that failed, then rename the log file and ``mypwatcher`` as above:
 
 .. code-block:: bash
 
@@ -323,3 +345,33 @@ You can find out more details about the failed jobs in ``mypwatcher/`` to diagno
 	$ less mypwatcher/jobs/Pcfbdb8b3c50d5e/stdout
 
 
+Manual Running of Failed Jobs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If your job still fails, try manually running the problematic jobs. Search in the job
+directory for the shell script containing the individual tasks and try manually running 
+the shell script or individual tasks:
+
+.. code-block:: bash
+
+	$ ls job_0000
+	
+	job_0000_done  L1.19.5.las  L1.19.7.las  L1.5.19.las  L1.7.19.las   raw_reads.db  run.sh       task.json
+	L1.19.4.las    L1.19.6.las  L1.4.19.las  L1.6.19.las  pwatcher.dir  rj_0000.sh    run.sh.done  task.sh
+
+	$ head job_0000/rj_0000.sh -n 12
+
+	#!/bin/bash
+	set -vex
+
+	db_dir=/lustre/hpcprod/skingan/FALCON_tutorial/ecoli/0-rawreads
+	ln -sf ${db_dir}/.raw_reads.bps .
+	ln -sf ${db_dir}/.raw_reads.idx .
+	ln -sf ${db_dir}/raw_reads.db .
+	ln -sf ${db_dir}/.raw_reads.dust.anno .
+	ln -sf ${db_dir}/.raw_reads.dust.data .
+	daligner -v -t16 -H22486 -e0.7 -s1000 raw_reads.19 raw_reads.4 raw_reads.5 raw_reads.6 raw_reads.7
+	LAcheck -v raw_reads *.las
+	LAsort -v raw_reads.4.raw_reads.19.C0 raw_reads.4.raw_reads.19.N0 raw_reads.4.raw_reads.19.C1 raw_reads.4.raw_reads.19.N1 raw_reads.4.raw_reads.19.C2 raw_reads.4.raw_reads.19.N2 raw_reads.4.raw_reads.19.C3 raw_reads.4.raw_reads.19.N3 && LAmerge -v L1.4.19 raw_reads.4.raw_reads.19.C0.S raw_reads.4.raw_reads.19.N0.S raw_reads.4.raw_reads.19.C1.S raw_reads.4.raw_reads.19.N1.S raw_reads.4.raw_reads.19.C2.S raw_reads.4.raw_reads.19.N2.S raw_reads.4.raw_reads.19.C3.S raw_reads.4.raw_reads.19.N3.S
+
+Once these jobs have run to completion, you can try restarting the pipeline.
