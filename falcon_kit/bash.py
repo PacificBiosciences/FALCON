@@ -307,8 +307,9 @@ rmfollow() {
             if not line.startswith('LAmerge'):
                 continue
             las_files = [word + '.las' for word in functional.yield_args_from_line(line)]
-            assert las_fn == os.path.basename(las_files[0])
-            script.extend('rmfollow {}'.format(fn) for fn in las_files[1:])
+            #las_fn = os.path.basename(las_files[0])
+            #assert las_fn == os.path.basename(las_files[0])
+            script.extend('# rmfollow {}'.format(fn) for fn in las_files[1:])
             break
 
         content = bash_funcs + '\n'.join(script + [''])
