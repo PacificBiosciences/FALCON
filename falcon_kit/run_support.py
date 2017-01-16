@@ -131,6 +131,7 @@ def parse_config(config_fn):
         config.readfp(open(config_fn))
     return config
 
+import warnings
 def get_dict_from_old_falcon_cfg(config):
     job_type = "SGE"
     section = 'General'
@@ -159,17 +160,33 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'pwatcher_directory'):
         pwatcher_directory = config.get(section, 'pwatcher_directory')
 
-    pa_concurrent_jobs = default_concurrent_jobs
+    da_concurrent_jobs = default_concurrent_jobs
+    la_concurrent_jobs = default_concurrent_jobs
+    cns_concurrent_jobs = default_concurrent_jobs
+    pda_concurrent_jobs = default_concurrent_jobs
+    pla_concurrent_jobs = default_concurrent_jobs
+    fc_concurrent_jobs = default_concurrent_jobs
+
     if config.has_option(section, 'pa_concurrent_jobs'):
         pa_concurrent_jobs = config.getint(section, 'pa_concurrent_jobs')
-
-    cns_concurrent_jobs = default_concurrent_jobs
-    if config.has_option(section, 'cns_concurrent_jobs'):
-        cns_concurrent_jobs = config.getint(section, 'cns_concurrent_jobs')
-
-    ovlp_concurrent_jobs = default_concurrent_jobs
+        warnings.warn("Deprecated setting in config: 'pa_concurrent_jobs' -- Prefer da_concurrent_jobs and la_concurrent_jobs separately")
+        da_concurrent_jobs = la_concurrent_jobs = pa_concurrent_jobs
     if config.has_option(section, 'ovlp_concurrent_jobs'):
         ovlp_concurrent_jobs = config.getint(section, 'ovlp_concurrent_jobs')
+        warnings.warn("Deprecated setting in config: 'ovlp_concurrent_jobs' -- Prefer pda_concurrent_jobs and pla_concurrent_jobs separately")
+        pda_concurrent_jobs = pla_concurrent_jobs = ovlp_concurrent_jobs
+    if config.has_option(section, 'da_concurrent_jobs'):
+        da_concurrent_jobs = config.getint(section, 'da_concurrent_jobs')
+    if config.has_option(section, 'la_concurrent_jobs'):
+        la_concurrent_jobs = config.getint(section, 'la_concurrent_jobs')
+    if config.has_option(section, 'cns_concurrent_jobs'):
+        cns_concurrent_jobs = config.getint(section, 'cns_concurrent_jobs')
+    if config.has_option(section, 'pda_concurrent_jobs'):
+        pda_concurrent_jobs = config.getint(section, 'pda_concurrent_jobs')
+    if config.has_option(section, 'pla_concurrent_jobs'):
+        pla_concurrent_jobs = config.getint(section, 'pla_concurrent_jobs')
+    if config.has_option(section, 'fc_concurrent_jobs'):
+        fc_concurrent_jobs = config.getint(section, 'fc_concurrent_jobs')
 
     #appending = False
     #if config.has_option(section, 'appending'):
@@ -310,9 +327,13 @@ def get_dict_from_old_falcon_cfg(config):
                    "job_queue" : job_queue,
                    "input_type": input_type,
                    #"openending": openending,
-                   "pa_concurrent_jobs" : pa_concurrent_jobs,
-                   "ovlp_concurrent_jobs" : ovlp_concurrent_jobs,
+                   "default_concurrent_jobs" : default_concurrent_jobs,
+                   "da_concurrent_jobs" : da_concurrent_jobs,
+                   "la_concurrent_jobs" : la_concurrent_jobs,
                    "cns_concurrent_jobs" : cns_concurrent_jobs,
+                   "pda_concurrent_jobs" : pda_concurrent_jobs,
+                   "pla_concurrent_jobs" : pla_concurrent_jobs,
+                   "fc_concurrent_jobs" : fc_concurrent_jobs,
                    "overlap_filtering_setting": overlap_filtering_setting,
                    "genome_size" : genome_size,
                    "seed_coverage" : seed_coverage,
@@ -347,7 +368,6 @@ def get_dict_from_old_falcon_cfg(config):
     provided = dict(config.items(section))
     unused = set(provided) - set(k.lower() for k in hgap_config)
     if unused:
-        import warnings
         warnings.warn("Unexpected keys in input config: %s" %repr(unused))
 
     hgap_config["install_prefix"] = sys.prefix
