@@ -156,8 +156,7 @@ def run(wf, config,
         support.make_dirs(d)
 
     exitOnFailure=config['stop_all_jobs_on_failure'] # only matter for parallel jobs
-    concurrent_jobs = config['pa_concurrent_jobs']
-    wf.max_jobs = concurrent_jobs
+    wf.max_jobs = config['default_concurrent_jobs']
 
     rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, 'raw-fofn-abs', os.path.basename(config['input_fofn'])))
     make_fofn_abs_task = PypeTask(inputs = {'i_fofn': input_fofn_plf},
@@ -196,6 +195,7 @@ def run(wf, config,
 
         raw_reads_nblock = support.get_nblock(fn(raw_reads_db_plf))
         #### run daligner
+        wf.max_jobs = config['da_concurrent_jobs']
         scattered_plf = os.path.join(rawread_dir, 'daligner-scatter', 'scattered.json')
         make_daligner_scatter = PypeTask(
                 inputs = {
@@ -234,6 +234,7 @@ def run(wf, config,
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
         # Merge .las files.
+        wf.max_jobs = config['la_concurrent_jobs']
         scattered_plf = os.path.join(rawread_dir, 'merge-scatter', 'scattered.json')
         make_task = PypeTask(
                 inputs = {
@@ -262,8 +263,7 @@ def run(wf, config,
             sys.exit(0)
 
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
-        concurrent_jobs = config['cns_concurrent_jobs']
-        wf.max_jobs = concurrent_jobs
+        wf.max_jobs = config['cns_concurrent_jobs']
 
         scattered_plf = os.path.join(rawread_dir, 'cns-scatter', 'scattered.json')
         make_task = PypeTask(
@@ -345,9 +345,7 @@ def run(wf, config,
 
     preads_nblock = support.get_nblock(fn(preads_db))
     #### run daligner
-    concurrent_jobs = config['ovlp_concurrent_jobs']
-    wf.max_jobs = concurrent_jobs
-
+    wf.max_jobs = config['pda_concurrent_jobs']
     config['sge_option_da'] = config['sge_option_pda']
 
     scattered_plf = os.path.join(pread_dir, 'daligner-scatter', 'scattered.json')
@@ -387,6 +385,7 @@ def run(wf, config,
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
     # Merge .las files.
+    wf.max_jobs = config['pla_concurrent_jobs']
     config['sge_option_la'] = config['sge_option_pla']
     scattered_plf = os.path.join(pread_dir, 'merge-scatter', 'scattered.json')
     make_task = PypeTask(
@@ -414,6 +413,8 @@ def run(wf, config,
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
 
+    # Draft assembly (called 'fc_' for now)
+    wf.max_jobs = config['fc_concurrent_jobs']
     db2falcon_dir = os.path.join(pread_dir, 'db2falcon')
     db2falcon_done = makePypeLocalFile(os.path.join(db2falcon_dir, 'db2falcon_done'))
     preads4falcon_plf = makePypeLocalFile(os.path.join(db2falcon_dir, 'preads4falcon.fasta'))
