@@ -101,6 +101,7 @@ class ReaderBase(object):
         """
         Prepare for iteration through the records in the file
         """
+        self.filename = f # only useful if f is not a fileobj
         self.file = getFileHandle(f, "r")
 
     def close(self):
@@ -256,5 +257,4 @@ class FastaReader(ReaderBase):
             for part in parts:
                 yield FastaRecord.fromString(">" + part)
         except AssertionError:
-            raise ValueError("Invalid FASTA file")
-
+            raise ValueError("Invalid FASTA file {!r}".format(self.filename))
