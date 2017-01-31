@@ -201,7 +201,9 @@ def task_run_las_merge(self):
         else:
             src = os.path.relpath(las_path, cwd)
         tgt = os.path.join(cwd, os.path.basename(las_path))
-        LOG.debug('symlink {!r} -> {!r}'.format(src, tgt))
+        LOG.debug('symlink {!r} <- {!r}'.format(src, tgt))
+        if os.path.lexists(tgt):
+            os.unlink(tgt)
         os.symlink(src, tgt)
 
     config = self.parameters['config']

@@ -84,7 +84,7 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
     with open(read_fofn, 'r') as f:
         for r_fn in f:
             r_fn = r_fn.strip()
-            read_fa_file = FastaReader(r_fn)
+            read_fa_file = FastaReader(r_fn) # TODO(CD): What about .dexta?
             for r in read_fa_file:
                 rid = r.name.split()[0]
                 if rid not in read_set:
