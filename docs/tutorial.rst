@@ -153,7 +153,7 @@ For example:
 
 .. code-block:: bash
 
-	$ find 0-rawreads -n "job*done" | wc -l
+	$ find 0-rawreads/ -name "job*done" | wc -l
 	60
 	
 	$ find 0-rawreads/ -name "m_*done" | wc -l
