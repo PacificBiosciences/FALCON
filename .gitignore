@@ -10,3 +10,5 @@ falcon_kit.egg-info/
 *.dll
 *.egg
 *.eggs
+FALCON.tar.gz
+nose.*.xml

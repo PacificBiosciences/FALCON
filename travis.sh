@@ -9,5 +9,5 @@ mkdir -p LOCAL
 export PYTHONUSERBASE=$(pwd)/LOCAL
 export PATH=$PYTHONUSERBASE/bin:$PATH
 
-. ./install.sh
-. ./test.sh
+make install
+make test
