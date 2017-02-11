@@ -8,6 +8,7 @@ install_requires=[
         "networkx >=1.7, <=1.10",
         #"logging_tree",
         #"pbcore >= 0.6.3",
+        #"pypeFLOW", # We exclude pypeFLOW because it is not needed for the unit-tests.
         ]
 
 scripts = glob.glob("src/py_scripts/*.py")

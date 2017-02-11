@@ -12,7 +12,9 @@
 #sudo: required
 os:
   - linux
-language: python
+#language: python # This seems to cause virtualenv, which we do not want. We prefer a --user install.
+# But to speed-up start-up,
+language: c
 compiler:
   - clang  # hmm. distutils uses 'gcc' anyway
 #  - gcc
