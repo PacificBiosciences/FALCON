@@ -15,11 +15,9 @@ def filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len):
         def ignore(overlap_data):
             left_count = overlap_data["5p"]
             right_count = overlap_data["3p"]
-            if abs(left_count - right_count) > max_diff:
-                return True
-            elif left_count > max_ovlp or right_count > max_ovlp:
-                return True
-            elif left_count < min_ovlp or right_count < min_ovlp:
+            if (abs(left_count - right_count) > max_diff) or \
+               (left_count > max_ovlp) or (right_count > max_ovlp) or \
+               (left_count < min_ovlp) or (right_count < min_ovlp):
                 return True
 
         ignore_rtn = []
