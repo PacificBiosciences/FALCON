@@ -333,9 +333,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
         allocate_delta_group(msa_array[i]);
     }
 
-#endif
-
-#ifdef STATIC_ALLOCATE
+#else
 
     static msa_pos_t * msa_array = NULL;
     if ( msa_array == NULL) {
@@ -550,9 +548,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
     }
 
     free(msa_array);
-#endif
-
-#ifdef STATIC_ALLOCATE
+#else
     clean_msa_working_space(msa_array, t_len+1);
 #endif
 
