@@ -262,6 +262,10 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'falcon_sense_greedy'):
         falcon_sense_greedy = config.getboolean(section, 'falcon_sense_greedy')
 
+    LA4Falcon_preload = ""
+    if config.has_option(section, 'la4falcon_preload'):
+        LA4Falcon_preload = config.getboolean(section, 'la4falcon_preload')
+
     genome_size = 0
     if config.has_option(section, 'genome_size'):
         genome_size = config.getint(section, 'genome_size')
@@ -359,6 +363,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "falcon_sense_option": falcon_sense_option,
                    "falcon_sense_skip_contained": falcon_sense_skip_contained,
                    "falcon_sense_greedy": falcon_sense_greedy,
+                   "LA4Falcon_preload": LA4Falcon_preload,
                    "stop_all_jobs_on_failure": stop_all_jobs_on_failure,
                    "use_tmpdir": use_tmpdir,
                    "pwatcher_type": pwatcher_type,
