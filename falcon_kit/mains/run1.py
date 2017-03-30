@@ -1,6 +1,6 @@
 from .. import run_support as support
 from .. import bash, pype_tasks
-from ..util.system import only_these_symlinks
+from ..util.system import (only_these_symlinks, lfs_setstripe_maybe)
 from pypeflow.simple_pwatcher_bridge import (PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase,
         makePypeLocalFile, fn, PypeTask)
 import argparse
@@ -452,6 +452,7 @@ def run(wf, config,
 
 
 def main(argv=sys.argv):
+    lfs_setstripe_maybe(path='.', stripe=12)
     parser = argparse.ArgumentParser()
     parser.add_argument('config',
         help='.cfg/.ini/.json')

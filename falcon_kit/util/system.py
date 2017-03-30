@@ -1,3 +1,4 @@
+from .io import system
 import logging
 import os
 import pprint
@@ -30,3 +31,11 @@ def only_these_symlinks(dir2paths):
         for base, rel in base2rel.iteritems():
             path = os.path.join(d, base)
             os.symlink(rel, path)
+
+def lfs_setstripe_maybe(path='.', stripe=12):
+    path = os.path.abspath(path)
+    rc = system('lfs setstripe -c {:d} {!s}'.format(stripe, path))
+    if rc:
+        log.info('Apparently {!r} is not lustre in filesystem.'.format(path))
+    else:
+        log.info('This lfs stripe ({}) should propagate to subdirs of {!r}.'.format(stripe, path))

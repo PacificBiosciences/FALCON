@@ -328,13 +328,16 @@ def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
     else:
         bash_cutoff = '{}'.format(length_cutoff)
     params.update(locals())
+    LA4Falcon_flags = 'P' if params.get('LA4Falcon_preload') else ''
     if config["falcon_sense_skip_contained"]:
-        run_consensus = """LA4Falcon -H$CUTOFF -fso {db_fn} {las_fn} | """
+        LA4Falcon_flags += 'fso'
     elif config["falcon_sense_greedy"]:
-        run_consensus = """LA4Falcon -H$CUTOFF -fog  {db_fn} {las_fn} | """
+        LA4Falcon_flags += 'fog'
     else:
-        run_consensus = """LA4Falcon -H$CUTOFF -fo  {db_fn} {las_fn} | """
-    run_consensus += """fc_consensus {falcon_sense_option} >| {out_file_bfn}"""
+        LA4Falcon_flags += 'fo'
+    if LA4Falcon_flags:
+        LA4Falcon_flags = '-' + ''.join(set(LA4Falcon_flags))
+    run_consensus = "LA4Falcon -H$CUTOFF %s {db_fn} {las_fn} | fc_consensus {falcon_sense_option} >| {out_file_bfn}"%LA4Falcon_flags
 
     if config.get('dazcon', False):
         run_consensus = """
