@@ -38,6 +38,8 @@ FALCON Parameter sets
 
 :download:`fc_run_mammal.cfg <cfgs/fc_run_mammal.cfg>` - Has worked well on at least one mammalian dataset
 
+:download:`fc_run_mammalSequel.cfg <cfgs/fc_run_mammalSequel.cfg>` - Has worked well on at least one mammalian Sequel dataset
+
 :download:`fc_run_plant.cfg <cfgs/fc_run_plant.cfg>` - Has worked well on at least one plant (Ranunculales) dataset
 
 :download:`fc_run_arabidopsis.cfg <cfgs/fc_run_arabidopsis.cfg>` - Configuration for arabidopsis assembly in Chin et al. 
