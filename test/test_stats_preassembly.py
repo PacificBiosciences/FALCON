@@ -2,11 +2,16 @@ import falcon_kit.stats_preassembly as M
 import helpers
 from cStringIO import StringIO
 
+def test_stats_from_sorted_readlengths():
+    stats = M.stats_from_sorted_readlengths([1,2,3,4])
+    expected = M.Stats(nreads=4, total=10, n50=3, p95=4, esize=3.0)
+    helpers.assert_equal(stats, expected)
+
 def test_stats_dict():
     #Stats = collections.namedtuple('FastaStats', ['nreads', 'total', 'n50', 'p95'])
-    stats_raw_reads = M.Stats(100, 1000, 50, 95)
-    stats_seed_reads = M.Stats(50, 500, 25, 40)
-    stats_corrected_reads = M.Stats(10, 100, 5, 9)
+    stats_raw_reads = M.Stats(100, 1000, 50, 95, 0.0)
+    stats_seed_reads = M.Stats(50, 500, 25, 40, 0.0)
+    stats_corrected_reads = M.Stats(10, 100, 5, 9, 0.0)
     genome_length = 19
     length_cutoff = 10
     frag = 1.0
