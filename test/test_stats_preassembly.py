@@ -25,16 +25,20 @@ def test_stats_dict():
  'preassembled_seed_fragmentation': 1.0,
  'preassembled_seed_truncation': 2.5,
  'preassembled_yield': 0.2,
+ 'preassembled_esize': 0.0,
  'raw_bases': 1000,
  'raw_coverage': 52.632,
  'raw_mean': 10.0,
  'raw_n50': 50,
  'raw_p95': 95,
  'raw_reads': 100,
+ 'raw_esize': 0.0,
  'seed_bases': 500,
  'seed_coverage': 26.316,
  'seed_mean': 10.0,
  'seed_n50': 25,
  'seed_p95': 40,
- 'seed_reads': 50}
+ 'seed_reads': 50,
+ 'seed_esize': 0.0,
+ }
     helpers.equal_dict(result, expected)
