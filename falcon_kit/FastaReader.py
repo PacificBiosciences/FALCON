@@ -3,6 +3,7 @@ from cStringIO import StringIO
 import contextlib
 import md5
 import re
+import subprocess
 
 def splitFastaHeader( name ):
     """
@@ -164,6 +165,11 @@ def yield_fasta_records(f, fn):
         raise Exception("Invalid FASTA file {!r}".format(fn))
 
 
+def stream_stdout(call, fn):
+    args = call.split()
+    proc = subprocess.Popen(args, stdin=open(fn), stdout=subprocess.PIPE)
+    return proc.stdout
+
 @contextlib.contextmanager
 def open_fasta_reader(fn):
     """
@@ -191,6 +197,8 @@ def open_fasta_reader(fn):
     mode = 'r'
     if filename.endswith(".gz"):
         ofs = gzip.open(filename, mode)
+    elif filename.endswith(".dexta"):
+        ofs = stream_stdout("undexta -vkU -w60 -i", filename)
     else:
         ofs = open(filename, mode)
     yield yield_fasta_records(ofs, filename)
