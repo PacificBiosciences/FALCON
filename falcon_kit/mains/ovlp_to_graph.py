@@ -1,4 +1,3 @@
-#from pbcore.io import FastaReader
 import networkx as nx
 import os
 import shlex

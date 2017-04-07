@@ -156,12 +156,12 @@ def yield_fasta_records(f, fn):
     fn: str - filename (for exceptions)
     """
     try:
-        parts = splitFileContents(self.file, ">")
+        parts = splitFileContents(f, ">")
         assert "" == next(parts)
         for part in parts:
             yield FastaRecord.fromString(">" + part)
     except AssertionError:
-        raise Exception("Invalid FASTA file {!r}".format(self.filename))
+        raise Exception("Invalid FASTA file {!r}".format(fn))
 
 
 @contextlib.contextmanager
@@ -188,11 +188,21 @@ def open_fasta_reader(fn):
         ref000004|EGFR_Exon_5 157 c368b8191164a9d6ab76fd328e2803ca
     """
     filename = abspath(expanduser(fn))
+    mode = 'r'
     if filename.endswith(".gz"):
         ofs = gzip.open(filename, mode)
     else:
         ofs = open(filename, mode)
-    yield ofs
+    yield yield_fasta_records(ofs, filename)
     ofs.close()
 
-FastaReader = open_fasta_reader
+
+class FastaReader(object):
+    """Deprecated, but should still work (with filenames).
+    """
+    def __iter__(self):
+        with open_fasta_reader(self.filename) as reader:
+            for rec in reader:
+                yield rec
+    def __init__(self, f):
+        self.filename = f

@@ -1,4 +1,4 @@
-from falcon_kit.FastaReader import FastaReader
+from falcon_kit.FastaReader import open_fasta_reader
 import argparse
 import contextlib
 import os
@@ -26,9 +26,9 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
         rid = int(fid.split('/')[1])/10
         return rid_to_oid[int(rid)]
 
-    ref_fasta = FastaReader(ctg_fa)
-    all_ctg_ids = set()
-    for s in ref_fasta:
+    with open_fasta_reader(ctg_fa) as ref_fasta:
+      all_ctg_ids = set()
+      for s in ref_fasta:
         s_id = s.name.split()[0]
         if ctg_id != 'all' and s_id != ctg_id:
             continue
