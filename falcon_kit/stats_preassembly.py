@@ -7,7 +7,7 @@ See FALCON-pbsmrtpipe/pbfalcon/report_preassembly.py for XML version.
 #   http://swarm/files/depot/branches/springfield/S2.3/software/smrtanalysis/bioinformatics/tools/pbreports/pbreports/report/preassembly.py
 from __future__ import absolute_import
 from __future__ import division
-from .FastaReader import FastaReader
+from .FastaReader import open_fasta_reader
 from .util.io import syscall
 from . import functional
 import collections
@@ -31,7 +31,7 @@ def get_fasta_readlengths(fasta_file):
     :return: (tuple)
     """
     lens = []
-    with FastaReader(fasta_file) as f:
+    with open_fasta_reader(fasta_file) as f:
         for record in f:
             lens.append(len(record.sequence))
     lens.sort()

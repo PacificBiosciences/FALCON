@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from .FastaReader import FastaReader
+from .FastaReader import open_fasta_reader
 import networkx as nx
 
 RCMAP = dict(zip("ACGTacgtNn-","TGCAtgcaNn-"))
@@ -54,8 +54,8 @@ class AsmGraph(object):
 
         seqs = {}
         # load all p-read name into memory
-        f = FastaReader(fasta_fn)
-        for r in f:
+        with open_fasta_reader(fasta_fn) as f:
+          for r in f:
             if r.name not in all_read_ids:
                 continue
             seqs[r.name] = r.sequence.upper()

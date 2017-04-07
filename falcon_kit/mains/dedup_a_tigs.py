@@ -1,4 +1,4 @@
-from falcon_kit.FastaReader import FastaReader
+from falcon_kit.FastaReader import open_fasta_reader
 import argparse
 import sys
 
@@ -13,8 +13,8 @@ def parse_args(argv):
 
 def main(argv=sys.argv):
     args = parse_args(argv)
-    reads = FastaReader("a_ctg_all.fa")
-    with open("a_ctg.fa","w") as f:
+    with open_fasta_reader("a_ctg_all.fa") as reads:
+      with open("a_ctg.fa","w") as f:
         for r in reads:
             tig_id, v, w, len_, ovl, ne, delta_l, idt, cov = r.name.split()
             if 100*float(idt) > args.max_idt and 100*float(cov) > args.max_aln_cov and\

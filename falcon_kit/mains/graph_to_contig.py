@@ -1,6 +1,6 @@
 import networkx as nx
 #from pbcore.io import FastaReader
-from falcon_kit.FastaReader import FastaReader
+from falcon_kit.FastaReader import open_fasta_reader
 from falcon_kit import kup, falcon, DWA
 
 read_fasta = "preads4falcon.fasta"
@@ -76,8 +76,8 @@ def main(argv=None):
 
     seqs = {}
     # load all p-read name into memory
-    f = FastaReader(read_fasta)
-    for r in f:
+    with open_fasta_reader(read_fasta) as f:
+      for r in f:
         if r.name not in reads_in_layout:
             continue
         seqs[r.name] = r.sequence.upper()
