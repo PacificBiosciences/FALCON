@@ -35,9 +35,12 @@ class ConsensusData(Structure):
     _fields_ = [ ("sequence", c_char_p),
                  ("eff_cov", POINTER(c_uint)) ]
 
-falcon_dll = CDLL(ext_falcon.__file__) # on failure, turn on absolute_import
-# That can fail if someone imports falcon_kit/falcon_kit.py absolutely, by accident.
-# See e.g. falcon_kit/fc_asm_graph.py
+try:
+    falcon_dll = CDLL(ext_falcon.__file__)
+except OSError:
+    # It seems that setup.py has changed the __file__ it attaches to an extension module.
+    # I have no idea why or why, but this works around it.
+    falcon_dll = CDLL(os.path.join(os.path.dirname(__file__), '..', os.path.basename(ext_falcon.__file__)))
 
 kup = falcon_dll
 
