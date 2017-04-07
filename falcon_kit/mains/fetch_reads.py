@@ -1,4 +1,4 @@
-from falcon_kit.FastaReader import FastaReader
+from falcon_kit.FastaReader import (FastaReader, open_fasta_reader)
 import argparse
 import contextlib
 import os

@@ -35,6 +35,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #################################################################################$$
+from __future__ import absolute_import
 __all__ = [
     'kup', 'DWA', 'falcon',
     'KmerLookup', 'KmerMatch', 'AlnRange', 'ConsensusData',
@@ -42,6 +43,7 @@ __all__ = [
     ]
 
 from ctypes import *
+import os
 import ext_falcon
 #module_path = os.path.split(__file__)[0]
 
@@ -70,8 +72,9 @@ class ConsensusData(Structure):
     _fields_ = [ ("sequence", c_char_p),
                  ("eff_cov", POINTER(c_uint)) ]
 
-
-falcon_dll = CDLL(ext_falcon.__file__)
+falcon_dll = CDLL(ext_falcon.__file__) # on failure, turn on absolute_import
+# That can fail if someone imports falcon_kit/falcon_kit.py absolutely, by accident.
+# See e.g. falcon_kit/fc_asm_graph.py
 
 kup = falcon_dll
 
