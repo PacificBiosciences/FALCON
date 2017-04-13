@@ -194,6 +194,7 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_bfn):
         mdust = ''
     params.update(locals())
     script = """\
+echo "PBFALCON_ERRFILE=$PBFALCON_ERRFILE"
 set -o pipefail
 #fc_fasta2fasta < {input_fofn_fn} >| fc.fofn
 while read fn; do  {cat_fasta} $fn | fasta2DB -v raw_reads -i${{fn##*/}}; done < {input_fofn_fn}

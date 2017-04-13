@@ -153,6 +153,13 @@ def test_calc_cutoff():
     got = f.calc_cutoff(target, partial_capture)
     eq_(expected, got)
 
+def test_calc_cutoff_bad_coverage():
+    target = 23 # > 22 available
+    expected_message = 'Not enough reads available for desired genome coverage (bases needed=23 > actual=22)'
+    with assert_raises(f.GenomeCoverageError) as ctx:
+        f.calc_cutoff(target, partial_capture)
+    eq_(expected_message, ctx.exception.message)
+
 sample_DBdump_output = """+ R 2
 + M 0
 + H 400
