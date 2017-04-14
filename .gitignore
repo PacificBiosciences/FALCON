@@ -1,7 +1,9 @@
 /LOCAL/
 /build/
 /dist/
+/.cache/
 falcon_kit.egg-info/
+/.coverage
 *.pyc
 *.pyo
 *.swp
