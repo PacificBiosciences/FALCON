@@ -1,4 +1,4 @@
-from falcon_kit.FastaReader import FastaReader
+from falcon_kit.FastaReader import open_fasta_reader
 
 
 def main(argv=None):
@@ -19,9 +19,9 @@ def main(argv=None):
             p_ctg_coor_map[ctg_id][w] = coor
 
 
-  a_ctg_fasta = FastaReader("a_ctg.fa")
-  for r in a_ctg_fasta:
-    rid = r.name.split()
-    rid, v, w = rid[:3]
-    pid = rid.split("-")[0]
-    print rid, p_ctg_coor_map[pid][v], p_ctg_coor_map[pid][w]
+  with open_fasta_reader("a_ctg.fa") as a_ctg_fasta:
+    for r in a_ctg_fasta:
+      rid = r.name.split()
+      rid, v, w = rid[:3]
+      pid = rid.split("-")[0]
+      print rid, p_ctg_coor_map[pid][v], p_ctg_coor_map[pid][w]

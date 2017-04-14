@@ -1,44 +1,9 @@
-#################################################################################$$
-# Copyright (c) 2011-2014, Pacific Biosciences of California, Inc.
-#
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted (subject to the limitations in the
-# disclaimer below) provided that the following conditions are met:
-#
-#  * Redistributions of source code must retain the above copyright
-#  notice, this list of conditions and the following disclaimer.
-#
-#  * Redistributions in binary form must reproduce the above
-#  copyright notice, this list of conditions and the following
-#  disclaimer in the documentation and/or other materials provided
-#  with the distribution.
-#
-#  * Neither the name of Pacific Biosciences nor the names of its
-#  contributors may be used to endorse or promote products derived
-#  from this software without specific prior written permission.
-#
-# NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
-# GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY PACIFIC
-# BIOSCIENCES AND ITS CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
-# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL PACIFIC BIOSCIENCES OR ITS
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#################################################################################$$
-
 from os.path import abspath, expanduser
 from cStringIO import StringIO
+import contextlib
 import md5
 import re
+import subprocess
 
 def splitFastaHeader( name ):
     """
@@ -69,52 +34,6 @@ def splitFileContents(f, delimiter, BLOCKSIZE=8192):
             remainder = StringIO()
             remainder.write(part)
     yield remainder.getvalue()
-
-def isFileLikeObject(o):
-    return hasattr(o, "read") and hasattr(o, "write")
-
-def getFileHandle(filenameOrFile, mode="r"):
-    """
-    Given a filename not ending in ".gz", open the file with the
-    appropriate mode.
-    Given a filename ending in ".gz", return a filehandle to the
-    unzipped stream.
-    Given a file object, return it unless the mode is incorrect--in
-    that case, raise an exception.
-    """
-    assert mode in ("r", "w")
-
-    if isinstance(filenameOrFile, basestring):
-        filename = abspath(expanduser(filenameOrFile))
-        if filename.endswith(".gz"):
-            return gzip.open(filename, mode)
-        else:
-            return open(filename, mode)
-    elif isFileLikeObject(filenameOrFile):
-        return filenameOrFile
-    else:
-        raise Exception("Invalid type to getFileHandle")
-
-
-class ReaderBase(object):
-    def __init__(self, f):
-        """
-        Prepare for iteration through the records in the file
-        """
-        self.filename = f # only useful if f is not a fileobj
-        self.file = getFileHandle(f, "r")
-
-    def close(self):
-        """
-        Close the underlying file
-        """
-        self.file.close()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
 
 
 class FastaRecord(object):
@@ -230,8 +149,34 @@ class FastaRecord(object):
             wrap(self.sequence, self.COLUMNS)
 
 
-class FastaReader(ReaderBase):
+# These are refactored from ReaderBase/FastaReader.
+
+def yield_fasta_records(f, fn):
     """
+    f: fileobj
+    fn: str - filename (for exceptions)
+    """
+    try:
+        parts = splitFileContents(f, ">")
+        assert "" == next(parts)
+        for part in parts:
+            yield FastaRecord.fromString(">" + part)
+    except AssertionError:
+        raise Exception("Invalid FASTA file {!r}".format(fn))
+
+
+def stream_stdout(call, fn):
+    args = call.split()
+    proc = subprocess.Popen(args, stdin=open(fn), stdout=subprocess.PIPE)
+    return proc.stdout
+
+@contextlib.contextmanager
+def open_fasta_reader(fn):
+    """
+    fn: str - filename
+
+    Note: If you already have a fileobj, you can iterate over yield_fasta_records() directly.
+
     Streaming reader for FASTA files, useable as a one-shot iterator
     over FastaRecord objects.  Agnostic about line wrapping.
     Example:
@@ -240,21 +185,32 @@ class FastaReader(ReaderBase):
         > from pbcore import data
         > filename = data.getTinyFasta()
         > r = FastaReader(filename)
-        > for record in r:
+        > with open_fasta_reader(filename) as r:
+        ...  for record in r:
         ...     print record.name, len(record.sequence), record.md5
         ref000001|EGFR_Exon_2 183 e3912e9ceacd6538ede8c1b2adda7423
         ref000002|EGFR_Exon_3 203 4bf218da37175a91869033024ac8f9e9
         ref000003|EGFR_Exon_4 215 245bc7a046aad0788c22b071ed210f4d
         ref000004|EGFR_Exon_5 157 c368b8191164a9d6ab76fd328e2803ca
-        > r.close()
     """
-    DELIMITER = ">"
+    filename = abspath(expanduser(fn))
+    mode = 'r'
+    if filename.endswith(".gz"):
+        ofs = gzip.open(filename, mode)
+    elif filename.endswith(".dexta"):
+        ofs = stream_stdout("undexta -vkU -w60 -i", filename)
+    else:
+        ofs = open(filename, mode)
+    yield yield_fasta_records(ofs, filename)
+    ofs.close()
 
+
+class FastaReader(object):
+    """Deprecated, but should still work (with filenames).
+    """
     def __iter__(self):
-        try:
-            parts = splitFileContents(self.file, ">")
-            assert "" == next(parts)
-            for part in parts:
-                yield FastaRecord.fromString(">" + part)
-        except AssertionError:
-            raise ValueError("Invalid FASTA file {!r}".format(self.filename))
+        with open_fasta_reader(self.filename) as reader:
+            for rec in reader:
+                yield rec
+    def __init__(self, f):
+        self.filename = f

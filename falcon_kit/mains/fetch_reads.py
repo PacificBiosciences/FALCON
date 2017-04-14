@@ -1,5 +1,6 @@
-from falcon_kit.FastaReader import FastaReader
+from falcon_kit.FastaReader import open_fasta_reader
 import argparse
+import contextlib
 import os
 import glob
 import sys
@@ -25,9 +26,9 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
         rid = int(fid.split('/')[1])/10
         return rid_to_oid[int(rid)]
 
-    ref_fasta = FastaReader(ctg_fa)
-    all_ctg_ids = set()
-    for s in ref_fasta:
+    with open_fasta_reader(ctg_fa) as ref_fasta:
+      all_ctg_ids = set()
+      for s in ref_fasta:
         s_id = s.name.split()[0]
         if ctg_id != 'all' and s_id != ctg_id:
             continue
@@ -81,11 +82,22 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
             print >>f, ctg_id
 
     read_out_files = {}
+    @contextlib.contextmanager
+    def reopened_fasta_out(ctg_id):
+                # A convenient closure, with a contextmanager.
+                if ctg_id not in read_out_files:
+                    read_out = open( os.path.join( out_dir, '%s_reads.fa' % ctg_id), 'w' )
+                    read_out_files[ctg_id] = 1
+                else:
+                    read_out = open( os.path.join( out_dir, '%s_reads.fa' % ctg_id), 'a' )
+                yield read_out
+                read_out.close()
+
     with open(read_fofn, 'r') as f:
         for r_fn in f:
             r_fn = r_fn.strip()
-            read_fa_file = FastaReader(r_fn) # TODO(CD): What about .dexta?
-            for r in read_fa_file:
+            with open_fasta_reader(r_fn) as read_fa_file:  # will soon handle .dexta too
+              for r in read_fa_file:
                 rid = r.name.split()[0]
                 if rid not in read_set:
                     ctg_id = 'unassigned'
@@ -95,15 +107,9 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
                 if ctg_id == 'NA' or ctg_id not in all_ctg_ids:
                     ctg_id = 'unassigned'
 
-                if ctg_id not in read_out_files:
-                    read_out = open( os.path.join( out_dir, '%s_reads.fa' % ctg_id), 'w' )
-                    read_out_files[ctg_id] = 1
-                else:
-                    read_out = open( os.path.join( out_dir, '%s_reads.fa' % ctg_id), 'a' )
-
-                print >>read_out, '>'+rid
-                print >>read_out, r.sequence
-                read_out.close()
+                with reopened_fasta_out(ctg_id) as read_out:
+                    print >>read_out, '>'+rid
+                    print >>read_out, r.sequence
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description='using the read to contig mapping data to partition the reads grouped by contigs')

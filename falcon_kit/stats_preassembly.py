@@ -7,7 +7,7 @@ See FALCON-pbsmrtpipe/pbfalcon/report_preassembly.py for XML version.
 #   http://swarm/files/depot/branches/springfield/S2.3/software/smrtanalysis/bioinformatics/tools/pbreports/pbreports/report/preassembly.py
 from __future__ import absolute_import
 from __future__ import division
-from .FastaReader import FastaReader
+from .FastaReader import open_fasta_reader
 from .util.io import syscall
 from . import functional
 import collections
@@ -21,7 +21,7 @@ import re
 log = logging.getLogger(__name__)
 __version__ = '0.1'
 
-Stats = collections.namedtuple('FastaStats', ['nreads', 'total', 'n50', 'p95'])
+Stats = collections.namedtuple('FastaStats', ['nreads', 'total', 'n50', 'p95', 'esize'])
 
 # Copied from pbreports/util.py
 # We want to avoid a dependency on pbreports b/c it needs matplotlib.
@@ -31,7 +31,7 @@ def get_fasta_readlengths(fasta_file):
     :return: (tuple)
     """
     lens = []
-    with FastaReader(fasta_file) as f:
+    with open_fasta_reader(fasta_file) as f:
         for record in f:
             lens.append(len(record.sequence))
     lens.sort()
@@ -88,11 +88,13 @@ def percentile(read_lens, p):
 def stats_from_sorted_readlengths(read_lens):
     nreads = len(read_lens)
     total = sum(read_lens)
+    sum_squares = sum(r*r for r in read_lens)
     n50 = read_len_above(read_lens, int(total * 0.50))
     p95 = percentile(read_lens, 0.95)
+    esize = sum_squares / total
     #alt_n50 = pbreports.util.compute_n50(read_lens)
     #log.info('our n50=%s, pbreports=%s' %(n50, alt_n50)) # Ours is more correct when median is between 2 reads.
-    return Stats(nreads=nreads, total=total, n50=n50, p95=p95)
+    return Stats(nreads=nreads, total=total, n50=n50, p95=p95, esize=esize)
 
 def read_lens_from_fofn(fofn_fn):
     """Return sorted list.
@@ -152,18 +154,21 @@ def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_
     kwds['raw_n50'] = stats_raw_reads.n50
     kwds['raw_p95'] = stats_raw_reads.p95
     kwds['raw_coverage'] = stats_raw_reads.total / genome_length
+    kwds['raw_esize'] = stats_raw_reads.esize
     kwds['seed_reads'] = stats_seed_reads.nreads
     kwds['seed_bases'] = stats_seed_reads.total
     kwds['seed_mean'] = stats_seed_reads.total / stats_seed_reads.nreads
     kwds['seed_n50'] = stats_seed_reads.n50
     kwds['seed_p95'] = stats_seed_reads.p95
     kwds['seed_coverage'] = stats_seed_reads.total / genome_length
+    kwds['seed_esize'] = stats_seed_reads.esize
     kwds['preassembled_reads'] = stats_corrected_reads.nreads
     kwds['preassembled_bases'] = stats_corrected_reads.total
     kwds['preassembled_mean'] = stats_corrected_reads.total / stats_corrected_reads.nreads
     kwds['preassembled_n50'] = stats_corrected_reads.n50
     kwds['preassembled_p95'] = stats_corrected_reads.p95
     kwds['preassembled_coverage'] = stats_corrected_reads.total / genome_length
+    kwds['preassembled_esize'] = stats_corrected_reads.esize
     kwds['preassembled_yield'] = stats_corrected_reads.total / stats_seed_reads.total
     kwds['preassembled_seed_fragmentation'] = fragmentation
     kwds['preassembled_seed_truncation'] = truncation
