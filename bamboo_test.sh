@@ -8,4 +8,6 @@ export PYTHONUSERBASE=$(pwd)/LOCAL
 export PATH=$PYTHONUSERBASE/bin:$PATH
 
 pip install --user pytest coverage
-make test
+#make test
+make coverage-install
+make coverage
