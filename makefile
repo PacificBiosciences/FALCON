@@ -22,9 +22,10 @@ test:
 	cp -f test.doctest.xml nose.doctest.xml
 coverage:
 	make coverage-clean
+	#pip install --user coverage
 	COVERAGE_PROCESS_START=${PWD}/mycoverage.cfg ${MAKE} coverage-actual
 coverage-actual: test
-	#pip install --user coverage
+	ls -larth
 	coverage combine
 	coverage xml -o coverage.xml
 	sed -i -e 's@filename="@filename="./@g' coverage.xml
