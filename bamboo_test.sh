@@ -11,3 +11,4 @@ pip install --user pytest coverage
 #make test
 make coverage-install
 make coverage
+chmod -R ugo+rwx .
