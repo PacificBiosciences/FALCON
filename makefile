@@ -27,6 +27,7 @@ coverage:
 coverage-actual: test
 	ls -larth
 	coverage combine
+	ls -larth
 	coverage xml -o coverage.xml
 	sed -i -e 's@filename="@filename="./@g' coverage.xml
 	coverage report -m
