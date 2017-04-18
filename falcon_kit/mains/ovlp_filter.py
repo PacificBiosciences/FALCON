@@ -231,6 +231,7 @@ def try_run_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn
         raise
 
 def ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
+    assert fofn, 'Must provide file-of-filenames for .fastas'
     if debug:
         n_core = 0
         silent = False
@@ -241,13 +242,27 @@ def ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn,
         Reader = io.StreamedProcessReaderContext
     try_run_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn)
 
-def parse_args(argv):
+def quiet_old_parse_args(argv):
+    ostdout = sys.stdout
+    ostderr = sys.stderr
+    sys.stdout = open('/dev/null', 'w')
+    sys.stderr = open('/dev/null', 'w')
+    try:
+        # Trying old command-line parser.
+        return old_parse_args(argv)
+    finally:
+        sys.stdout.close()
+        sys.stderr.close()
+        sys.stdout = ostdout
+        sys.stderr = ostderr
+
+def old_parse_args(argv):
     parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--n_core', type=int, default=4,
                         help='number of processes used for generating consensus; '
                         '0 for main process only')
-    parser.add_argument('--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
+    parser.add_argument('--fofn', type=str, required=True, help='file contains the path of all LAS file to be processed in parallel')
     parser.add_argument('--db', type=str, dest='db_fn', help='read db file path')
     parser.add_argument('--max_diff', type=int, help="max difference of 5' and 3' coverage")
     parser.add_argument('--max_cov', type=int, help="max coverage of 5' or 3' coverage")
@@ -260,6 +275,29 @@ def parse_args(argv):
     args = parser.parse_args(argv[1:])
     return args
 
+def parse_args(argv):
+    parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--n-core', type=int, default=4,
+                        help='number of processes used for generating consensus; '
+                        '0 for main process only')
+    parser.add_argument('--max-diff', type=int, help="max difference of 5' and 3' coverage")
+    parser.add_argument('--max-ovlp', type=int, dest='max_cov', help="max of 5' or 3' coverage")
+    parser.add_argument('--min-ovlp', type=int, dest='min_cov', help="min of 5' or 3' coverage")
+    parser.add_argument('--min-len', type=int, default=2500, help="min length of the reads")
+    parser.add_argument('--bestn', type=int, default=10, help="output at least best n overlaps on 5' or 3' ends if possible")
+    parser.add_argument('--stream', action='store_true', help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
+    parser.add_argument('--debug', '-g', action='store_true', help="single-threaded, plus other aids to debugging")
+    parser.add_argument('--silent', action='store_true', help="suppress cmd reporting on stderr")
+    parser.add_argument('db_fn', type=str, help='read db file path')
+    parser.add_argument('fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
+    args = parser.parse_args(argv[1:])
+    return args
+
 def main(argv=sys.argv):
-    args = parse_args(argv)
+    try:
+        args = quiet_old_parse_args(argv)
+        sys.stderr.write('Warning: Using old command-line parser. Run `{} --help` for new options.\n'.format(argv[0]))
+    except:
+        args = parse_args(argv)
     ovlp_filter(**vars(args))

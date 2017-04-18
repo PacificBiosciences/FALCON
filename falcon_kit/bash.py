@@ -355,10 +355,20 @@ CUTOFF=%(bash_cutoff)s
 def script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn):
     params = dict(config)
     params.update(locals())
+    def filter_overlap_filtering_setting(val):
+        if '--min_len' not in val and '--min-len' not in val:
+            if 'max_' in val or 'n_core' in val:
+                # until we drop the deprecated options
+                val += ' --min_len $length_cutoff_pr'
+            else:
+                val += ' --min-len $length_cutoff_pr'
+        return val
+    params['overlap_filtering_setting'] = filter_overlap_filtering_setting(params['overlap_filtering_setting'])
     script = """\
 # Given, las.fofn,
 # write preads.ovl:
-time fc_ovlp_filter --db {db_file_fn} --fofn {las_fofn_fn} {overlap_filtering_setting} --min_len {length_cutoff_pr} >| preads.ovl
+length_cutoff_pr={length_cutoff_pr}
+time fc_ovlp_filter {overlap_filtering_setting} {db_file_fn} {las_fofn_fn} >| preads.ovl
 
 ln -sf {preads4falcon_fasta_fn} ./preads4falcon.fasta
 
