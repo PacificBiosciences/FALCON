@@ -222,6 +222,8 @@ def get_dict_from_old_falcon_cfg(config):
     pa_DBsplit_option = """ -x500 -s200"""
     if config.has_option(section, 'pa_DBsplit_option'):
         pa_DBsplit_option = config.get(section, 'pa_DBsplit_option')
+    if '-a' not in pa_DBsplit_option:
+        pa_DBsplit_option += ' -a'
 
     skip_checks = False
     if config.has_option(section, 'skip_checks'):
@@ -246,6 +248,8 @@ def get_dict_from_old_falcon_cfg(config):
     ovlp_DBsplit_option = """ -x500 -s200"""
     if config.has_option(section, 'ovlp_DBsplit_option'):
         ovlp_DBsplit_option = config.get(section, 'ovlp_DBsplit_option')
+    if '-a' not in ovlp_DBsplit_option:
+        ovlp_DBsplit_option += ' -a'
 
     falcon_sense_option = """ --output_multi --min_idt 0.70 --min_cov 2 --max_n_read 1800 --n_core 6"""
     if config.has_option(section, 'falcon_sense_option'):
