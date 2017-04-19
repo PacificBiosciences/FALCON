@@ -19,5 +19,8 @@ which python
 mkdir -p LOCAL
 export PYTHONUSERBASE=$(pwd)/LOCAL
 
-make install
+make install-edit
 # Note: no --edit because we might be building artifacts.
+# ... Scratch that. We have trouble getting coverage for
+#  source=falcon_kit
+# but maybe it will work with a --edit install.
