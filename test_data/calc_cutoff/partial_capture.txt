@@ -1,0 +1,5 @@
+        Bin:      Count  % Reads  % Bases     Average
+          4:          2      0.0      0.0      xxx
+          3:          0      0.0      0.0      xxx
+          2:          3      0.0      0.0      xxx
+          1:          8      0.0      0.0      xxx
