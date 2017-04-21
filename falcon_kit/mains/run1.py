@@ -158,17 +158,19 @@ def run(wf, config,
     exitOnFailure=config['stop_all_jobs_on_failure'] # only matter for parallel jobs
     wf.max_jobs = config['default_concurrent_jobs']
 
-    rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, 'raw-fofn-abs', os.path.basename(config['input_fofn'])))
-    make_fofn_abs_task = PypeTask(inputs = {'i_fofn': input_fofn_plf},
-                                  outputs = {'o_fofn': rawread_fofn_plf},
-                                  parameters = {},
-    )
-    fofn_abs_task = make_fofn_abs_task(pype_tasks.task_make_fofn_abs_raw)
-
-    wf.addTasks([fofn_abs_task])
-    wf.refreshTargets([fofn_abs_task])
+    assert config['input_type'] in ('raw', 'preads'), 'Invalid input_type=={!r}'.format(config['input_type'])
 
     if config['input_type'] == 'raw':
+        rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, 'raw-fofn-abs', os.path.basename(config['input_fofn'])))
+        make_fofn_abs_task = PypeTask(inputs = {'i_fofn': input_fofn_plf},
+                                    outputs = {'o_fofn': rawread_fofn_plf},
+                                    parameters = {},
+        )
+        fofn_abs_task = make_fofn_abs_task(pype_tasks.task_make_fofn_abs_raw)
+
+        wf.addTasks([fofn_abs_task])
+        wf.refreshTargets([fofn_abs_task])
+
         #### import sequences into daligner DB
         sleep_done = makePypeLocalFile( os.path.join( rawread_dir, 'sleep_done') )
         rdb_build_done = makePypeLocalFile( os.path.join( rawread_dir, 'rdb_build_done') )
@@ -314,7 +316,7 @@ def run(wf, config,
     # build pread database
     if config['input_type'] == 'preads':
         preads_fofn_plf = makePypeLocalFile(os.path.join(pread_dir, 'preads-fofn-abs', os.path.basename(config['input_fofn'])))
-        make_fofn_abs_task = PypeTask(inputs = {'i_fofn': rawread_fofn_plf},
+        make_fofn_abs_task = PypeTask(inputs = {'i_fofn': input_fofn_plf},
                                      outputs = {'o_fofn': preads_fofn_plf},
                                      parameters = {},
         )
