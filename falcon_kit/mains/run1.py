@@ -158,6 +158,8 @@ def run(wf, config,
     exitOnFailure=config['stop_all_jobs_on_failure'] # only matter for parallel jobs
     wf.max_jobs = config['default_concurrent_jobs']
 
+    assert config['input_type'] in ('raw', 'preads'), 'Invalid input_type=={!r}'.format(config['input_type'])
+
     if config['input_type'] == 'raw':
         rawread_fofn_plf = makePypeLocalFile(os.path.join(rawread_dir, 'raw-fofn-abs', os.path.basename(config['input_fofn'])))
         make_fofn_abs_task = PypeTask(inputs = {'i_fofn': input_fofn_plf},
