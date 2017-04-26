@@ -383,6 +383,6 @@ def script_run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_l
     params = dict()
     params.update(locals())
     script = """\
-python -m falcon_kit.mains.report_pre_assembly --genome-length {genome_length} --length-cutoff {length_cutoff} --db {i_raw_reads_db_fn} --preads-fofn {i_preads_fofn_fn} --out {o_json_fn}
+python2.7 -m falcon_kit.mains.report_pre_assembly --genome-length {genome_length} --length-cutoff {length_cutoff} --db {i_raw_reads_db_fn} --preads-fofn {i_preads_fofn_fn} --out {o_json_fn}
 """
     return script.format(**params)
