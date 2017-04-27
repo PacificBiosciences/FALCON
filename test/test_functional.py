@@ -1,5 +1,6 @@
 import helpers
 from nose.tools import assert_equal, assert_raises, eq_
+import pytest
 import falcon_kit.functional as f
 import StringIO
 import collections
@@ -17,6 +18,12 @@ def test_get_daligner_job_descriptions():
     helpers.equal_multiline(result[('.1', '.1')], "daligner -v -h1 -t16 -H1 -e0.7 -l1 -s1000 raw_reads.1 raw_reads.1\nLAcheck -v raw_reads *.las\nLAsort -v raw_reads.1.raw_reads.1.C0 raw_reads.1.raw_reads.1.N0 && LAmerge -v L1.1.1 raw_reads.1.raw_reads.1.C0.S raw_reads.1.raw_reads.1.N0.S && rm raw_reads.1.raw_reads.1.C0.S.las raw_reads.1.raw_reads.1.N0.S.las\nLAcheck -vS raw_reads L1.1.1\n")
     helpers.equal_multiline(result[('.2', '.1', '.2')], "daligner -v -h1 -t16 -H1 -e0.7 -l1 -s1000 raw_reads.2 raw_reads.1 raw_reads.2\nLAcheck -v raw_reads *.las\nLAsort -v raw_reads.1.raw_reads.2.C0 raw_reads.1.raw_reads.2.N0 && LAmerge -v L1.1.2 raw_reads.1.raw_reads.2.C0.S raw_reads.1.raw_reads.2.N0.S && rm raw_reads.1.raw_reads.2.C0.S.las raw_reads.1.raw_reads.2.N0.S.las\nLAsort -v raw_reads.2.raw_reads.1.C0 raw_reads.2.raw_reads.1.N0 && LAmerge -v L1.2.1 raw_reads.2.raw_reads.1.C0.S raw_reads.2.raw_reads.1.N0.S && rm raw_reads.2.raw_reads.1.C0.S.las raw_reads.2.raw_reads.1.N0.S.las\nLAsort -v raw_reads.2.raw_reads.2.C0 raw_reads.2.raw_reads.2.N0 && LAmerge -v L1.2.2 raw_reads.2.raw_reads.2.C0.S raw_reads.2.raw_reads.2.N0.S && rm raw_reads.2.raw_reads.2.C0.S.las raw_reads.2.raw_reads.2.N0.S.las\nLAcheck -vS raw_reads L1.1.2\nLAcheck -vS raw_reads L1.2.1\nLAcheck -vS raw_reads L1.2.2\n")
     eq_(len(result), 2)
+
+def test_get_daligner_job_descriptions_with_bad_arg():
+    with pytest.raises(AssertionError) as excinfo:
+        f.get_daligner_job_descriptions(
+                'fake_filename.txt', 'raw_reads')
+    assert "['f', 'a', 'k', 'e'" in str(excinfo.value)
 
 def test_get_daligner_job_descriptions_small():
     # when there is only 1 block, a special case
@@ -152,6 +159,13 @@ def test_calc_cutoff():
     expected = 2
     got = f.calc_cutoff(target, partial_capture)
     eq_(expected, got)
+
+def test_calc_cutoff_bad_coverage():
+    target = 23 # > 22 available
+    expected_message = 'Not enough reads available for desired genome coverage (bases needed=23 > actual=22)'
+    with assert_raises(f.GenomeCoverageError) as ctx:
+        f.calc_cutoff(target, partial_capture)
+    eq_(expected_message, ctx.exception.message)
 
 sample_DBdump_output = """+ R 2
 + M 0

@@ -6,7 +6,7 @@ import re
 import StringIO
 
 def _verify_pairs(pairs1, pairs2):
-    if pairs1 != pairs2:
+    if pairs1 != pairs2: # pragma: no cover
         print('pair2dali:', pairs1)
         print('pair2sort:', pairs2)
         print('dali-sort:', set(pairs1) - set(pairs2))
@@ -79,7 +79,7 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
         Can return [('', '')] if only 1 block.
         """
         mo = re_pair_sort.search(line)
-        if not mo:
+        if not mo: # pragma: no cover
             raise Exception('Pattern {!r} does not match line {!r}'.format(
                 re_pair_sort.pattern, line))
         return mo.group(1, 2)
@@ -234,20 +234,26 @@ def get_script_xformer(pread_aln):
     else:
         return xform_script_for_raw_reads
 
+class GenomeCoverageError(Exception):
+    pass
+
 def calc_cutoff_from_reverse_sorted_readlength_counts(rl_counts, target):
     """Return first read_len which gives at least 'target' bases.
     """
     total = sum(pair[0]*pair[1] for pair in rl_counts)
     subtotal = 0
-    assert target <= total, 'Not enough genome coverage (target={} < actual={})'.format(target, total)
+    if target > total:
+        msg = 'Not enough reads available for desired genome coverage (bases needed={} > actual={})'.format(target, total)
+        raise GenomeCoverageError(msg)
     cutoff = 0
     for (rl, count) in rl_counts:
         subtotal += rl*count
         if subtotal >= target:
             cutoff = rl
             break
-    else:
-        raise Exception('Impossible target: target={target}, subtotal={subtotal}, total={total}'.format(locals()))
+    else: # pragma: no cover
+        msg = 'Impossible target (probably a bug): target={target}, subtotal={subtotal}, total={total}'.format(locals())
+        raise Exception(msg)
     return cutoff
 
 def num2int(num):

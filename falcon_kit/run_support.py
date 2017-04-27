@@ -144,7 +144,7 @@ def get_dict_from_old_falcon_cfg(config):
     else:
         sge_option = config.get(section, 'sge_option_da')
 
-    job_queue = "default"
+    job_queue = ""
     if config.has_option(section, 'job_queue'):
         job_queue = config.get(section, 'job_queue')
 
