@@ -13,7 +13,7 @@ import sys
 import time
 
 
-fc_run_logger = logging.getLogger(__name__) # default, for remote tasks
+LOG = logging.getLogger(__name__) # default, for remote tasks
 
 
 def create_daligner_tasks(basedir, scatter_fn):
@@ -111,14 +111,14 @@ def create_consensus_gather_task(wd, inputs):
 
 
 def main1(prog_name, input_config_fn, logger_config_fn=None):
-    global fc_run_logger
-    fc_run_logger = support.setup_logger(logger_config_fn)
+    global LOG
+    LOG = support.setup_logger(logger_config_fn)
 
-    fc_run_logger.info('fc_run started with configuration %s', input_config_fn)
+    LOG.info('fc_run started with configuration %s', input_config_fn)
     try:
         config = support.get_dict_from_old_falcon_cfg(support.parse_config(input_config_fn))
     except Exception:
-        fc_run_logger.exception('Failed to parse config "{}".'.format(input_config_fn))
+        LOG.exception('Failed to parse config "{}".'.format(input_config_fn))
         raise
     input_fofn_plf = makePypeLocalFile(config['input_fofn'])
     genome_size = config.get('genome_size')
@@ -143,7 +143,7 @@ def run(wf, config,
         ):
     """
     Preconditions (for now):
-    * fc_run_logger
+    * LOG
     * run_support.logger
     """
     rawread_dir = os.path.abspath('./0-rawreads')
@@ -310,7 +310,7 @@ def run(wf, config,
 
 
     if config['target'] == 'pre-assembly':
-        log.info('Quitting after stage-0 for "pre-assembly" target.')
+        LOG.info('Quitting after stage-0 for "pre-assembly" target.')
         sys.exit(0)
 
     # build pread database

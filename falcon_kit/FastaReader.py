@@ -1,9 +1,18 @@
 from os.path import abspath, expanduser
 from cStringIO import StringIO
 import contextlib
+import gzip
 import md5
 import re
 import subprocess
+
+##
+## Utility functions for FastaReader
+##
+def wrap(s, columns):
+    return "\n".join(s[start:start+columns]
+                     for start in xrange(0, len(s), columns))
+
 
 def splitFastaHeader( name ):
     """
@@ -117,18 +126,6 @@ class FastaRecord(object):
             return FastaRecord(name, sequence)
         except AssertionError:
             raise ValueError("String not recognized as a valid FASTA record")
-
-    def reverseComplement(self, preserveHeader=False):
-        """
-        Return a new FastaRecord with the reverse-complemented DNA sequence.
-        Optionally, supply a name
-        """
-        rcSequence = sequences.reverseComplement(self.sequence)
-        if preserveHeader:
-            return FastaRecord(self.name, rcSequence)
-        else:
-            rcName = '{0} [revcomp]'.format(self.name.strip())
-            return FastaRecord(rcName, rcSequence)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
