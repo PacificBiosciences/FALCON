@@ -13,6 +13,8 @@ install-edit:
 	pip -v install --user --edit .
 install: wheel
 	pip -v install --user --use-wheel --find-links=dist/ .
+pylint:
+	pylint --errors-only falcon_kit/
 test:
 	python -c 'import falcon_kit; print falcon_kit.falcon'
 	#pip install --user pytest

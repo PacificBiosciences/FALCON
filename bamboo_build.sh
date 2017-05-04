@@ -24,3 +24,5 @@ make install-edit
 # ... Scratch that. We have trouble getting coverage for
 #  source=falcon_kit
 # but maybe it will work with a --edit install.
+
+make pylint
