@@ -1,8 +1,9 @@
 from __future__ import absolute_import
+from .. import pype_tasks
+# pylint: disable=no-name-in-module, import-error, fixme, line-too-long
 from pypeflow.simple_pwatcher_bridge import (PypeProcWatcherWorkflow, MyFakePypeThreadTaskBase,
         makePypeLocalFile, fn, PypeTask)
 PypeThreadTaskBase = MyFakePypeThreadTaskBase
-from .. import pype_tasks
 import argparse
 import glob
 import logging
