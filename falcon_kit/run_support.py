@@ -68,7 +68,7 @@ def make_job_data(url, script_fn):
     Base job_name on script_fn.
     """
     wd = os.path.dirname(script_fn)
-    job_name = '{0}-{1}-{1}'.format(
+    job_name = '{0}-{1}-{2}'.format(
             os.path.basename(script_fn),
             url.split("/")[-1],
             str(uuid.uuid4())[:8],

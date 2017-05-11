@@ -34,8 +34,8 @@ def get_daligner_job_descriptions_sans_LAcheck(run_jobs_stream, db_prefix, singl
     result = {}
     for k,v in descs.iteritems():
         bash = skip_LAcheck(v)
-        bash = bash.replace('LAsort', 'python -m falcon_kit.mains.LAsort {}'.format(db_prefix))
-        bash = bash.replace('LAmerge', 'python -m falcon_kit.mains.LAmerge {}'.format(db_prefix))
+        bash = bash.replace('LAsort', 'python2.7 -m falcon_kit.mains.LAsort {}'.format(db_prefix))
+        bash = bash.replace('LAmerge', 'python2.7 -m falcon_kit.mains.LAmerge {}'.format(db_prefix))
         result[k] = bash
     return result
 
@@ -177,7 +177,7 @@ def get_las_filenames(mjob_data, db_prefix):
         mo = regex.search(bash_lines[i])
         if not mo:
             raise Exception('Regex {!r} failed on {!r}'.format(
-                re_las_name.pattern, bash_lines[i]))
+                regex.pattern, bash_lines[i]))
         las_fn = mo.group(1) + '.las'
         result[p_id] = las_fn
     return result

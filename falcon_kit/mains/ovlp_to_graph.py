@@ -1042,7 +1042,7 @@ def identify_simple_paths(sg2, edge_data):
         for v,w in free_edges:
             if (reverse_end(w), reverse_end(v) ) not in free_edges:
                 print "bug", v,w
-                print oreverse_end(w), reverse_end(v)
+                print reverse_end(w), reverse_end(v)
 
     while free_edges:
         if s_nodes:

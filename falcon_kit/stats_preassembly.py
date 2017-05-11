@@ -183,6 +183,8 @@ def make_dict(
         i_raw_reads_fofn_fn,
         genome_length,
         length_cutoff,
+        fragmentation=-1,
+        truncation=-1,
     ):
     raw_reads = read_lens_from_fofn(i_raw_reads_fofn_fn)
     stats_raw_reads = stats_from_sorted_readlengths(raw_reads)
@@ -198,6 +200,8 @@ def make_dict(
             stats_corrected_reads=stats_preads,
             genome_length=genome_length,
             length_cutoff=length_cutoff,
+            fragmentation=fragmentation,
+            truncation=truncation,
     )
     return report_dict
 
