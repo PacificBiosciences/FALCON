@@ -244,7 +244,7 @@ void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, uint8_t p_delta, cha
     }
     if (updated == 0) {
         if (col->n_link + 1 > col->size) {
-            if (col->size < (UINT16_MAX > 1)-1) {
+            if (col->size < (UINT16_MAX >> 1)-1) {
                 col->size *= 2;
             } else {
                 col->size += 256;
