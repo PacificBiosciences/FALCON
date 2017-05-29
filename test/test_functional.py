@@ -222,3 +222,8 @@ def test_args_from_line():
     helpers.equal_list(result, expected)
     bash_lines = [line]
     las_files = [word + '.las' for word in f.yield_args_from_line(line) for line in bash_lines if line.startswith('LAmerge')][1:]
+
+def test_splitlines_iter():
+    from falcon_kit.util import io
+    for text in ['', 'a', 'a\n', 'a\nb', 'a\nb\nc', 'a\nb\nc\n', '\n', '\na', '\na\n']:
+        assert list(io.splitlines_iter(text)) == list(text.splitlines())
