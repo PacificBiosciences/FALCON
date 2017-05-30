@@ -167,7 +167,7 @@ class StreamedProcessReaderContext(ProcessReaderContext):
         Otherwise, after all lines are read, if 'cmd' failed, Exception is raised.
         """
         for line in self.proc.stdout:
-            yield line
+            yield line.rstrip()
 
 def filesize(fn):
     """In bytes.
