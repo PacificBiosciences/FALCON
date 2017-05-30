@@ -1,4 +1,3 @@
-import networkx as nx
 from falcon_kit.fc_asm_graph import AsmGraph
 
 
