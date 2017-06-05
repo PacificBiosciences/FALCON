@@ -148,6 +148,10 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'job_queue'):
         job_queue = config.get(section, 'job_queue')
 
+    job_name_style = ""
+    if config.has_option(section, 'job_name_style'):
+        job_name_style = config.get(section, 'job_name_style')
+
     pwatcher_type = 'fs_based'
     if config.has_option(section, 'pwatcher_type'):
         pwatcher_type = config.get(section, 'pwatcher_type')
@@ -329,6 +333,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "target" : target,
                    "job_type" : job_type,
                    "job_queue" : job_queue,
+                   "job_name_style" : job_name_style,
                    "input_type": input_type,
                    #"openending": openending,
                    "default_concurrent_jobs" : default_concurrent_jobs,
