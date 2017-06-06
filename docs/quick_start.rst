@@ -12,7 +12,7 @@ Installation
 
 The quickest way to install FALCON + FALCON_unzip is to download and run this install script:
 
-:down`load:`install_unzip.sh <scripts/install_unzip.sh>`
+:download:`install_unzip.sh <scripts/install_unzip.sh>`
 
 .. code-block:: bash
 
@@ -34,9 +34,18 @@ available for the public. The workaround is to download each tool independently 
 you set in :ref:`fc_unzip.cfg` as your ``smrt_bin`` parameter. This is not necessary if you are not interested in
 phasing your genome.
 
-1. `samtools <https://github.com/samtools/samtools>`_
-2. `pbalign <https://github.com/PacificBiosciences/pbalign>`_
-3. `GenomicConsensus v1.1.0@654d0276d4a03f269cd1a14ddd7dfd0f54bede45 <https://github.com/PacificBiosciences/GenomicConsensus/tree/654d0276d4a03f269cd1a14ddd7dfd0f54bede45>`_
+
+To simply phase your genome, (e.g. run ``fc_unzip.py``) you need these additional tools:
+
+ 1. `blasr <https://github.com/PacificBiosciences/blasr>`_
+ 2. `samtools <http://www.htslib.org/>`_
+
+If you would like to further call consensus on your phased genome using ``fc_quiver.py`` you need these additional tools
+installed:
+
+ 1. `ConsensusCore <https://github.com/PacificBiosciences/ConsensusCore>`_
+ 2. `pbalign <https://github.com/PacificBiosciences/pbalign>`_
+ 3. `GenomicConsensus v1.1.0@654d0276d4a03f269cd1a14ddd7dfd0f54bede45 <https://github.com/PacificBiosciences/GenomicConsensus/tree/654d0276d4a03f269cd1a14ddd7dfd0f54bede45>`_
 
 ** Note: the script ``makePbi.py`` is only available from GenomicConsensus 1.1.0 and earlier. To sync the branch
 that has this script, follow these steps:
