@@ -1,6 +1,0 @@
-.. _tertiary:
-
-Tertiary
-========
-
-TODO
