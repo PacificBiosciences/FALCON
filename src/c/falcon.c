@@ -158,6 +158,9 @@ align_tags_t * get_align_tags( char * aln_q_seq,
     (tags->align_tags[k]).delta = UINT8_MAX;
     (tags->align_tags[k]).q_base = '.';
     (tags->align_tags[k]).q_id = UINT_MAX;
+    (tags->align_tags[k]).p_t_pos = p_j + t_offset;
+    (tags->align_tags[k]).p_delta = p_jj;
+    (tags->align_tags[k]).p_q_base = p_q_base;
     return tags;
 }
 
