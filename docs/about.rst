@@ -1,4 +1,4 @@
-.. image:: falcon_icon2.png
+.. image:: media/falcon_icon2.png
    :height: 200px
    :width: 200 px
    :alt: Falcon Assembler
@@ -23,7 +23,7 @@ genomic region on an p-contig.
 assembly. It then produces a set of partially phased :term:`primary contigs <primary contig>` and fully phased
 :term:`haplotigs <haplotig>` which represent divergent haplotyes.
 
-.. image:: Fig1.png
+.. image:: media/Fig1.png
 
 
 References

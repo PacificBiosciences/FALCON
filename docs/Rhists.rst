@@ -1,12 +1,12 @@
 .. _RHists:
 
-.. image:: RawReadHist.png
+.. image:: media/RawReadHist.png
    :height: 700px
    :width: 700 px
    :alt: Raw Read Histogram
    :align: center
 
-.. image:: PreadHist.png
+.. image:: media/PreadHist.png
    :height: 700px
    :width: 700 px
    :alt: PRead Histogram

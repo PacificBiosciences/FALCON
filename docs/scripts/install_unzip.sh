@@ -4,6 +4,7 @@
 # contact: gconcepcion@pacificbiosciences.com
 
 ###Install script dependencies
+##Make sure these binaries are available in your $PATH
 #source /mnt/software/Modules/current/init/bash
 
 #module load python/2.7.9
@@ -13,6 +14,14 @@
 
 ###Variables
 ROOT=$1
+if [ -z $ROOT ];then
+    ROOT=$(pwd)
+fi
+
+if [ ! -z $ROOT ]; then
+    ROOT=$(readlink -f $ROOT)
+fi
+
 SRC_ROOT=${ROOT}/src
 VENV_BASE=${ROOT}/fc_env
 SLUG=$(date +%y%m%d)

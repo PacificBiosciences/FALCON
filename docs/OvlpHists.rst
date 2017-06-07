@@ -1,6 +1,6 @@
 .. _OvlpHists:
 
-.. image:: OvlpHist.png
+.. image:: media/OvlpHist.png
    :height: 500px
    :width: 1000 px
    :alt: Pread Ovlp Histogram

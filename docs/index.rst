@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 
-.. image:: falcon_icon2.png
+.. image:: media/falcon_icon2.png
    :height: 200px
    :width: 200 px
    :alt: Falcon Assembler
@@ -29,7 +29,7 @@ FALCON Assembler
    tertiary
 
 
-`FALCON <http://github.com/PacificBiosicences/FALCON>`_ is a diploid aware genome assembler designed for Pacific Biosciences long read data.
+`FALCON <http://github.com/PacificBiosciences/FALCON>`_ is a diploid aware genome assembler designed for Pacific Biosciences long read data.
 
 *  :ref:`About                           <about>` - About Falcon
 *  :ref:`Quick Start               <quick_start>` - Want to start using FALCON immediately?

@@ -1,4 +1,4 @@
-.. image:: falcon_icon2.png
+.. image:: media/falcon_icon2.png
    :height: 200px
    :width: 200 px
    :alt: Falcon Assembler
@@ -167,7 +167,7 @@ Raw and Pread Coverage and Quality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The *E. coli* subreads
-are a total of 1.01 Gb of data in 105,451 reads. (:download:`countFasta.pl <countFasta.pl>` 
+are a total of 1.01 Gb of data in 105,451 reads. (:download:`countFasta.pl <media/countFasta.pl>`
 is a useful script by Joseph Fass and Brad Sickler at UC Davis for calculating total sequence
 length and other assembly metrics).
 
