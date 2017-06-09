@@ -29,29 +29,21 @@ Install script dependencies (Ubuntu/CentOS):
 
 Additional FALCON_unzip dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FALCON_unzip also depends on several commands that are bundled with SMRTAnalysis 3.0.x, but not currently
-available for the public. The workaround is to download each tool independently and link the binaries to a path that
-you set in :ref:`fc_unzip.cfg` as your ``smrt_bin`` parameter. This is not necessary if you are not interested in
-phasing your genome.
-
-
-To simply phase your genome, (e.g. run ``fc_unzip.py``) you need these additional tools:
-
- 1. `blasr <https://github.com/PacificBiosciences/blasr>`_
- 2. `samtools <http://www.htslib.org/>`_
-
-If you would like to further call consensus on your phased genome using ``fc_quiver.py`` you need these additional tools
-installed:
-
- 1. `ConsensusCore <https://github.com/PacificBiosciences/ConsensusCore>`_
- 2. `pbalign <https://github.com/PacificBiosciences/pbalign>`_
- 3. `GenomicConsensus v1.1.0@654d0276d4a03f269cd1a14ddd7dfd0f54bede45 <https://github.com/PacificBiosciences/GenomicConsensus/tree/654d0276d4a03f269cd1a14ddd7dfd0f54bede45>`_
-
-** Note: the script ``makePbi.py`` is only available from GenomicConsensus 1.1.0 and earlier. To sync the branch
-that has this script, follow these steps:
+FALCON_unzip also depends on several commands that are bundled with SMRTAnalysis 4.0.0+. You can download/build these
+dependencies manually, (blasr/samtools/pbalign/GenomicConsensus) or by far the easiest option is to download the
+SMRTAnalysis 4.0.0 zip file, unarchive, deploy and use the full PATH to the `smrtcmds/bin` directory as your ``smrt_bin``
+parameter in :ref:`fc_unzip.cfg`. If you are not interested in unzipping and phasing your genome, installing these
+additional FALCON_unzip dependencies is unnecessary.
 
 .. code-block:: bash
 
-    $ git clone https://github.com/PacificBiosciences/GenomicConsensus.git
-    $ cd GenomicConsensus
-    $ git reset --hard 654d0276d4a03f269cd1a14ddd7dfd0f54bede45
+    $ wget https://downloads.pacbcloud.com/public/software/installers/smrtlink_4.0.0.190159.zip
+    $ unzip smrtlink_4.0.0_190159.zip   ### the password is SmrT3chN
+    $ ./smrtlink_4.0.0.190159.run
+
+For a simple local install being used exclusively as binaries for FALCON, you can select default options across the board.
+
+If you want to install a fully functional SMRTAnalysis GUI suite, you should refer to the Release Documentation section
+`here <http://www.pacb.com/support/software-downloads/>`_.
+
+TLDR: pdf of the SMRTAnalysis installation process `here <http://programs.pacificbiosciences.com/e/1652/e-Installation--v4-0-0--v2-pdf/3rvmzg/507864561>`_
