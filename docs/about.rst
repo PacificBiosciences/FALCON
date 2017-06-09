@@ -1,7 +1,7 @@
 .. image:: media/falcon_icon2.png
    :height: 200px
    :width: 200 px
-   :alt: Falcon Assembler
+   :alt: FALCON Assembler
    :align: right
 
 
