@@ -56,14 +56,19 @@ FALCON
 .. image:: media/Fig1.png
 
 For more complex genomes assembled with ``FALCON``, 
-"bubbles" in the contig-assembly graph may be resolved as associate and primary contigs. Associate contig 
-IDs contain the name of their primary contig but the precise location of alignment must be determined with third party 
+"bubbles" in the contig-assembly graph that result from structural variation between haplotypes may be resolved as associate 
+and primary contigs. The unzip process will extend haplotype phasing beyond "bubble" regions, increasing the amount of phased 
+contig sequence. It is important to note that
+while individual haplotype blocks are phased, phasing does not extend **between** haplotigs. Thus, in part **C)** of the 
+figure above, **haplotig_1** and **haplotig_2** may originate from different parental haplotypes. Additional information is 
+needed to phase the haplotype blocks with each other.
+
+Associate contig IDs contain the name of their primary contig but the precise location of alignment must be determined with third party 
 tools such as NUCmer_. For example, in a ``FALCON`` assembly, `000123F-010-01` is an associated contig to primary contig 
 `000123F`. In a ``FALCON-Unzip`` assembly, `000123F_001` is a haplotig of primary contig `000123F`.
 
 Below are examples of alignments between associate and primary contigs from ``FALCON``, and haplotigs and primary contigs 
-from 
-``FALCON-Unzip``. Alignments were built with NUCmer_ and visualized with Assemblytics_. Precise coordinates 
+from ``FALCON-Unzip``. Alignments were built with NUCmer_ and visualized with Assemblytics_. Precise coordinates 
 may be obtained with the show-coords_ utilty from MUMmer_. 
 
 .. image:: media/dotplots.png
