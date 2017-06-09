@@ -1,7 +1,7 @@
 .. image:: media/falcon_icon2.png
    :height: 200px
    :width: 200 px
-   :alt: Falcon Assembler
+   :alt: FALCON Assembler
    :align: right
 
 .. _tutorial:
@@ -94,11 +94,11 @@ bash script ``run_falcon.sh`` that submits to an SGE_ cluster:
 	cd /path/to/my/build/FALCON-integrate
 	source env.sh
 
-	# navigate to job directory
+	# navigate to job directory, directory containing input.fofn
 	cd /path/to/my/job_dir
 
 	# run it!
-	fc_run.py fc_run.cfg
+	fc_run fc_run.cfg
 
 
 To initiate the FALCON run, I just submit my job to the scheduler with a qsub command:
@@ -286,7 +286,7 @@ at a histogram of the number of overlaps on the 5' and 3' end of each read. Run 
 .. code-block:: bash
 	
 	$ cd 2-asm-falcon
-	$ fc_ovlp_stats.py --fofn 1-preads_ovl/merge-gather/las.fofn > ovlp.stats
+	$ fc_ovlp_stats --fofn ../1-preads_ovl/merge-gather/las.fofn > ovlp.stats
 	
 Then plot :ref:`histograms <OvlpHists>` of the number of 5' and 3' overlaps between preads in R.
 This can inform your parameters for :ref:`sge_option_fc <sge_option_fc>` where ``min_cov`` and ``max_cov``
