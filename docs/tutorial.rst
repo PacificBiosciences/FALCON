@@ -11,18 +11,17 @@
 Tutorial
 ========
 
-In this section we will run the FALCON pipeline on an *E. coli* dataset.
+In this section we will run the ``FALCON`` pipeline on an *E. coli* dataset.
 We will work through the commands and results and give you ideas of how to assess 
-the perfomance of FALCON on your dataset so you can modify parameters and trouble-shoot more 
-effectively. This tutorial is a beginners guide to FALCON but assumes bioinformatics fluency.
+the perfomance of ``FALCON`` on your dataset so you can modify parameters and trouble-shoot more 
+effectively. This tutorial is a beginners guide to ``FALCON`` but assumes bioinformatics fluency.
 
 Input Files
 -----------
 
 You will need three types of files to get started, your PacBio data in fasta format (can be one or many files), a 
-text file telling FALCON where to find your fasta files, and a :ref:`configuration <Configuration>` file. 
-All files except the fasta 
-files must be in your job directory.
+text file telling ``FALCON`` where to find your fasta files, and a :ref:`configuration <Configuration>` file. 
+All files except the fasta files must be in your job directory.
 
 
 1. Download *E. coli* dataset
@@ -34,6 +33,7 @@ An example *E. coli* dataset can be download from here_. and then unpacked. e.g.
 
 	$ wget https://downloads.pacbcloud.com/public/data/git-sym/ecoli.m140913_050931_42139_c100713652400000001823152404301535_s1_p0.subreads.tar.gz
 	$ tar -xvzf ecoli.m140913_050931_42139_c100713652400000001823152404301535_s1_p0.subreads.tar.gz 
+
 .. _here: https://downloads.pacbcloud.com/public/data/git-sym/
 
 You should find three fasta files of ~350 Mb each in the newly created subdirectory.
@@ -61,7 +61,7 @@ If you are running your job locally, try this file:
 :download:`fc_run_ecoli_local.cfg <cfgs/fc_run_ecoli_local.cfg>`
 
 These config files are meant to be starting points only! You will need to make adjustments according
-to your particular compute setup.
+to your particular compute setup. Please refer to these :ref:`config <Configuration>` files as you plan your run.
 
 
 Note that I have manually specified a seed read length cutoff of 
@@ -73,10 +73,10 @@ the automated seed read length cut off, you should get a fragmented (28 contigs)
 incomplete assembly (< 900Mb).
 
    
-Running Falcon
+Running FALCON
 --------------
 
-I send all of my FALCON jobs to the scheduler for ease of tracking job progress. Here is an example
+I send all of my ``FALCON`` jobs to the scheduler for ease of tracking job progress. Here is an example
 bash script ``run_falcon.sh`` that submits to an SGE_ cluster:
 
 .. code-block:: bash
@@ -91,7 +91,7 @@ bash script ``run_falcon.sh`` that submits to an SGE_ cluster:
 	module load python/2.7.9 gcc/4.9.2
 
 	# source build
-	cd /path/to/my/build/FALCON-integrate
+	cd /path_to_build/src/FALCON-integrate/
 	source env.sh
 
 	# navigate to job directory, directory containing input.fofn
@@ -101,7 +101,7 @@ bash script ``run_falcon.sh`` that submits to an SGE_ cluster:
 	fc_run fc_run.cfg
 
 
-To initiate the FALCON run, I just submit my job to the scheduler with a qsub command:
+To initiate the ``FALCON`` run, I just submit my job to the scheduler with a qsub command:
 
 .. code-block:: bash
 
@@ -109,15 +109,15 @@ To initiate the FALCON run, I just submit my job to the scheduler with a qsub co
 	
 	
 Alternatively, you can add the ``fc_env/bin`` directory to your
-``$PATH`` and invoke :doc:`fc_run.py` at the command line with your ``fc_run.cfg`` as the argument.
+``$PATH`` and invoke ``fc_run`` at the command line with your ``fc_run.cfg`` as the argument.
 Note that this shell needs to persist through the entire assembly process so you may need 
 to use a window manager like screen_ to maintain your connection.
 
 .. code-block:: bash
 
-    falcon_jobdir$ export PYTHONUSERBASE=/path/to/FALCON-integrate/fc_env
+    falcon_jobdir$ export PYTHONUSERBASE=/path_to_build/fc_env/
     falcon_jobdir$ export PATH=$PYTHONUSERBASE/bin:$PATH
-    falcon_jobdir$ fc_run.py fc_run.cfg
+    falcon_jobdir$ fc_run fc_run.cfg
 
 
 .. _SGE: http://gridscheduler.sourceforge.net/htmlman/manuals.html
@@ -127,7 +127,7 @@ to use a window manager like screen_ to maintain your connection.
 Assessing Run Progress
 ----------------------
 
-Refer to the pipeline document for detailed summary of FALCON job directory structure, 
+Refer to the pipeline document for detailed summary of ``FALCON`` job directory structure, 
 sequence of commands, and output files created.
 
 Counting Completed Jobs
@@ -138,7 +138,7 @@ then sorting and merging them. To determine how many jobs are performed for each
 
 .. code-block:: bash
 
-    $ grep '^#' run_jobs.sh
+    $ grep '^#' 0-rawreads/run_jobs.sh
     
     	# Daligner jobs (60)
 	# Initial sort jobs (400)
@@ -167,7 +167,7 @@ Raw and Pread Coverage and Quality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The *E. coli* subreads
-are a total of 1.01 Gb of data in 105,451 reads. (:download:`countFasta.pl <media/countFasta.pl>`
+are a total of 1.01 Gb of data in 105,451 reads. :download:`countFasta.pl <scripts/countFasta.pl>`
 is a useful script by Joseph Fass and Brad Sickler at UC Davis for calculating total sequence
 length and other assembly metrics).
 
@@ -178,7 +178,7 @@ You can confirm that your dazzler database was correctly constructed using a uti
 .. code-block:: bash 
 
 	$ DBstats raw_reads.db > raw_reads.stats
-	$ head raw_reads.stats
+	$ head raw_reads.stats -n 17
 	
 	Statistics for all reads of length 500 bases or more
 	
@@ -244,7 +244,8 @@ and plotting in :ref:`R <RHists>`.
 Contig Stats
 ~~~~~~~~~~~~
 
-When your run is complete, you can summarize your assembly stats using the countFasta.pl script:
+When your run is complete, you can summarize your assembly stats using the :download:`countFasta.pl <scripts/countFasta.pl>` 
+script:
 
  .. code-block:: bash
 	
@@ -266,11 +267,10 @@ Assembly Graph and Pread Overlaps
 
 Assembly contiguity can be enhanced by adjusting a few parameters in the last stage of the 
 assembly process. You can try a grid of :ref:`pread length cut offs <length_cutoff_pr>` for 
-the filtering of the final
-overlaps in the assembly graph. In a general sense, longer pread length cut offs will increase the
- contiguity (contig N50) in your assembly, but may result in shorter over all assembly length. 
+the filtering of the final overlaps in the assembly graph. In a general sense, longer pread length cut offs will increase the
+contiguity (contig N50) in your assembly, but may result in shorter over all assembly length. 
 To try different length cut off, rename your 2-asm-falcon dir,
-modify the config file, rename the log and mypwatcher directory, and restart falcon:
+modify the config file, rename the log and mypwatcher directory, and restart ``FALCON``:
 
 .. code-block:: bash
 	
@@ -284,7 +284,12 @@ The other parameter to adjust is the number of overlaps in the assembly graph. F
 at a histogram of the number of overlaps on the 5' and 3' end of each read. Run the falcon utility:
 
 .. code-block:: bash
-	
+
+	# make sure utility is in $PATH
+	$ export PYTHONUSERBASE=/path_to_build/fc_env/
+	$ export PATH=$PYTHONUSERBASE/bin:$PATH
+
+	# navigate to directory 
 	$ cd 2-asm-falcon
 	$ fc_ovlp_stats --fofn ../1-preads_ovl/merge-gather/las.fofn > ovlp.stats
 	
@@ -375,3 +380,6 @@ the shell script or individual tasks:
 	LAsort -v raw_reads.4.raw_reads.19.C0 raw_reads.4.raw_reads.19.N0 raw_reads.4.raw_reads.19.C1 raw_reads.4.raw_reads.19.N1 raw_reads.4.raw_reads.19.C2 raw_reads.4.raw_reads.19.N2 raw_reads.4.raw_reads.19.C3 raw_reads.4.raw_reads.19.N3 && LAmerge -v L1.4.19 raw_reads.4.raw_reads.19.C0.S raw_reads.4.raw_reads.19.N0.S raw_reads.4.raw_reads.19.C1.S raw_reads.4.raw_reads.19.N1.S raw_reads.4.raw_reads.19.C2.S raw_reads.4.raw_reads.19.N2.S raw_reads.4.raw_reads.19.C3.S raw_reads.4.raw_reads.19.N3.S
 
 Once these jobs have run to completion, you can try restarting the pipeline.
+
+
+
