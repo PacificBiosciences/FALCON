@@ -31,7 +31,8 @@ assembly. It then produces a set of partially phased :term:`primary contigs <pri
 Detailed Description
 --------------------
 
-### HGAP
+HGAP
+~~~~
 
 The hierarchical genome assembly process proceeds in two rounds. The first round of assembly involves the selection of seed reads, 
 or the longest reads in the dataset (user-defined :ref:`length_cutoff <length_cutoff>`). All shorter reads are aligned to 
@@ -49,7 +50,8 @@ genomic contigs.
 .. image:: media/HGAP.png
 
 
-### FALCON
+FALCON
+~~~~~~
 
 .. image:: media/Fig1.png
 
