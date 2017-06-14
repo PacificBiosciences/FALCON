@@ -34,8 +34,9 @@ FALCON_unzip also depends on several commands that are bundled with SMRTAnalysis
 
 They can be downloaded, built and installed manually (blasr/samtools/GenomicConsensus)
 
-However, by far the easiest method is to download and install the SMRTAnalysis tools. Once installed, use the fully
-resolved PATH to the unarchived BIN directory ``smrtlink/smrtcmds/bin`` as the ``smrt_tools`` parameter in
+However, by far the easiest method is to download and install SMRTAnalysis tools. Once unarchived, you will use the fully
+resolved PATH to the unarchived BIN directory ``/path/to/smrttools/install/smrtcmds/bin`` as the ``smrt_bin`` parameter in your FALCON_unzip
+configuration file :ref:`fc_unzip.cfg`
 
 .. code-block:: bash
 
