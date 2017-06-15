@@ -73,29 +73,37 @@ Choosing an Assembler: HGAP4 vs FALCON vs FALCON-Unzip
 HGAP4
 ~~~~~
 
-We recommend ``HGAP4`` for genomes of known complexity that are not larger than human (3Gb or smaller), although underlying 
-compute resources for your SMRTlink instance will influence performance and feasibility. The underlying assembly
-process for ``HGAP4`` in the SMRTlink GUI (graphical user interface) is identical to ``FALCON`` at the command line, besides differences in 
-compute resource configuration and directory structures. The ``HGAP4`` pipeline includes a round of "polishing" which employs the ``resequencing`` pipeline.
+We recommend ``HGAP4``, part of the SMRT Link web-based analysis suite, for genomes of known complexity, no larger than 
+human (3Gb or 
+smaller), 
+although underlying 
+compute resources for your SMRT Link instance will influence performance and feasibility. The assembly
+process for ``HGAP4`` in the SMRT Link GUI (graphical user interface) is identical to ``FALCON`` at the command line, besides 
+differences in 
+compute resource configuration and minor differences in directory structure. The ``HGAP4`` pipeline by default includes a round of 
+genome "polishing" 
+which employs the ``resequencing`` pipeline.
 
-``HGAP4`` results are not compatible with ``FALCON-Unzip`` at this time!
+``HGAP4`` RESULTS ARE NOT COMPATIBLE WITH ``FALCON-Unzip`` AT THIS TIME!
 
 
-``HGAP4`` inputs are a PacBio BAM_ dataset, either Sequel or RSII. The FASTA and FASTQ files output from ``HGAP4`` are a concatenation of primary 
-and associate contigs output from ``FALCON`` as separate files. 
+``HGAP4`` inputs are a PacBio subread BAM_ dataset, either Sequel or RSII. The FASTA and FASTQ files output from ``HGAP4`` are a concatenation of the primary 
+and associate contigs, which are output from ``FALCON`` as separate files. 
 
 
 Command Line
 ~~~~~~~~~~~~
 
 Users more comfortable at the command line may use ``FALCON`` for genomes of any size 
-or complexity. Command line inputs are FASTA files of Sequel or RSII subreads. Additional polishing must be run separately using the 
-``resequencing`` pipeline of pbsmrtpipe_ (available for command-line installation using the SMRT_Link_ download, see 
+or complexity. Command line inputs are FASTA files of Sequel or RSII subreads. Command-line ``FALCON`` does not automatically polished the assembly. If a user 
+wishes, asembly polishing may 
+be run using the ``resequencing`` pipeline of pbsmrtpipe_ (available for command-line installation using the SMRT_Link_ download, see 
 SMRT_Tools_Reference_Guide_ for 
-installation instructions). Resequencing requires PacBio BAM_ inputs.
+installation instructions). Resequencing requires PacBio subread BAM_ inputs.
 
-We recommend the ``FALCON-Unzip`` module for heterozygous or outbred organisms. Users wishing to run ``FALCON-Unzip`` must do so only after running ``FALCON`` on the 
-command line. ``HGAP4`` IS NOT COMPATIBLE WITH ``FALCON-UNZIP``! The ``FALCON-Unzip`` module requires both FASTA and PacBio BAM_ inputs. 
+We recommend the ``FALCON-Unzip`` module for heterozygous or outbred organisms that are diploid or higher ploidy. Users wishing to run 
+``FALCON-Unzip`` must do so only after running ``FALCON`` on the 
+command line. ``HGAP4`` IS NOT COMPATIBLE WITH ``FALCON-UNZIP``! The ``FALCON-Unzip`` module requires both FASTA and PacBio BAM_ inputs for subreads. 
 
 
 References
