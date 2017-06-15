@@ -11,7 +11,7 @@ install_requires=[
         #"pypeFLOW", # We exclude pypeFLOW because it is not needed for the unit-tests.
         ]
 
-scripts = glob.glob("src/py_scripts/*.py")
+#scripts = glob.glob("src/py_scripts/*.py")
 
 try:
     local_version = '+git.{}'.format(subprocess.check_output('git rev-parse HEAD', shell=True))
@@ -41,7 +41,22 @@ setup(name='falcon_kit',
                    ),
                   ],
       entry_points = {'console_scripts': [
-          'falcon-task=falcon_kit.mains.tasks:main',
+          'falcon-task=falcon_kit.mains.tasks:main', # used anywhere?
+
+          # These used to be in src/py_scripts, but 'pip install' might not add shebang.
+          'fc_actg_coordinate.py=falcon_kit.mains.actg_coordinate:main',
+          'fc_consensus.py=falcon_kit.mains.consensus:main',
+          'fc_contig_annotate.py=falcon_kit.mains.contig_annotate:main',
+          'fc_ctg_link_analysis.py=falcon_kit.mains.ctg_link_analysis:main',
+          'fc_dedup_a_tigs.py=falcon_kit.mains.dedup_a_tigs:main',
+          'fc_graph_to_contig.py=falcon_kit.mains.graph_to_contig:main',
+          'fc_graph_to_utgs.py=falcon_kit.mains.graph_to_utgs:main',
+          'fc_ovlp_filter.py=falcon_kit.mains.ovlp_filter:main',
+          'fc_ovlp_stats.py=falcon_kit.mains.ovlp_stats:main',
+          'fc_ovlp_to_graph.py=falcon_kit.mains.ovlp_to_graph:main',
+          'fc_run.py=falcon_kit.mains.run1:main',
+
+          # These can also be called via 'python -m falcon_kit.mains.modname'
           'fc_actg_coordinate=falcon_kit.mains.actg_coordinate:main',
           'fc_consensus=falcon_kit.mains.consensus:main',
           'fc_contig_annotate=falcon_kit.mains.contig_annotate:main',
@@ -54,7 +69,7 @@ setup(name='falcon_kit',
           'fc_ovlp_to_graph=falcon_kit.mains.ovlp_to_graph:main',
           'fc_calc_cutoff=falcon_kit.mains.calc_cutoff:main',
           'fc_run=falcon_kit.mains.run1:main',
-          'fc_run1=falcon_kit.mains.run1:main',
+          'fc_run1=falcon_kit.mains.run1:main', # deprecated
           'fc_fasta2fasta=falcon_kit.mains.fasta2fasta:main',
           'fc_fetch_reads=falcon_kit.mains.fetch_reads:main',
           'fc_get_read_ctg_map=falcon_kit.mains.get_read_ctg_map:main',
@@ -65,7 +80,7 @@ setup(name='falcon_kit',
       extras_require = {
           'falcon-task':  ['falcon_kit'],
       },
-      scripts = scripts,
+      #scripts = scripts,
       zip_safe = False,
       setup_requires=install_requires,
       install_requires=install_requires

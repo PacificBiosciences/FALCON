@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Usage:
 
     LAsort.py DB <args>

@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 """A pre-processor for DAZZ_DB/fasta2DB.
 
 Since fasta2DB has several constraints

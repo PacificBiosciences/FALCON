@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Usage:
 
     LAmerge.py DB <args>
