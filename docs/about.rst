@@ -31,9 +31,6 @@ assembly. It then produces a set of partially phased :term:`primary contigs <pri
 Detailed Description
 --------------------
 
-HGAP
-~~~~
-
 The hierarchical genome assembly process proceeds in two rounds. The first round of assembly involves the selection of seed reads, 
 or the longest reads in the dataset (user-defined :ref:`length_cutoff <length_cutoff>`). All shorter reads are aligned to 
 the seed reads, in 
@@ -48,10 +45,6 @@ In the next round of HGAP, the :term:`preads <pread>`, are aligned to each other
 genomic contigs.
 
 .. image:: media/HGAP.png
-
-
-FALCON
-~~~~~~
 
 .. image:: media/Fig1.png
 
@@ -74,7 +67,35 @@ may be obtained with the show-coords_ utilty from MUMmer_.
 .. image:: media/dotplots.png
 
 
+Choosing an Assembler: HGAP4 vs FALCON vs FALCON-Unzip 
+------------------------------------------------------
 
+HGAP4
+~~~~~
+
+We recommend ``HGAP4`` for genomes of known complexity that are not larger than human (3Gb or smaller), although underlying 
+compute resources for your SMRTlink instance will influence performance and feasibility. The underlying assembly
+process for ``HGAP4`` in the SMRTlink GUI (graphical user interface) is identical to ``FALCON`` at the command line, besides differences in 
+compute resource configuration and directory structures. The ``HGAP4`` pipeline includes a round of "polishing" which employs the ``resequencing`` pipeline.
+
+``HGAP4`` results are not compatible with ``FALCON-Unzip`` at this time!
+
+
+``HGAP4`` inputs are a PacBio BAM_ dataset, either Sequel or RSII. The FASTA and FASTQ files output from ``HGAP4`` are a concatenation of primary 
+and associate contigs output from ``FALCON`` as separate files. 
+
+
+Command Line
+~~~~~~~~~~~~
+
+Users more comfortable at the command line may use ``FALCON`` for genomes of any size 
+or complexity. Command line inputs are FASTA files of Sequel or RSII subreads. Additional polishing must be run separately using the 
+``resequencing`` pipeline of pbsmrtpipe_ (available for command-line installation using the SMRT_Link_ download, see 
+SMRT_Tools_Reference_Guide_ for 
+installation instructions). Resequencing requires PacBio BAM_ inputs.
+
+Users wishing to run ``FALCON-Unzip`` must do so only after running ``FALCON`` on the command line. ``HGAP4`` IS NOT COMPATIBLE WITH 
+``FALCON-UNZIP``! The ``FALCON-Unzip`` module requires both FASTA and PacBio BAM_ inputs. 
 
 
 References
@@ -92,3 +113,7 @@ References
 .. _assemblytics: http://qb.cshl.edu/assemblytics/
 .. _MUMmer: http://mummer.sourceforge.net/manual/
 .. _show-coords: http://mummer.sourceforge.net/manual/#coords
+.. _pbsmrtpipe: http://pbsmrtpipe.readthedocs.io/en/master/getting_started.html
+.. _SMRT_Link: http://www.pacb.com/support/software-downloads/
+.. _SMRT_Tools_Reference_Guide: http://programs.pacificbiosciences.com/l/1652/2017-02-01/3rzxn6/184345/SMRT_Tools_Reference_Guide__v4.0.0_.pdf
+.. _BAM: http://pacbiofileformats.readthedocs.io/en/3.0/BAM.html
