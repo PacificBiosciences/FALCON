@@ -95,8 +95,8 @@ Command Line
 ~~~~~~~~~~~~
 
 Users more comfortable at the command line may use ``FALCON`` for genomes of any size 
-or complexity. Command line inputs are FASTA files of Sequel or RSII subreads. Command-line ``FALCON`` does not automatically polished the assembly. If a user 
-wishes, asembly polishing may 
+or complexity. Command line inputs are FASTA files of Sequel or RSII subreads. Command-line ``FALCON`` does not automatically polish the assembly. If a user 
+wishes, assembly polishing may 
 be run using the ``resequencing`` pipeline of pbsmrtpipe_ (available for command-line installation using the SMRT_Link_ download, see 
 SMRT_Tools_Reference_Guide_ for 
 installation instructions). Resequencing requires PacBio subread BAM_ inputs.
