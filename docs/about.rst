@@ -94,8 +94,8 @@ or complexity. Command line inputs are FASTA files of Sequel or RSII subreads. A
 SMRT_Tools_Reference_Guide_ for 
 installation instructions). Resequencing requires PacBio BAM_ inputs.
 
-Users wishing to run ``FALCON-Unzip`` must do so only after running ``FALCON`` on the command line. ``HGAP4`` IS NOT COMPATIBLE WITH 
-``FALCON-UNZIP``! The ``FALCON-Unzip`` module requires both FASTA and PacBio BAM_ inputs. 
+We recommend the ``FALCON-Unzip`` module for heterozygous or outbred organisms. Users wishing to run ``FALCON-Unzip`` must do so only after running ``FALCON`` on the 
+command line. ``HGAP4`` IS NOT COMPATIBLE WITH ``FALCON-UNZIP``! The ``FALCON-Unzip`` module requires both FASTA and PacBio BAM_ inputs. 
 
 
 References
