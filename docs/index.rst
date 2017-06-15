@@ -31,7 +31,7 @@ FALCON Assembler
 
 `FALCON <http://github.com/PacificBiosciences/FALCON>`_ is a diploid aware genome assembler designed for Pacific Biosciences long read data.
 
-*  :ref:`About                           <about>` - About Falcon
+*  :ref:`About                           <about>` - About FALCON
 *  :ref:`Quick Start               <quick_start>` - Want to start using FALCON immediately?
 *  :ref:`Tutorial                     <tutorial>` - Follow an example on how to run FALCON
 *  :ref:`Pipeline                     <pipeline>` - How does a FALCON job work?
