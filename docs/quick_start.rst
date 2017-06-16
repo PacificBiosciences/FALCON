@@ -3,12 +3,8 @@
 Quick Start Guide
 =================
 
-
-FALCON
-------
-
 Installation
-^^^^^^^^^^^^
+------------
 
 The quickest way to install FALCON + FALCON_unzip is to download and run this install script:
 
@@ -18,32 +14,77 @@ The quickest way to install FALCON + FALCON_unzip is to download and run this in
 
     $ bash -ex install_unzip.sh /path/to/your/install/dir
 
-This will clone both the FALCON-integrate and FALCON_unzip repositories and build a virtualenv including all FALCON daligner/dazzler dependencies.
 
-Install script dependencies (Ubuntu/CentOS):
+.. NOTE::
 
- 1. python/2.7.x
- 2. virtualenv 13.0.1 (but should work with older)
- 3. git binaries in your $PATH
+    This will clone both the FALCON-integrate and FALCON_unzip repositories and build a virtualenv including all FALCON daligner/dazzler dependencies.
 
 
-Additional FALCON_unzip dependencies
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. IMPORTANT::
 
-FALCON_unzip also depends on several commands that are bundled with SMRTAnalysis 4.0.0+.
 
-They can be downloaded, built and installed manually (blasr/samtools/GenomicConsensus)
+    FALCON_unzip also depends on several commands that are bundled with `SMRTLink <https://www.pacb.com/support/software-downloads>`_
+    and `MUMmer <https://sourceforge.net/projects/mummer/>`_. The easiest way to ensure these dependencies are in place
+    and FALCON_unzip will run as expected is to
 
-However, by far the easiest method is to download and install SMRTAnalysis tools. Once unarchived, you will use the fully
-resolved PATH to the unarchived BIN directory ``/path/to/smrttools/install/smrtcmds/bin`` as the ``smrt_bin`` parameter in your FALCON_unzip
-configuration file :ref:`fc_unzip.cfg`
+        1. Download and install `MUMmer 3.23 <https://sourceforge.net/projects/mummer/>`_
+        2. Download and install `SMRTLink 4.0.0 <http://www.pacb.com/support/software-downloads/>`_
+
+
+        .. code-block:: bash
+
+            $ wget https://downloads.pacbcloud.com/public/software/installers/smrtlink_4.0.0.190159.zip
+            $ unzip smrtlink_4.0.0.190159.zip   ### the password is SmrT3chN
+            $ ./smrtlink_4.0.0.190159.run --rootdir smrtlink --smrttools-only
+
+    If you don't care about unzipping / phasing your genome, or you are working with a haploid organism, this step is unnecessary.
+
+
+
+Testing
+-------
+
+If you're reading this section, we are assuming that you have successfully completed the above steps and would now like
+to test your install before you launch a FALCON/FALCON_unzip job on a large genome.
+
+First, let's source our brand new virtualenv
 
 .. code-block:: bash
 
-    $ wget https://downloads.pacbcloud.com/public/software/installers/smrtlink_4.0.0.190159.zip
-    $ unzip smrtlink_4.0.0.190159.zip   ### the password is SmrT3chN
-    $ ./smrtlink_4.0.0.190159.run --rootdir smrtlink --smrttools-only
+    $ source /path/to/your/install/dir/fc_env/bin/activate
 
-The ``--smrttools-only`` flag will allow you to install just the SMRTanalysis tools, skipping the full analysis suite
- configuration. Refer to this `PDF <http://programs.pacificbiosciences.com/e/1652/e-Installation--v4-0-0--v2-pdf/3rvmzg/507864561>`_
- if you would like to configure a fully functional SMRTLink 4.0.0 install
+Second, let's ensure our small testing dataset is in place
+
+.. code-block:: bash
+
+    $ cd /path/to/your/install/dir/src/FALCON-integrate/FALCON-examples
+    $ ./git-sym/git-sym update FALCON-examples/run/greg200k-sv2   ### ensure testdata in place
+
+Third, we need to ensure the unarchived smrttools bin directory ``smrtlink/smrtcmds/bin`` (from instructions above) is specified correctly in your :ref:`fc_unzip.cfg`
+
+.. code-block:: bash
+
+    $ cd FALCON_examples/run/greg200k-sv2
+    $ sed -s 's|^smrt_bin=*|smrt_bin=/path/to/smrtlink/smrtcmds/bin|g' fc_unzip.cfg
+
+Fourth - we need to ensure the mummer & samtools (part of smrttools) binaries are available in your ``$PATH``
+
+.. code-block:: bash
+
+    $ export PATH=/path/to/mummer/bindir:$PATH
+    $ export PATH=$PATH:/path/to/your/smrtlink/smrtcmds/bin
+
+.. IMPORTANT::
+
+    if you specify PATH=/path/to/smrtlink/smrtcmds/bin:$PATH instead of what's above you will run in to python import problems.
+
+Fifth - let's test!
+
+.. code-block:: bash
+
+    $ fc_run fc_run.cfg
+    $ fc_unzip.py fc_unzip.cfg
+    $ fc_quiver.py fc_unzip.cfg
+
+If you don't see any errors, you will have successfully assembled, unzipped, and polished a small test dataset. At this
+point you should be ready to confidently launch a larger genome assembly.
