@@ -4,9 +4,10 @@
 # contact: gconcepcion@pacificbiosciences.com
 
 ###Install script dependencies
-##Make sure these binaries are available in your $PATH
-#source /mnt/software/Modules/current/init/bash
+##This script should work on both Ubuntu/CentOS as long as the following dependencies are installed and 
+##available in your $PATH
 
+#source /mnt/software/Modules/current/init/bash
 #module load python/2.7.9
 #module load virtualenv/13.0.1
 #module load git
