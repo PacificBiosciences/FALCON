@@ -65,7 +65,7 @@ Third, we need to ensure the unarchived smrttools bin directory ``smrtlink/smrtc
 .. code-block:: bash
 
     $ cd FALCON_examples/run/greg200k-sv2
-    $ sed -s 's|^smrt_bin=*|smrt_bin=/path/to/smrtlink/smrtcmds/bin|g' fc_unzip.cfg
+    $ sed -i 's|^smrt_bin=*|smrt_bin=/path/to/smrtlink/smrtcmds/bin|g' fc_unzip.cfg
 
 Fourth - we need to ensure the mummer & samtools (part of smrttools) binaries are available in your ``$PATH``
 
