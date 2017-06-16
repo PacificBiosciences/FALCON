@@ -23,7 +23,7 @@ The quickest way to install FALCON + FALCON_unzip is to download and run this in
 .. IMPORTANT::
 
 
-    FALCON_unzip also depends on several commands that are bundled with `SMRTLink <http://www.pacb.com/support/software-downloads/>>`_
+    FALCON_unzip also depends on several commands that are bundled with `SMRTLink <http://www.pacb.com/support/software-downloads/>`_
     and `MUMmer <https://sourceforge.net/projects/mummer/>`_. The easiest way to ensure these dependencies are in place
     and FALCON_unzip will run as expected is to
 
