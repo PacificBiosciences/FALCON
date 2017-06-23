@@ -233,11 +233,9 @@ A FALCON_unzip job can be broken down into 3 steps
         ├── reads/                      # raw read fastas for each contig
         ├── all_h_ctg_edges             # haplotig edge list
         ├── all_h_ctg.fa                # phased haplotigs
-        ├── all_h_ctg.fa.stats          # haplotig stats
         ├── all_h_ctg_ids               # haplotig id index
         ├── all_p_ctg_edges             # primary contig edge list
         ├── all_p_ctg.fa                # partially phased primary contigs
-        ├── all_p_ctg.fa.stats          # primary contig stats
         └── all_phased_reads            # table of all phased raw reads
 
 
