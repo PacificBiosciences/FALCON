@@ -25,11 +25,12 @@ Each step is performed in it's own subdirectory within the FALCON job
 .. code-block:: bash
 
     falcon_job/
-        ├── 0-rawreads     # Raw read error correction directory
-        ├── 1-preads_ovl   # Corrected read overlap detection
-        ├── 2-asm-falcon   # String Graph Assembly
-        ├── scripts
-        └── sge_log        # Job scheduler logs
+        ├── 0-rawreads/     # Raw read error correction directory
+        ├── 1-preads_ovl/   # Corrected read overlap detection
+        ├── 2-asm-falcon/   # String Graph Assembly
+        ├── mypwatcher/     # Job scheduler logs
+        ├── scripts/
+        └── sge_log/        # deprecated
 
 The assembly process is driven by the script :ref:`fc_run.py` which should be sent to the scheduler or run on a head node
 as it needs to persist throughout the entire assembly process.
@@ -82,24 +83,24 @@ output to :ref:`fc_consensus.py <fc_consensus>` to generate a fasta file with co
         ├── job_*                     # dirs for all of the daligner jobs
         ├── m_*/                      # dirs for all of the LA4Merge jobs
         ├── preads/                   # sub-dir for preads generation
-        ├── report/		      # pre-assembly stats
-        ├── length_cutoff             # text file with length cutoff for seed reads
-        ├── raw_reads.db              # dazzler DB file
-        ├── input.fofn                # list if your input *.fasta files
-        ├── cns-scatter/	      # dir of scripts for falcon-consensus jobs
+        ├── report/		              # pre-assembly stats
+        ├── cns-scatter/	          # dir of scripts for falcon-consensus jobs
         ├── daligner-scatter/	      # dir of scripts for daligner jobs
-        ├── merge-scatter/	      # dir of scripts for LAMerge jobs
-        ├── merge-gather/	      # dir of scripts for gathering LAMerge inputs
-	├── raw-gather/	      	      # dir of scripts for gathering daligner jobs for merging
-        ├── raw-fofn-abs	      # dir of scripts for gathering raw reads inputs
-        ├── pwatcher.dir	      # dir of individual pipeline jobs stderr and stdout 
-        ├── rdb_build_done            # database construction sentinel file
+        ├── merge-scatter/	          # dir of scripts for LAMerge jobs
+        ├── merge-gather/	          # dir of scripts for gathering LAMerge inputs
+        ├── raw-gather/	      	      # dir of scripts for gathering daligner jobs for merging
+        ├── input.fofn               # list if your input *.fasta files
+        ├── length_cutoff             # text file with length cutoff for seed reads
+        ├── pwatcher.dir	          # dir of individual pipeline jobs stderr and stdout
         ├── prepare_rdb.sh            # env wrapper script
-        ├── run_jobs.sh               # listing of all overlap step commands
-        ├── run.sh		      # masker job script
-        ├── run.sh.done		      # sentinel file for all jobs
-        ├── task.json		      # json file specifying inputs, outputs, and params
-        └── task.sh		      # script to run json file
+        ├── raw_reads.db              # dazzler DB file
+        ├── raw-fofn-abs	          # dir of scripts for gathering raw reads inputs
+        ├── rdb_build_done            # database construction sentinel file
+        ├── run_jobs.sh              # listing of all overlap step commands
+        ├── run.sh		              # masker job script
+        ├── run.sh.done		          # sentinel file for all jobs
+        ├── task.json		         # json file specifying inputs, outputs, and params
+        └── task.sh		             # script to run json file
 
 
 
@@ -146,10 +147,9 @@ details on actual parameter settings used.
         ├── daligner-scatter/	    # dir of scripts for daligner jobs
         ├── pdb_build_done          # sentinel file for pread DB building
         ├── preads.db               # preads dazzler DB
-        ├── run_jobs.sh             # listing of all pread overlap job commands
         ├── prepare_pdb.sh          # env wrapper script
-        ├── pwatcher.dir	    # dir of individual pipeline jobs stderr and stdout 
-        ├── run_jobs.sh             # listing of all overlap step commands
+        ├── pwatcher.dir	    # dir of individual pipeline jobs stderr and stdout
+        ├── run_jobs.sh             # listing of all pread overlap job commands
         ├── run.sh		    # masker job script
         ├── run.sh.done		    # sentinel file for all jobs
         ├── task.json		    # json file specifying inputs, outputs, and params
@@ -170,8 +170,7 @@ Step 3: String Graph assembly
 -----------------------------
 
 The final step of the FALCON Assembly pipeline is generation of the final :term:`String Graph` assembly and 
-output of contig sequences in
-fasta format. Four commands are run in the final phase of FALCON:
+output of contig sequences in fasta format. Four commands are run in the final phase of FALCON:
 
 1. :ref:`fc_ovlp_filter <fc_ovlp_filter.py>` - Filters overlaps based on the criteria provided in :ref:`fc_run.cfg`
 2. :ref:`fc_ovlp_to_graph <fc_ovlp_to_graph.py>` - Constructs an overlap graph of reads larger than the length cutoff
@@ -203,9 +202,12 @@ fasta file, ``a_ctg.fa`` that consists of all of the structural variants from th
         ├── sg_edges_list                # list of all edges
         ├── chimers_nodes                #
         ├── preads.ovl                   # List of all overlaps between preads
-        ├── las.fofn                     # List of *.las files for input
         ├── run_falcon_asm.sh            # env wrapper script
-        └── run_falcon_asm.sub.sh        # Assembly driver script
+        ├── task.json		              # json file specifying inputs, outputs, and params
+        ├── task.sh		                  # script to run json file
+        ├── run.sh.done		              # sentinel file for all jobs
+        └── run.sh                       # Assembly driver script
+
 
 The following parameters affect this step directly:
 
@@ -231,11 +233,11 @@ A FALCON_unzip job can be broken down into 3 steps
         ├── 1-hasm/                     # Contig Graph assembly information
         ├── read_maps/                  # rawread_to_contigs; read_to_contig_map
         ├── reads/                      # raw read fastas for each contig
-        ├── all_h_ctg_edges             # haplotig edge list
-        ├── all_h_ctg.fa                # phased haplotigs
-        ├── all_h_ctg_ids               # haplotig id index
-        ├── all_p_ctg_edges             # primary contig edge list
         ├── all_p_ctg.fa                # partially phased primary contigs
+        ├── all_h_ctg.fa                # phased haplotigs
+        ├── all_p_ctg_edges             # primary contig edge list
+        ├── all_h_ctg_edges             # haplotig edge list
+        ├── all_h_ctg_ids               # haplotig id index
         └── all_phased_reads            # table of all phased raw reads
 
 
