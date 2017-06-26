@@ -57,8 +57,8 @@ Second, let's ensure our small testing dataset is in place
 
 .. code-block:: bash
 
-    $ cd /path/to/your/install/dir/src/FALCON-integrate
-    $ ./git-sym/git-sym update FALCON-examples/run/greg200k-sv2   ### ensure testdata in place
+    $ cd /path/to/your/install/dir/src/FALCON-integrate/FALCON-examples
+    $ ../git-sym/git-sym update FALCON-examples/run/greg200k-sv2   ### ensure testdata in place
 
 Third, we need to ensure the unarchived smrttools bin directory ``smrtlink/smrtcmds/bin`` (from instructions above) is specified correctly in your :ref:`fc_unzip.cfg`
 
