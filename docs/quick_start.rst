@@ -58,14 +58,14 @@ Second, let's ensure our small testing dataset is in place
 .. code-block:: bash
 
     $ cd /path/to/your/install/dir/src/FALCON-integrate/FALCON-examples
-    $ ../git-sym/git-sym update FALCON-examples/run/greg200k-sv2   ### ensure testdata in place
+    $ ../git-sym/git-sym update run/greg200k-sv2   ### ensure testdata in place
 
 Third, we need to ensure the unarchived smrttools bin directory ``smrtlink/smrtcmds/bin`` (from instructions above) is specified correctly in your :ref:`fc_unzip.cfg`
 
 .. code-block:: bash
 
     $ cd FALCON_examples/run/greg200k-sv2
-    $ sed -i 's|^smrt_bin=*|smrt_bin=/path/to/smrtlink/smrtcmds/bin|g' fc_unzip.cfg
+    $ sed -i 's|^smrt_bin=.*!|smrt_bin=/path/to/smrtlink/smrtcmds/bin|g' fc_unzip.cfg
 
 Fourth - we need to ensure the mummer & samtools (part of smrttools) binaries are available in your ``$PATH``
 
