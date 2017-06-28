@@ -17,3 +17,9 @@ Slides presented at the East Coast UGM in Baltimore, June 27th, 2017
 :download:`Wenger_pbsv_BFXwrkshop.pdf <media/Wenger_pbsv_BFXwrkshop.pdf>`
 
 
+:download:`Goodwin_SamplePrep_ExtraLongLibraries.pdf <media/Goodwin_SamplePrep_ExtraLongLibraries.pdf>`
+
+
+:download:`Smith_SamplePrep_BestPracLargeInsertLib.pdf <media/Smith_SamplePrep_BestPracLargeInsertLib.pdf>`
+
+
