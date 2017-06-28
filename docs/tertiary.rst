@@ -14,3 +14,6 @@ Slides presented at the East Coast UGM in Baltimore, June 27th, 2017
 :download:`Ghurye_PacBHiC_Asm.pdf <media/Ghurye_PacBHiC_Asm.pdf>`
 
 
+:download:`Wenger_pbsv_BFXwrkshop.pdf <media/Wenger_pbsv_BFXwrkshop.pdf>`
+
+
