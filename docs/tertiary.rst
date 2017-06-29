@@ -23,3 +23,6 @@ Slides presented at the East Coast UGM in Baltimore, June 27th, 2017
 :download:`Smith_SamplePrep_BestPracLargeInsertLib.pdf <media/Smith_SamplePrep_BestPracLargeInsertLib.pdf>`
 
 
+:download:`HamidAshrafi_BlueberryAsmIsoSeq.pdf <media/HamidAshrafi_BlueberryAsmIsoSeq.pdf>`
+
+
