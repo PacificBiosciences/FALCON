@@ -19,6 +19,9 @@ which python
 mkdir -p LOCAL
 export PYTHONUSERBASE=$(pwd)/LOCAL
 
+# We have a problem with pylint: https://github.com/PyCQA/pylint/issues/1296
+pip install --user --upgrade pylint
+
 make install-edit
 # Note: no --edit because we might be building artifacts.
 # ... Scratch that. We have trouble getting coverage for
