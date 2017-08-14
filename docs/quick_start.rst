@@ -17,28 +17,7 @@ The quickest way to install FALCON + FALCON_unzip is to download and run this in
 
 .. NOTE::
 
-    This will clone both the FALCON-integrate and FALCON_unzip repositories and build a virtualenv including all FALCON daligner/dazzler dependencies.
-
-
-.. IMPORTANT::
-
-
-    FALCON_unzip also depends on several commands that are bundled with `SMRTLink <http://www.pacb.com/support/software-downloads/>`_
-    and `MUMmer <https://sourceforge.net/projects/mummer/>`_. The easiest way to ensure these dependencies are in place
-    and FALCON_unzip will run as expected is to
-
-        1. Download and install `MUMmer 3.23 <https://sourceforge.net/projects/mummer/>`_
-        2. Download and install `SMRTLink 4.0.0 <http://www.pacb.com/support/software-downloads/>`_
-
-
-        .. code-block:: bash
-
-            $ wget https://downloads.pacbcloud.com/public/software/installers/smrtlink_4.0.0.190159.zip
-            $ unzip smrtlink_4.0.0.190159.zip   ### the password is SmrT3chN
-            $ ./smrtlink_4.0.0.190159.run --rootdir smrtlink --smrttools-only
-
-    If you don't care about unzipping / phasing your genome, or you are working with a haploid organism, this step is unnecessary.
-
+    This will clone both the FALCON-integrate repository and FALCON_unzip binaries and build a virtualenv including all FALCON and FALCON_unzip dependencies.
 
 
 Testing

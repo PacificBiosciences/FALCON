@@ -1,10 +1,9 @@
 #!/bin/bash
 # This is a simple script to install FALCON-integrate + FALCON_unzip.
-# Running FALCON_unzip requires addiitonal blasr/samtools/GenomicConsensus binaries
 # contact: gconcepcion@pacificbiosciences.com
 
 ###Install script dependencies
-##This script should work on both Ubuntu/CentOS as long as the following dependencies are installed and 
+##This script should work on both Ubuntu/CentOS as long as the following dependencies are installed and
 ##available in your $PATH
 
 #source /mnt/software/Modules/current/init/bash
@@ -12,43 +11,33 @@
 #module load virtualenv/13.0.1
 #module load git
 
-
 ###Variables
 ROOT=$1
-if [ -z $ROOT ];then
-    ROOT=$(pwd)
-fi
-
-if [ ! -z $ROOT ]; then
-    ROOT=$(readlink -f $ROOT)
-fi
-
-SRC_ROOT=${ROOT}/src
+SRC=${ROOT}/src
 VENV_BASE=${ROOT}/fc_env
 SLUG=$(date +%y%m%d)
 VENV=${VENV_BASE}_${SLUG}
-REPO_ROOT="http://github.com/PacificBiosciences"
-UNZIP="FALCON_unzip"
-FALCON="FALCON-integrate"
-UNZIP_REPO=${REPO_ROOT}/${UNZIP}.git
-FALCON_REPO=${REPO_ROOT}/${FALCON}.git
-UNZIP_PATH=${SRC_ROOT}/${UNZIP}
-FALCON_PATH=${SRC_ROOT}/${FALCON}
+FALCON_PATH=${SRC}/FALCON-integrate
+FALCON_REPO="https://github.com/PacificBiosciences/FALCON-integrate.git"
+DL_CLOUD="https://downloads.pacbcloud.com/public/falcon/"
+
+###Test whether you need ucs4 or ucs2 tarball with this command:
+#  $ python2.7 -c 'import sysconfig,pprint; pprint.pprint(sysconfig.get_config_vars()["Py_UNICODE_SIZE"])'
+UNZIP_TARBALL="falcon-2017.06.28-18.01-py2.7-ucs4.tar.gz"
+###UNZIP_TARBALL="falcon-2017.06.28-18.01-py2.7-ucs2.tar.gz"
 
 ###Cleanup
-if [ ! -d "${SRC_ROOT}" ]; then
-    echo "Creating src root"
-    mkdir ${SRC_ROOT}
+if [ ! -d ${ROOT} ]; then
+    mkdir ${ROOT}
 fi
+
+if [ ! -d ${SRC} ]; then
+    mkdir ${SRC}
+fi 
 
 if [ -d "${VENV}" ]; then
     echo "Removing previous build from today"
     rm -rf $VENV
-fi
-
-if [ -d "${UNZIP_PATH}" ]; then
-    echo "Removing old UNZIP repo"
-    rm -rf ${UNZIP_PATH}
 fi
 
 if [ -d "${FALCON_PATH}" ]; then
@@ -61,14 +50,16 @@ if [ -L "${VENV_BASE}" ]; then
 fi
 
 
-cd $SRC_ROOT
-git clone ${FALCON_REPO}
-git clone ${UNZIP_REPO}
+virtualenv --no-site-packages ${VENV}
+echo "export LD_LIBRARY_PATH=${VENV}/lib:\${LD_LIBRARY_PATH}" >>${VENV}/bin/activate
 
+source ${VENV}/bin/activate
+
+cd $SRC
+git clone ${FALCON_REPO}
 
 ###install falcon
-virtualenv --no-site-packages ${VENV}
-source ${VENV}/bin/activate
+
 cd ${FALCON_PATH}
 git checkout master
 git submodule update --init
@@ -82,17 +73,22 @@ make -j all
 make install
 #make test
 
-
 ###install unzip
-cd ${UNZIP_PATH}
-python setup.py install
+
+cd ${SRC}
+curl -O ${DL_CLOUD}/${UNZIP_TARBALL}
+tar zxvf ${UNZIP_TARBALL}  -C ${VENV}
+
 ln -s ${VENV} ${VENV_BASE}
 
-
 ###Test falcon_unzip pipeline
-## requires blasr, samtools and GenomicConsensus binaries in your path
-#cd ${FALCON_PATH}/FALCON-examples
-#../git-sym/git-sym update run/greg200k-sv2
-#cd run/greg200k-sv2
-#fc_run fc_run.cfg
-#fc_unzip.py fc_unzip.cfg
+
+cd ${FALCON_PATH}/FALCON-examples
+../git-sym/git-sym update run/greg200k-sv2
+cd run/greg200k-sv2
+fc_run fc_run.cfg
+
+export LD_LIBRARY_PATH=${PREFIX}/lib:${LD_LIBRARY_PATH}
+
+sed -i "s|^smrt_bin=.*|smrt_bin=${VENV}/bin|g" fc_unzip.cfg
+fc_unzip.py fc_unzip.cfg
