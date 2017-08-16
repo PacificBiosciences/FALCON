@@ -17,7 +17,7 @@ The quickest way to install FALCON + FALCON_unzip is to download and run this in
 
 .. NOTE::
 
-    This will clone both the FALCON-integrate repository and FALCON_unzip binaries and build a virtualenv including all FALCON and FALCON_unzip dependencies.
+    This will clone the FALCON-integrate repository, FALCON_unzip binaries and build a virtualenv that includes all necessary dependencies.
 
 
 Testing
@@ -46,5 +46,5 @@ Third - let's test!
     $ fc_run fc_run.cfg
     $ fc_unzip.py fc_unzip.cfg
 
-If you don't see any errors, you will have successfully assembled, unzipped, and polished a small test dataset. At this
+If you don't see any errors, you will have successfully assembled, unzipped a small test dataset. At this
 point you should be ready to confidently launch a larger genome assembly.
