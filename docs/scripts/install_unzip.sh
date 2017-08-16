@@ -24,7 +24,7 @@ DL_CLOUD="https://downloads.pacbcloud.com/public/falcon/"
 ###Test whether you need ucs4 or ucs2 tarball with this command:
 #  $ python2.7 -c 'import sysconfig,pprint; pprint.pprint(sysconfig.get_config_vars()["Py_UNICODE_SIZE"])'
 UNZIP_TARBALL="falcon-2017.06.28-18.01-py2.7-ucs4.tar.gz"
-###UNZIP_TARBALL="falcon-2017.06.28-18.01-py2.7-ucs2.tar.gz"
+#UNZIP_TARBALL="falcon-2017.06.28-18.01-py2.7-ucs2.tar.gz"
 
 ###Cleanup
 if [ ! -d ${ROOT} ]; then
@@ -88,7 +88,9 @@ cd ${FALCON_PATH}/FALCON-examples
 cd run/greg200k-sv2
 fc_run fc_run.cfg
 
-export LD_LIBRARY_PATH=${PREFIX}/lib:${LD_LIBRARY_PATH}
-
 sed -i "s|^smrt_bin=.*|smrt_bin=${VENV}/bin|g" fc_unzip.cfg
 fc_unzip.py fc_unzip.cfg
+
+echo "FALCON & FALCON_unzip have been successfully installed into a virtualenv."
+echo "To activate the FALCON_unzip environment:"
+echo "$ source ${VENV}/bin/activate"
