@@ -11,7 +11,8 @@ install_requires=[
         #"pypeFLOW", # We exclude pypeFLOW because it is not needed for the unit-tests.
         ]
 
-scripts = glob.glob("src/py_scripts/*.py")
+#scripts = glob.glob("src/py_scripts/*.py") # Prefer entry-points, for shebang lines.
+scripts = []
 
 try:
     local_version = '+git.{}'.format(subprocess.check_output('git rev-parse HEAD', shell=True))
@@ -61,6 +62,10 @@ setup(name='falcon_kit',
           'fc_pr_ctg_track=falcon_kit.mains.pr_ctg_track:main',
           'fc_rr_ctg_track=falcon_kit.mains.rr_ctg_track:main',
           'fc_gen_gfa_v1 = falcon_kit.mains.gen_gfa_v1:main',
+
+          # Some scripts still use old .py scripts, which need shebang lines.
+          # (I guess pip does not add shebang to scripts.)
+          'fc_run.py=falcon_kit.mains.run1:main',
           ],
       },
       extras_require = {
