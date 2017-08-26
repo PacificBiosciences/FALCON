@@ -10,6 +10,8 @@ class FakePool(object):
         return map(func, iterable)
     def imap(self, func, iterable, chunksize=None):
         return itertools.imap(func, iterable)
+    def terminate(self):
+        pass
     def __init__(self, initializer=None, initargs=[], *args, **kwds):
         if initializer:
             initializer(*initargs)
