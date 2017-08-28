@@ -31,6 +31,7 @@ class SGEdge(object):
         self.attr[attr] = value
 
 def reverse_end( node_id ):
+    if (node_id == 'NA'): return node_id
     node_id, end = node_id.split(":")
     new_end = "B" if end == "E" else "E"
     return node_id + ":" + new_end
@@ -1123,7 +1124,7 @@ def identify_simple_paths(sg2, edge_data):
     return simple_paths
 
 
-def identify_spurs(ug, u_edge_data):
+def identify_spurs(ug, u_edge_data, spur_len):
     # identify spurs in the utg graph
     # Currently, we use ad-hoc logic filtering out shorter utg, but we can
     # add proper alignment comparison later to remove redundant utgs
@@ -1171,7 +1172,7 @@ def identify_spurs(ug, u_edge_data):
                     total_length += length
                 v1 = v2
 
-            if total_length >= 50000:
+            if total_length >= spur_len:
                 continue
 
             v1 = s_path[0]
@@ -1382,7 +1383,7 @@ def ovlp_to_graph(args):
                     path_or_edges = "~".join( path_or_edges )
                 print >>f, s, v, t, type_, length, score, path_or_edges
 
-    ug2 = identify_spurs(ug, u_edge_data)
+    ug2 = identify_spurs(ug, u_edge_data, 50000)
     ug2 = remove_dup_simple_path(ug2, u_edge_data)
 
     #phase 2, finding all "consistent" compound paths
@@ -1444,6 +1445,10 @@ def ovlp_to_graph(args):
         length, score, edges, type_ = u_edge_data[ (s, t, v) ]
         u_edge_data[ (s, t, v) ] = length, score, edges, "repeat_bridge"
 
+    ug = ug2
+
+    # Repeat the aggresive spur filtering with slightly larger spur length.
+    ug2 = identify_spurs(ug, u_edge_data, 80000)
     ug = ug2
 
     with open("utg_data","w") as f:
