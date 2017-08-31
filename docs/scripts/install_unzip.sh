@@ -13,6 +13,10 @@
 
 ###Variables
 ROOT=$1
+if [ -z ${ROOT} ]; then
+    ROOT=$(pwd)
+fi
+
 SRC=${ROOT}/src
 VENV_BASE=${ROOT}/fc_env
 SLUG=$(date +%y%m%d)
