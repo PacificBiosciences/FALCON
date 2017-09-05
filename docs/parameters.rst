@@ -90,14 +90,13 @@ seed-coverage <int>
 .. _length_cutoff:
 
 length_cutoff <int>
-   minimum length of seed-reads used for pre-assembly stage
+   Raw reads shorter than this cutoff won't be considered in the assembly process.
    If '-1', then auto-calculate the cutoff based on genome_size and seed_coverage.
 
 .. _length_cutoff_pr:
 
 length_cutoff_pr <int>
    minimum length of seed-reads used after pre-assembly, for the "overlap" stage
-
 
 .. _target:
 
