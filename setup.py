@@ -60,6 +60,7 @@ setup(name='falcon_kit',
           'fc_get_read_ctg_map=falcon_kit.mains.get_read_ctg_map:main',
           'fc_pr_ctg_track=falcon_kit.mains.pr_ctg_track:main',
           'fc_rr_ctg_track=falcon_kit.mains.rr_ctg_track:main',
+          'fc_gen_gfa_v1 = falcon_kit.mains.gen_gfa_v1:main',
           ],
       },
       extras_require = {

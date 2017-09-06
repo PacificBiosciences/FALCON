@@ -30,9 +30,12 @@ class SGEdge(object):
     def set_attribute(self, attr, value):
         self.attr[attr] = value
 
-def reverse_end( node_id ):
-    if (node_id == 'NA'): return node_id
-    node_id, end = node_id.split(":")
+def reverse_end(node_name):
+    if (node_name == 'NA'):
+      return node_name
+    if (len(node_name) < 2 or (node_name[-2:] not in [':B', ':E'])):
+      raise Exception('Invalid node name. Node name passed to method: "{node_name}", expected format: "(%d)+:[BE]" or "NA".'.format(node_name=node_name));
+    node_id, end = node_name.split(":")
     new_end = "B" if end == "E" else "E"
     return node_id + ":" + new_end
 
