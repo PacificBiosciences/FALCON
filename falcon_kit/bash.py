@@ -374,10 +374,10 @@ time fc_graph_to_contig
 
 # Generate a GFA of all assembly graph edges. This GFA can contain
 # edges and nodes which are not part of primary and associate contigs.
-time python -m falcon_kit.mains.gen_gfa_v1.py --out asm.gfa >| fc_gen_gfa_v1_asm.log
+time fc_gen_gfa_v1 --out asm.gfa >| fc_gen_gfa_v1_asm.log
 
 # Generate a GFA for only primary and associate contigs.
-time python -m falcon_kit.mains.gen_gfa_v1.py --tiling --out contigs.gfa >| fc_gen_gfa_v1_contigs.log
+time fc_gen_gfa_v1 --tiling --out contigs.gfa >| fc_gen_gfa_v1_contigs.log
 
 rm -f ./preads4falcon.fasta
 
