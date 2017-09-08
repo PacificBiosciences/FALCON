@@ -218,7 +218,11 @@ def load_seqs(fasta_file, seqs_to_load, load_bases):
             seq_bases[r.name] = r.sequence
     return seq_bases, seq_len
 
-def gfa_from_assembly(args):
+def gfa_from_assembly(out, p_ctg_tiling_path, a_ctg_tiling_path, \
+                      preads_fasta, p_ctg_fasta, a_ctg_fasta, \
+                      sg_edges_list, utg_data, ctg_paths, \
+                      tiling, write_reads, write_contigs, \
+                      min_p_len, min_a_len):
     """
     This method produces the GFA-1 formatted output of the
     FALCON assembly.
@@ -229,32 +233,16 @@ def gfa_from_assembly(args):
     Output is written to stdout.
     """
 
-    # Get the parameters.
-    out = args.out
-    write_reads = args.write_reads
-    write_contigs = args.write_contigs
-    p_ctg_tiling_path_file = args.p_ctg_tiling_path
-    a_ctg_tiling_path_file = args.a_ctg_tiling_path
-    preads_fasta = args.preads_fasta
-    p_ctg_fasta = args.p_ctg_fasta
-    a_ctg_fasta = args.a_ctg_fasta
-    sg_edges_list = args.sg_edges_list
-    utg_data = args.utg_data
-    ctg_paths = args.ctg_paths
-    min_p_len = args.min_p_len
-    min_a_len = args.min_a_len
-    gfa_from_tiling_path_only = args.tiling
-
     # Initialize the output stream.
     fp_out = sys.stdout if out == '-' else open(out, 'w')
 
     # Load and filter primary contig paths.
-    p_path, p_edge_to_ctg = load_tiling_paths(p_ctg_tiling_path_file, 'P');
+    p_path, p_edge_to_ctg = load_tiling_paths(p_ctg_tiling_path, 'P');
     _, p_ctg_len = calc_tiling_paths_len(p_path)
     p_path = filter_tiling_paths_by_len(p_path, p_ctg_len, min_p_len)
 
     # Load and filter associate contig paths.
-    a_path, a_edge_to_ctg = load_tiling_paths(a_ctg_tiling_path_file, 'A');
+    a_path, a_edge_to_ctg = load_tiling_paths(a_ctg_tiling_path, 'A');
     _, a_ctg_len = calc_tiling_paths_len(a_path)
     a_path = filter_tiling_paths_by_len(a_path, a_ctg_len, min_a_len)
 
@@ -270,7 +258,7 @@ def gfa_from_assembly(args):
 
     # Process the graph edges and extract only edges
     # and reads in the final graph.
-    if gfa_from_tiling_path_only:
+    if tiling:
         read_in_graph, link_lines = get_gfa_links_from_tiling_paths(all_tiling_paths, edge_to_ctg);
     else:
         # Load the string graph.
@@ -291,33 +279,29 @@ def gfa_from_assembly(args):
     if (write_contigs):
         f = FastaReader(p_ctg_fasta)
         for r in f:
-            fp_out.write('\t'.join([GFA_S_TAG, r.name.split()[0], r.sequence, 'LN:i:%d' % (len(r.sequence))]) + '\n');
+            if len(r.sequence) >= min_p_len:
+                fp_out.write('\t'.join([GFA_S_TAG, r.name.split()[0], r.sequence, 'LN:i:%d' % (len(r.sequence))]) + '\n');
         f = FastaReader(a_ctg_fasta)
         for r in f:
-            fp_out.write('\t'.join([GFA_S_TAG, r.name.split()[0], r.sequence, 'LN:i:%d' % (len(r.sequence))]) + '\n');
+            if len(r.sequence) >= min_a_len:
+                fp_out.write('\t'.join([GFA_S_TAG, r.name.split()[0], r.sequence, 'LN:i:%d' % (len(r.sequence))]) + '\n');
 
     # Output links.
     for link_line in link_lines:
         fp_out.write(link_line + '\n')
 
-    # Output paths for primary contigs.
+    # Output contig paths.
     # Paths are already filtered by length, so just output them.
-    for k in sorted(p_path.keys()):
-        out = format_gfa_path_line(k, p_path[k], seq_len);
-        fp_out.write('\t'.join(out) + '\n')
-
-    # Output paths for associate contigs.
-    # Paths are already filtered by length, so just output them.
-    for k in sorted(a_path.keys()):
-        out = format_gfa_path_line(k, a_path[k], seq_len);
+    for k in sorted(all_tiling_paths.keys()):
+        out = format_gfa_path_line(k, all_tiling_paths[k], seq_len);
         fp_out.write('\t'.join(out) + '\n')
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description="Generates GFA output from FALCON's assembly.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--out', '-o', type=str, default='-', help='output GFA file to write to. If "-", stdout will be used')
-    parser.add_argument('--p_ctg-tiling_path', type=str, default='p_ctg_tiling_path', help='location of the p_ctg tiling path file')
-    parser.add_argument('--a_ctg-tiling_path', type=str, default='a_ctg_tiling_path', help='location of the a_ctg tiling path file')
+    parser.add_argument('--p-ctg-tiling-path', type=str, default='p_ctg_tiling_path', help='location of the p_ctg tiling path file')
+    parser.add_argument('--a-ctg-tiling-path', type=str, default='a_ctg_tiling_path', help='location of the a_ctg tiling path file')
     parser.add_argument('--preads-fasta', type=str, default='../1-preads_ovl/db2falcon/preads4falcon.fasta', help='path to the preads4falcon.fasta file')
     parser.add_argument('--p-ctg-fasta', type=str, default='p_ctg.fa', help='path to the primary contigs file')
     parser.add_argument('--a-ctg-fasta', type=str, default='a_ctg.fa', help='path to the associate contigs file')
@@ -335,4 +319,4 @@ def parse_args(argv):
 def main(argv=sys.argv):
     args = parse_args(argv)
 
-    gfa_from_assembly(args)
+    gfa_from_assembly(**vars(args))
