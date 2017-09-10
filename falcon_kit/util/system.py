@@ -2,6 +2,7 @@ from .io import system
 import logging
 import os
 import pprint
+import fnmatch
 
 log = logging.getLogger(__name__)
 
@@ -39,3 +40,12 @@ def lfs_setstripe_maybe(path='.', stripe=12):
         log.info('Apparently {!r} is not lustre in filesystem.'.format(path))
     else:
         log.info('This lfs stripe ({}) should propagate to subdirs of {!r}.'.format(stripe, path))
+
+def find_files(root_path, pattern):
+    """
+    Finds all files with filenames formatted as the
+    given pattern, descending down from root_path.
+    """
+    for root, dirs, files in os.walk(root_path):
+        for filename in fnmatch.filter(files, pattern):
+            yield os.path.join(root, filename)

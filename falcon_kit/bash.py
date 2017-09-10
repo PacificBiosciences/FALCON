@@ -372,17 +372,18 @@ time fc_ovlp_to_graph {fc_ovlp_to_graph_option} preads.ovl >| fc_ovlp_to_graph.l
 # plus a_ctg_base.fa, p_ctg_tiling_path, a_ctg_tiling_path, a_ctg_base_tiling_path:
 time fc_graph_to_contig
 
-# Generate a GFA of all assembly graph edges. This GFA can contain
-# edges and nodes which are not part of primary and associate contigs.
-time python -m falcon_kit.mains.gen_gfa_v1 --out asm.gfa >| fc_gen_gfa_v1_asm.log
-
-# Generate a GFA for only primary and associate contigs.
-time python -m falcon_kit.mains.gen_gfa_v1 --tiling --out contigs.gfa >| fc_gen_gfa_v1_contigs.log
-
-rm -f ./preads4falcon.fasta
-
 # Given a_ctg_all.fa, write a_ctg.fa:
 time fc_dedup_a_tigs
+
+# Generate a GFA of all assembly graph edges. This GFA can contain
+# edges and nodes which are not part of primary and associate contigs.
+time python -m falcon_kit.mains.gen_gfa_v1 --tiling --out asm.gfa
+
+# Generate a GFA of all assembly graph edges. This GFA can contain
+# edges and nodes which are not part of primary and associate contigs.
+time python -m falcon_kit.mains.gen_gfa_v1 --out sg.gfa
+
+rm -f ./preads4falcon.fasta
 """
     return script.format(**params)
 
