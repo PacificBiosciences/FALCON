@@ -61,7 +61,6 @@ def test_main_1(capsys):
     test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
 
     argv = ['prog',
-            '--out', '-',
             '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
             '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
             '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
@@ -86,7 +85,6 @@ def test_main_2(capsys):
     test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
 
     argv = ['prog',
-            '--out', '-',
             '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
             '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
             '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
@@ -111,7 +109,6 @@ def test_main_3(capsys):
     test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
 
     argv = ['prog',
-            '--out', '-',
             '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
             '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
             '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
@@ -136,7 +133,6 @@ def test_main_4(capsys):
     test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
 
     argv = ['prog',
-            '--out', '-',
             '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
             '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
             '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
@@ -161,7 +157,6 @@ def test_main_5(capsys):
     test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
 
     argv = ['prog',
-            '--out', '-',
             '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
             '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
             '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
@@ -186,7 +181,6 @@ def test_main_6(capsys):
     test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
 
     argv = ['prog',
-            '--out', '-',
             '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
             '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
             '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),

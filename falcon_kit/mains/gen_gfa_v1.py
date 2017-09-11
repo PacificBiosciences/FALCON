@@ -84,7 +84,7 @@ def filter_tiling_paths_by_len(tiling_paths, paths_len, min_len):
             ret_paths[ctg_id] = edges
     return ret_paths
 
-def gfa_from_assembly(out, p_ctg_tiling_path, a_ctg_tiling_path,
+def gfa_from_assembly(fp_out, p_ctg_tiling_path, a_ctg_tiling_path,
                       preads_fasta, p_ctg_fasta, a_ctg_fasta,
                       sg_edges_list, utg_data, ctg_paths,
                       tiling, write_reads, write_contigs,
@@ -98,10 +98,6 @@ def gfa_from_assembly(out, p_ctg_tiling_path, a_ctg_tiling_path,
     breaks, whereas the tiling path output is more sparse.
     Output is written to stdout.
     """
-
-    # Initialize the output stream.
-    fp_out = sys.stdout if out == '-' else open(out, 'w')
-
     gfa_graph = GFAGraph()
 
     # Load and filter primary contig paths.
@@ -125,12 +121,9 @@ def gfa_from_assembly(out, p_ctg_tiling_path, a_ctg_tiling_path,
 
     gfa_graph.write_gfa_v1(fp_out, preads_fasta, [p_ctg_fasta, a_ctg_fasta], write_reads, write_contigs)
 
-    if fp_out != sys.stdout: fp_out.close()
-
 def parse_args(argv):
-    parser = argparse.ArgumentParser(description="Generates GFA output from FALCON's assembly.",
+    parser = argparse.ArgumentParser(description="Generates GFA output (on stdout) from FALCON's assembly.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--out', '-o', type=str, default='-', help='output GFA file to write to. If "-", stdout will be used')
     parser.add_argument('--p-ctg-tiling-path', type=str, default='p_ctg_tiling_path', help='location of the p_ctg tiling path file')
     parser.add_argument('--a-ctg-tiling-path', type=str, default='a_ctg_tiling_path', help='location of the a_ctg tiling path file')
     parser.add_argument('--preads-fasta', type=str, default='preads4falcon.fasta', help='path to the preads4falcon.fasta file')
@@ -150,7 +143,7 @@ def parse_args(argv):
 def main(argv=sys.argv):
     args = parse_args(argv)
 
-    gfa_from_assembly(**vars(args))
+    gfa_from_assembly(sys.stdout, **vars(args))
 
 if __name__ == '__main__':
     main()
