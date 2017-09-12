@@ -12,9 +12,11 @@
 #module load git
 
 ###Variables
-ROOT=$1
-if [ -z ${ROOT} ]; then
+INPUT=$1
+if [ -z ${INPUT} ]; then
     ROOT=$(pwd)
+else
+    ROOT=$(readlink -f ${INPUT})
 fi
 
 SRC=${ROOT}/src
@@ -84,6 +86,18 @@ curl -O ${DL_CLOUD}/${UNZIP_TARBALL}
 tar zxvf ${UNZIP_TARBALL}  -C ${VENV}
 
 ln -s ${VENV} ${VENV_BASE}
+
+
+###install MUMmer 3.23 - for FALCON_unzip
+
+MUMMER_323='https://downloads.sourceforge.net/project/mummer/mummer/3.23/MUMmer3.23.tar.gz'
+cd ${SRC}
+wget ${MUMMER_323} -P ${SRC}
+tar zxvf MUMmer3.23.tar.gz
+cd MUMmer3.23
+make install
+cp nucmer ${VENV}/bin
+
 
 ###Test falcon_unzip pipeline
 
