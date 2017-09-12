@@ -205,18 +205,18 @@ class GFAGraph:
 
         vals = [GFA_L_TAG, r1, o1, r2, o2, cig_str]
 
-        if overlap_len:
+        if overlap_len != None:
             vals.append('ol:i:%d' % (int(overlap_len)))
-        if overlap_idt:
+        if overlap_idt != None:
             vals.append('oi:f:%.1f' % (float(overlap_idt)))
-        if overlap_begin:
+        if overlap_begin != None:
             vals.append('ob:i:%d' % (int(overlap_begin)))
-        if overlap_end:
+        if overlap_end != None:
             vals.append('oe:i:%d' % (int(overlap_end)))
 
-        if src_graph:
+        if src_graph != None:
             vals.append('sg:Z:%s' % (str(src_graph)))
-        if cross_phase:
+        if cross_phase != None:
             vals.append('cp:Z:%s' % (str(cross_phase)))
 
         ctg_name_str = str(ctg_name) if ctg_name else 'NA'
