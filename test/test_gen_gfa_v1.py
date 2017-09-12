@@ -57,6 +57,150 @@ def test_help():
     except SystemExit:
         pass
 
+def test_main_1(capsys):
+    test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
+
+    argv = ['prog',
+            '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
+            '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
+            '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
+            '--p-ctg-fasta', os.path.join(test_dir, 'p_ctg.fa'),
+            '--a-ctg-fasta', os.path.join(test_dir, 'a_ctg.fa'),
+            '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
+            '--utg-data', os.path.join(test_dir, 'utg_data'),
+            '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
+            # '--tiling',
+            '--write-reads',
+            '--write-contigs',
+            '--min-p-len', '0',
+            '--min-a-len', '0',
+           ]
+    mod.main(argv)
+    out, err = capsys.readouterr()
+    result = out.strip().splitlines()
+    expected = [line.strip() for line in open(os.path.join(test_dir, 'expected-1-sg-r-c.gfa')).readlines()]
+    assert(result == expected)
+
+def test_main_2(capsys):
+    test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
+
+    argv = ['prog',
+            '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
+            '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
+            '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
+            '--p-ctg-fasta', os.path.join(test_dir, 'p_ctg.fa'),
+            '--a-ctg-fasta', os.path.join(test_dir, 'a_ctg.fa'),
+            '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
+            '--utg-data', os.path.join(test_dir, 'utg_data'),
+            '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
+            '--tiling',
+            '--write-reads',
+            '--write-contigs',
+            '--min-p-len', '0',
+            '--min-a-len', '0',
+           ]
+    mod.main(argv)
+    out, err = capsys.readouterr()
+    result = out.strip().splitlines()
+    expected = [line.strip() for line in open(os.path.join(test_dir, 'expected-2-tiling-r-c.gfa')).readlines()]
+    assert(result == expected)
+
+def test_main_3(capsys):
+    test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
+
+    argv = ['prog',
+            '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
+            '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
+            '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
+            '--p-ctg-fasta', os.path.join(test_dir, 'p_ctg.fa'),
+            '--a-ctg-fasta', os.path.join(test_dir, 'a_ctg.fa'),
+            '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
+            '--utg-data', os.path.join(test_dir, 'utg_data'),
+            '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
+            '--tiling',
+            # '--write-reads',
+            '--write-contigs',
+            '--min-p-len', '0',
+            '--min-a-len', '0',
+           ]
+    mod.main(argv)
+    out, err = capsys.readouterr()
+    result = out.strip().splitlines()
+    expected = [line.strip() for line in open(os.path.join(test_dir, 'expected-3-tiling-no_r-c.gfa')).readlines()]
+    assert(result == expected)
+
+def test_main_4(capsys):
+    test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
+
+    argv = ['prog',
+            '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
+            '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
+            '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
+            '--p-ctg-fasta', os.path.join(test_dir, 'p_ctg.fa'),
+            '--a-ctg-fasta', os.path.join(test_dir, 'a_ctg.fa'),
+            '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
+            '--utg-data', os.path.join(test_dir, 'utg_data'),
+            '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
+            '--tiling',
+            # '--write-reads',
+            # '--write-contigs',
+            '--min-p-len', '0',
+            '--min-a-len', '0',
+           ]
+    mod.main(argv)
+    out, err = capsys.readouterr()
+    result = out.strip().splitlines()
+    expected = [line.strip() for line in open(os.path.join(test_dir, 'expected-4-tiling-no_r-no_c.gfa')).readlines()]
+    assert(result == expected)
+
+def test_main_5(capsys):
+    test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
+
+    argv = ['prog',
+            '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
+            '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
+            '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
+            '--p-ctg-fasta', os.path.join(test_dir, 'p_ctg.fa'),
+            '--a-ctg-fasta', os.path.join(test_dir, 'a_ctg.fa'),
+            '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
+            '--utg-data', os.path.join(test_dir, 'utg_data'),
+            '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
+            # '--tiling',
+            # '--write-reads',
+            # '--write-contigs',
+            '--min-p-len', '0',
+            '--min-a-len', '0',
+           ]
+    mod.main(argv)
+    out, err = capsys.readouterr()
+    result = out.strip().splitlines()
+    expected = [line.strip() for line in open(os.path.join(test_dir, 'expected-5-sg-no_r-no_c.gfa')).readlines()]
+    assert(result == expected)
+
+def test_main_6(capsys):
+    test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
+
+    argv = ['prog',
+            '--p-ctg-tiling-path', os.path.join(test_dir, 'p_ctg_tiling_path'),
+            '--a-ctg-tiling-path', os.path.join(test_dir, 'a_ctg_tiling_path'),
+            '--preads-fasta', os.path.join(test_dir, 'preads4falcon.fasta'),
+            '--p-ctg-fasta', os.path.join(test_dir, 'p_ctg.fa'),
+            '--a-ctg-fasta', os.path.join(test_dir, 'a_ctg.fa'),
+            '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
+            '--utg-data', os.path.join(test_dir, 'utg_data'),
+            '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
+            '--tiling',
+            # '--write-reads',
+            # '--write-contigs',
+            '--min-p-len', '10000',
+            '--min-a-len', '10000',
+           ]
+    mod.main(argv)
+    out, err = capsys.readouterr()
+    result = out.strip().splitlines()
+    expected = [line.strip() for line in open(os.path.join(test_dir, 'expected-6-tiling-no_r-no_c-minlen.gfa')).readlines()]
+    assert(result == expected)
+
 def test_load_tiling_paths():
     p_ctg_tiling_path_file = os.path.join(helpers.get_test_data_dir(), 'p_ctg_tiling_path_1')
     p_path, p_edge_to_ctg = mod.load_tiling_paths(p_ctg_tiling_path_file, 'P')
@@ -68,6 +212,25 @@ def test_load_tiling_paths():
             v, w, b, e, l, idt, etype = edge
             assert((v, w) in p_edge_to_ctg)
             assert(p_edge_to_ctg[(v, w)] == (ctg_id, etype))
+
+def test_load_tiling_paths_from_stream():
+    # Test a degenerate case where the file object is None.
+    p_paths, edge_to_ctg = mod.load_tiling_paths_from_stream(None, 'P')
+    assert(not p_paths)
+    assert(not edge_to_ctg)
+
+    # This tests a normal case.
+    p_ctg_tiling_path_file = os.path.join(helpers.get_test_data_dir(), 'p_ctg_tiling_path_1')
+    p_paths = {}
+    edge_to_ctg = {}
+    with open(p_ctg_tiling_path_file) as f:
+        p_paths, edge_to_ctg = mod.load_tiling_paths_from_stream(f, 'P')
+    assert(sorted(p_paths.keys()) == sorted(['000000F', '000001F', '000002F', '000003F', '000004F']))
+    for ctg_id, path in p_paths.iteritems():
+        for edge in path:
+            v, w, b, e, l, idt, etype = edge
+            assert((v, w) in edge_to_ctg)
+            assert(edge_to_ctg[(v, w)] == (ctg_id, etype))
 
 def test_calc_node_coords():
     # The p_ctg_tiling_path_1 is a normal tiling path file.
@@ -87,14 +250,17 @@ def test_calc_node_coords():
     p_ctg_tiling_path_file = os.path.join(helpers.get_test_data_dir(), 'p_ctg_tiling_path_2')
     p_paths, p_edge_to_ctg = mod.load_tiling_paths(p_ctg_tiling_path_file, 'P')
 
+    # Allow cycles, but the node's coord gets overwritten.
     ctg_id = '000000F';
-    with pytest.raises(Exception) as e_info:
-        coord_map, contig_len = mod.calc_node_coords(p_paths[ctg_id])
+    coord_map, contig_len = mod.calc_node_coords(p_paths[ctg_id])
+    assert(coord_map['000081654:B'] == 55125)
 
+    # Do not allow unsorted graphs.
     ctg_id = '000001F';
     with pytest.raises(Exception) as e_info:
         coord_map, contig_len = mod.calc_node_coords(p_paths[ctg_id])
 
+    # Allow circular graphs.
     ctg_id = '000002F';
     coord_map, contig_len = mod.calc_node_coords(p_paths[ctg_id])
     assert(contig_len == 18473)
@@ -117,86 +283,24 @@ def test_calc_tiling_paths_len():
 def test_filter_tiling_paths_by_len():
     p_ctg_tiling_path_file = os.path.join(helpers.get_test_data_dir(), 'p_ctg_tiling_path_1')
     p_path, p_edge_to_ctg = mod.load_tiling_paths(p_ctg_tiling_path_file, 'P')
-    p_coords, p_ctg_len = mod.calc_tiling_paths_len(p_path)
+    _, p_ctg_len = mod.calc_tiling_paths_len(p_path)
 
-    p_path = mod.filter_tiling_paths_by_len(p_path, p_ctg_len, 0)
-    assert(sorted(p_path.keys()) == sorted(['000000F', '000001F', '000002F', '000003F', '000004F']))
+    p_path_filtered = mod.filter_tiling_paths_by_len(p_path, p_ctg_len, 0)
+    assert(sorted(p_path_filtered.keys()) == sorted(['000000F', '000001F', '000002F', '000003F', '000004F']))
 
-    p_path = mod.filter_tiling_paths_by_len(p_path, p_ctg_len, 10000)
-    assert(sorted(p_path.keys()) == sorted(['000000F', '000001F', '000002F', '000003F']))
+    p_path_filtered = mod.filter_tiling_paths_by_len(p_path, p_ctg_len, 10000)
+    assert(sorted(p_path_filtered.keys()) == sorted(['000000F', '000001F', '000002F', '000003F']))
 
-    p_path = mod.filter_tiling_paths_by_len(p_path, p_ctg_len, 35000)
-    assert(sorted(p_path.keys()) == sorted(['000000F', '000001F']))
+    p_path_filtered = mod.filter_tiling_paths_by_len(p_path, p_ctg_len, 35000)
+    assert(sorted(p_path_filtered.keys()) == sorted(['000000F', '000001F']))
 
-    p_path = mod.filter_tiling_paths_by_len(p_path, p_ctg_len, 100000)
-    assert(sorted(p_path.keys()) == sorted([]))
+    p_path_filtered = mod.filter_tiling_paths_by_len(p_path, p_ctg_len, 100000)
+    assert(sorted(p_path_filtered.keys()) == sorted([]))
 
-def test_load_seqs():
-    fasta_file = os.path.join(helpers.get_test_data_dir(), 't1.fa')
-
-    seqs_to_load = set(['30a5633d_129405_0'])
-    load_bases = True
-    seq_bases, seq_len = mod.load_seqs(fasta_file, seqs_to_load, load_bases)
-    assert(len(seq_bases.keys()) == 1)
-    assert(len(seq_len.keys()) == 1)
-    for k, seq in seq_bases.iteritems():
-        assert(k in seq_len)
-        assert(len(seq) == seq_len[k])
-
-    seqs_to_load = set(['30a5633d_129405_0'])
-    load_bases = False
-    seq_bases, seq_len = mod.load_seqs(fasta_file, seqs_to_load, load_bases)
-    assert(len(seq_bases.keys()) == 0)
-    assert(len(seq_len.keys()) == 1)
-    assert('30a5633d_129405_0' in seq_len)
-    assert(seq_len['30a5633d_129405_0'] == 9148)
-
-    seqs_to_load = set([])  # Empty filter set loads everything.
-    load_bases = False
-    seq_bases, seq_len = mod.load_seqs(fasta_file, seqs_to_load, load_bases)
-    assert(len(seq_bases.keys()) == 0)
-    assert(len(seq_len.keys()) == 1)
-    assert('30a5633d_129405_0' in seq_len)
-    assert(seq_len['30a5633d_129405_0'] == 9148)
-
-    seqs_to_load = set([])  # Empty filter set loads everything.
-    load_bases = True
-    seq_bases, seq_len = mod.load_seqs(fasta_file, seqs_to_load, load_bases)
-    assert(len(seq_bases.keys()) == 1)
-    assert(len(seq_len.keys()) == 1)
-    for k, seq in seq_bases.iteritems():
-        assert(k in seq_len)
-        assert(len(seq) == seq_len[k])
-
-    seqs_to_load = set(['wrong_header'])
-    load_bases = False
-    seq_bases, seq_len = mod.load_seqs(fasta_file, seqs_to_load, load_bases)
-    assert(len(seq_bases.keys()) == 0)
-    assert(len(seq_len.keys()) == 0)
-
-    seqs_to_load = set(['wrong_header'])
-    load_bases = True
-    seq_bases, seq_len = mod.load_seqs(fasta_file, seqs_to_load, load_bases)
-    assert(len(seq_bases.keys()) == 0)
-    assert(len(seq_len.keys()) == 0)
-
-    # Use a list instead of set.
-    seqs_to_load = ['30a5633d_129405_0']
-    load_bases = False
-    seq_bases, seq_len = mod.load_seqs(fasta_file, seqs_to_load, load_bases)
-    assert(len(seq_bases.keys()) == 0)
-    assert(len(seq_len.keys()) == 1)
-    assert('30a5633d_129405_0' in seq_len)
-    assert(seq_len['30a5633d_129405_0'] == 9148)
-
-def test_format_gfa_path_line():
-    pass;
-
-def test_gfa_from_assembly():
-    pass;
-
-def test_get_gfa_links_from_tiling_paths():
-    pass;
-
-def test_get_gfa_links_from_gfa():
-    pass;
+    # Test a degenerate case where there is no length for a particular contig.
+    keys = p_ctg_len.keys()
+    p_ctg_len_degenerate = {}
+    for i in xrange(1, len(keys)):
+        p_ctg_len_degenerate[keys[i]] = p_ctg_len[keys[i]]
+    with pytest.raises(Exception) as e_info:
+        p_path_filtered = mod.filter_tiling_paths_by_len(p_path, p_ctg_len_degenerate, 0)
