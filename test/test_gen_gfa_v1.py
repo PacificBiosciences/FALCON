@@ -214,11 +214,6 @@ def test_load_tiling_paths():
             assert(p_edge_to_ctg[(v, w)] == (ctg_id, etype))
 
 def test_load_tiling_paths_from_stream():
-    # Test a degenerate case where the file object is None.
-    p_paths, edge_to_ctg = mod.load_tiling_paths_from_stream(None, 'P')
-    assert(not p_paths)
-    assert(not edge_to_ctg)
-
     # This tests a normal case.
     p_ctg_tiling_path_file = os.path.join(helpers.get_test_data_dir(), 'p_ctg_tiling_path_1')
     p_paths = {}

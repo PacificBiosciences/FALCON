@@ -22,7 +22,7 @@ def calc_node_coords(tiling_path):
     coord_map[v0] = 0
     for v, w, b, e, l, idt, etype in tiling_path:
         if v not in coord_map:
-            raise Exception('Tiling path is not in sorted order. Node "{v}" does not yet have an assigned coordinate.'.format(v=v))
+            raise Exception('Tiling path is not in sorted order. Node "{v!r}" does not yet have an assigned coordinate.'.format(v=v))
         coord = coord_map[v]
         coord += abs(int(b) - int(e))
         coord_map[w] = coord
@@ -37,8 +37,6 @@ def load_tiling_paths_from_stream(fp, type_):
     """
     paths = {}
     edge_to_ctg = {}
-    if not fp:
-        return paths, edge_to_ctg
     for row in fp:
         row = row.strip().split()
         ctg_id, v, w, edge_rid, b, e, l, idt  = row[:8]
@@ -49,15 +47,11 @@ def load_tiling_paths_from_stream(fp, type_):
 
 def load_tiling_paths(tiling_path_file, type_):
     """
-    Loads the tiling paths from a specified tiling path file.
-    Parameter type_ is intended to mark the type of the tiling path
-    file (e.g. 'P' for primary contigs and 'A' for associate contigs).
+    Open 'tiling_path_file' and call load_tiling_paths_from_stream().
     """
-    paths = {}
-    edge_to_ctg = {}
     with open(tiling_path_file) as f:
         paths, edge_to_ctg = load_tiling_paths_from_stream(f, type_)
-    return paths, edge_to_ctg
+        return paths, edge_to_ctg
 
 def calc_tiling_paths_len(tiling_paths):
     """
