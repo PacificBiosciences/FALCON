@@ -3,7 +3,7 @@ import sys
 
 import networkx as nx
 from fc_asm_graph import AsmGraph
-from FastaReader import FastaReader
+import FastaReader
 
 GFA_H_TAG = 'H'
 GFA_S_TAG = 'S'
@@ -87,8 +87,8 @@ class GFAGraph:
         # Perhaps solve this via yield, but we also want the sequence length map generated simultaneously as well.
         if self.read_in_graph:
             found_reads = set()
-            f = FastaReader(preads_file)
-            for r in f:
+            with FastaReader.open_fasta_reader(preads_file) as f:
+              for r in f:
                 rname = r.name.split()[0]
                 seq_len_map[rname] = len(r.sequence)
                 if rname in self.read_in_graph:
@@ -99,8 +99,8 @@ class GFAGraph:
 
         if write_contigs:
             for contig_fasta in contig_files:
-                f = FastaReader(contig_fasta)
-                for r in f:
+                with FastaReader.open_fasta_reader(contig_fasta) as f:
+                  for r in f:
                     rname = r.name.split()[0]
                     # Only output contigs which were added as paths.
                     if rname in self.paths:
@@ -169,7 +169,7 @@ class GFAGraph:
         curr_edge = self.edges[(v, w)]
         new_edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_]
         for i in xrange(len(curr_edge)):
-            if curr_edge[i] == None:
+            if curr_edge[i] is None:
                 curr_edge[i] = new_edge[i]
 
     def add_or_update_edge(self, v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_):
