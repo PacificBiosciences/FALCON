@@ -7,6 +7,7 @@
 ##available in your $PATH
 
 #source /mnt/software/Modules/current/init/bash
+#module load gcc/4.9.2
 #module load python/2.7.9
 #module load virtualenv/13.0.1
 #module load git
