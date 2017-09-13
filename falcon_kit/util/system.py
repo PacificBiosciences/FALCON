@@ -45,7 +45,11 @@ def find_files(root_path, pattern):
     """
     Finds all files with filenames formatted as the
     given pattern, descending down from root_path.
+    raise Exception if root_path is not a directory.
     """
+    if not os.path.isdir(root_path):
+        raise Exception('Not a directory: {!r}'.format(root_path))
     for root, dirs, files in os.walk(root_path):
-        for filename in fnmatch.filter(files, pattern):
+        dirs.sort()
+        for filename in sorted(fnmatch.filter(files, pattern)):
             yield os.path.join(root, filename)
