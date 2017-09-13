@@ -108,6 +108,7 @@ class ProcessReaderContext(object):
     """Prefer this to slurplines() or streamlines().
     """
     def __enter__(self):
+        LOG('{!r}'.format(self.cmd))
         self.proc = sp.Popen(shlex.split(self.cmd), stdout=sp.PIPE)
     def __exit__(self, etype, evalue, etb):
         if etype is None:
