@@ -11,8 +11,8 @@ install_requires=[
         #"pypeFLOW", # We exclude pypeFLOW because it is not needed for the unit-tests.
         ]
 
-#scripts = glob.glob("src/py_scripts/*.py") # Prefer entry-points, for shebang lines.
-scripts = []
+scripts = glob.glob("src/py_scripts/*.py") # Prefer entry-points, for shebang lines.
+#scripts = []
 
 try:
     local_version = '+git.{}'.format(subprocess.check_output('git rev-parse HEAD', shell=True))
