@@ -334,7 +334,7 @@ def test_format_gfa_v1_link_line():
     cross_phase, src_graph, ctg_name, type_ = None, None, None, None
     edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_]
     result = gfa_graph.format_gfa_v1_link_line(edge)
-    expected = 'L\t123\t-\t456\t+\t*\tol:i:10000\toi:f:99.9\toe:i:9000\tci:Z:NA-NA'
+    expected = 'L\t123\t-\t456\t+\t*\tol:i:10000\toi:f:99.9\tob:i:0\toe:i:9000\tci:Z:NA-NA'
     assert(result == expected)
 
     # Test an edge with full information.
@@ -343,8 +343,19 @@ def test_format_gfa_v1_link_line():
     cross_phase, src_graph, ctg_name, type_ = 'N', 'OP', '000000F', 'P'
     edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_]
     result = gfa_graph.format_gfa_v1_link_line(edge)
-    expected = 'L\t456\t-\t789\t+\t*\tol:i:10000\toi:f:99.9\toe:i:9000\tsg:Z:OP\tcp:Z:N\tci:Z:000000F-P'
+    expected = 'L\t456\t-\t789\t+\t*\tol:i:10000\toi:f:99.9\tob:i:0\toe:i:9000\tsg:Z:OP\tcp:Z:N\tci:Z:000000F-P'
     assert(result == expected)
+
+    # Edges with integer values of 0 should be present in custom
+    # fields in the output. Only None values should be skipped.
+    v, w, cigar = '123:B', '456:E', '*'
+    overlap_len, overlap_idt, overlap_begin, overlap_end = 0, 0, 0, 0
+    cross_phase, src_graph, ctg_name, type_ = None, None, None, None
+    edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_]
+    result = gfa_graph.format_gfa_v1_link_line(edge)
+    expected = 'L\t123\t-\t456\t+\t*\tol:i:0\toi:f:0.0\tob:i:0\toe:i:0\tci:Z:NA-NA'
+    assert(result == expected)
+
 
 def test_format_gfa_v1_path_line():
     gfa_graph = mod.GFAGraph()
