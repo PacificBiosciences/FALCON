@@ -1,3 +1,4 @@
+import sys
 import networkx as nx
 #from pbcore.io import FastaReader
 from falcon_kit.FastaReader import open_fasta_reader
@@ -60,7 +61,7 @@ def reverse_end( node_id ):
     new_end = "B" if end == "E" else "E"
     return node_id + ":" + new_end
 
-def main(argv=None):
+def main(argv=sys.argv):
     reads_in_layout = set()
     with open(edge_data_file) as f:
         for l in f:
@@ -297,3 +298,7 @@ def main(argv=None):
     a_ctg_base_t_out.close()
     a_ctg_t_out.close()
     p_ctg_t_out.close()
+
+
+if __name__ == "__main__":
+    main(sys.argv)

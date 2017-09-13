@@ -1545,3 +1545,5 @@ def main(argv=sys.argv):
     args = parser.parse_args(argv[1:])
     ovlp_to_graph(args)
 
+if __name__ == "__main__":
+    main(sys.argv)

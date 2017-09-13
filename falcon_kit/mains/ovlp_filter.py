@@ -263,3 +263,7 @@ def parse_args(argv):
 def main(argv=sys.argv):
     args = parse_args(argv)
     ovlp_filter(**vars(args))
+
+
+if __name__ == "__main__":
+    main(sys.argv)

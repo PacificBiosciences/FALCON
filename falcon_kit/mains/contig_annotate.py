@@ -1,7 +1,8 @@
 from falcon_kit.fc_asm_graph import AsmGraph
+import sys
 
 
-def main(argv=None):
+def main(argv=sys.argv):
   G_asm = AsmGraph("sg_edges_list", "utg_data", "ctg_paths")
 
 
@@ -26,3 +27,6 @@ def main(argv=None):
             p_ctg_coor_map[ctg_id][w] = coor
             print ctg_id, w, coor, " ".join(list(G_asm.node_to_ctg[w]))
     f.close()
+
+if __name__ == "__main__":
+    main(sys.argv)

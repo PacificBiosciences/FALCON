@@ -29,3 +29,7 @@ def main(argv=sys.argv):
         'make-fofn-abs': main_make_fofn_abs,
     }
     return tasks[task](*argv[2:])
+
+
+if __name__ == "__main__":
+    main(sys.argv)
