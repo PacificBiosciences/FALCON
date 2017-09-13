@@ -1,6 +1,7 @@
 from falcon_kit import kup, falcon, DWA
 from falcon_kit.fc_asm_graph import AsmGraph
 import networkx as nx
+import sys
 
 RCMAP = dict(zip("ACGTacgtNn-","TGCAtgcaNn-"))
 def rc(seq):
@@ -42,7 +43,7 @@ def get_aln_data(t_seq, q_seq):
     kup.free_seq_addr_array(sda_ptr)
     return aln_data, x, y
 
-def main(argv=None):
+def main(argv=sys.argv):
   G_asm = AsmGraph("sg_edges_list", "utg_data", "ctg_paths")
   G_asm.load_sg_seq("preads4falcon.fasta")
 
@@ -158,3 +159,7 @@ def main(argv=None):
             print >> utg_out, ">%s~%s~%s-%d %d %d" % (v0, "NA", w0, sub_id,  total_length, total_score )
             print >> utg_out, seq
             sub_id += 1
+
+
+if __name__ == "__main__":
+    main(sys.argv)

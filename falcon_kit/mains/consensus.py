@@ -261,3 +261,6 @@ def main(argv=sys.argv):
                 cns.sort(key = lambda x: len(x))
                 print ">"+seed_id
                 print cns[-1]
+
+if __name__ == "__main__":
+    main(sys.argv)
