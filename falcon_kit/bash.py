@@ -338,7 +338,7 @@ def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
         LA4Falcon_flags += 'fo'
     if LA4Falcon_flags:
         LA4Falcon_flags = '-' + ''.join(set(LA4Falcon_flags))
-    run_consensus = "LA4Falcon -H$CUTOFF %s {db_fn} {las_fn} | fc_consensus {falcon_sense_option} >| {out_file_bfn}"%LA4Falcon_flags
+    run_consensus = "LA4Falcon -H$CUTOFF %s {db_fn} {las_fn} | python -m falcon_kit.mains.consensus {falcon_sense_option} >| {out_file_bfn}"%LA4Falcon_flags
 
     if config.get('dazcon', False):
         run_consensus = """
@@ -359,21 +359,25 @@ def script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_f
     script = """\
 # Given, las.fofn,
 # write preads.ovl:
-time fc_ovlp_filter --db {db_file_fn} --fofn {las_fofn_fn} {overlap_filtering_setting} --min_len {length_cutoff_pr} >| preads.ovl
+
+# mobs uses binwrappers, so it does not see our "entry-points".
+# So, after dropping "src/py_scripts/*.py", we can call these via python -m:
+
+time python -m falcon_kit.mains.ovlp_filter --db {db_file_fn} --fofn {las_fofn_fn} {overlap_filtering_setting} --min_len {length_cutoff_pr} >| preads.ovl
 
 ln -sf {preads4falcon_fasta_fn} ./preads4falcon.fasta
 
 # Given preads.ovl,
 # write sg_edges_list, c_path, utg_data, ctg_paths.
-time fc_ovlp_to_graph {fc_ovlp_to_graph_option} preads.ovl >| fc_ovlp_to_graph.log
+time python -m falcon_kit.mains.ovlp_to_graph {fc_ovlp_to_graph_option} preads.ovl >| fc_ovlp_to_graph.log
 
 # Given sg_edges_list, utg_data, ctg_paths, preads4falcon.fasta,
 # write p_ctg.fa and a_ctg_all.fa,
 # plus a_ctg_base.fa, p_ctg_tiling_path, a_ctg_tiling_path, a_ctg_base_tiling_path:
-time fc_graph_to_contig
+time python -m falcon_kit.mains.graph_to_contig
 
 # Given a_ctg_all.fa, write a_ctg.fa:
-time fc_dedup_a_tigs
+time python -m falcon_kit.mains.dedup_a_tigs
 
 # Generate a GFA of all assembly graph edges. This GFA can contain
 # edges and nodes which are not part of primary and associate contigs.
