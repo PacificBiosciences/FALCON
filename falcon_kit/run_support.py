@@ -247,6 +247,46 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'pa_dazcon_option'):
         pa_dazcon_option = config.get(section, 'pa_dazcon_option')
 
+    # DAMASKER options
+    """
+    Example config usage:
+    pa_use_tanmask = true
+    pa_use_repmask = true
+    pa_HPCtanmask_option =
+    pa_repmask_levels = 2
+    pa_HPCrepmask_1_option = -g1 -c20 -mtan
+    pa_HPCrepmask_2_option = -g10 -c15 -mtan -mrep1
+    pa_damasker_HPCdaligner_option = -mtan -mrep1 -mrep10
+    """
+    pa_use_tanmask = False
+    if config.has_option(section, 'pa_use_tanmask'):
+        pa_use_tanmask = config.getboolean(section, 'pa_use_tanmask')
+
+    pa_HPCtanmask_option = "";
+    if config.has_option(section, 'pa_HPCtanmask_option'):
+        pa_HPCtanmask_option = config.get(section, 'pa_HPCtanmask_option')
+
+    pa_use_repmask = False
+    if config.has_option(section, 'pa_use_repmask'):
+        pa_use_repmask = config.getboolean(section, 'pa_use_repmask')
+
+    pa_repmask_levels = 0   # REPmask tool can be used multiple times.
+    if config.has_option(section, 'pa_repmask_levels'):
+        pa_repmask_levels = config.getint(section, 'pa_repmask_levels')
+
+    pa_HPCrepmask_1_option = """ -g1 -c20 -mtan"""
+    if config.has_option(section, 'pa_HPCrepmask_1_option'):
+        pa_HPCrepmask_1_option = config.get(section, 'pa_HPCrepmask_1_option')
+
+    pa_HPCrepmask_2_option = """ -g10 -c15 -mtan -mrep1"""
+    if config.has_option(section, 'pa_HPCrepmask_2_option'):
+        pa_HPCrepmask_2_option = config.get(section, 'pa_HPCrepmask_2_option')
+
+    pa_damasker_HPCdaligner_option = """ -mtan -mrep1 -mrep10"""    # Repeat masks need to be passed to Daligner.
+    if config.has_option(section, 'pa_damasker_HPCdaligner_option'):
+        pa_damasker_HPCdaligner_option = config.get(section, 'pa_damasker_HPCdaligner_option')
+    # End of DAMASKER options.
+
     ovlp_DBsplit_option = """ -x500 -s200"""
     if config.has_option(section, 'ovlp_DBsplit_option'):
         ovlp_DBsplit_option = config.get(section, 'ovlp_DBsplit_option')
@@ -356,6 +396,13 @@ def get_dict_from_old_falcon_cfg(config):
                    "sge_option_fc": config.get(section, 'sge_option_fc'),
                    "sge_option_cns": config.get(section, 'sge_option_cns'),
                    "pa_HPCdaligner_option": pa_HPCdaligner_option,
+                   "pa_use_tanmask": pa_use_tanmask,
+                   "pa_HPCtanmask_option": pa_HPCtanmask_option,
+                   "pa_use_repmask": pa_use_repmask,
+                   "pa_repmask_levels": pa_repmask_levels,
+                   "pa_HPCrepmask_1_option": pa_HPCrepmask_1_option,
+                   "pa_HPCrepmask_2_option": pa_HPCrepmask_2_option,
+                   "pa_damasker_HPCdaligner_option": pa_damasker_HPCdaligner_option,
                    "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
                    "pa_DBsplit_option": pa_DBsplit_option,
                    "skip_checks": skip_checks,
