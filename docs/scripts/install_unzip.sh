@@ -38,7 +38,10 @@ if [ ! -d ${ROOT} ]; then
     mkdir ${ROOT}
 fi
 
-if [ ! -d ${SRC} ]; then
+if [ -d ${SRC} ]; then
+    rm -rf ${SRC}
+    mkdir ${SRC}
+else
     mkdir ${SRC}
 fi 
 
