@@ -5,6 +5,7 @@ import subprocess, sys
 import glob
 
 install_requires=[
+        "pytest",
         "networkx >=1.7, <=1.10",
         #"logging_tree",
         #"pbcore >= 0.6.3",
