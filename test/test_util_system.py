@@ -74,3 +74,6 @@ find_files/level_2/file4.txt
     # Test empty dir and empty pattern
     with pytest.raises(Exception) as excinfo:
         list(mod.find_files('', ''))
+
+def test_make_fofn_abs():
+    pass
