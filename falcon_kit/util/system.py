@@ -66,17 +66,25 @@ def cd(newdir):
         log.debug('CD: %r -> %r' %(newdir, prevdir))
         os.chdir(prevdir)
 
+def abs_fns(ifofns, idir=None):
+    """Yield absolute filenames from a streamed file-of-filenames.
+    """
+    log.info('Absolutizing FOFN in dir={!r}'.format(os.path.abspath(idir)))
+    for line in ifofns.read().split():
+        ifn = line.strip()
+        if not ifn:
+            continue
+        if not os.path.isabs(ifn):
+            ifn = os.path.realpath(os.path.join(idir, ifn))
+        yield ifn
+
 def make_fofn_abs(i_fofn_fn, o_fofn_fn):
     """Copy i_fofn to o_fofn, but with relative filenames expanded for the dir of i_fofn.
     """
     assert os.path.abspath(o_fofn_fn) != os.path.abspath(i_fofn_fn), '{!r} != {!r}'.format(o_fofn_fn, i_fofn_fn)
     with open(i_fofn_fn) as ifs, open(o_fofn_fn, 'w') as ofs:
-      with cd(os.path.dirname(i_fofn_fn)):
-        for line in ifs:
-            ifn = line.strip()
-            if not ifn: continue
-            abs_ifn = os.path.realpath(ifn)
-            ofs.write('%s\n' %abs_ifn)
+        for fn in abs_fns(ifs, os.path.dirname(i_fofn_fn)):
+            ofs.write(fn + '\n')
     #return o_fofn_fn
 
 def make_dirs(d):
