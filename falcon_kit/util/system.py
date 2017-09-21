@@ -1,4 +1,5 @@
 from .io import system
+import contextlib
 import logging
 import os
 import pprint
@@ -53,3 +54,31 @@ def find_files(root_path, pattern):
         dirs.sort()
         for filename in sorted(fnmatch.filter(files, pattern)):
             yield os.path.join(root, filename)
+
+@contextlib.contextmanager
+def cd(newdir):
+    prevdir = os.getcwd()
+    log.debug('CD: %r <- %r' %(newdir, prevdir))
+    os.chdir(os.path.expanduser(newdir))
+    try:
+        yield
+    finally:
+        log.debug('CD: %r -> %r' %(newdir, prevdir))
+        os.chdir(prevdir)
+
+def make_fofn_abs(i_fofn_fn, o_fofn_fn):
+    """Copy i_fofn to o_fofn, but with relative filenames expanded for the dir of i_fofn.
+    """
+    assert os.path.abspath(o_fofn_fn) != os.path.abspath(i_fofn_fn), '{!r} != {!r}'.format(o_fofn_fn, i_fofn_fn)
+    with open(i_fofn_fn) as ifs, open(o_fofn_fn, 'w') as ofs:
+      with cd(os.path.dirname(i_fofn_fn)):
+        for line in ifs:
+            ifn = line.strip()
+            if not ifn: continue
+            abs_ifn = os.path.abspath(ifn)
+            ofs.write('%s\n' %abs_ifn)
+    #return o_fofn_fn
+
+def make_dirs(d):
+    if not os.path.isdir(d):
+        os.makedirs(d)
