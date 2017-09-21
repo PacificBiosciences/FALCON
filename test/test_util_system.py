@@ -75,5 +75,14 @@ find_files/level_2/file4.txt
     with pytest.raises(Exception) as excinfo:
         list(mod.find_files('', ''))
 
-def test_make_fofn_abs():
-    pass
+def test_make_fofn_abs(tmpdir):
+    with tmpdir.as_cwd():
+        expected = os.path.realpath('actual') + '\n'
+        touchtree('./actual')
+        os.symlink('actual', 'link')
+        i_fn = './i.fofn'
+        o_fn = './o.fofn'
+        with open(i_fn, 'w') as stream:
+            stream.write('link\n')
+        mod.make_fofn_abs(i_fn, o_fn)
+        assert open(o_fn).read() == expected
