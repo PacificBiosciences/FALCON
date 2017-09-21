@@ -75,7 +75,7 @@ def abs_fns(ifofns, idir=None):
         if not ifn:
             continue
         if not os.path.isabs(ifn):
-            ifn = os.path.realpath(os.path.join(idir, ifn))
+            ifn = os.path.abspath(os.path.join(idir, ifn))
         yield ifn
 
 def make_fofn_abs(i_fofn_fn, o_fofn_fn):
