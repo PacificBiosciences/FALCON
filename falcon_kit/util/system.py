@@ -58,12 +58,12 @@ def find_files(root_path, pattern):
 @contextlib.contextmanager
 def cd(newdir):
     prevdir = os.getcwd()
-    logger.debug('CD: %r <- %r' %(newdir, prevdir))
+    log.debug('CD: %r <- %r' %(newdir, prevdir))
     os.chdir(os.path.expanduser(newdir))
     try:
         yield
     finally:
-        logger.debug('CD: %r -> %r' %(newdir, prevdir))
+        log.debug('CD: %r -> %r' %(newdir, prevdir))
         os.chdir(prevdir)
 
 def make_fofn_abs(i_fofn_fn, o_fofn_fn):
