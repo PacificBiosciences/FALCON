@@ -75,7 +75,7 @@ def make_fofn_abs(i_fofn_fn, o_fofn_fn):
         for line in ifs:
             ifn = line.strip()
             if not ifn: continue
-            abs_ifn = os.path.abspath(ifn)
+            abs_ifn = os.path.realpath(ifn)
             ofs.write('%s\n' %abs_ifn)
     #return o_fofn_fn
 
