@@ -76,12 +76,19 @@ find_files/level_2/file4.txt
         list(mod.find_files('', ''))
 
 def test_make_fofn_abs(tmpdir):
+    """
+    Paths are expanded relative to resolved directory of the input FOFN.
+    But otherwise, symlinks do not really need to be resolved.
+    """
     with tmpdir.as_cwd():
-        expected = os.path.realpath('actual') + '\n'
+        expected = os.path.abspath('link') + '\n'
         touchtree('./actual')
         os.symlink('actual', 'link')
-        i_fn = './i.fofn'
-        o_fn = './o.fofn'
+        a_fn = './actual.fofn'
+        mod.make_dirs('./subdir')
+        i_fn = './subdir/i.fofn'
+        o_fn = './subdir/o.fofn'
+        os.symlink('../actual.fofn', i_fn)
         with open(i_fn, 'w') as stream:
             stream.write('link\n')
         mod.make_fofn_abs(i_fn, o_fn)
