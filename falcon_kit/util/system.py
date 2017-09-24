@@ -89,4 +89,16 @@ def make_fofn_abs(i_fofn_fn, o_fofn_fn):
 
 def make_dirs(d):
     if not os.path.isdir(d):
+        log.debug('mkdir -p {!r}'.format(d))
         os.makedirs(d)
+
+def touch(*paths):
+    """touch a file.
+    """
+    msg = 'touch {!r}'.format(paths)
+    log.debug(msg)
+    for path in paths:
+        if os.path.exists(path):
+            os.utime(path, None)
+        else:
+            open(path, 'a').close()
