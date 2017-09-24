@@ -56,6 +56,8 @@ def run_track_reads(exe_pool, base_dir, file_list, min_len, bestn, db_fn):
     io.logstats()
     asm_dir = os.path.abspath(os.path.join(base_dir, '2-asm-falcon'))
     pid_to_ctg = get_pid_to_ctg(os.path.join(asm_dir, 'read_maps', 'get_ctg_read_map', 'read_to_contig_map'))
+    io.LOG('len(pid_to_ctg) == {}'.format(len(pid_to_ctg)))
+    assert pid_to_ctg, 'Empty pid_to_ctg. Maybe empty {!r}?'.format(file_list)
     inputs = []
     for fn in file_list:
         inputs.append( (run_tr_stage1, db_fn, fn, min_len, bestn, pid_to_ctg) )
@@ -76,7 +78,7 @@ def run_track_reads(exe_pool, base_dir, file_list, min_len, bestn, db_fn):
                     heappush( bread_to_areads[k], item )
                 else:
                     heappushpop( bread_to_areads[k], item )
-
+    assert bread_to_areads, 'No bread_to_areads found. Is there any point in continuing?'
 
     with open( os.path.join(asm_dir, "read_maps/pread_to_contigs"), "w") as out_f:
         for bread in bread_to_areads:

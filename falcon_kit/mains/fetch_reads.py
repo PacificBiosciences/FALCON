@@ -20,6 +20,8 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
 
     rid_to_oid = open(rawread_id_file).read().split('\n')  #daligner raw read id to the original ids
     pid_to_fid = open(pread_id_file).read().split('\n')  #daligner pread id to the fake ids
+    assert rid_to_oid, 'Empty rid_to_oid. Maybe empty {!r}?'.format(rawread_id_file)
+    assert pid_to_fid, 'Empty pid_to_fid. Maybe empty {!r}?'.format(pread_id_file)
 
     def pid_to_oid(pid):
         fid = pid_to_fid[int(pid)]
@@ -60,7 +62,7 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
                 o_id = rid_to_oid[int(row[0])]
                 read_set[o_id] = hit_ctg
                 ctg_id_hits[hit_ctg] = ctg_id_hits.get(hit_ctg, 0) + 1
-
+    assert read_set, 'Empty read_set. Maybe empty {!}?'.format(map_fn)
     map_fn = os.path.join(read_map_dir,'pread_to_contigs')
     with open(map_fn, 'r') as f:
         for row in f:
