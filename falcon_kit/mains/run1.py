@@ -20,7 +20,12 @@ LOG = logging.getLogger(__name__) # default, for remote tasks
 def create_daligner_tasks(basedir, scatter_fn):
     tasks = []
     tasks_out = {}
-    content = json.loads(open(scatter_fn).read()) # array of descriptions
+    try:
+        content = json.loads(open(scatter_fn).read()) # array of descriptions
+    except Exception:
+        msg = 'Failed to read JSON from {!r}'.format(scatter_fn)
+        LOG.exception(msg)
+        raise Exception(msg)
     for section in content:
         parameters = section['parameters']
         inputs = section['inputs']
