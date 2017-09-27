@@ -7,6 +7,9 @@ ifndef PYTHONUSERBASE
 endif
 export COVERAGE_PROCESS_START
 
+WHEELHOUSE?=wheelhouse
+PIP=pip wheel --wheel-dir ${WHEELHOUSE}
+
 MY_TEST_FLAGS?=-v -s
 
 install-edit:
@@ -47,10 +50,15 @@ coverage-uninstall:
 # We cannot run doctests on *all* modules because some include dependencies.
 # Just pypeFLOW for now, but I would rather not test dependencies anyway.
 
-wheel:
+old-wheel:
 	pip install --upgrade --user pip
 	python setup.py bdist_wheel
-# Look for dist/*.whl
+	# Look for dist/*.whl
+
+wheel:
+	which pip
+	${PIP} --no-deps .
+	ls -larth ${WHEELHOUSE}
 
 tar:
 	rm -f FALCON.tar.gz
