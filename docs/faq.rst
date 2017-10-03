@@ -101,7 +101,7 @@ an associated contigs.
 
 
 How does FALCON avoid chimeras given homologous repeat regions an different chromosomes?
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Such repeats are typically called as “segmental duplications”. Yes, Falcon will collapse these regions if the
 overlapper can not distinguish the repeats. As discussed above in some case, it is just
@@ -119,7 +119,7 @@ Can Falcon handle X-ploid genome data?
 
 Falcon, in its current form, is a “diploid or polyploid aware assembler”. I believe there is no fully specific
 definition what a “diploid or polyploid assembler” should deliver yet at the moment of this writing.
-From the point of the genome assembly research field, it is still quite new. There were a couple of paper published
+From the point of the genome assembly research field, it is still quite new. There were a couple of papers published
 before for diploid assemblies. However, the general strategy is the phasing adding reads on top on earlier assembly
 step.
 
@@ -139,6 +139,51 @@ There are some prototype work to fully segregate the “fused primary contigs”
 presented the ideas in #SFAF2015 conference. For tetraploid case, it will need some hard-code non-trivial
 mathematics research work to get it work right.
 
+
+Why don't I have two perfectly phased genomes after FALCON_unzip?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It's useful to first understand that not all genomes are alike. Haploid genomes are the holy grail of genome assembly
+as there is only one haplotype phase present and assembly is trivial if you have reads long enough to span repeats.
+Diploid and (allo/auto)polyploid genomes become difficult as there are two or more haplotype phases present. This fact,
+coupled with widely varying levels of heterozygosity and structural variation lead to complications during the assembly
+process. To understand your FALCON output, it's useful to look at this supplemental figure from the FALCON_unzip_ paper:
+
+.. _FALCON_unzip: http://www.nature.com/nmeth/journal/vaop/ncurrent/full/nmeth.4035.html
+
+.. image:: media/heterozygosity.jpg
+
+Consider the first line as a cartoon illustrating 3 ranges of heterozygosity (low/medium/high).
+In general, all genomes will have regions that fall into each of these three categories depending on organismal
+biology. During the first step of the FALCON assembly process, a diploid aware assembly graph is generated.
+At this point, in medium heterozygosity regions structural variation information is captured as bubbles or
+alternative pathways in the assembly graph whereas at high levels of heterozygosity the haplotype phases assemble into
+distinct primary assembly graphs.
+
+The ``FALCON_unzip`` add-on module to the FALCON pipeline is an attempt to leverage the heterozygous SNP information to
+phase the medium level heterozygosity regions of the genome. Low heterozygosity regions have insufficient SNP
+density for phasing, while High heterozygosity regions will likely have already been assembled as distinct haplotypes
+in the primary contigs.
+
+FALCON_unzip yields two fasta files. One containing primary contigs, and one containing haplotigs. The primary contigs
+fasta file is the main output that most people consider first and should consist of the majority of your genome. Primary
+contigs are considered ``partially-phased``. What this means is that during the unzipping process after the raw reads
+are aligned back to the genome for phasing, certain regions with insufficient SNP density are unable to be phased and
+are thus collapsed and represented as a homozygous region. Because of these collapsed homozygous regions, it's
+impossible to maintain phase between the flanking medium level heterozygosity sides, thus alot of primary contigs will
+contain phase-switches between phaseable regions. The haplotigs file will consist of the ``unzippapble`` or
+``phaseable`` regions of the genome and are considered fully phased. This means there should be no phase switching in
+the haplotigs and each haplotig should represent only one phase. See this figure for reference:
+
+.. image:: media/phaseswitch.png
+
+
+It's also important to note that In high heterozygosity situations, we often see the primary contig fasta file
+approaching 1.5X+ the expected haploid genome size, due to the assembly of both phases of certain chromosomes in the primary assembly.
+
+Also, one needs to consider that FALCON_unzip was designed to phase the plant and fungal genomes in the 2016 Nature Methods
+paper above, but many people have successfully used it to help phase their genome of interest. But as always with
+software on the internet, your mileage may vary.
 
 Why does FALCON have trouble assembling my amplicon data?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
