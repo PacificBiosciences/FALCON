@@ -100,7 +100,7 @@ In some case, you can even just do quick sequence alignment to find the homologo
 an associated contigs.
 
 
-How does FALCON avoid chimeras given homologous repeat regions an different chromosomes?
+How does FALCON avoid chimeras given homologous repeat regions on different chromosomes?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Such repeats are typically called as “segmental duplications”. Yes, Falcon will collapse these regions if the
@@ -182,7 +182,7 @@ chromosomal regions in the primary assembly.
 
 Also, one needs to consider that FALCON_unzip was designed to phase the plant and fungal genomes in the 2016 Nature Methods
 paper above, but many people have successfully used it to help phase their genome of interest. But as always with
-software on the internet, your mileage may vary.
+free software on the internet, your mileage may vary.
 
 
 Why does FALCON have trouble assembling my amplicon data?
@@ -196,7 +196,7 @@ and filters alot of the data out.
 You can try to down sample your data and make the daligner block size even smaller ( reduce -s50 in
 pa_DBsplit_option and ovlp_concurrent_jobs ) and increase the overlap filter thresholds (--max_diff 100
 --max_cov 100 in overlap_filtering_setting) to try to make it work, however it's not really within the scope of
-FALCON
+the FALCON algorithm.
 
 Workflow
 --------
