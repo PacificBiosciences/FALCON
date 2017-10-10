@@ -231,11 +231,11 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'skip_checks'):
         skip_checks = config.getboolean(section, 'skip_checks')
 
-    dust = False
     if config.has_option(section, 'dust'):
-        dust = config.getboolean(section, 'dust')
+        warnings.warn("The 'dust' option is deprecated and ignored. We always run DBdust now. Use pa_DBdust_option to override its default arguments.")
 
-    pa_DBdust_option = "-w128 -t2.5 -m20"
+    #pa_DBdust_option = "-w128 -t2.5 -m20"
+    pa_DBdust_option = "" # Gene recommends the defaults.
     if config.has_option(section, 'pa_DBdust_option'):
         pa_DBdust_option = config.get(section, 'pa_DBdust_option')
 
@@ -406,7 +406,6 @@ def get_dict_from_old_falcon_cfg(config):
                    "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
                    "pa_DBsplit_option": pa_DBsplit_option,
                    "skip_checks": skip_checks,
-                   "dust": dust,
                    "pa_DBdust_option": pa_DBdust_option,
                    "dazcon": dazcon,
                    "pa_dazcon_option": pa_dazcon_option,

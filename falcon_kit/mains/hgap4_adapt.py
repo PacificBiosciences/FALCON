@@ -214,6 +214,8 @@ def symlink(jo):
             link(rdir, 'raw_reads.db')
             link(rdir, '.raw_reads.bps')
             link(rdir, '.raw_reads.idx')
+            link(rdir, '.raw_reads.dust.data')
+            link(rdir, '.raw_reads.dust.anno')
             touch_done()
     def task_daligner_scatter():
         """
@@ -296,6 +298,8 @@ def symlink(jo):
             link(rdir, 'preads.db')
             link(rdir, '.preads.bps')
             link(rdir, '.preads.idx')
+            link(rdir, '.preads.dust.data')
+            link(rdir, '.preads.dust.anno')
             touch_done()
     def task_daligner_scatter1():
         """
