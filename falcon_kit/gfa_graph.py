@@ -14,6 +14,7 @@ GFA_ORIENT_REV = '-'
 GFA_SEQ_UNKNOWN = '*'
 GFA_LINK_CIGAR_UNKNOWN = '*'
 
+
 class GFAGraph:
     def __init__(self):
         self.paths = {}
@@ -37,7 +38,8 @@ class GFAGraph:
         for v, w, b, e, l, idt, etype in ctg_path:
             self.add_read_from_node(v)
             self.add_read_from_node(w)
-            self.add_or_update_edge(v, w, '*', l, idt, b, e, None, None, ctg_name, etype)
+            self.add_or_update_edge(
+                v, w, '*', l, idt, b, e, None, None, ctg_name, etype)
 
     def add_asm_graph(self, asm_graph):
         """
@@ -52,7 +54,8 @@ class GFAGraph:
                 overlap_end = int(edge_data[0][2])
                 overlap_length = int(edge_data[1])
                 overlap_idt = float(edge_data[2])
-                self.add_or_update_edge(v, w, '*', overlap_length, overlap_idt, overlap_begin, overlap_end, None, None, None, None)
+                self.add_or_update_edge(
+                    v, w, '*', overlap_length, overlap_idt, overlap_begin, overlap_end, None, None, None, None)
 
     def add_nx_string_graph(self, nx_sg):
         """
@@ -63,10 +66,11 @@ class GFAGraph:
         for node in nx_sg.nodes():
             self.add_read_from_node(node)
         for v, w in nx_sg.edges():
-            edata = nx_sg.get_edge_data(v, w);
+            edata = nx_sg.get_edge_data(v, w)
             src_graph = edata.get('src', None)
             cross_phase = edata.get('cross_phase', None)
-            self.add_or_update_edge(v, w, '*', None, None, None, None, cross_phase, src_graph, None, None)
+            self.add_or_update_edge(
+                v, w, '*', None, None, None, None, cross_phase, src_graph, None, None)
 
     def write_gfa_v1(self, fp_out, preads_file, contig_files, write_reads, write_contigs):
         """
@@ -88,23 +92,26 @@ class GFAGraph:
         if self.read_in_graph:
             found_reads = set()
             with FastaReader.open_fasta_reader(preads_file) as f:
-              for r in f:
-                rname = r.name.split()[0]
-                seq_len_map[rname] = len(r.sequence)
-                if rname in self.read_in_graph:
-                    fp_out.write('\t'.join([GFA_S_TAG, rname, GFA_SEQ_UNKNOWN if (not write_reads) else r.sequence, 'LN:i:%s' % len(r.sequence)]) + '\n')
-                    found_reads.add(rname)
+                for r in f:
+                    rname = r.name.split()[0]
+                    seq_len_map[rname] = len(r.sequence)
+                    if rname in self.read_in_graph:
+                        fp_out.write('\t'.join([GFA_S_TAG, rname, GFA_SEQ_UNKNOWN if (
+                            not write_reads) else r.sequence, 'LN:i:%s' % len(r.sequence)]) + '\n')
+                        found_reads.add(rname)
             if len(found_reads) != len(self.read_in_graph):
-                raise Exception('Not all reads were found in the specified preads file.')
+                raise Exception(
+                    'Not all reads were found in the specified preads file.')
 
         if write_contigs:
             for contig_fasta in contig_files:
                 with FastaReader.open_fasta_reader(contig_fasta) as f:
-                  for r in f:
-                    rname = r.name.split()[0]
-                    # Only output contigs which were added as paths.
-                    if rname in self.paths:
-                        fp_out.write('\t'.join([GFA_S_TAG, rname, r.sequence, 'LN:i:%d' % (len(r.sequence))]) + '\n');
+                    for r in f:
+                        rname = r.name.split()[0]
+                        # Only output contigs which were added as paths.
+                        if rname in self.paths:
+                            fp_out.write('\t'.join(
+                                [GFA_S_TAG, rname, r.sequence, 'LN:i:%d' % (len(r.sequence))]) + '\n')
 
         # Output links.
         for key, edge in self.edges.iteritems():
@@ -113,7 +120,8 @@ class GFAGraph:
 
         # Output contig paths.
         for ctg_name in sorted(self.paths.keys()):
-            path_line = self.format_gfa_v1_path_line(ctg_name, self.paths[ctg_name], seq_len_map)
+            path_line = self.format_gfa_v1_path_line(
+                ctg_name, self.paths[ctg_name], seq_len_map)
             fp_out.write(path_line + '\n')
 
     def add_read_from_node(self, node):
@@ -130,7 +138,8 @@ class GFAGraph:
         between reads in v and w does not yet exist.
         GFA-1 format might not allow multiedges.
         """
-        new_edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_]
+        new_edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin,
+                    overlap_end, cross_phase, src_graph, ctg_name, type_]
 
         # GFA supposedly does not allow multiedges
         r1, r1end = v.split(':')
@@ -157,7 +166,8 @@ class GFAGraph:
         graph).
         """
         if (v, w) not in self.edges:
-            raise Exception('Edge "vwedge" does not exist and cannot be updated.'.format(vvedge=str((v, w))))
+            raise Exception('Edge "vwedge" does not exist and cannot be updated.'.format(
+                vvedge=str((v, w))))
 
         # Update only non-None data.
         # Useful in case e.g. edges were loaded from the Networkx object which lacks some info,
@@ -167,7 +177,8 @@ class GFAGraph:
         # On the other hand, Unzip nx graph has info about phasing which is missing
         # from the tiling paths.
         curr_edge = self.edges[(v, w)]
-        new_edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_]
+        new_edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin,
+                    overlap_end, cross_phase, src_graph, ctg_name, type_]
         for i in xrange(len(curr_edge)):
             if curr_edge[i] is None:
                 curr_edge[i] = new_edge[i]
@@ -179,9 +190,11 @@ class GFAGraph:
         the GFAGraph.
         """
         if (v, w) not in self.edges:
-            self.add_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_)
+            self.add_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin,
+                          overlap_end, cross_phase, src_graph, ctg_name, type_)
         else:
-            self.update_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_)
+            self.update_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin,
+                             overlap_end, cross_phase, src_graph, ctg_name, type_)
 
     def format_gfa_v1_link_line(self, edge):
         """

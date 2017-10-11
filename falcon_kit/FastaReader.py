@@ -7,14 +7,16 @@ import re
 import subprocess
 
 ##
-## Utility functions for FastaReader
+# Utility functions for FastaReader
 ##
+
+
 def wrap(s, columns):
-    return "\n".join(s[start:start+columns]
+    return "\n".join(s[start:start + columns]
                      for start in xrange(0, len(s), columns))
 
 
-def splitFastaHeader( name ):
+def splitFastaHeader(name):
     """
     Split a FASTA/FASTQ header into its id and metadata components
     """
@@ -25,6 +27,7 @@ def splitFastaHeader( name ):
     else:
         metadata = None
     return (id_, metadata)
+
 
 def splitFileContents(f, delimiter, BLOCKSIZE=8192):
     """
@@ -50,7 +53,7 @@ class FastaRecord(object):
     A FastaRecord object models a named sequence in a FASTA file.
     """
     DELIMITER = ">"
-    COLUMNS   = 60
+    COLUMNS = 60
 
     def __init__(self, name, sequence):
         try:
@@ -129,7 +132,7 @@ class FastaRecord(object):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return (self.name     == other.name and
+            return (self.name == other.name and
                     self.sequence == other.sequence)
         else:
             return False
@@ -166,6 +169,7 @@ def stream_stdout(call, fn):
     args = call.split()
     proc = subprocess.Popen(args, stdin=open(fn), stdout=subprocess.PIPE)
     return proc.stdout
+
 
 @contextlib.contextmanager
 def open_fasta_reader(fn):
@@ -205,9 +209,11 @@ def open_fasta_reader(fn):
 class FastaReader(object):
     """Deprecated, but should still work (with filenames).
     """
+
     def __iter__(self):
         with open_fasta_reader(self.filename) as reader:
             for rec in reader:
                 yield rec
+
     def __init__(self, f):
         self.filename = f

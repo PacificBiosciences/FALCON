@@ -6,6 +6,7 @@ import logging
 
 log = logging.getLogger()
 
+
 def do_report(db, preads_fofn, genome_length, length_cutoff, out):
     kwds = dict(
         i_preads_fofn_fn=preads_fofn,
@@ -14,28 +15,30 @@ def do_report(db, preads_fofn, genome_length, length_cutoff, out):
         length_cutoff=length_cutoff,
     )
     report_dict = stats_preassembly.calc_dict(**kwds)
-    content = json.dumps(report_dict, sort_keys=True, indent=4, separators=(',', ': '))
+    content = json.dumps(report_dict, sort_keys=True,
+                         indent=4, separators=(',', ': '))
     open(out, 'w').write(content)
+
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--genome-length',
-        type=int,
-        required=True,
-        help='Estimated number of bases in the full genome haplotype.')
+                        type=int,
+                        required=True,
+                        help='Estimated number of bases in the full genome haplotype.')
     parser.add_argument('--length-cutoff',
-        type=int,
-        required=True,
-        help='Minimum length of any seed read.')
+                        type=int,
+                        required=True,
+                        help='Minimum length of any seed read.')
     parser.add_argument('--db',
-        required=True,
-        help='Path to raw_reads.db (dazzler DB)')
+                        required=True,
+                        help='Path to raw_reads.db (dazzler DB)')
     parser.add_argument('--preads-fofn',
-        required=True,
-        help='Path to FOFN of preads fasta files.')
+                        required=True,
+                        help='Path to FOFN of preads fasta files.')
     parser.add_argument('--out',
-        required=True,
-        help='Path to JSON output file.')
+                        required=True,
+                        help='Path to JSON output file.')
     ARGS = parser.parse_args()
     do_report(**vars(ARGS))
 

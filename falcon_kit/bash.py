@@ -9,14 +9,16 @@ import os
 import tempfile
 import traceback
 
-LOG=logging.getLogger(__name__)
-BASH='/bin/bash'
-BUG_avoid_Text_file_busy=True
+LOG = logging.getLogger(__name__)
+BASH = '/bin/bash'
+BUG_avoid_Text_file_busy = True
 # http://stackoverflow.com/questions/1384398/usr-bin-perl-bad-interpreter-text-file-busy/
+
 
 def mkdir(d):
     if not os.path.isdir(d):
         os.makedirs(d)
+
 
 def make_executable(path):
     """http://stackoverflow.com/questions/12791997/how-do-you-do-a-simple-chmod-x-from-within-python
@@ -24,6 +26,7 @@ def make_executable(path):
     mode = os.stat(path).st_mode
     mode |= (mode & 0444) >> 2    # copy R bits to X
     os.chmod(path, mode)
+
 
 def write_sub_script(ofs, script):
     # We use shebang + chmod so we can see the sub-script in 'top'.
@@ -41,18 +44,20 @@ def write_sub_script(ofs, script):
         # but some users have a problem with that, e.g.
         #   https://github.com/PacificBiosciences/FALCON/issues/269
         # Another idea never worked reliably:
-        #chmod +x {sub_script_bfn}
-        #touch {sub_script_bfn}
+        # chmod +x {sub_script_bfn}
+        # touch {sub_script_bfn}
         # We are trying to avoid this problem:
         #   /bin/bash: bad interpreter: Text file busy
         exe = ''
     return exe
+
 
 def write_script(script, script_fn, job_done_fn=None):
     if job_done_fn:
         script += '\ntouch {}'.format(job_done_fn)
     with open(script_fn, 'w') as ofs:
         exe = write_sub_script(ofs, script)
+
 
 def write_script_and_wrapper_top(script, wrapper_fn, job_done):
     """NOT USED.
@@ -63,7 +68,7 @@ def write_script_and_wrapper_top(script, wrapper_fn, job_done):
     """
     job_exit = job_done + '.exit'
     wdir = os.path.abspath(os.path.dirname(wrapper_fn))
-    #mkdir(wdir) # To avoid races, callers must do this.
+    # mkdir(wdir) # To avoid races, callers must do this.
 
     root, ext = os.path.splitext(os.path.basename(wrapper_fn))
     sub_script_bfn = root + '.sub' + ext
@@ -86,10 +91,12 @@ touch {job_done}
         ofs.write(wrapper)
     return job_done, job_exit
 
+
 def select_rundir(tmpdir, wdir, script):
     user = getpass.getuser()
     digest = md5.md5(script).hexdigest()
     return '{}/{}/falcontmp/{}/{}'.format(tmpdir, user, wdir, digest)
+
 
 def write_script_and_wrapper_for_tmp(tmpdir, script, wrapper_fn, job_done):
     """NOT USED. This will be done in pypeFLOW.
@@ -118,6 +125,7 @@ rm -rf {rdir}
     tmp_wrapper_script = tmp_wrapper_script.format(**locals())
     return write_script_and_wrapper_top(tmp_wrapper_script, wrapper_fn, job_done)
 
+
 def get_write_script_and_wrapper(config):
     """NOT USED. This will be done in pypeFLOW.
     Return a function.
@@ -135,16 +143,19 @@ def get_write_script_and_wrapper(config):
     else:
         return write_script_and_wrapper_top
 
+
 def filter_DBsplit_option(opt):
     """We want -a by default, but if we see --no-a[ll], we will not add -a.
     """
     flags = opt.split()
     if '-x' not in opt:
-        flags.append('-x70') # daligner belches on any read < kmer length
+        flags.append('-x70')  # daligner belches on any read < kmer length
     return ' '.join(flags)
+
 
 def update_dict_entry(d, key, func):
     d[key] = func(d[key])
+
 
 def get_last_block(fn):
     """From existing db, e.g. 'raw_reads.db',
@@ -163,16 +174,17 @@ def get_last_block(fn):
                     break
     return (new_db, last_block)
 
+
 def script_build_rdb(config, input_fofn_fn, run_jobs_bfn):
     """
     raw_reads.db will be output into CWD, should not already exist.
     run_jobs_bfn will be output into CWD.
     """
     last_block = 1
-    config = dict(config) # copy
+    config = dict(config)  # copy
     update_dict_entry(config, 'pa_DBsplit_option', filter_DBsplit_option)
     DBsplit = 'DBsplit {pa_DBsplit_option} raw_reads'.format(**config)
-    #if openending == True:
+    # if openending == True:
     #    count = """$(cat raw_reads.db | LD_LIBRARY_PATH= awk '$1 == "blocks" {print $3-1}')"""
     count = """$(cat raw_reads.db | LD_LIBRARY_PATH= awk '$1 == "blocks" {print $3}')"""
     params = dict(config)
@@ -209,6 +221,7 @@ HPC.daligner {pa_HPCdaligner_option} -mdust -H$CUTOFF raw_reads {last_block}-$LB
     # However, it is not a true dependency because we still have a workflow that starts
     # from 'corrected reads' (preads), in which case build_rdb is not run.
 
+
 def script_build_pdb(config, input_fofn_bfn, run_jobs_bfn):
     last_block = 1
     count = """$(cat preads.db | LD_LIBRARY_PATH= awk '$1 == "blocks" {print $3}')"""
@@ -229,6 +242,7 @@ HPC.daligner {ovlp_HPCdaligner_option} -mdust -H{length_cutoff_pr} preads {last_
 """.format(**params)
     return script
 
+
 def script_run_DB2Falcon(config, preads4falcon_fn, preads_db):
     """Run in pread_dir.
     """
@@ -242,6 +256,7 @@ time DB2Falcon -U {preads_db}
 """.format(**params)
     return script
 
+
 def scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, nblock, pread_aln=False, skip_check=False):
     """Yield job_uid, bash
     """
@@ -249,16 +264,17 @@ def scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, nblock, pread_aln=F
     xform_script = functional.get_script_xformer(pread_aln)
     db_dir = os.path.dirname(run_jobs_fn)
     get_daligner_job_descriptions = (
-            functional.get_daligner_job_descriptions_sans_LAcheck if skip_check else
-            functional.get_daligner_job_descriptions)
+        functional.get_daligner_job_descriptions_sans_LAcheck if skip_check else
+        functional.get_daligner_job_descriptions)
     single = (nblock == 1)
     try:
-        job_descs = get_daligner_job_descriptions(open(run_jobs_fn), db_prefix, single)
+        job_descs = get_daligner_job_descriptions(
+            open(run_jobs_fn), db_prefix, single)
     except Exception:
         raise Exception('Could not parse job descriptions from file "{}":\n{}'.format(
             run_jobs_fn, traceback.format_exc()))
     for i, (desc, bash) in enumerate(job_descs.iteritems()):
-        job_uid = '%04x' %i
+        job_uid = '%04x' % i
         daligner_cmd = xform_script(bash)
         bash = """
 db_dir={db_dir}
@@ -272,6 +288,7 @@ rm -f *.C?.las *.C?.S.las *.C??.las *.C??.S.las *.C???.las *.C???.S.las
 rm -f *.N?.las *.N?.S.las *.N??.las *.N??.S.las *.N???.las *.N???.S.las
 """.format(db_dir=db_dir, db_prefix=db_prefix, daligner_cmd=daligner_cmd)
         yield job_uid, bash
+
 
 def scripts_merge(config, db_prefix, run_jobs_fn):
     """Yield p_id, bash
@@ -295,7 +312,7 @@ rmfollow() {
     rm -f "${path}"
 }
 """
-    #las_fns = functional.get_las_filenames(mjob_data, db_prefix) # ok, but tricky
+    # las_fns = functional.get_las_filenames(mjob_data, db_prefix) # ok, but tricky
     for p_id in mjob_data:
         #las_fn = las_fns[p_id]
         # We already know the output .las filename by convention.
@@ -305,11 +322,12 @@ rmfollow() {
 
         script = []
         for line in bash_lines:
-            script.append(line) # Assume we no longer have "&& rm".
+            script.append(line)  # Assume we no longer have "&& rm".
         for line in bash_lines:
             if not line.startswith('LAmerge'):
                 continue
-            las_files = [word + '.las' for word in functional.yield_args_from_line(line)]
+            las_files = [
+                word + '.las' for word in functional.yield_args_from_line(line)]
             #las_fn = os.path.basename(las_files[0])
             #assert las_fn == os.path.basename(las_files[0])
             script.extend('# rmfollow {}'.format(fn) for fn in las_files[1:])
@@ -317,6 +335,7 @@ rmfollow() {
 
         content = bash_funcs + '\n'.join(script + [''])
         yield p_id, content, las_fn
+
 
 def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
     """config: falcon_sense_option, length_cutoff
@@ -340,7 +359,7 @@ def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
         LA4Falcon_flags += 'fo'
     if LA4Falcon_flags:
         LA4Falcon_flags = '-' + ''.join(set(LA4Falcon_flags))
-    run_consensus = "LA4Falcon -H$CUTOFF %s {db_fn} {las_fn} | python -m falcon_kit.mains.consensus {falcon_sense_option} >| {out_file_bfn}"%LA4Falcon_flags
+    run_consensus = "LA4Falcon -H$CUTOFF %s {db_fn} {las_fn} | python -m falcon_kit.mains.consensus {falcon_sense_option} >| {out_file_bfn}" % LA4Falcon_flags
 
     if config.get('dazcon', False):
         run_consensus = """
@@ -352,8 +371,9 @@ dazcon {pa_dazcon_option} -s {db_fn} -a {las_fn} >| {out_file_bfn}
 set -o pipefail
 CUTOFF=%(bash_cutoff)s
 %(run_consensus)s
-"""%(locals())
+""" % (locals())
     return script.format(**params)
+
 
 def script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_fn):
     params = dict(config)
@@ -392,6 +412,7 @@ time python -m falcon_kit.mains.gen_gfa_v1 >| sg.gfa
 rm -f ./preads4falcon.fasta
 """
     return script.format(**params)
+
 
 def script_run_report_pre_assembly(i_raw_reads_db_fn, i_preads_fofn_fn, genome_length, length_cutoff, o_json_fn):
     params = dict()

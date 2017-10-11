@@ -6,10 +6,13 @@
 Run LAcheck on each input in args. Exclude any failures from
 the arglist. Then run LAsort on the remaining arglist.
 """
-import sys, os
+import sys
+import os
+
 
 def log(msg):
     sys.stderr.write(msg + '\n')
+
 
 def system(call, checked=False):
     log('!{}'.format(call))
@@ -21,10 +24,11 @@ def system(call, checked=False):
         log(msg)
     return rc
 
+
 def main(argv=sys.argv):
     log('argv:{!r}'.format(argv))
     db = argv[1]
-    args = argv[2:] # Skip program name
+    args = argv[2:]  # Skip program name
     lass = list()
     new_args = list()
     new_args.append('LAsort')

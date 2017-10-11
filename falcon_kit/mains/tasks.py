@@ -18,8 +18,10 @@ tasks:
 """)
     sys.exit(2)
 
+
 def main_make_fofn_abs(i_fofn_fn, o_fofn_fn):
     support.make_fofn_abs(i_fofn_fn, o_fofn_fn)
+
 
 def main(argv=sys.argv):
     if len(argv) < 2 or argv[1].startswith('-'):
