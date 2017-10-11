@@ -109,7 +109,6 @@ pbcoretools.tasks.contigset2fasta-0
 """
 
 
-
 """In job_output/tasks/ dir, without chunking:
 
 pbcoretools.tasks.filterdataset-0
@@ -162,17 +161,21 @@ falcon_ns.tasks.task_falcon2_run_asm-0
 2-asm-falcon/read_maps/dump_rawread_ids
 2-asm-falcon/read_maps/get_ctg_read_map
 """
+
+
 @contextlib.contextmanager
 def mkcd(newdir):
     make_dirs(newdir)
     with cd(newdir):
         yield
 
+
 def symlink(jo):
     """Caller should first cd into link-dir.
     """
     def assert_exists(path):
         assert os.path.exists(path), 'File does not exist: {!r}'.format(path)
+
     def assert_dir(path):
         assert os.path.isdir(path), 'Not a directory: {!r}'.format(path)
     assert_dir(jo)
@@ -183,8 +186,10 @@ def symlink(jo):
         """Standard pypeflow convention.
         """
         touch('run.sh.done')
+
     def abstdir(basetdir):
         return os.path.abspath(os.path.join(jo, 'tasks', basetdir))
+
     def link(targetdir, basename, linkname=None):
         if not linkname:
             linkname = basename
@@ -205,8 +210,9 @@ def symlink(jo):
         "input_fofn" from cfg
         """
         with mkcd('0-rawreads/raw-fofn-abs/'):
-            #touch('input.fofn')
+            # touch('input.fofn')
             touch_done()
+
     def task_build_rdb():
         rdir = abstdir('falcon_ns.tasks.task_falcon0_build_rdb-0')
         with mkcd('0-rawreads/'):
@@ -217,6 +223,7 @@ def symlink(jo):
             link(rdir, '.raw_reads.dust.data')
             link(rdir, '.raw_reads.dust.anno')
             touch_done()
+
     def task_daligner_scatter():
         """
         """
@@ -225,6 +232,7 @@ def symlink(jo):
             with open('scattered.json', 'w') as stream:
                 stream.write(json.dumps(data))
             touch_done()
+
     def create_daligner_tasks():
         """
         0-rawreads/job_0000 ***
@@ -234,8 +242,9 @@ def symlink(jo):
         """
         """
         with mkcd('0-rawreads/raw-gather/'):
-            #touch('gathered_las.txt')
+            # touch('gathered_las.txt')
             touch_done()
+
     def task_merge_scatter():
         """
         """
@@ -244,6 +253,7 @@ def symlink(jo):
             with open('scattered.json', 'w') as stream:
                 stream.write(json.dumps(data))
             touch_done()
+
     def create_merge_tasks():
         """
         0-rawreads/m_00001 ***
@@ -252,7 +262,8 @@ def symlink(jo):
     def task_merge_gather():
         # falcon_unzip/rr_hctg_track.py expects files under 0-rawreads/m*/raw_reads.*.las
         dn2fn = dict()
-        rdir = abstdir('falcon_ns.tasks.task_falcon0_run_merge_consensus_jobs-0/')
+        rdir = abstdir(
+            'falcon_ns.tasks.task_falcon0_run_merge_consensus_jobs-0/')
         with cd(rdir):
             for path in glob.glob(os.path.join('m*/raw_reads.*.las')):
                 dn, fn = os.path.split(path)
@@ -264,6 +275,7 @@ def symlink(jo):
         with mkcd('0-rawreads/merge-gather/'):
             #touch('las.fofn', 'las.fopfn')
             touch_done()
+
     def task_consensus_scatter():
         """
         """
@@ -272,6 +284,7 @@ def symlink(jo):
             with open('scattered.json', 'w') as stream:
                 stream.write(json.dumps(data))
             touch_done()
+
     def create_consensus_tasks():
         """
         0-rawreads/preads/cns_00001 ***
@@ -281,14 +294,16 @@ def symlink(jo):
         """
         """
         with mkcd('0-rawreads/preads'):
-            #touch('input_preads.fofn')
+            # touch('input_preads.fofn')
             touch_done()
+
     def task_report_pre_assembly():
         """
         """
         with mkcd('0-rawreads/report/'):
-            #touch('pre_assembly_stats.json')
+            # touch('pre_assembly_stats.json')
             touch_done()
+
     def task_build_pdb():
         """
         """
@@ -301,6 +316,7 @@ def symlink(jo):
             link(rdir, '.preads.dust.data')
             link(rdir, '.preads.dust.anno')
             touch_done()
+
     def task_daligner_scatter1():
         """
         """
@@ -309,6 +325,7 @@ def symlink(jo):
             with open('scattered.json', 'w') as stream:
                 stream.write(json.dumps(data))
             touch_done()
+
     def create_daligner_tasks1():
         """
         1-preads_ovl/job_0000 ***
@@ -318,8 +335,9 @@ def symlink(jo):
         """
         """
         with mkcd('1-preads_ovl/gathered-las/'):
-            #touch('gathered_las.txt')
+            # touch('gathered_las.txt')
             touch_done()
+
     def task_merge_scatter1():
         """
         """
@@ -328,6 +346,7 @@ def symlink(jo):
             with open('scattered.json', 'w') as stream:
                 stream.write(json.dumps(data))
             touch_done()
+
     def create_merge_tasks1():
         """
         1-preads_ovl/m_00001 ***
@@ -336,7 +355,8 @@ def symlink(jo):
     def task_merge_gather1():
         # falcon/pr_ctg_track.py expects files under 1-preads_ovl/m*/preads.*.las
         dn2fn = dict()
-        rdir = abstdir('falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0/')
+        rdir = abstdir(
+            'falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0/')
         with cd(rdir):
             for path in glob.glob(os.path.join('m*/preads.*.las')):
                 dn, fn = os.path.split(path)
@@ -346,18 +366,22 @@ def symlink(jo):
                 with mkcd(dn):
                     link(os.path.join(rdir, dn), fn)
         #rdir = abstdir('falcon_ns.tasks.task_falcon1_merge-0')
-        rdir = abstdir('falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0')
+        rdir = abstdir(
+            'falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0')
         with mkcd('1-preads_ovl/merge-gather/'):
             #touch('las.fofn', 'las.fopfn')
             link(rdir, 'file.fofn', 'las.fofn')
             touch_done()
+
     def task_run_db2falcon():
         rdir = abstdir('falcon_ns.tasks.task_falcon1_db2falcon-0')
-        rdirx = abstdir('falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0')
+        rdirx = abstdir(
+            'falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0')
         with mkcd('1-preads_ovl/db2falcon/'):
             #touch('db2falcon', 'preads4falcon.fasta')
             link(rdirx, 'preads4falcon.fasta')
             touch_done()
+
     def task_run_falcon_asm():
         """falcon_ns.tasks.task_falcon2_run_asm-0
           (falcon_ns.tasks.task_falcon2_rm_las-0)
@@ -396,8 +420,11 @@ def symlink(jo):
     task_merge_gather1()
     task_run_db2falcon()
     task_run_falcon_asm()
+
+
 def get_parser():
-    class HelpF(argparse.RawTextHelpFormatter, argparse.ArgumentDefaultsHelpFormatter): pass
+    class HelpF(argparse.RawTextHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
+        pass
     description = 'Given a full HGAP4 run, generate directories and symlinks to make it look like a pypeflow run.'
     epilog = """
 Typically:
@@ -426,16 +453,18 @@ For more help on .cfg files, see
 """
 
     parser = argparse.ArgumentParser(
-            description=description,
-            epilog=epilog,
-            formatter_class=HelpF)
+        description=description,
+        epilog=epilog,
+        formatter_class=HelpF)
     parser.add_argument('--job-output-dir', default='job_output',
-            help='Directory of HGAP4 job_output. (A symlink or relative path is fine.) Task-dirs are under here in "tasks/"')
+                        help='Directory of HGAP4 job_output. (A symlink or relative path is fine.) Task-dirs are under here in "tasks/"')
     return parser
+
 
 def main(argv=sys.argv):
     args = get_parser().parse_args(argv[1:])
     symlink(args.job_output_dir)
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

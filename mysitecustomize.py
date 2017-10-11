@@ -1,3 +1,4 @@
 #import site; site.addsitedir('...')
 #raise Exception('WHERE')
-import coverage; coverage.process_startup()
+import coverage
+coverage.process_startup()

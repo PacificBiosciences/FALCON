@@ -5,8 +5,9 @@ import collections
 import re
 import StringIO
 
+
 def _verify_pairs(pairs1, pairs2):
-    if pairs1 != pairs2: # pragma: no cover
+    if pairs1 != pairs2:  # pragma: no cover
         print('pair2dali:', pairs1)
         print('pair2sort:', pairs2)
         print('dali-sort:', set(pairs1) - set(pairs2))
@@ -14,6 +15,7 @@ def _verify_pairs(pairs1, pairs2):
         print('pair2dali:', len(pairs1))
         print('pair2sort:', len(pairs2))
         assert pairs1 == pairs2
+
 
 def skip_LAcheck(bash):
     def lines():
@@ -26,18 +28,22 @@ def skip_LAcheck(bash):
                 yield line
     return ''.join(lines())
 
+
 def get_daligner_job_descriptions_sans_LAcheck(run_jobs_stream, db_prefix, single=False):
     """Strip LAcheck (somehow) from each bash script.
     (For now, we will run it but not fail on error.)
     """
     descs = get_daligner_job_descriptions(run_jobs_stream, db_prefix, single)
     result = {}
-    for k,v in descs.iteritems():
+    for k, v in descs.iteritems():
         bash = skip_LAcheck(v)
-        bash = bash.replace('LAsort', 'python2.7 -m falcon_kit.mains.LAsort {}'.format(db_prefix))
-        bash = bash.replace('LAmerge', 'python2.7 -m falcon_kit.mains.LAmerge {}'.format(db_prefix))
+        bash = bash.replace(
+            'LAsort', 'python2.7 -m falcon_kit.mains.LAsort {}'.format(db_prefix))
+        bash = bash.replace(
+            'LAmerge', 'python2.7 -m falcon_kit.mains.LAmerge {}'.format(db_prefix))
         result[k] = bash
     return result
+
 
 def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
     """Return a dict of job-desc-tuple -> HPCdaligner bash-job.
@@ -65,7 +71,8 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
     Oddly, b/c of a recent change by GM, if there is only 1 block,
     then the merged file is named differently. To achieve that, use single=True.
     """
-    re_block_dali = re.compile(r'%s(\.\d+|)' %db_prefix)
+    re_block_dali = re.compile(r'%s(\.\d+|)' % db_prefix)
+
     def blocks_dali(line):
         """Return ['.1', '.2', ...]
         Can return [''] if only 1 block.
@@ -73,20 +80,24 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
         return [mo.group(1) for mo in re_block_dali.finditer(line)]
     # X == blocks[0]; A/B/C = blocks[...]
 
-    re_pair_sort = re.compile(r'%s(\.\d+|)\.%s(\.\d+|)' %(db_prefix, db_prefix))
+    re_pair_sort = re.compile(r'%s(\.\d+|)\.%s(\.\d+|)' %
+                              (db_prefix, db_prefix))
+
     def LAsort_pair(line):
         """Return [('.1', '.1'), ('.1', '.2'), ('.2', '.1'), ...]
         Can return [('', '')] if only 1 block.
         """
         mo = re_pair_sort.search(line)
-        if not mo: # pragma: no cover
+        if not mo:  # pragma: no cover
             raise Exception('Pattern {!r} does not match line {!r}'.format(
                 re_pair_sort.pattern, line))
         return mo.group(1, 2)
 
     lines = [line.strip() for line in run_jobs_stream]
-    assert any(len(l) > 1 for l in lines), repr(lines) # in case caller passed filename, not stream
-    lines_dali = [l for l in lines if l.startswith('daligner')] # could be daligner_p
+    # in case caller passed filename, not stream
+    assert any(len(l) > 1 for l in lines), repr(lines)
+    lines_dali = [l for l in lines if l.startswith(
+        'daligner')]  # could be daligner_p
     lines_sort = [l for l in lines if l.startswith('LAsort')]
     pair2dali = {}
     for line in lines_dali:
@@ -111,25 +122,32 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
         dali2pairs[dali].add(pair)
         total_pairs += 1
     if single:
-        assert total_pairs == 1, 'In single-mode, but total_pair={}'.format(total_pairs)
+        assert total_pairs == 1, 'In single-mode, but total_pair={}'.format(
+            total_pairs)
         assert list(pair2dali.keys())[0] == ('.1', '.1'), repr(pair2dali)
     result = {}
     for dali, pairs in dali2pairs.items():
         pairs = list(pairs)
-        pairs.sort( key=lambda k: ( (int(k[0][1:]) if k[0].startswith('.') else 0), (int(k[1][1:]) if k[1].startswith('.') else 0) ) )
+        pairs.sort(key=lambda k: ((int(k[0][1:]) if k[0].startswith(
+            '.') else 0), (int(k[1][1:]) if k[1].startswith('.') else 0)))
         sorts = [pair2sort[pair] for pair in pairs]
         id = tuple(blocks_dali(dali))
-        early_checks = [ "LAcheck -v {db_prefix} *.las".format( db_prefix = db_prefix )  ]
+        early_checks = [
+            "LAcheck -v {db_prefix} *.las".format(db_prefix=db_prefix)]
         if single:
-            checks = [ "LAcheck -vS {db_prefix} {db_prefix}.1".format( db_prefix = db_prefix )  ]
+            checks = [
+                "LAcheck -vS {db_prefix} {db_prefix}.1".format(db_prefix=db_prefix)]
         else:
-            checks = [ "LAcheck -vS {db_prefix} L1{p1}{p2}".format( db_prefix = db_prefix, p1=pair[0], p2=pair[1]) for pair in pairs ]
+            checks = ["LAcheck -vS {db_prefix} L1{p1}{p2}".format(
+                db_prefix=db_prefix, p1=pair[0], p2=pair[1]) for pair in pairs]
 
         script = '\n'.join([dali] + early_checks + sorts + checks) + '\n'
         result[id] = script
     return result
 
+
 re_first_block_las = re.compile(r'^(?:\S+)(?:\s+-\S+)*\s+[^\.]+\.(\d+|)')
+
 
 def first_block_las(line):
     """
@@ -142,6 +160,7 @@ def first_block_las(line):
     except Exception as e:
         raise Exception('Pattern {!r} does not match line {!r}: {}'.format(
             re_first_block_las.pattern, line, e))
+
 
 def get_las_filenames(mjob_data, db_prefix):
     """Given result of get_mjob_data(),
@@ -182,13 +201,14 @@ def get_las_filenames(mjob_data, db_prefix):
         result[p_id] = las_fn
     return result
 
+
 def get_mjob_data(run_jobs_stream):
     """Given output of HPC.daligner,
     return {int: [bash-lines]}
     """
     f = run_jobs_stream
 
-    ## Strip either '&& rm ...' or '; rm ...' ?
+    # Strip either '&& rm ...' or '; rm ...' ?
     #re_strip_rm = re.compile(r'^(.*) ((\&\&)|;) .*$')
 
     # Copied from scripts_merge()
@@ -202,14 +222,15 @@ def get_mjob_data(run_jobs_stream):
             # We now run this part w/ daligner, but we still need
             # a small script for some book-keeping.
             p_id = first_block_las(l)
-            mjob_data.setdefault( p_id, [] )
-            #mjob_data[p_id].append(  " ".join(l) ) # Already done w/ daligner!
+            mjob_data.setdefault(p_id, [])
+            # mjob_data[p_id].append(  " ".join(l) ) # Already done w/ daligner!
         elif first_word in ["LAmerge"]:
             p_id = first_block_las(l)
-            mjob_data.setdefault( p_id, [] )
-            #l = re_strip_rm.sub(r'\1', l) # rm is very safe if we run in /tmp
+            mjob_data.setdefault(p_id, [])
+            # l = re_strip_rm.sub(r'\1', l) # rm is very safe if we run in /tmp
             mjob_data[p_id].append(l)
     return mjob_data
+
 
 def yield_args_from_line(bash_line):
     """Given a line of LAmerge, etc.,
@@ -220,13 +241,19 @@ def yield_args_from_line(bash_line):
             continue
         yield word
 
+
 _re_sub_daligner = re.compile(r'^daligner\b', re.MULTILINE)
+
+
 def xform_script_for_preads(script):
     daligner_exe = 'daligner_p'
-    return _re_sub_daligner.sub(daligner_exe, script) #, flags=re.MULTILINE) # flags in py2.7
+    # , flags=re.MULTILINE) # flags in py2.7
+    return _re_sub_daligner.sub(daligner_exe, script)
+
 
 def xform_script_for_raw_reads(script):
     return script
+
 
 def get_script_xformer(pread_aln):
     if pread_aln:
@@ -234,27 +261,32 @@ def get_script_xformer(pread_aln):
     else:
         return xform_script_for_raw_reads
 
+
 class GenomeCoverageError(Exception):
     pass
+
 
 def calc_cutoff_from_reverse_sorted_readlength_counts(rl_counts, target):
     """Return first read_len which gives at least 'target' bases.
     """
-    total = sum(pair[0]*pair[1] for pair in rl_counts)
+    total = sum(pair[0] * pair[1] for pair in rl_counts)
     subtotal = 0
     if target > total:
-        msg = 'Not enough reads available for desired genome coverage (bases needed={} > actual={})'.format(target, total)
+        msg = 'Not enough reads available for desired genome coverage (bases needed={} > actual={})'.format(
+            target, total)
         raise GenomeCoverageError(msg)
     cutoff = 0
     for (rl, count) in rl_counts:
-        subtotal += rl*count
+        subtotal += rl * count
         if subtotal >= target:
             cutoff = rl
             break
-    else: # pragma: no cover
-        msg = 'Impossible target (probably a bug): target={target}, subtotal={subtotal}, total={total}'.format(locals())
+    else:  # pragma: no cover
+        msg = 'Impossible target (probably a bug): target={target}, subtotal={subtotal}, total={total}'.format(
+            locals())
         raise Exception(msg)
     return cutoff
+
 
 def num2int(num):
     """
@@ -262,6 +294,7 @@ def num2int(num):
     1000000
     """
     return int(num.replace(',', ''))
+
 
 def get_reverse_sorted_readlength_counts_from_DBstats(DBstats_output):
     """Return pairs of (readlength, count).
@@ -273,7 +306,8 @@ def get_reverse_sorted_readlength_counts_from_DBstats(DBstats_output):
     """
     rl_counts = list()
     lines = DBstats_output.splitlines()
-    re_stat = re.compile(r'^\s*(?P<bin>\S+):\s+(?P<count>\S+)\s+\S+\s+\S+\s+\S+\s*$')
+    re_stat = re.compile(
+        r'^\s*(?P<bin>\S+):\s+(?P<count>\S+)\s+\S+\s+\S+\s+\S+\s*$')
     for line in lines:
         match = re_stat.search(line)
         if not match:
@@ -283,12 +317,15 @@ def get_reverse_sorted_readlength_counts_from_DBstats(DBstats_output):
         rl_counts.append((rl, count))
     return rl_counts
 
+
 def calc_cutoff(target, DBstats_output):
     """Calculate the length_cutoff needed for at least 'target' bases.
     DBstats_output: ASCII output of 'DBstats -b1 DB',
     """
-    rl_counts = get_reverse_sorted_readlength_counts_from_DBstats(DBstats_output)
+    rl_counts = get_reverse_sorted_readlength_counts_from_DBstats(
+        DBstats_output)
     return calc_cutoff_from_reverse_sorted_readlength_counts(rl_counts, target)
+
 
 def parse_2columns_of_ints(data):
     r"""Given 2 columns of integers,
@@ -300,8 +337,10 @@ def parse_2columns_of_ints(data):
     """
     for line in data.splitlines():
         line = line.strip()
-        if not line: continue
+        if not line:
+            continue
         yield tuple(int(x) for x in line.split())
+
 
 def weighted_average(cols):
     """Given tuples of (weight, value),
@@ -310,7 +349,8 @@ def weighted_average(cols):
     >>> weighted_average(((100, 1), (200, 2), (100, 5)))
     2.5
     """
-    return sum(w*v for (w,v) in cols) / sum(w for (w,v) in cols)
+    return sum(w * v for (w, v) in cols) / sum(w for (w, v) in cols)
+
 
 def parsed_readlengths_from_dbdump_output(output):
     """Given output text from the DBump command,
@@ -324,6 +364,7 @@ def parsed_readlengths_from_dbdump_output(output):
             beg = int(beg)
             end = int(end)
             yield end - beg
+
 
 def mapped_readlengths_from_dbdump_output(output):
     """Given output text from the DBump command,
@@ -351,6 +392,7 @@ def mapped_readlengths_from_dbdump_output(output):
             continue
     return lengths
 
+
 def average_difference(dictA, dictB):
     """Return the average difference of
     values in dictA minus dictB, only
@@ -358,10 +400,11 @@ def average_difference(dictA, dictB):
     If a value is missing from dictB, raise Exception.
     """
     total_diff = 0.0
-    for k,va in dictA.iteritems():
+    for k, va in dictA.iteritems():
         vb = dictB[k]
         total_diff += (va - vb)
     return total_diff / len(dictA)
+
 
 def calc_metric_fragmentation(perl_counts_output):
     # """perl -e 'while (<>) { if ( m{>[^/]+/(\d+)\d/} ) { $id{$1}++; } }; while (my ($k, $v) = each %%id) { $counts{$v}++; }; while (my ($k, $v) = each %%counts) { print "$v $k\n"; };' %s""" %(fastas)
@@ -369,13 +412,15 @@ def calc_metric_fragmentation(perl_counts_output):
     avg = weighted_average(cols)
     return avg
 
+
 def calc_metric_truncation(dbdump_output, length_pairs_output):
     # """perl -e 'while (<>) { if ( m{>[^/]+/0*(\d+)\d/(\d+)_(\d+)} ) { $lengths{$1} += ($3 - $2); } }; while (my ($k, $v) = each %%lengths) { print "$k $v\n"; };' %s""" %(fastas)
     cols = tuple(parse_2columns_of_ints(length_pairs_output))
-    pread_lengths = dict((k,v) for (k,v) in cols)
+    pread_lengths = dict((k, v) for (k, v) in cols)
     orig_lengths = mapped_readlengths_from_dbdump_output(dbdump_output)
     avg = -average_difference(pread_lengths, orig_lengths)
     return avg
+
 
 def choose_cat_fasta(fofn):
     """Given the contents of a fasta FOFN,
