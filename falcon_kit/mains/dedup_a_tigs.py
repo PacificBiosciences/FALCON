@@ -22,3 +22,7 @@ def main(argv=sys.argv):
                    continue
             print >>f, ">"+r.name
             print >>f, r.sequence
+
+
+if __name__ == "__main__":
+    main(sys.argv)

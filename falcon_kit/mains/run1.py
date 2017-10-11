@@ -20,7 +20,12 @@ LOG = logging.getLogger(__name__) # default, for remote tasks
 def create_daligner_tasks(basedir, scatter_fn):
     tasks = []
     tasks_out = {}
-    content = json.loads(open(scatter_fn).read()) # array of descriptions
+    try:
+        content = json.loads(open(scatter_fn).read()) # array of descriptions
+    except Exception:
+        msg = 'Failed to read JSON from {!r}'.format(scatter_fn)
+        LOG.exception(msg)
+        raise Exception(msg)
     for section in content:
         parameters = section['parameters']
         inputs = section['inputs']
@@ -126,6 +131,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     squash = True if 0 < genome_size < 1000000 else False
     wf = PypeProcWatcherWorkflow(job_type=config['job_type'],
             job_queue=config['job_queue'],
+            job_name_style=config['job_name_style'],
             sge_option=config.get('sge_option', ''),
             watcher_type=config['pwatcher_type'],
             watcher_directory=config['pwatcher_directory'],

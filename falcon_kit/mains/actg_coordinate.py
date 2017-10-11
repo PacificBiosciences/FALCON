@@ -1,7 +1,8 @@
 from falcon_kit.FastaReader import open_fasta_reader
+import sys
 
 
-def main(argv=None):
+def main(argv=sys.argv):
   p_ctg_coor_map = {}
   with open("p_ctg_tiling_path") as f:
     for row in f:
@@ -25,3 +26,6 @@ def main(argv=None):
       rid, v, w = rid[:3]
       pid = rid.split("-")[0]
       print rid, p_ctg_coor_map[pid][v], p_ctg_coor_map[pid][w]
+
+if __name__ == "__main__":
+    main(sys.argv)

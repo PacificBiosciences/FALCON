@@ -1,6 +1,7 @@
 from falcon_kit import fc_asm_graph
+import sys
 
-def main(argv=None):
+def main(argv=sys.argv):
   AsmGraph = fc_asm_graph.AsmGraph
 
   G_asm = AsmGraph("sg_edges_list", "utg_data", "ctg_paths")
@@ -77,5 +78,5 @@ def main(argv=None):
                 print '{} {} {:7d}\t{:7d}\t{}\t{}\t{}\t{} {} {}'.format(
                         ctg1, ctg2, len_1, len_2, len(utg1), len(utg2), len(links), "~".join( (s1,v1,t1) ),  "~".join( (s2,v2,t2) ), len(c))
 
-
-
+if __name__ == "__main__":
+    main(sys.argv)

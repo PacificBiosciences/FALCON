@@ -11,6 +11,7 @@ Currently, we ignore zmw numbers and instead use a global counter.
 Inputs may be compressed, and may be either fasta or fastq.
 (For now, we ignore QVs.)
 """
+from ..util.system import abs_fns
 import argparse
 import glob
 import gzip
@@ -198,18 +199,6 @@ def fixall(ifns, Gzip=False):
         process(ifn, movie2write)
     movie2write.close()
     return movie2write.basenames()
-
-def abs_fns(ifofns, idir=None):
-    """Yield absolute filenames from a streamed file-of-filenames.
-    """
-    log.info('idir={!r}'.format(idir))
-    for line in ifofns.read().split():
-        ifn = line.strip()
-        if not ifn:
-            continue
-        if not os.path.isabs(ifn):
-            ifn = os.path.abspath(os.path.join(idir, ifn))
-        yield ifn
 
 def main():
     parser = argparse.ArgumentParser()

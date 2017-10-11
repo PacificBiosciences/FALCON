@@ -1,6 +1,6 @@
 from . import bash
+from .util.system import (make_fofn_abs, make_dirs, cd)
 import ConfigParser
-import contextlib
 import json
 import logging
 import logging.config
@@ -148,6 +148,10 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'job_queue'):
         job_queue = config.get(section, 'job_queue')
 
+    job_name_style = ""
+    if config.has_option(section, 'job_name_style'):
+        job_name_style = config.get(section, 'job_name_style')
+
     pwatcher_type = 'fs_based'
     if config.has_option(section, 'pwatcher_type'):
         pwatcher_type = config.get(section, 'pwatcher_type')
@@ -227,11 +231,11 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'skip_checks'):
         skip_checks = config.getboolean(section, 'skip_checks')
 
-    dust = False
     if config.has_option(section, 'dust'):
-        dust = config.getboolean(section, 'dust')
+        warnings.warn("The 'dust' option is deprecated and ignored. We always run DBdust now. Use pa_DBdust_option to override its default arguments.")
 
-    pa_DBdust_option = "-w128 -t2.5 -m20"
+    #pa_DBdust_option = "-w128 -t2.5 -m20"
+    pa_DBdust_option = "" # Gene recommends the defaults.
     if config.has_option(section, 'pa_DBdust_option'):
         pa_DBdust_option = config.get(section, 'pa_DBdust_option')
 
@@ -242,6 +246,46 @@ def get_dict_from_old_falcon_cfg(config):
     pa_dazcon_option = "-j 4 -x -l 500"
     if config.has_option(section, 'pa_dazcon_option'):
         pa_dazcon_option = config.get(section, 'pa_dazcon_option')
+
+    # DAMASKER options
+    """
+    Example config usage:
+    pa_use_tanmask = true
+    pa_use_repmask = true
+    pa_HPCtanmask_option =
+    pa_repmask_levels = 2
+    pa_HPCrepmask_1_option = -g1 -c20 -mtan
+    pa_HPCrepmask_2_option = -g10 -c15 -mtan -mrep1
+    pa_damasker_HPCdaligner_option = -mtan -mrep1 -mrep10
+    """
+    pa_use_tanmask = False
+    if config.has_option(section, 'pa_use_tanmask'):
+        pa_use_tanmask = config.getboolean(section, 'pa_use_tanmask')
+
+    pa_HPCtanmask_option = "";
+    if config.has_option(section, 'pa_HPCtanmask_option'):
+        pa_HPCtanmask_option = config.get(section, 'pa_HPCtanmask_option')
+
+    pa_use_repmask = False
+    if config.has_option(section, 'pa_use_repmask'):
+        pa_use_repmask = config.getboolean(section, 'pa_use_repmask')
+
+    pa_repmask_levels = 0   # REPmask tool can be used multiple times.
+    if config.has_option(section, 'pa_repmask_levels'):
+        pa_repmask_levels = config.getint(section, 'pa_repmask_levels')
+
+    pa_HPCrepmask_1_option = """ -g1 -c20 -mtan"""
+    if config.has_option(section, 'pa_HPCrepmask_1_option'):
+        pa_HPCrepmask_1_option = config.get(section, 'pa_HPCrepmask_1_option')
+
+    pa_HPCrepmask_2_option = """ -g10 -c15 -mtan -mrep1"""
+    if config.has_option(section, 'pa_HPCrepmask_2_option'):
+        pa_HPCrepmask_2_option = config.get(section, 'pa_HPCrepmask_2_option')
+
+    pa_damasker_HPCdaligner_option = """ -mtan -mrep1 -mrep10"""    # Repeat masks need to be passed to Daligner.
+    if config.has_option(section, 'pa_damasker_HPCdaligner_option'):
+        pa_damasker_HPCdaligner_option = config.get(section, 'pa_damasker_HPCdaligner_option')
+    # End of DAMASKER options.
 
     ovlp_DBsplit_option = """ -x500 -s200"""
     if config.has_option(section, 'ovlp_DBsplit_option'):
@@ -329,6 +373,7 @@ def get_dict_from_old_falcon_cfg(config):
                    "target" : target,
                    "job_type" : job_type,
                    "job_queue" : job_queue,
+                   "job_name_style" : job_name_style,
                    "input_type": input_type,
                    #"openending": openending,
                    "default_concurrent_jobs" : default_concurrent_jobs,
@@ -351,10 +396,16 @@ def get_dict_from_old_falcon_cfg(config):
                    "sge_option_fc": config.get(section, 'sge_option_fc'),
                    "sge_option_cns": config.get(section, 'sge_option_cns'),
                    "pa_HPCdaligner_option": pa_HPCdaligner_option,
+                   "pa_use_tanmask": pa_use_tanmask,
+                   "pa_HPCtanmask_option": pa_HPCtanmask_option,
+                   "pa_use_repmask": pa_use_repmask,
+                   "pa_repmask_levels": pa_repmask_levels,
+                   "pa_HPCrepmask_1_option": pa_HPCrepmask_1_option,
+                   "pa_HPCrepmask_2_option": pa_HPCrepmask_2_option,
+                   "pa_damasker_HPCdaligner_option": pa_damasker_HPCdaligner_option,
                    "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
                    "pa_DBsplit_option": pa_DBsplit_option,
                    "skip_checks": skip_checks,
-                   "dust": dust,
                    "pa_DBdust_option": pa_DBdust_option,
                    "dazcon": dazcon,
                    "pa_dazcon_option": pa_dazcon_option,
@@ -446,34 +497,6 @@ def setup_logger(logging_config_fn):
         pass
 
     return logger
-
-@contextlib.contextmanager
-def cd(newdir):
-    prevdir = os.getcwd()
-    logger.debug('CD: %r <- %r' %(newdir, prevdir))
-    os.chdir(os.path.expanduser(newdir))
-    try:
-        yield
-    finally:
-        logger.debug('CD: %r -> %r' %(newdir, prevdir))
-        os.chdir(prevdir)
-
-def make_fofn_abs(i_fofn_fn, o_fofn_fn):
-    """Copy i_fofn to o_fofn, but with relative filenames expanded for the dir of i_fofn.
-    """
-    assert os.path.abspath(o_fofn_fn) != os.path.abspath(i_fofn_fn), '{!r} != {!r}'.format(o_fofn_fn, i_fofn_fn)
-    with open(i_fofn_fn) as ifs, open(o_fofn_fn, 'w') as ofs:
-      with cd(os.path.dirname(i_fofn_fn)):
-        for line in ifs:
-            ifn = line.strip()
-            if not ifn: continue
-            abs_ifn = os.path.abspath(ifn)
-            ofs.write('%s\n' %abs_ifn)
-    #return o_fofn_fn
-
-def make_dirs(d):
-    if not os.path.isdir(d):
-        os.makedirs(d)
 
 def get_nblock(db_file):
     """Return #blocks in dazzler-db.

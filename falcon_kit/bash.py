@@ -188,10 +188,6 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_bfn):
         LOG.exception('Using "cat" by default.')
         cat_fasta = 'cat '
     DBdust = 'DBdust {} raw_reads'.format(params.get('pa_DBdust_option', ''))
-    mdust = '-mdust'
-    if not params.get('dust'):
-        DBdust = "#" + DBdust
-        mdust = ''
     params.update(locals())
     script = """\
 echo "PBFALCON_ERRFILE=$PBFALCON_ERRFILE"
@@ -205,7 +201,7 @@ LB={count}
 rm -f {run_jobs_bfn}
 CUTOFF={bash_cutoff}
 echo -n $CUTOFF >| length_cutoff
-HPC.daligner {pa_HPCdaligner_option} {mdust} -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_bfn}
+HPC.daligner {pa_HPCdaligner_option} -mdust -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_bfn}
 """.format(**params)
     return script
     # Note: We dump the 'length_cutoff' file for later reference within the preassembly report
@@ -218,12 +214,18 @@ def script_build_pdb(config, input_fofn_bfn, run_jobs_bfn):
     count = """$(cat preads.db | LD_LIBRARY_PATH= awk '$1 == "blocks" {print $3}')"""
     params = dict(config)
     update_dict_entry(params, 'ovlp_DBsplit_option', filter_DBsplit_option)
+
+    # We need to run DBdust for preads too, for consistency.
+    # We will always use defaults for preads, since they should be small and clean.
+    DBdust = 'DBdust preads'
+
     params.update(locals())
     script = """\
 while read fn; do fasta2DB -v preads $fn; done < {input_fofn_bfn}
 DBsplit {ovlp_DBsplit_option} preads
+{DBdust}
 LB={count}
-HPC.daligner {ovlp_HPCdaligner_option} -H{length_cutoff_pr} preads {last_block}-$LB >| {run_jobs_bfn}
+HPC.daligner {ovlp_HPCdaligner_option} -mdust -H{length_cutoff_pr} preads {last_block}-$LB >| {run_jobs_bfn}
 """.format(**params)
     return script
 
@@ -338,7 +340,7 @@ def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
         LA4Falcon_flags += 'fo'
     if LA4Falcon_flags:
         LA4Falcon_flags = '-' + ''.join(set(LA4Falcon_flags))
-    run_consensus = "LA4Falcon -H$CUTOFF %s {db_fn} {las_fn} | fc_consensus {falcon_sense_option} >| {out_file_bfn}"%LA4Falcon_flags
+    run_consensus = "LA4Falcon -H$CUTOFF %s {db_fn} {las_fn} | python -m falcon_kit.mains.consensus {falcon_sense_option} >| {out_file_bfn}"%LA4Falcon_flags
 
     if config.get('dazcon', False):
         run_consensus = """
@@ -359,23 +361,35 @@ def script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_f
     script = """\
 # Given, las.fofn,
 # write preads.ovl:
-time fc_ovlp_filter --db {db_file_fn} --fofn {las_fofn_fn} {overlap_filtering_setting} --min_len {length_cutoff_pr} >| preads.ovl
+
+# mobs uses binwrappers, so it does not see our "entry-points".
+# So, after dropping "src/py_scripts/*.py", we can call these via python -m:
+
+time python -m falcon_kit.mains.ovlp_filter --db {db_file_fn} --fofn {las_fofn_fn} {overlap_filtering_setting} --min_len {length_cutoff_pr} >| preads.ovl
 
 ln -sf {preads4falcon_fasta_fn} ./preads4falcon.fasta
 
 # Given preads.ovl,
 # write sg_edges_list, c_path, utg_data, ctg_paths.
-time fc_ovlp_to_graph {fc_ovlp_to_graph_option} preads.ovl >| fc_ovlp_to_graph.log
+time python -m falcon_kit.mains.ovlp_to_graph {fc_ovlp_to_graph_option} preads.ovl >| fc_ovlp_to_graph.log
 
 # Given sg_edges_list, utg_data, ctg_paths, preads4falcon.fasta,
 # write p_ctg.fa and a_ctg_all.fa,
 # plus a_ctg_base.fa, p_ctg_tiling_path, a_ctg_tiling_path, a_ctg_base_tiling_path:
-time fc_graph_to_contig
-
-rm -f ./preads4falcon.fasta
+time python -m falcon_kit.mains.graph_to_contig
 
 # Given a_ctg_all.fa, write a_ctg.fa:
-time fc_dedup_a_tigs
+time python -m falcon_kit.mains.dedup_a_tigs
+
+# Generate a GFA of all assembly graph edges. This GFA can contain
+# edges and nodes which are not part of primary and associate contigs.
+time python -m falcon_kit.mains.gen_gfa_v1 --tiling >| asm.gfa
+
+# Generate a GFA of all assembly graph edges. This GFA can contain
+# edges and nodes which are not part of primary and associate contigs.
+time python -m falcon_kit.mains.gen_gfa_v1 >| sg.gfa
+
+rm -f ./preads4falcon.fasta
 """
     return script.format(**params)
 
