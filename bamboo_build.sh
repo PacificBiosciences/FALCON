@@ -5,6 +5,7 @@ module unload git gcc ccache
 module load git/2.8.3
 module load gcc/6.4.0
 module load ccache/3.2.3
+module load python/2.7.13-UCS4
 #module load make
 
 set -vx
@@ -12,15 +13,11 @@ git --version
 which gcc
 which g++
 gcc --version
-# We cannot use /bin/python without /bin/gcc.
-export PATH=/mnt/software/a/anaconda2/4.2.0/bin:$PATH
 which python
 
 mkdir -p LOCAL
 export PYTHONUSERBASE=$(pwd)/LOCAL
-
-# We have a problem with pylint: https://github.com/PyCQA/pylint/issues/1296
-pip install --user --upgrade pylint
+export PATH=${PYTHONUSERBASE}/bin:${PATH}
 
 make install-edit
 # Note: no --edit because we might be building artifacts.
@@ -28,4 +25,11 @@ make install-edit
 #  source=falcon_kit
 # but maybe it will work with a --edit install.
 
+pip install --user pytest pytest-cov nose
+export MY_TEST_FLAGS="-v -s --durations=0 --cov=falcon_kit --cov-report=term-missing --cov-report=xml:coverage.xml --cov-branch"
+make test
+sed -i -e 's@filename="@filename="./falcon_kit/@g' coverage.xml
+
+# We have a problem with pylint: https://github.com/PyCQA/pylint/issues/1296
+pip install --user --upgrade pylint
 make pylint
