@@ -3,7 +3,7 @@ __all__ = [
     'kup', 'DWA', 'falcon',
     'KmerLookup', 'KmerMatch', 'AlnRange', 'ConsensusData',
     'Alignment', 'get_alignment',
-    ]
+]
 
 from ctypes import *
 import os
@@ -14,37 +14,43 @@ import ext_falcon
 seq_coor_t = c_int
 base_t = c_uint8
 
+
 class KmerLookup(Structure):
     _fields_ = [("start", seq_coor_t),
                 ("last", seq_coor_t),
                 ("count", seq_coor_t)]
 
+
 class KmerMatch(Structure):
-    _fields_ = [ ("count", seq_coor_t),
+    _fields_ = [("count", seq_coor_t),
                 ("query_pos", POINTER(seq_coor_t)),
-                ("target_pos", POINTER(seq_coor_t)) ]
+                ("target_pos", POINTER(seq_coor_t))]
+
 
 class AlnRange(Structure):
-    _fields_ = [ ("s1", seq_coor_t),
-                 ("e1", seq_coor_t),
-                 ("s2", seq_coor_t),
-                 ("e2", seq_coor_t),
-                 ("score", c_long) ]
+    _fields_ = [("s1", seq_coor_t),
+                ("e1", seq_coor_t),
+                ("s2", seq_coor_t),
+                ("e2", seq_coor_t),
+                ("score", c_long)]
+
 
 class ConsensusData(Structure):
-    _fields_ = [ ("sequence", c_char_p),
-                 ("eff_cov", POINTER(c_uint)) ]
+    _fields_ = [("sequence", c_char_p),
+                ("eff_cov", POINTER(c_uint))]
+
 
 try:
     falcon_dll = CDLL(ext_falcon.__file__)
 except OSError:
     # It seems that setup.py has changed the __file__ it attaches to an extension module.
     # I have no idea why or why, but this works around it.
-    falcon_dll = CDLL(os.path.join(os.path.dirname(__file__), '..', os.path.basename(ext_falcon.__file__)))
+    falcon_dll = CDLL(os.path.join(os.path.dirname(__file__),
+                                   '..', os.path.basename(ext_falcon.__file__)))
 
 kup = falcon_dll
 
-kup.allocate_kmer_lookup.argtypes =  [seq_coor_t]
+kup.allocate_kmer_lookup.argtypes = [seq_coor_t]
 kup.allocate_kmer_lookup.restype = POINTER(KmerLookup)
 kup.init_kmer_lookup.argtypes = [POINTER(KmerLookup), seq_coor_t]
 kup.free_kmer_lookup.argtypes = [POINTER(KmerLookup)]
@@ -58,18 +64,20 @@ kup.allocate_seq_addr.argtypes = [seq_coor_t]
 kup.allocate_seq_addr.restype = POINTER(seq_coor_t)
 kup.free_seq_addr_array.argtypes = [POINTER(seq_coor_t)]
 
-kup.add_sequence.argtypes = [ seq_coor_t, c_uint, POINTER(c_char), seq_coor_t, POINTER(seq_coor_t),
-                              POINTER(c_uint8), POINTER(KmerLookup) ]
-kup.mask_k_mer.argtypes =[ c_long, POINTER(KmerLookup), c_long ]
-kup.find_kmer_pos_for_seq.argtypes = [ POINTER(c_char), seq_coor_t, c_uint, POINTER(seq_coor_t),
-                                       POINTER(KmerLookup)]
+kup.add_sequence.argtypes = [seq_coor_t, c_uint, POINTER(c_char), seq_coor_t, POINTER(seq_coor_t),
+                             POINTER(c_uint8), POINTER(KmerLookup)]
+kup.mask_k_mer.argtypes = [c_long, POINTER(KmerLookup), c_long]
+kup.find_kmer_pos_for_seq.argtypes = [POINTER(c_char), seq_coor_t, c_uint, POINTER(seq_coor_t),
+                                      POINTER(KmerLookup)]
 kup.find_kmer_pos_for_seq.restype = POINTER(KmerMatch)
-kup.free_kmer_match.argtypes = [ POINTER(KmerMatch) ]
+kup.free_kmer_match.argtypes = [POINTER(KmerMatch)]
 
 
-kup.find_best_aln_range.argtypes = [POINTER(KmerMatch), seq_coor_t, seq_coor_t, seq_coor_t]
+kup.find_best_aln_range.argtypes = [
+    POINTER(KmerMatch), seq_coor_t, seq_coor_t, seq_coor_t]
 kup.find_best_aln_range.restype = POINTER(AlnRange)
-kup.find_best_aln_range2.argtypes = [POINTER(KmerMatch), seq_coor_t, seq_coor_t, seq_coor_t]
+kup.find_best_aln_range2.argtypes = [
+    POINTER(KmerMatch), seq_coor_t, seq_coor_t, seq_coor_t]
 kup.find_best_aln_range2.restype = POINTER(AlnRange)
 kup.free_aln_range.argtypes = [POINTER(AlnRange)]
 
@@ -87,41 +95,43 @@ class Alignment(Structure):
         char * t_aln_str;
     } alignment;
     """
-    _fields_ = [ ("aln_str_size", seq_coor_t),
-                 ("dist", seq_coor_t),
-                 ("aln_q_s", seq_coor_t),
-                 ("aln_q_e", seq_coor_t),
-                 ("aln_t_s", seq_coor_t),
-                 ("aln_t_e", seq_coor_t),
-                 ("q_aln_str", c_char_p),
-                 ("t_aln_str", c_char_p)]
+    _fields_ = [("aln_str_size", seq_coor_t),
+                ("dist", seq_coor_t),
+                ("aln_q_s", seq_coor_t),
+                ("aln_q_e", seq_coor_t),
+                ("aln_t_s", seq_coor_t),
+                ("aln_t_e", seq_coor_t),
+                ("q_aln_str", c_char_p),
+                ("t_aln_str", c_char_p)]
 
 
 DWA = falcon_dll
 
-DWA.align.argtypes = [ POINTER(c_char), c_long, POINTER(c_char), c_long, c_long, c_int ]
+DWA.align.argtypes = [POINTER(c_char), c_long, POINTER(
+    c_char), c_long, c_long, c_int]
 DWA.align.restype = POINTER(Alignment)
 DWA.free_alignment.argtypes = [POINTER(Alignment)]
 
 
-
 falcon = falcon_dll
 
-falcon.generate_consensus.argtypes = [POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint, c_uint, c_double  ]
+falcon.generate_consensus.argtypes = [
+    POINTER(c_char_p), c_uint, c_uint, c_uint, c_uint, c_uint, c_double]
 falcon.generate_consensus.restype = POINTER(ConsensusData)
-falcon.free_consensus_data.argtypes = [ POINTER(ConsensusData) ]
+falcon.free_consensus_data.argtypes = [POINTER(ConsensusData)]
 
 
 def get_alignment(seq1, seq0):
     K = 8
-    lk_ptr = kup.allocate_kmer_lookup( 1 << (K * 2) )
-    sa_ptr = kup.allocate_seq( len(seq0) )
-    sda_ptr = kup.allocate_seq_addr( len(seq0) )
-    kup.add_sequence( 0, K, seq0, len(seq0), sda_ptr, sa_ptr, lk_ptr)
+    lk_ptr = kup.allocate_kmer_lookup(1 << (K * 2))
+    sa_ptr = kup.allocate_seq(len(seq0))
+    sda_ptr = kup.allocate_seq_addr(len(seq0))
+    kup.add_sequence(0, K, seq0, len(seq0), sda_ptr, sa_ptr, lk_ptr)
 
-    kmer_match_ptr = kup.find_kmer_pos_for_seq(seq1, len(seq1), K, sda_ptr, lk_ptr)
+    kmer_match_ptr = kup.find_kmer_pos_for_seq(
+        seq1, len(seq1), K, sda_ptr, lk_ptr)
     kmer_match = kmer_match_ptr[0]
-    aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K*10, 50)
+    aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K * 10, 50)
     #x,y = zip( * [ (kmer_match.query_pos[i], kmer_match.target_pos[i]) for i in range(kmer_match.count )] )
     kup.free_kmer_match(kmer_match_ptr)
     aln_range = aln_range_ptr[0]
@@ -131,16 +141,16 @@ def get_alignment(seq1, seq0):
     if e1 - s1 > 500:
         #s1 = 0 if s1 < 14 else s1 - 14
         #s2 = 0 if s2 < 14 else s2 - 14
-        e1 = len(seq1) if e1 >= len(seq1)-2*K else e1 + K*2
-        e2 = len(seq0) if e2 >= len(seq0)-2*K else e2 + K*2
+        e1 = len(seq1) if e1 >= len(seq1) - 2 * K else e1 + K * 2
+        e2 = len(seq0) if e2 >= len(seq0) - 2 * K else e2 + K * 2
 
-        alignment = DWA.align(seq1[s1:e1], e1-s1,
-                              seq0[s2:e2], e2-s2,
+        alignment = DWA.align(seq1[s1:e1], e1 - s1,
+                              seq0[s2:e2], e2 - s2,
                               100,
                               0)
-        #print seq1[s1:e1]
-        #print seq0[s2:e2]
-        #if alignment[0].aln_str_size > 500:
+        # print seq1[s1:e1]
+        # print seq0[s2:e2]
+        # if alignment[0].aln_str_size > 500:
 
         #aln_str1 = alignment[0].q_aln_str
         #aln_str0 = alignment[0].t_aln_str
@@ -151,11 +161,11 @@ def get_alignment(seq1, seq0):
         aln_t_s = alignment[0].aln_t_s
         aln_t_e = alignment[0].aln_t_e
 
-        #print "X,",alignment[0].aln_q_s, alignment[0].aln_q_e
-        #print "Y,",alignment[0].aln_t_s, alignment[0].aln_t_e
+        # print "X,",alignment[0].aln_q_s, alignment[0].aln_q_e
+        # print "Y,",alignment[0].aln_t_s, alignment[0].aln_t_e
 
-        #print aln_str1
-        #print aln_str0
+        # print aln_str1
+        # print aln_str0
 
         DWA.free_alignment(alignment)
 
@@ -163,6 +173,6 @@ def get_alignment(seq1, seq0):
     kup.free_seq_array(sa_ptr)
     kup.free_kmer_lookup(lk_ptr)
     if e1 - s1 > 500 and aln_size > 500:
-        return s1, s1+aln_q_e-aln_q_s, s2, s2+aln_t_e-aln_t_s, aln_size, aln_dist
+        return s1, s1 + aln_q_e - aln_q_s, s2, s2 + aln_t_e - aln_t_s, aln_size, aln_dist
     else:
         return None

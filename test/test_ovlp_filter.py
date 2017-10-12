@@ -1,6 +1,7 @@
 import falcon_kit.mains.ovlp_filter as mod
 from nose.tools import assert_equal
 
+
 def test_help():
     """Calls itself 'nosetests', but reports
     proper help message otherwise.
@@ -9,6 +10,7 @@ def test_help():
         mod.main(['prog', '--help'])
     except SystemExit:
         pass
+
 
 def test_several():
     expected = ['000000001', '000000002', '000000017', '000000028']
@@ -31,6 +33,7 @@ def test_several():
     got = mod.filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len)
     assert_equal(expected, got)
 
+
 def test_one_not_ignored():
     """This is the same as a line dropped in the earlier test.
     """
@@ -43,6 +46,7 @@ def test_one_not_ignored():
     got = mod.filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len)
     assert_equal(expected, got)
 
+
 def test_one_line_ignored():
     """This is the same as a line kept in the earlier test.
     """
@@ -54,6 +58,7 @@ def test_one_line_ignored():
     max_diff, max_ovlp, min_ovlp, min_len = 1000, 1000, 1, 1
     got = mod.filter_stage1(readlines, max_diff, max_ovlp, min_ovlp, min_len)
     assert_equal(expected, got)
+
 
 def test_empty():
     expected = []

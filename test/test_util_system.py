@@ -6,10 +6,13 @@ import pytest
 import os
 import shutil
 
+
 def touchtree(*fns):
     for fn in fns:
         mkdir(os.path.dirname(fn))
-        with open(fn, 'w'): pass
+        with open(fn, 'w'):
+            pass
+
 
 @pytest.yield_fixture
 @pytest.fixture(scope="session")
@@ -74,6 +77,7 @@ find_files/level_2/file4.txt
     # Test empty dir and empty pattern
     with pytest.raises(Exception) as excinfo:
         list(mod.find_files('', ''))
+
 
 def test_make_fofn_abs(tmpdir):
     """

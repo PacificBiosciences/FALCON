@@ -9,10 +9,13 @@ the arglist. Then run LAmerge on the remaining arglist.
 This differs from LAsort.py in that the first las file is actually
 an *explicit* output, whereas LAsort relies on *implicit* outputs.
 """
-import sys, os
+import sys
+import os
+
 
 def log(msg):
     sys.stderr.write(msg + '\n')
+
 
 def system(call, checked=False):
     log('!{}'.format(call))
@@ -24,9 +27,10 @@ def system(call, checked=False):
         log(msg)
     return rc
 
+
 def main(argv=sys.argv):
     db = argv[1]
-    args = argv[2:] # Skip program name
+    args = argv[2:]  # Skip program name
     lass = list()
     new_args = list()
     new_args.append('LAmerge')
@@ -36,15 +40,15 @@ def main(argv=sys.argv):
         else:
             lass.append(arg)
     outlas = lass[0]
-    new_args.append(outlas) # This is the output las.
+    new_args.append(outlas)  # This is the output las.
     for las in lass[1:]:
-        rc = system('LAcheck -vS {} {}.las'.format(db, las)) # Assume sorted.
+        rc = system('LAcheck -vS {} {}.las'.format(db, las))  # Assume sorted.
         if rc:
             log('Skipping {}.las'.format(las))
         else:
             new_args.append(las)
     system(' '.join(new_args))
-    system('LAcheck -vS {} {}.las'.format(db, outlas)) # Assume sorted.
+    system('LAcheck -vS {} {}.las'.format(db, outlas))  # Assume sorted.
 
 
 if __name__ == "__main__":

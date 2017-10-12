@@ -1,21 +1,23 @@
 #!/usr/bin/env python2.7
 
 from setuptools import setup, Extension
-import subprocess, sys
+import subprocess
+import sys
 import glob
 
-install_requires=[
-        "networkx >=1.7, <=1.11",
-        #"logging_tree",
-        #"pbcore >= 0.6.3",
-        #"pypeFLOW", # We exclude pypeFLOW because it is not needed for the unit-tests.
-        ]
+install_requires = [
+    "networkx >=1.7, <=1.11",
+    #"logging_tree",
+    #"pbcore >= 0.6.3",
+    #"pypeFLOW", # We exclude pypeFLOW because it is not needed for the unit-tests.
+]
 
-#scripts = glob.glob("src/py_scripts/*.py") # Prefer entry-points, for shebang lines.
+# scripts = glob.glob("src/py_scripts/*.py") # Prefer entry-points, for shebang lines.
 scripts = []
 
 try:
-    local_version = '+git.{}'.format(subprocess.check_output('git rev-parse HEAD', shell=True))
+    local_version = '+git.{}'.format(
+        subprocess.check_output('git rev-parse HEAD', shell=True))
 except Exception:
     local_version = ''
 
@@ -25,23 +27,24 @@ setup(name='falcon_kit',
       author='Jason Chin',
       author_email='jchin@pacificbiosciences.com',
       packages=['falcon_kit',
-          'falcon_kit.mains',
-          'falcon_kit.util',
-          ],
-      package_dir={'falcon_kit':'falcon_kit/'},
+                'falcon_kit.mains',
+                'falcon_kit.util',
+                ],
+      package_dir={'falcon_kit': 'falcon_kit/'},
       ext_modules=[
-                   Extension('ext_falcon', ['src/c/ext_falcon.c', 'src/c/DW_banded.c', 'src/c/kmer_lookup.c', 'src/c/falcon.c'],
+          Extension('ext_falcon', ['src/c/ext_falcon.c', 'src/c/DW_banded.c', 'src/c/kmer_lookup.c', 'src/c/falcon.c'],
                     extra_link_args=[],
-                    extra_compile_args=['-fPIC', '-O3', '-fno-omit-frame-pointer'],
+                    extra_compile_args=['-fPIC', '-O3',
+                                        '-fno-omit-frame-pointer'],
                     # '-fno-omit-frame-pointer' can help with gperftools.
-                    #libraries=['profiler'],
-                    #include_dirs=['/home/cdunn/local/include'],
-                    #library_dirs=['/home/cdunn/local/lib'],
-                    #language="c++", # c for now
-                    #export_symbols=['generate_consensus'], # for windows?
-                   ),
-                  ],
-      entry_points = {'console_scripts': [
+                    # libraries=['profiler'],
+                    # include_dirs=['/home/cdunn/local/include'],
+                    # library_dirs=['/home/cdunn/local/lib'],
+                    # language="c++", # c for now
+                    # export_symbols=['generate_consensus'], # for windows?
+                    ),
+      ],
+      entry_points={'console_scripts': [
           'falcon-task=falcon_kit.mains.tasks:main',
           'fc_actg_coordinate=falcon_kit.mains.actg_coordinate:main',
           'fc_consensus=falcon_kit.mains.consensus:main',
@@ -66,13 +69,13 @@ setup(name='falcon_kit',
           # Some scripts still use old .py scripts, which need shebang lines.
           # (I guess pip does not add shebang to scripts.)
           'fc_run.py=falcon_kit.mains.run1:main',
-          ],
+      ],
       },
-      extras_require = {
+      extras_require={
           'falcon-task':  ['falcon_kit'],
       },
-      scripts = scripts,
-      zip_safe = False,
+      scripts=scripts,
+      zip_safe=False,
       setup_requires=install_requires,
       install_requires=install_requires
-     )
+      )

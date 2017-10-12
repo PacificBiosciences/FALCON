@@ -4,6 +4,7 @@ import os
 import sys
 import traceback
 
+
 def main(argv=sys.argv):
     import argparse
 
@@ -22,17 +23,17 @@ Note: If PBFALCON_ERRFILE is defined (and its directory is writable),
 we will write errors there in addition to stderr.
 """
     parser = argparse.ArgumentParser(description=description, epilog=epilog,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--coverage', type=float, default=20,
-            help='Desired coverage ratio (i.e. over-sampling)')
+                        help='Desired coverage ratio (i.e. over-sampling)')
     parser.add_argument('genome_size', type=int,
-            help='Estimated number of bases in genome. (haploid?)')
-    parser.add_argument('capture', #default='-', # I guess default is not allowed for required args.
-            help='File with captured output of DBstats. (Otherwise, stdin.)')
+                        help='Estimated number of bases in genome. (haploid?)')
+    parser.add_argument('capture',  # default='-', # I guess default is not allowed for required args.
+                        help='File with captured output of DBstats. (Otherwise, stdin.)')
     args = parser.parse_args(argv[1:])
 
     target = int(args.genome_size * args.coverage)
-    capture = open(args.capture) if args.capture!='-' else sys.stdin
+    capture = open(args.capture) if args.capture != '-' else sys.stdin
     stats = capture.read()
     try:
         cutoff = f.calc_cutoff(target, stats)
@@ -47,6 +48,7 @@ we will write errors there in addition to stderr.
                 ofs.write(msg)
         raise Exception(msg)
     sys.stdout.write(str(cutoff))
+
 
 if __name__ == "__main__":
     main(sys.argv)
