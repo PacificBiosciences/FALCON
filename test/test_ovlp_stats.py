@@ -1,5 +1,4 @@
 import falcon_kit.mains.ovlp_stats as mod
-from nose.tools import assert_equal
 
 
 def test_help():
@@ -13,7 +12,7 @@ def test():
     readlines = data.strip().splitlines
     stats = mod.filter_stats(readlines, min_len=62)
     # print stats
-    assert_equal(expected,  stats)
+    assert expected == stats
 
 
 expected = [('000000000', 1988, 2, 1), ('000000001', 1989, 2, 0),

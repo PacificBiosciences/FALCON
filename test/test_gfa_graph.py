@@ -7,6 +7,7 @@ import falcon_kit.gfa_graph as mod
 import falcon_kit.mains.gen_gfa_v1 as gen_gfa_v1
 from falcon_kit.fc_asm_graph import AsmGraph
 from falcon_kit.mains.ovlp_to_graph import reverse_end
+from falcon_kit.util import system
 
 
 def test_gfa_graph():
@@ -186,28 +187,32 @@ def wrap_write_gfa_v1_test(use_sg, use_nx, use_tp, write_reads, write_contigs, m
     assert(result == expected)
 
 
-def test_write_gfa_v1_1():
+@pytest.mark.parametrize("args, expected_path", [
+    # Test various combinations of options.
+    ((True, False, True, True, True, 0, 0),
+            'expected-1-sg-r-c.gfa'),
+    ((False, False, True, True, True, 0, 0),
+            'expected-2-tiling-r-c.gfa'),
+    ((False, False, True, False, True, 0, 0),
+            'expected-3-tiling-no_r-c.gfa'),
+    ((False, False, True, False, False, 0, 0),
+            'expected-4-tiling-no_r-no_c.gfa'),
+    ((True, False, True, False, False, 0, 0),
+            'expected-5-sg-no_r-no_c.gfa'),
+    ((False, False, True, False, False, 10000, 10000),
+            'expected-6-tiling-no_r-no_c-minlen.gfa'),
+    ((False, True, False, False, False, 0, 0),
+            'expected-7-nx-no_r-no_c.gfa'),
+    ((False, True, True, False, False, 0, 0),
+            'expected-8-nx-tiling-no_r-no_c.gfa'),
+    ((False, True, True, True, True, 0, 0),
+            'expected-9-nx-tiling-r-c.gfa'),
+])
+def test_write_gfa_v1_1(args, expected_path):
     test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')
 
-    # Test various combinations of options.
-    wrap_write_gfa_v1_test(True, False, True, True, True,
-                           0, 0, os.path.join(test_dir, 'expected-1-sg-r-c.gfa'))
-    wrap_write_gfa_v1_test(False, False, True, True, True, 0, 0, os.path.join(
-        test_dir, 'expected-2-tiling-r-c.gfa'))
-    wrap_write_gfa_v1_test(False, False, True, False, True, 0, 0, os.path.join(
-        test_dir, 'expected-3-tiling-no_r-c.gfa'))
-    wrap_write_gfa_v1_test(False, False, True, False, False, 0, 0, os.path.join(
-        test_dir, 'expected-4-tiling-no_r-no_c.gfa'))
-    wrap_write_gfa_v1_test(True, False, True, False, False, 0, 0, os.path.join(
-        test_dir, 'expected-5-sg-no_r-no_c.gfa'))
-    wrap_write_gfa_v1_test(False, False, True, False, False, 10000, 10000, os.path.join(
-        test_dir, 'expected-6-tiling-no_r-no_c-minlen.gfa'))
-    wrap_write_gfa_v1_test(False, True, False, False, False, 0, 0, os.path.join(
-        test_dir, 'expected-7-nx-no_r-no_c.gfa'))
-    wrap_write_gfa_v1_test(False, True, True, False, False, 0, 0, os.path.join(
-        test_dir, 'expected-8-nx-tiling-no_r-no_c.gfa'))
-    wrap_write_gfa_v1_test(False, True, True, True, True, 0, 0, os.path.join(
-        test_dir, 'expected-9-nx-tiling-r-c.gfa'))
+    with system.cd(test_dir):
+        wrap_write_gfa_v1_test(*args, expected_path=expected_path)
 
 
 def test_write_gfa_v1_2():
