@@ -1,13 +1,15 @@
-import os
-import pytest
-import helpers
 from StringIO import StringIO
+import os
+
+import pytest
 import networkx as nx
-import falcon_kit.gfa_graph as mod
-import falcon_kit.mains.gen_gfa_v1 as gen_gfa_v1
+
 from falcon_kit.fc_asm_graph import AsmGraph
 from falcon_kit.mains.ovlp_to_graph import reverse_end
 from falcon_kit.util import system
+import falcon_kit.gfa_graph as mod
+import falcon_kit.mains.gen_gfa_v1 as gen_gfa_v1
+import helpers
 
 
 def test_gfa_graph():
@@ -128,6 +130,14 @@ def wrap_write_gfa_v1_test(use_sg, use_nx, use_tp, write_reads, write_contigs, m
     # Create a GFA graph.
     gfa_graph = mod.GFAGraph()
 
+    # Init paths to other input files.
+    preads_file = os.path.join(
+        helpers.get_test_data_dir(), 'gfa-1', 'preads4falcon.fasta')
+    p_ctg_fasta = os.path.join(
+        helpers.get_test_data_dir(), 'gfa-1', 'p_ctg.fa')
+    a_ctg_fasta = os.path.join(
+        helpers.get_test_data_dir(), 'gfa-1', 'a_ctg.fa')
+
     if use_sg:
         # Load the assembly graph.
         sg_edges_list = os.path.join(
@@ -141,25 +151,13 @@ def wrap_write_gfa_v1_test(use_sg, use_nx, use_tp, write_reads, write_contigs, m
         gfa_graph.add_asm_graph(asm_graph)
 
     if use_tp:
-        # Load the p_ctg tiling paths.
         p_ctg_tiling_path_file = os.path.join(
             helpers.get_test_data_dir(), 'gfa-1', 'p_ctg_tiling_path')
-        p_paths, p_edge_to_ctg = gen_gfa_v1.load_tiling_paths(
-            p_ctg_tiling_path_file, 'P')
-        # Add the tiling paths to the GFA.
-        for ctg_id, path in p_paths.iteritems():
-            _, contig_len = gen_gfa_v1.calc_node_coords(path)
-            if contig_len >= min_p_len:
-                gfa_graph.add_tiling_path(path, ctg_id)
         a_ctg_tiling_path_file = os.path.join(
             helpers.get_test_data_dir(), 'gfa-1', 'a_ctg_tiling_path')
-        a_paths, a_edge_to_ctg = gen_gfa_v1.load_tiling_paths(
-            a_ctg_tiling_path_file, 'P')
-        # Add the tiling paths to the GFA.
-        for ctg_id, path in a_paths.iteritems():
-            _, contig_len = gen_gfa_v1.calc_node_coords(path)
-            if contig_len >= min_a_len:
-                gfa_graph.add_tiling_path(path, ctg_id)
+        gen_gfa_v1.add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
+                                           p_ctg_tiling_path_file, a_ctg_tiling_path_file,
+                                           min_p_len, min_a_len, gfa_graph)
 
     if use_nx:
         gexf_file = os.path.join(
@@ -167,46 +165,36 @@ def wrap_write_gfa_v1_test(use_sg, use_nx, use_tp, write_reads, write_contigs, m
         nx_sg = nx.read_gexf(gexf_file)
         gfa_graph.add_nx_string_graph(nx_sg)
 
-    # Init paths to other input files.
-    preads_file = os.path.join(
-        helpers.get_test_data_dir(), 'gfa-1', 'preads4falcon.fasta')
-    p_ctg_fasta = os.path.join(
-        helpers.get_test_data_dir(), 'gfa-1', 'p_ctg.fa')
-    a_ctg_fasta = os.path.join(
-        helpers.get_test_data_dir(), 'gfa-1', 'a_ctg.fa')
-
     fp_out = StringIO()
     # Run the unit under test.
     gfa_graph.write_gfa_v1(fp_out, preads_file, [
                            p_ctg_fasta, a_ctg_fasta], write_reads, write_contigs)
 
     # Compare results.
-    result = fp_out.getvalue()
-    result = result.splitlines()
-    expected = [line.strip() for line in open(expected_path).readlines()]
-    assert(result == expected)
+    value = fp_out.getvalue()
+    helpers.assert_filecmp(value, expected_path)
 
 
 @pytest.mark.parametrize("args, expected_path", [
     # Test various combinations of options.
     ((True, False, True, True, True, 0, 0),
-            'expected-1-sg-r-c.gfa'),
+     'expected-1-sg-r-c.gfa'),
     ((False, False, True, True, True, 0, 0),
-            'expected-2-tiling-r-c.gfa'),
+     'expected-2-tiling-r-c.gfa'),
     ((False, False, True, False, True, 0, 0),
-            'expected-3-tiling-no_r-c.gfa'),
+     'expected-3-tiling-no_r-c.gfa'),
     ((False, False, True, False, False, 0, 0),
-            'expected-4-tiling-no_r-no_c.gfa'),
+     'expected-4-tiling-no_r-no_c.gfa'),
     ((True, False, True, False, False, 0, 0),
-            'expected-5-sg-no_r-no_c.gfa'),
+     'expected-5-sg-no_r-no_c.gfa'),
     ((False, False, True, False, False, 10000, 10000),
-            'expected-6-tiling-no_r-no_c-minlen.gfa'),
+     'expected-6-tiling-no_r-no_c-minlen.gfa'),
     ((False, True, False, False, False, 0, 0),
-            'expected-7-nx-no_r-no_c.gfa'),
+     'expected-7-nx-no_r-no_c.gfa'),
     ((False, True, True, False, False, 0, 0),
-            'expected-8-nx-tiling-no_r-no_c.gfa'),
+     'expected-8-nx-tiling-no_r-no_c.gfa'),
     ((False, True, True, True, True, 0, 0),
-            'expected-9-nx-tiling-r-c.gfa'),
+     'expected-9-nx-tiling-r-c.gfa'),
 ])
 def test_write_gfa_v1_1(args, expected_path):
     test_dir = os.path.join(helpers.get_test_data_dir(), 'gfa-1')

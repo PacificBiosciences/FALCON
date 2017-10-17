@@ -2,7 +2,9 @@
 The equal_*() funcs are not really needed with pytest,
 but they do not hurt.
 """
+import difflib
 import os.path
+from StringIO import StringIO
 
 
 def equal_list(a, b):
@@ -24,3 +26,11 @@ def equal_multiline(a, b):
 
 def get_test_data_dir():
     return os.path.join(os.path.dirname(__file__), '..', 'test_data')
+
+
+def assert_filecmp(got, expected_path):
+    result = [line.strip() for line in StringIO(got)]
+    expected = [line.strip() for line in open(expected_path)]
+    diffs = list(difflib.context_diff(result, expected, fromfile='got', tofile='expected'))
+    if diffs:
+        assert False, 'context_diff:\n' + '\n'.join(diffs[:30])

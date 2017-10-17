@@ -1,7 +1,9 @@
 import falcon_kit.mains.ovlp_filter as mod
 
+
 def assert_equal(expected, got):
     assert expected == got
+
 
 def test_help():
     """Can be called 'pytest' or something, but reports
