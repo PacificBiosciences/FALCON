@@ -1,13 +1,15 @@
-import os
-import pytest
-import helpers
 from StringIO import StringIO
+import os
+
+import pytest
 import networkx as nx
-import falcon_kit.gfa_graph as mod
-import falcon_kit.mains.gen_gfa_v1 as gen_gfa_v1
+
 from falcon_kit.fc_asm_graph import AsmGraph
 from falcon_kit.mains.ovlp_to_graph import reverse_end
 from falcon_kit.util import system
+import falcon_kit.gfa_graph as mod
+import falcon_kit.mains.gen_gfa_v1 as gen_gfa_v1
+import helpers
 
 
 def test_gfa_graph():
@@ -169,10 +171,8 @@ def wrap_write_gfa_v1_test(use_sg, use_nx, use_tp, write_reads, write_contigs, m
                            p_ctg_fasta, a_ctg_fasta], write_reads, write_contigs)
 
     # Compare results.
-    result = fp_out.getvalue()
-    result = result.splitlines()
-    expected = [line.strip() for line in open(expected_path).readlines()]
-    assert(result == expected)
+    value = fp_out.getvalue()
+    helpers.assert_filecmp(value, expected_path)
 
 
 @pytest.mark.parametrize("args, expected_path", [
