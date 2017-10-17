@@ -123,7 +123,7 @@ def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
 def gfa_from_assembly(fp_out, p_ctg_tiling_path, a_ctg_tiling_path,
                       preads_fasta, p_ctg_fasta, a_ctg_fasta,
                       sg_edges_list, utg_data, ctg_paths,
-                      tiling, write_reads, write_contigs,
+                      add_string_graph, write_reads, write_contigs,
                       min_p_len, min_a_len):
     """
     This method produces the GFA-1 formatted output of the
@@ -141,7 +141,7 @@ def gfa_from_assembly(fp_out, p_ctg_tiling_path, a_ctg_tiling_path,
                             min_p_len, min_a_len,
                             gfa_graph)
 
-    if not tiling:
+    if add_string_graph:
         # Load the string graph.
         asm_graph = AsmGraph(sg_edges_list, utg_data, ctg_paths)
         gfa_graph.add_asm_graph(asm_graph)
@@ -169,8 +169,8 @@ def parse_args(argv):
                         default='utg_data', help='unitig data file from Falcon')
     parser.add_argument('--ctg-paths', type=str, default='ctg_paths',
                         help='contig paths file from Falcon assembly')
-    parser.add_argument('--tiling', '-t', action='store_true',
-                        help="outputs only the tiling paths of contigs/associated contigs instead of the entire graph")
+    parser.add_argument('--add-string-graph', action='store_true',
+                        help="in addition to tiling paths, output other edges and nodes from the final string graph")
     parser.add_argument('--write-reads', '-r', action='store_true',
                         help="output read sequences in S lines")
     parser.add_argument('--write-contigs', '-c', action='store_true',
