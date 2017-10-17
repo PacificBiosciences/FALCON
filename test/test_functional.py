@@ -14,6 +14,7 @@ example_HPCdaligner_small_fn = os.path.join(
 def eq_(a, b):
     assert a == b
 
+
 def test_get_daligner_job_descriptions():
     example_HPCdaligner = open(example_HPCdaligner_fn)
     result = f.get_daligner_job_descriptions(
@@ -122,21 +123,24 @@ read_lens = [1, 2, 2, 3]
 rs_rl_counts = [(3, 1), (2, 2), (1, 1)]
 assert collections.Counter(read_lens) == dict(rs_rl_counts)
 
+
 def check(target, expected):
     got = f.calc_cutoff_from_reverse_sorted_readlength_counts(
         rs_rl_counts, target)
     eq_(expected, got)
 
+
 @pytest.mark.parametrize("n_target, n_expected", [
-        (8, 1),
-        (7, 2),
-        (4, 2),
-        (3, 3),
-        (1, 3),
-        (0, 3),
+    (8, 1),
+    (7, 2),
+    (4, 2),
+    (3, 3),
+    (1, 3),
+    (0, 3),
 ])
 def test_calc_cutoff_from_reverse_sorted_readlength_counts(n_target, n_expected):
     check(n_target, n_expected)
+
 
 def test_calc_cutoff_from_reverse_sorted_readlength_counts_raises():
     with pytest.raises(Exception):

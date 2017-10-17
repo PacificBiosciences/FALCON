@@ -85,6 +85,41 @@ def filter_tiling_paths_by_len(tiling_paths, paths_len, min_len):
     return ret_paths
 
 
+def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
+                            p_ctg_tiling_path, a_ctg_tiling_path,
+                            min_p_len, min_a_len, gfa_graph):
+    # Associate tiling paths are not deduplicated.
+    # We need the headers of the final haplotigs to filter
+    # out the unnecessary tiling paths.
+    a_ctg_headers = set()
+    f = FastaReader(a_ctg_fasta)
+    for r in f:
+        a_ctg_headers.add(r.name)
+
+    # Associate tiling paths are not deduplicated.
+    # We need the headers of the final haplotigs to filter
+    # out the unnecessary tiling paths.
+    a_ctg_headers = set()
+    f = FastaReader(a_ctg_fasta)
+    for r in f:
+        a_ctg_headers.add(r.name)
+
+    # Load and filter primary contig paths.
+    p_paths, p_edge_to_ctg = load_tiling_paths(p_ctg_tiling_path, 'P')
+    _, p_ctg_len = calc_tiling_paths_len(p_paths)
+    p_paths = filter_tiling_paths_by_len(p_paths, p_ctg_len, min_p_len)
+    for ctg_id, path in p_paths.iteritems():
+        gfa_graph.add_tiling_path(path, ctg_id)
+
+    # Load and filter associate contig paths.
+    a_paths, a_edge_to_ctg = load_tiling_paths(a_ctg_tiling_path, 'A')
+    _, a_ctg_len = calc_tiling_paths_len(a_paths)
+    a_paths = filter_tiling_paths_by_len(a_paths, a_ctg_len, min_a_len)
+    for ctg_id, path in a_paths.iteritems():
+        if ctg_id in a_ctg_headers:
+            gfa_graph.add_tiling_path(path, ctg_id)
+
+
 def gfa_from_assembly(fp_out, p_ctg_tiling_path, a_ctg_tiling_path,
                       preads_fasta, p_ctg_fasta, a_ctg_fasta,
                       sg_edges_list, utg_data, ctg_paths,
@@ -101,19 +136,10 @@ def gfa_from_assembly(fp_out, p_ctg_tiling_path, a_ctg_tiling_path,
     """
     gfa_graph = GFAGraph()
 
-    # Load and filter primary contig paths.
-    p_paths, p_edge_to_ctg = load_tiling_paths(p_ctg_tiling_path, 'P')
-    _, p_ctg_len = calc_tiling_paths_len(p_paths)
-    p_paths = filter_tiling_paths_by_len(p_paths, p_ctg_len, min_p_len)
-    for ctg_id, path in p_paths.iteritems():
-        gfa_graph.add_tiling_path(path, ctg_id)
-
-    # Load and filter associate contig paths.
-    a_paths, a_edge_to_ctg = load_tiling_paths(a_ctg_tiling_path, 'A')
-    _, a_ctg_len = calc_tiling_paths_len(a_paths)
-    a_paths = filter_tiling_paths_by_len(a_paths, a_ctg_len, min_a_len)
-    for ctg_id, path in a_paths.iteritems():
-        gfa_graph.add_tiling_path(path, ctg_id)
+    add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
+                            p_ctg_tiling_path, a_ctg_tiling_path,
+                            min_p_len, min_a_len,
+                            gfa_graph)
 
     if not tiling:
         # Load the string graph.
