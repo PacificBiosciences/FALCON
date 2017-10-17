@@ -1,5 +1,4 @@
 import helpers
-from nose.tools import assert_equal, assert_raises, eq_
 import pytest
 import falcon_kit.functional as f
 import StringIO
@@ -11,6 +10,9 @@ example_HPCdaligner_fn = os.path.join(thisdir, 'HPCdaligner_synth0.sh')
 example_HPCdaligner_small_fn = os.path.join(
     thisdir, 'HPCdaligner_synth0_preads.sh')
 
+
+def eq_(a, b):
+    assert a == b
 
 def test_get_daligner_job_descriptions():
     example_HPCdaligner = open(example_HPCdaligner_fn)
@@ -92,9 +94,11 @@ def test_first_block_las():
     eq_(result, 1)
     # We expect HPC.daligner to use block numbers always.
     line = 'LAsort -v -a -q foo.foo.C0'
-    assert_raises(Exception, f.first_block_las, line)
+    with pytest.raises(Exception):
+        f.first_block_las(line)
     line = 'LAsort foo.foo.C0'
-    assert_raises(Exception, f.first_block_las, line)
+    with pytest.raises(Exception):
+        f.first_block_las(line)
 
 
 def test_xform_script_for_preads():
@@ -114,25 +118,29 @@ def test_xform_script_for_preads():
     eq_(f.get_script_xformer(False), f.xform_script_for_raw_reads)
 
 
-def test_calc_cutoff_from_reverse_sorted_readlength_counts():
-    read_lens = [1, 2, 2, 3]
-    rs_rl_counts = [(3, 1), (2, 2), (1, 1)]
-    assert collections.Counter(read_lens) == dict(rs_rl_counts)
+read_lens = [1, 2, 2, 3]
+rs_rl_counts = [(3, 1), (2, 2), (1, 1)]
+assert collections.Counter(read_lens) == dict(rs_rl_counts)
 
-    def check(target, expected):
-        got = f.calc_cutoff_from_reverse_sorted_readlength_counts(
-            rs_rl_counts, target)
-        assert_equal(expected, got)
-    for n, expected in (
+def check(target, expected):
+    got = f.calc_cutoff_from_reverse_sorted_readlength_counts(
+        rs_rl_counts, target)
+    eq_(expected, got)
+
+@pytest.mark.parametrize("n_target, n_expected", [
         (8, 1),
         (7, 2),
         (4, 2),
         (3, 3),
         (1, 3),
         (0, 3),
-    ):
-        yield check, n, expected
-    assert_raises(Exception, check, 9, None)
+])
+def test_calc_cutoff_from_reverse_sorted_readlength_counts(n_target, n_expected):
+    check(n_target, n_expected)
+
+def test_calc_cutoff_from_reverse_sorted_readlength_counts_raises():
+    with pytest.raises(Exception):
+        check(9, None)
 
 
 capture = """
@@ -158,13 +166,13 @@ Statistics for all reads of length 500 bases or more
 def test_get_reverse_sorted_readlength_counts_from_DBstats():
     got = f.get_reverse_sorted_readlength_counts_from_DBstats(capture)
     expected = [(169514, 1), (169513, 0)]
-    assert_equal(expected, got)
+    eq_(expected, got)
 
 
 def test_num2int():
-    assert_equal(5, f.num2int('5'))
-    assert_equal(1000, f.num2int('1,000'))
-    assert_equal(1000000, f.num2int('1,000,000'))
+    eq_(5, f.num2int('5'))
+    eq_(1000, f.num2int('1,000'))
+    eq_(1000000, f.num2int('1,000,000'))
 
 
 partial_capture = """
@@ -186,9 +194,9 @@ def test_calc_cutoff():
 def test_calc_cutoff_bad_coverage():
     target = 23  # > 22 available
     expected_message = 'Not enough reads available for desired genome coverage (bases needed=23 > actual=22)'
-    with assert_raises(f.GenomeCoverageError) as ctx:
+    with pytest.raises(f.GenomeCoverageError) as ctx:
         f.calc_cutoff(target, partial_capture)
-    eq_(expected_message, ctx.exception.message)
+    assert expected_message == str(ctx.value)
 
 
 sample_DBdump_output = """+ R 2
@@ -225,7 +233,8 @@ def test_average_difference():
     eq_(avg, -5.0)
 
     dictB = {1: 55}
-    assert_raises(Exception, f.average_difference, dictA, dictB)
+    with pytest.raises(Exception):
+        f.average_difference(dictA, dictB)
 
 
 sample_perl_output = """

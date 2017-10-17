@@ -1,9 +1,10 @@
 import falcon_kit.mains.ovlp_filter as mod
-from nose.tools import assert_equal
 
+def assert_equal(expected, got):
+    assert expected == got
 
 def test_help():
-    """Calls itself 'nosetests', but reports
+    """Can be called 'pytest' or something, but reports
     proper help message otherwise.
     """
     try:

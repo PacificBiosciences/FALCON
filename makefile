@@ -5,12 +5,11 @@ ifndef PYTHONUSERBASE
   export PYTHONUSERBASE
   export PATH
 endif
-export COVERAGE_PROCESS_START
 
 WHEELHOUSE?=wheelhouse
 PIP=pip wheel --wheel-dir ${WHEELHOUSE}
 
-MY_TEST_FLAGS?=-v -s
+MY_TEST_FLAGS?=-v -s --durations=0
 
 install-edit:
 	pip -v install --user --edit .
@@ -22,7 +21,7 @@ test:
 	python -c 'import falcon_kit; print falcon_kit.falcon'
 	py.test ${MY_TEST_FLAGS} --junit-xml=test.xml --doctest-modules falcon_kit/functional.py test/
 autopep8:
-	autopep8 --max-line-length=120 -ir -j0 . falcon_kit/ examples/ test/ setup.py
+	autopep8 --max-line-length=120 -ir -j0 falcon_kit/ examples/ test/ setup.py
 
 old-wheel:
 	pip install --upgrade --user pip

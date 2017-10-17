@@ -6,7 +6,7 @@ from cStringIO import StringIO
 def test_stats_from_sorted_readlengths():
     stats = M.stats_from_sorted_readlengths([1, 2, 3, 4])
     expected = M.Stats(nreads=4, total=10, n50=3, p95=4, esize=3.0)
-    helpers.assert_equal(stats, expected)
+    assert stats == expected
 
 
 def test_stats_dict():
