@@ -403,11 +403,11 @@ time python -m falcon_kit.mains.dedup_a_tigs
 
 # Generate a GFA of all assembly graph edges. This GFA can contain
 # edges and nodes which are not part of primary and associate contigs.
-time python -m falcon_kit.mains.gen_gfa_v1 --tiling >| asm.gfa
+time python -m falcon_kit.mains.gen_gfa_v1 >| asm.gfa
 
 # Generate a GFA of all assembly graph edges. This GFA can contain
 # edges and nodes which are not part of primary and associate contigs.
-time python -m falcon_kit.mains.gen_gfa_v1 >| sg.gfa
+time python -m falcon_kit.mains.gen_gfa_v1 --add-string-graph >| sg.gfa
 
 rm -f ./preads4falcon.fasta
 """
