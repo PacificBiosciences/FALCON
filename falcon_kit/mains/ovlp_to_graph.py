@@ -645,7 +645,6 @@ def find_bundle(ug, u_edge_data, start_node, depth_cutoff, width_cutoff, length_
 
 
 def generate_string_graph(args):
-
     overlap_file = args.overlap_file
 
     contained_reads = set()
@@ -1549,8 +1548,8 @@ def main(argv=sys.argv):
     parser = argparse.ArgumentParser(description='a example string graph assembler that is desinged for handling diploid genomes',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        'overlap_file', help='a file that contains the overlap information.')
-
+        '--overlap-file', default='preads.ovl',
+        help='a file that contains the overlap information.')
     parser.add_argument(
         '--min_len', type=int, default=4000,
         help='minimum length of the reads to be considered for assembling')
