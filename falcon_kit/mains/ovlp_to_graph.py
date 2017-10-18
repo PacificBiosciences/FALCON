@@ -663,78 +663,78 @@ def generate_string_graph(args):
     # loop through the overlapping data to load the data in the a python array
     # contained reads are identified
 
-    with open(overlap_file) as f:
-        for l in f:
-            l = l.strip().split()
-
+    def process_fields(l):
             # work around for some ill formed data recored
             # if len(l) != 13:
             #    continue
-
             f_id, g_id, score, identity = l[:4]
 
             if f_id == g_id:  # don't need self-self overlapping
-                continue
-
+                return
             if filter_reads:
-
                 if g_id not in seqs:
-                    continue
-
+                    return
                 if f_id not in seqs:
-                    continue
-
+                    return
             score = int(score)
             identity = float(identity)
             contained = l[12]
             if contained == "contained":
                 contained_reads.add(f_id)
-                continue
+                return
             if contained == "contains":
                 contained_reads.add(g_id)
-                continue
+                return
             if contained == "none":
-                continue
-
+                return
             if identity < args.min_idt:  # only take record with >96% identity as overlapped reads
-                continue
+                return
             f_strain, f_start, f_end, f_len = (int(c) for c in l[4:8])
             g_strain, g_start, g_end, g_len = (int(c) for c in l[8:12])
 
             # only used reads longer than the 4kb for assembly
             if f_len < args.min_len:
-                continue
+                return
             if g_len < args.min_len:
-                continue
-
+                return
             """
             # double check for proper overlap
             # this is not necessary when using DALIGNER for overlapper
             # it may be useful if other overlappers give fuzzier alignment boundary
             if f_start > 24 and f_len - f_end > 24:  # allow 24 base tolerance on both sides of the overlapping
-                continue
-
+                return
             if g_start > 24 and g_len - g_end > 24:
-                continue
-
+                return
             if g_strain == 0:
                 if f_start < 24 and g_len - g_end > 24:
-                    continue
+                    return
                 if g_start < 24 and f_len - f_end > 24:
-                    continue
+                    return
             else:
                 if f_start < 24 and g_start > 24:
-                    continue
+                    return
                 if g_start < 24 and f_start > 24:
-                    continue
+                    return
             """
-
             overlap_data.append((f_id, g_id, score, identity,
                                  f_strain, f_start, f_end, f_len,
                                  g_strain, g_start, g_end, g_len))
-
             overlap_count[f_id] = overlap_count.get(f_id, 0) + 1
             overlap_count[g_id] = overlap_count.get(g_id, 0) + 1
+
+    with open(overlap_file) as f:
+        n = 0
+        for line in f:
+            if line.startswith('-'):
+                break
+            l = line.strip().split()
+            process_fields(l)
+            n += 1
+        else:
+            # This happens only if we did not 'break' from the for-loop.
+            msg = 'No end-of-file marker for overlap_file {!r} after {} lines.'.format(
+                overlap_file, n)
+            raise Exception(msg)
 
     overlap_set = set()
     sg = StringGraph()
