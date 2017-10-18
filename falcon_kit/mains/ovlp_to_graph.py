@@ -1551,14 +1551,18 @@ def main(argv=sys.argv):
     parser.add_argument(
         'overlap_file', help='a file that contains the overlap information.')
 
-    parser.add_argument('--min_len', type=int, default=4000,
-                        help='minimum length of the reads to be considered for assembling')
-    parser.add_argument('--min_idt', type=float, default=96,
-                        help='minimum alignment identity of the reads to be considered for assembling')
-    parser.add_argument('--lfc', action="store_true", default=False,
-                        help='use local flow constraint method rather than best overlap method to resolve knots in string graph')
-    parser.add_argument('--disable_chimer_bridge_removal', action="store_true", default=False,
-                        help='disable chimer induced bridge removal')
+    parser.add_argument(
+        '--min_len', type=int, default=4000,
+        help='minimum length of the reads to be considered for assembling')
+    parser.add_argument(
+        '--min_idt', type=float, default=96,
+        help='minimum alignment identity of the reads to be considered for assembling')
+    parser.add_argument(
+        '--lfc', action="store_true", default=False,
+        help='use local flow constraint method rather than best overlap method to resolve knots in string graph')
+    parser.add_argument(
+        '--disable_chimer_bridge_removal', action="store_true", default=False,
+        help='disable chimer induced bridge removal')
 
     args = parser.parse_args(argv[1:])
     ovlp_to_graph(args)
