@@ -1,6 +1,7 @@
 from falcon_kit.multiproc import Pool
 import falcon_kit.util.io as io
 import argparse
+import os
 import sys
 
 Reader = io.CapturedProcessReaderContext
@@ -186,7 +187,7 @@ def filter_stage3(readlines, max_diff, max_ovlp, min_ovlp, min_len, ignore_set, 
     return ovlp_output
 
 
-def run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, bestn, db_fn):
+def run_ovlp_filter(outs, exe_pool, file_list, max_diff, max_cov, min_cov, min_len, bestn, db_fn):
     io.LOG('preparing filter_stage1')
     io.logstats()
     inputs = []
@@ -223,19 +224,23 @@ def run_ovlp_filter(exe_pool, file_list, max_diff, max_cov, min_cov, min_len, be
                            max_cov, min_cov, min_len, ignore_all, contained, bestn))
     for res in exe_pool.imap(io.run_func, inputs):
         for l in res[1]:
-            print " ".join(l)
+            outs.write(" ".join(l) + "\n")
     io.logstats()
 
 
-def try_run_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn):
+def try_run_ovlp_filter(out_fn, n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn):
     io.LOG('starting ovlp_filter')
     file_list = io.validated_fns(fofn)
     io.LOG('fofn %r: %r' % (fofn, file_list))
     n_core = min(n_core, len(file_list))
     exe_pool = Pool(n_core)
+    tmp_out_fn = out_fn + '.tmp'
     try:
-        run_ovlp_filter(exe_pool, file_list, max_diff, max_cov,
-                        min_cov, min_len, bestn, db_fn)
+        with open(tmp_out_fn, 'w') as outs:
+            run_ovlp_filter(outs, exe_pool, file_list, max_diff, max_cov,
+                            min_cov, min_len, bestn, db_fn)
+            outs.write('---\n')
+        os.rename(tmp_out_fn, out_fn)
         io.LOG('finished ovlp_filter')
     except:
         io.LOG('terminating ovlp_filter workers...')
@@ -243,7 +248,7 @@ def try_run_ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn
         raise
 
 
-def ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
+def ovlp_filter(out_fn, n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
     if debug:
         n_core = 0
         silent = False
@@ -252,36 +257,57 @@ def ovlp_filter(n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn,
     if stream:
         global Reader
         Reader = io.StreamedProcessReaderContext
-    try_run_ovlp_filter(n_core, fofn, max_diff, max_cov,
+    try_run_ovlp_filter(out_fn, n_core, fofn, max_diff, max_cov,
                         min_cov, min_len, bestn, db_fn)
 
 
 def parse_args(argv):
-    parser = argparse.ArgumentParser(description='a simple multi-processes LAS ovelap data filter',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--n_core', type=int, default=4,
-                        help='number of processes used for generating consensus; '
-                        '0 for main process only')
+    epilog = """Output consists of selected lines from LA4Falcon -mo, e.g.
+000000047 000000550 -206 100.00 0 0 206 603 1 0 206 741 overlap
+"""
+
+    class HelpF(argparse.RawTextHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
+        pass
+    parser = argparse.ArgumentParser(
+        description='a simple multi-processes LAS ovelap data filter',
+        epilog=epilog,
+        formatter_class=HelpF)
     parser.add_argument(
-        '--fofn', type=str, help='file contains the path of all LAS file to be processed in parallel')
-    parser.add_argument('--db', type=str, dest='db_fn',
-                        help='read db file path')
-    parser.add_argument('--max_diff', type=int,
-                        help="max difference of 5' and 3' coverage")
-    parser.add_argument('--max_cov', type=int,
-                        help="max coverage of 5' or 3' coverage")
-    parser.add_argument('--min_cov', type=int,
-                        help="min coverage of 5' or 3' coverage")
-    parser.add_argument('--min_len', type=int, default=2500,
-                        help="min length of the reads")
-    parser.add_argument('--bestn', type=int, default=10,
-                        help="output at least best n overlaps on 5' or 3' ends if possible")
-    parser.add_argument('--stream', action='store_true',
-                        help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
-    parser.add_argument('--debug', '-g', action='store_true',
-                        help="single-threaded, plus other aids to debugging")
-    parser.add_argument('--silent', action='store_true',
-                        help="suppress cmd reporting on stderr")
+        '--out-fn', default='preads.ovl',
+        help='Output filename')
+    parser.add_argument(
+        '--n_core', type=int, default=4,
+        help='number of processes used for generating consensus; 0 for main process only')
+    parser.add_argument(
+        '--fofn', type=str,
+        help='file contains the path of all LAS file to be processed in parallel')
+    parser.add_argument(
+        '--db', type=str, dest='db_fn',
+        help='read db file path')
+    parser.add_argument(
+        '--max_diff', type=int,
+        help="max difference of 5' and 3' coverage")
+    parser.add_argument(
+        '--max_cov', type=int,
+        help="max coverage of 5' or 3' coverage")
+    parser.add_argument(
+        '--min_cov', type=int,
+        help="min coverage of 5' or 3' coverage")
+    parser.add_argument(
+        '--min_len', type=int, default=2500,
+        help="min length of the reads")
+    parser.add_argument(
+        '--bestn', type=int, default=10,
+        help="output at least best n overlaps on 5' or 3' ends if possible")
+    parser.add_argument(
+        '--stream', action='store_true',
+        help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
+    parser.add_argument(
+        '--debug', '-g', action='store_true',
+        help="single-threaded, plus other aids to debugging")
+    parser.add_argument(
+        '--silent', action='store_true',
+        help="suppress cmd reporting on stderr")
     args = parser.parse_args(argv[1:])
     return args
 
