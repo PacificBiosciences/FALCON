@@ -72,7 +72,7 @@ def test_main_1(capsys):
             '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
             '--utg-data', os.path.join(test_dir, 'utg_data'),
             '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
-            # '--tiling',
+            '--add-string-graph',
             '--write-reads',
             '--write-contigs',
             '--min-p-len', '0',
@@ -80,10 +80,9 @@ def test_main_1(capsys):
             ]
     mod.main(argv)
     out, err = capsys.readouterr()
-    result = out.strip().splitlines()
-    expected = [line.strip() for line in open(
-        os.path.join(test_dir, 'expected-1-sg-r-c.gfa')).readlines()]
-    assert(result == expected)
+    expected_path = os.path.join(test_dir,
+                                 'expected-1-sg-r-c.gfa')
+    helpers.assert_filecmp(out, expected_path)
 
 
 def test_main_2(capsys):
@@ -98,7 +97,7 @@ def test_main_2(capsys):
             '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
             '--utg-data', os.path.join(test_dir, 'utg_data'),
             '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
-            '--tiling',
+            # '--add-string-graph',
             '--write-reads',
             '--write-contigs',
             '--min-p-len', '0',
@@ -106,10 +105,9 @@ def test_main_2(capsys):
             ]
     mod.main(argv)
     out, err = capsys.readouterr()
-    result = out.strip().splitlines()
-    expected = [line.strip() for line in open(os.path.join(
-        test_dir, 'expected-2-tiling-r-c.gfa')).readlines()]
-    assert(result == expected)
+    expected_path = os.path.join(test_dir,
+                                 'expected-2-tiling-r-c.gfa')
+    helpers.assert_filecmp(out, expected_path)
 
 
 def test_main_3(capsys):
@@ -124,7 +122,7 @@ def test_main_3(capsys):
             '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
             '--utg-data', os.path.join(test_dir, 'utg_data'),
             '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
-            '--tiling',
+            # '--add-string-graph',
             # '--write-reads',
             '--write-contigs',
             '--min-p-len', '0',
@@ -132,10 +130,9 @@ def test_main_3(capsys):
             ]
     mod.main(argv)
     out, err = capsys.readouterr()
-    result = out.strip().splitlines()
-    expected = [line.strip() for line in open(os.path.join(
-        test_dir, 'expected-3-tiling-no_r-c.gfa')).readlines()]
-    assert(result == expected)
+    expected_path = os.path.join(test_dir,
+                                 'expected-3-tiling-no_r-c.gfa')
+    helpers.assert_filecmp(out, expected_path)
 
 
 def test_main_4(capsys):
@@ -150,7 +147,7 @@ def test_main_4(capsys):
             '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
             '--utg-data', os.path.join(test_dir, 'utg_data'),
             '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
-            '--tiling',
+            # '--add-string-graph',
             # '--write-reads',
             # '--write-contigs',
             '--min-p-len', '0',
@@ -158,10 +155,9 @@ def test_main_4(capsys):
             ]
     mod.main(argv)
     out, err = capsys.readouterr()
-    result = out.strip().splitlines()
-    expected = [line.strip() for line in open(os.path.join(
-        test_dir, 'expected-4-tiling-no_r-no_c.gfa')).readlines()]
-    assert(result == expected)
+    expected_path = os.path.join(test_dir,
+                                 'expected-4-tiling-no_r-no_c.gfa')
+    helpers.assert_filecmp(out, expected_path)
 
 
 def test_main_5(capsys):
@@ -176,7 +172,7 @@ def test_main_5(capsys):
             '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
             '--utg-data', os.path.join(test_dir, 'utg_data'),
             '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
-            # '--tiling',
+            '--add-string-graph',
             # '--write-reads',
             # '--write-contigs',
             '--min-p-len', '0',
@@ -184,10 +180,9 @@ def test_main_5(capsys):
             ]
     mod.main(argv)
     out, err = capsys.readouterr()
-    result = out.strip().splitlines()
-    expected = [line.strip() for line in open(os.path.join(
-        test_dir, 'expected-5-sg-no_r-no_c.gfa')).readlines()]
-    assert(result == expected)
+    expected_path = os.path.join(test_dir,
+                                 'expected-5-sg-no_r-no_c.gfa')
+    helpers.assert_filecmp(out, expected_path)
 
 
 def test_main_6(capsys):
@@ -202,7 +197,7 @@ def test_main_6(capsys):
             '--sg-edges-list', os.path.join(test_dir, 'sg_edges_list'),
             '--utg-data', os.path.join(test_dir, 'utg_data'),
             '--ctg-paths', os.path.join(test_dir, 'ctg_paths'),
-            '--tiling',
+            # '--add-string-graph',
             # '--write-reads',
             # '--write-contigs',
             '--min-p-len', '10000',
@@ -210,10 +205,9 @@ def test_main_6(capsys):
             ]
     mod.main(argv)
     out, err = capsys.readouterr()
-    result = out.strip().splitlines()
-    expected = [line.strip() for line in open(os.path.join(
-        test_dir, 'expected-6-tiling-no_r-no_c-minlen.gfa')).readlines()]
-    assert(result == expected)
+    expected_path = os.path.join(test_dir,
+                                 'expected-6-tiling-no_r-no_c-minlen.gfa')
+    helpers.assert_filecmp(out, expected_path)
 
 
 def test_load_tiling_paths():
