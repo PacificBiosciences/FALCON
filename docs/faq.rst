@@ -189,8 +189,8 @@ Why does FALCON have trouble assembling my amplicon data?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 FALCON was designed for whole genome shot gun assembly rather than amplicon assembly. In whole genome shotgun
-assembly we suppress repetitive high copy regions to assembly to assembly less repetitive regions first.
-When you assemble PCR product of a short region in a genome, FALCON sees the whole thing like high copy repeats
+assembly we suppress repetitive high copy regions to assemble less repetitive regions first.
+When you assemble PCR product of a short region in a genome, FALCON sees the whole thing as a high copy repeat
 and filters alot of the data out.
 
 You can try to down sample your data and make the daligner block size even smaller ( reduce -s50 in
