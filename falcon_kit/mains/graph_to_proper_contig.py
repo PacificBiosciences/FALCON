@@ -92,7 +92,7 @@ def main(argv=sys.argv):
     with open(edge_data_file) as f:
         for l in f:
             l = l.strip().split()
-            """001039799:E 000333411:E 000333411 17524 20167 17524 99.62"""
+            """001039799:E 000333411:E 000333411 17524 20167 17524 99.62 G"""
             v, w, rid, s, t, aln_score, idt, type_ = l
             if type_ != "G":
                 continue
@@ -107,21 +107,21 @@ def main(argv=sys.argv):
         for r in f:
             if r.name not in reads_in_layout:
                 continue
-            seqs[r.name] = r.sequence.upper()
+            seqs[r.name] = r.sequence.upper() # name == rid-string
 
     edge_data = {}
     with open(edge_data_file) as f:
         for l in f:
             l = l.strip().split()
-            """001039799:E 000333411:E 000333411 17524 20167 17524 99.62"""
+            """001039799:E 000333411:E 000333411 17524 20167 17524 99.62 G"""
             v, w, rid, s, t, aln_score, idt, type_ = l
 
             if type_ != "G":
                 continue
             r1 = v.split(":")[0]
-            reads_in_layout.add(r1)
+            reads_in_layout.add(r1) # redundant, but harmless
             r2 = w.split(":")[0]
-            reads_in_layout.add(r2)
+            reads_in_layout.add(r2) # redundant, but harmless
 
             s = int(s)
             t = int(t)

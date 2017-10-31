@@ -4,7 +4,7 @@ import sys
 
 
 def parse_args(argv):
-    parser = argparse.ArgumentParser(description='remove duplicate a-tig, it assumes the working directory has the a_ctg_all.fa file',
+    parser = argparse.ArgumentParser(description='Removes duplicate a-tig, iff *all* conditions are violated. Assumes the working directory has the a_ctg_all.fa file, and produces a_ctg.fa',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--max_idt', type=int,
                         help="keep a-tig if the identity (in %) to the primary contig is <= max_idt", default=96)
