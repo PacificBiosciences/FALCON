@@ -1,3 +1,21 @@
+"""
+TODO: (from convo w/ Ivan)
+the issue with this script (but would still like to re-read it to refresh my memory). The script loads all edge sequences and tries to do two things at once: create p_ctg and a_ctg sequences, and align the bubbles using those sequences
+
+
+If we generate:
+1. All paths first (as tiling paths) for all p_ctg and all a_ctg without loading sequences - this should not consume much space (take a look at *_tiling_paths files).
+2. Load the first read of each tiling path fully, and only edge sequences for every transition, we can generate the output sequences with the same memory/disk consumption.
+3. Align bubbles after that.
+
+Our resource consumption should be same
+
+Bubbles?
+It aligns them to produce the identity score
+
+After that the dedup_a_tigs.py script is used to deduplicate fake a_ctg.
+But that script is simple, and only depends on the alignment info that the previous script stored in the a_ctg header.
+"""
 import sys
 import networkx as nx
 #from pbcore.io import FastaReader
