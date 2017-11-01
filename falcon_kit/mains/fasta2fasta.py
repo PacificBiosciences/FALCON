@@ -37,7 +37,7 @@ def complement(x): return (COMPLEMENT[base] for base in x)
 zmw_counter = None
 
 
-def WriteSplit(write, seq, split=80):
+def WriteSplit(write, seq, split=8000):
     i = 0
     while i < len(seq):
         slice = seq[i:i + split]
@@ -46,19 +46,19 @@ def WriteSplit(write, seq, split=80):
         i += split
 
 
-def parse_header(header):
+def parse_header(header, zmw_counter=None):
     """
-    >>> zmw_counter=1
-    >>> parse_header('>mine foo bar')
-    ('mine', 1, 'foo bar')
-    >>> zmw_counter=None
+    >>> parse_header('>mine foo bar', 1)
+    ('mine', 1, 'foo bar', 2)
     >>> parse_header('>mine/123/5_75 foo bar')
-    ('mine', 123, '5_75 foo bar')
+    ('mine', 123, '5_75 foo bar', None)
 
     For now, ignore the zmw and instead use a global counter.
     """
-    global zmw_counter
-    parts = header[1:].split('/')
+    if '/' in header:
+        parts = header[1:].split('/')
+    else:
+        parts = header[1:].split(None, 1)
     movie = parts[0]
     if zmw_counter is None:
         zmw = int(parts[1])
@@ -69,7 +69,7 @@ def parse_header(header):
         extra = parts[-1]
     else:
         extra = ''
-    return movie, zmw, extra
+    return movie, zmw, extra, zmw_counter
 
 
 re_range = re.compile('^(\d+)_(\d+)\s*(.*)$')
@@ -80,7 +80,8 @@ def process_fasta(ifs, movie2write):
     if header[0] != '>':
         raise Exception('{!r} is not a fasta file.'.format(ifs.name))
     while header:
-        movie, zmw, extra = parse_header(header)
+        global zmw_counter
+        movie, zmw, extra, zmw_counter = parse_header(header, zmw_counter)
         write = movie2write[movie]
         # log.info('header={!r}'.format(header))
         seq = ''
@@ -112,7 +113,8 @@ def process_fastq(ifs, movie2write):
     if header[0] != '@':
         raise Exception('{!r} is not a fastq file.'.format(ifs.name))
     while header:
-        movie, zmw, extra = parse_header(header)
+        global zmw_counter
+        movie, zmw, extra, zmw_counter = parse_header(header, zmw_counter)
         write = movie2write[movie]
         # log.info('header={!r}'.format(header))
         seq = ifs.readline().strip()
