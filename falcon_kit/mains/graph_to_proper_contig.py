@@ -87,6 +87,20 @@ def reverse_end(node_id):
     return node_id + ":" + new_end
 
 
+def yield_first_seq(one_path_edges, seqs):
+            if one_path_edges and one_path_edges[0] != one_path_edges[-1]:
+                # If non-empty, and non-circular,
+                # prepend the entire first read.
+                (vv, ww) = one_path_edges[0]
+                (vv_rid, vv_letter) = vv.split(":")
+                if vv_letter == 'E':
+                    first_seq = seqs[vv_rid]
+                else:
+                    assert vv_letter == 'B'
+                    first_seq = "".join([RCMAP[c] for c in seqs[vv_rid][::-1]])
+                yield first_seq
+
+
 def main(argv=sys.argv):
     reads_in_layout = set()
     with open(edge_data_file) as f:
@@ -118,9 +132,9 @@ def main(argv=sys.argv):
 
             if type_ != "G":
                 continue
-            r1 = v.split(":")[0]
+            r1, dir1 = v.split(":")
             reads_in_layout.add(r1) # redundant, but harmless
-            r2 = w.split(":")[0]
+            r2, dir2 = w.split(":")
             reads_in_layout.add(r2) # redundant, but harmless
 
             s = int(s)
@@ -130,10 +144,12 @@ def main(argv=sys.argv):
 
             if s < t:
                 e_seq = seqs[rid][s:t]
+                assert 'E' == dir2
             else:
                 # t and s were swapped for 'c' alignments in ovlp_to_graph.generate_string_graph():702
                 # They were translated from reverse-dir to forward-dir coordinate system in LA4Falcon.
                 e_seq = "".join([RCMAP[c] for c in seqs[rid][t:s][::-1]])
+                assert 'B' == dir2
             edge_data[(v, w)] = (rid, s, t, aln_score, idt, e_seq)
 
     utg_data = {}
@@ -243,7 +259,7 @@ def main(argv=sys.argv):
 
             one_path_edges = zip(one_path[:-1], one_path[1:])
 
-            sub_seqs = []
+            sub_seqs = list(yield_first_seq(one_path_edges, seqs))
             for vv, ww in one_path_edges:
                 rid, s, t, aln_score, idt, e_seq = edge_data[(vv, ww)]
                 sub_seqs.append(e_seq)
@@ -256,21 +272,14 @@ def main(argv=sys.argv):
             a_id = 1
             for v, w, in a_ctg_group:
                 # get the base sequence used in the primary contig
-                #count = len( [x for x in a_ctg_group[ (v, w) ] if len(x[1]) > 3] )
-                # if count < 2:
-                #    continue
                 atig_output = []
 
                 score, atig_path = a_ctg_group[(v, w)][0]
                 atig_path_edges = zip(atig_path[:-1], atig_path[1:])
-                sub_seqs = []
-                total_length = 0
-                total_score = 0
+                sub_seqs = list(yield_first_seq(atig_path_edges, seqs))
                 for vv, ww in atig_path_edges:
                     rid, s, t, aln_score, idt, e_seq = edge_data[(vv, ww)]
                     sub_seqs.append(e_seq)
-                    total_length += abs(s - t)
-                    total_score += aln_score
 
                 base_seq = "".join(sub_seqs)
                 atig_output.append(
@@ -278,7 +287,7 @@ def main(argv=sys.argv):
 
                 for score, atig_path in a_ctg_group[(v, w)][1:]:
                     atig_path_edges = zip(atig_path[:-1], atig_path[1:])
-                    sub_seqs = []
+                    sub_seqs = list(yield_first_seq(atig_path_edges, seqs))
                     total_length = 0
                     total_score = 0
                     for vv, ww in atig_path_edges:
