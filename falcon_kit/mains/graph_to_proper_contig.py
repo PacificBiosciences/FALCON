@@ -88,7 +88,7 @@ def reverse_end(node_id):
 
 
 def yield_first_seq(one_path_edges, seqs):
-            if one_path_edges and one_path_edges[0] != one_path_edges[-1]:
+            if one_path_edges and one_path_edges[0][0] != one_path_edges[-1][1]:
                 # If non-empty, and non-circular,
                 # prepend the entire first read.
                 (vv, ww) = one_path_edges[0]
