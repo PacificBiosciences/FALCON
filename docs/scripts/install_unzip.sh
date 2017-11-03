@@ -6,10 +6,10 @@
 ##This script should work on both Ubuntu/CentOS as long as the following dependencies are installed and
 ##available in your $PATH
 
-#source /mnt/software/Modules/current/init/bash
-#module load python/2.7.9
-#module load virtualenv/13.0.1
-#module load git
+source /mnt/software/Modules/current/init/bash
+module load python/2.7.9
+module load virtualenv/13.0.1
+module load git
 
 ###Variables
 INPUT=$1
@@ -78,16 +78,13 @@ wget ${MUMMER_323} -P ${SRC}
 tar zxvf MUMmer3.23.tar.gz
 cd MUMmer3.23
 make install
-cp nucmer ${VENV}/bin
-cp show-coords ${VENV}/bin
+find . -maxdepth 1 -perm -111 -type f -exec cp {} ${VENV}/bin \;
 
 ###Test falcon_unzip pipeline
 cd ${SRC} && git clone ${FALCON_REPO}
 cd ${FALCON_PATH} && git submodule update --init
 cd ${FALCON_PATH}/FALCON-examples && ../git-sym/git-sym update run/greg200k-sv2
 cd run/greg200k-sv2 && fc_run fc_run.cfg
-
-sed -i "s|^smrt_bin=.*|smrt_bin=${VENV}/bin|g" fc_unzip.cfg
 fc_unzip.py fc_unzip.cfg
 
 echo "FALCON & FALCON_unzip have been successfully installed into a virtualenv."
