@@ -218,7 +218,7 @@ def run(wf, config,
         raw_reads_nblock = support.get_nblock(fn(raw_reads_db_plf))
         # run daligner
         wf.max_jobs = config['da_concurrent_jobs']
-        scattered_plf = os.path.join(
+        scattered_fn = os.path.join(
             rawread_dir, 'daligner-scatter', 'scattered.json')
         make_daligner_scatter = PypeTask(
             inputs={
@@ -226,7 +226,7 @@ def run(wf, config,
                 'db_build_done': rdb_build_done,
             },
             outputs={
-                'scatter_fn': scattered_plf,
+                'scatter_fn': scattered_fn,
             },
             parameters={
                 'db_prefix': 'raw_reads',
@@ -240,7 +240,7 @@ def run(wf, config,
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
         daligner_tasks, daligner_out = create_daligner_tasks(
-            rawread_dir, scattered_plf)
+            rawread_dir, scattered_fn)
 
         wf.addTasks(daligner_tasks)
         r_gathered_las_plf = makePypeLocalFile(os.path.join(
@@ -260,7 +260,7 @@ def run(wf, config,
 
         # Merge .las files.
         wf.max_jobs = config['la_concurrent_jobs']
-        scattered_plf = os.path.join(
+        scattered_fn = os.path.join(
             rawread_dir, 'merge-scatter', 'scattered.json')
         make_task = PypeTask(
             inputs={
@@ -268,7 +268,7 @@ def run(wf, config,
                 'gathered_las': r_gathered_las_plf,
             },
             outputs={
-                'scattered': scattered_plf,
+                'scattered': scattered_fn,
             },
             parameters={
                 'db_prefix': 'raw_reads',
@@ -280,7 +280,7 @@ def run(wf, config,
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
         merge_tasks, p_ids_merged_las = create_merge_tasks(
-            rawread_dir, scattered_plf)
+            rawread_dir, scattered_fn)
         wf.addTasks(merge_tasks)
         task, _, las_fopfn_plf = create_merge_gather_task(
             os.path.join(rawread_dir, 'merge-gather'), p_ids_merged_las)
@@ -293,7 +293,7 @@ def run(wf, config,
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
         wf.max_jobs = config['cns_concurrent_jobs']
 
-        scattered_plf = os.path.join(
+        scattered_fn = os.path.join(
             rawread_dir, 'cns-scatter', 'scattered.json')
         make_task = PypeTask(
             inputs={
@@ -301,7 +301,7 @@ def run(wf, config,
                 'db': raw_reads_db_plf,
             },
             outputs={
-                'scattered': scattered_plf,
+                'scattered': scattered_fn,
             },
             parameters={
                 'db_prefix': 'raw_reads',
@@ -313,7 +313,7 @@ def run(wf, config,
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
         tasks, consensus_out = create_consensus_tasks(
-            rawread_dir, scattered_plf)
+            rawread_dir, scattered_fn)
         wf.addTasks(tasks)
         wf.refreshTargets(exitOnFailure=exitOnFailure)
 
@@ -382,7 +382,7 @@ def run(wf, config,
     wf.max_jobs = config['pda_concurrent_jobs']
     config['sge_option_da'] = config['sge_option_pda']
 
-    scattered_plf = os.path.join(
+    scattered_fn = os.path.join(
         pread_dir, 'daligner-scatter', 'scattered.json')
     make_daligner_scatter = PypeTask(
         inputs={
@@ -390,7 +390,7 @@ def run(wf, config,
             'db_build_done': pdb_build_done,
         },
         outputs={
-            'scatter_fn': scattered_plf,
+            'scatter_fn': scattered_fn,
         },
         parameters={
             'db_prefix': 'preads',
@@ -404,7 +404,7 @@ def run(wf, config,
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
     daligner_tasks, daligner_out = create_daligner_tasks(
-        pread_dir, scattered_plf)
+        pread_dir, scattered_fn)
     wf.addTasks(daligner_tasks)
 
     p_gathered_las_plf = makePypeLocalFile(os.path.join(
@@ -424,14 +424,14 @@ def run(wf, config,
     # Merge .las files.
     wf.max_jobs = config['pla_concurrent_jobs']
     config['sge_option_la'] = config['sge_option_pla']
-    scattered_plf = os.path.join(pread_dir, 'merge-scatter', 'scattered.json')
+    scattered_fn = os.path.join(pread_dir, 'merge-scatter', 'scattered.json')
     make_task = PypeTask(
         inputs={
             'run_jobs': run_jobs,
             'gathered_las': p_gathered_las_plf,
         },
         outputs={
-            'scattered': scattered_plf,
+            'scattered': scattered_fn,
         },
         parameters={
             'db_prefix': 'preads',
@@ -443,7 +443,7 @@ def run(wf, config,
     wf.refreshTargets(exitOnFailure=exitOnFailure)
 
     merge_tasks, p_ids_merged_las = create_merge_tasks(
-        pread_dir, scattered_plf)
+        pread_dir, scattered_fn)
     wf.addTasks(merge_tasks)
     task, las_fofn_plf, las_fopfn_plf = create_merge_gather_task(
         os.path.join(pread_dir, 'merge-gather'), p_ids_merged_las)
