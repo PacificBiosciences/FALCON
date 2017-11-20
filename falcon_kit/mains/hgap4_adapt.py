@@ -156,10 +156,6 @@ falcon_ns.tasks.task_falcon2_run_asm-0
 1-preads_ovl/db2falcon
 
 2-asm-falcon/
-2-asm-falcon/read_maps
-2-asm-falcon/read_maps/dump_pread_ids
-2-asm-falcon/read_maps/dump_rawread_ids
-2-asm-falcon/read_maps/get_ctg_read_map
 """
 
 
