@@ -25,11 +25,8 @@ make install-edit
 #  source=falcon_kit
 # but maybe it will work with a --edit install.
 
-pip install --user pytest pytest-cov
 export MY_TEST_FLAGS="-v -s --durations=0 --cov=falcon_kit --cov-report=term-missing --cov-report=xml:coverage.xml --cov-branch"
 make test
 sed -i -e 's@filename="@filename="./falcon_kit/@g' coverage.xml
 
-# We have a problem with pylint: https://github.com/PyCQA/pylint/issues/1296
-pip install --user --upgrade pylint
 make pylint
