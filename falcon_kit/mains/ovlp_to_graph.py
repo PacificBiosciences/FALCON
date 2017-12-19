@@ -1516,13 +1516,15 @@ def ovlp_to_graph(args):
         s0, t0, v0 = non_overlapped_path[0]
         end_node = non_overlapped_path[-1][1]
 
-        print >> ctg_paths, "%06dF" % ctg_id, "ctg_linear", s0 + "~" + v0 + "~" + \
+        c_type_ = "ctg_linear" if (end_node != s0) else "ctg_circular"
+
+        print >> ctg_paths, "%06dF" % ctg_id, c_type_, s0 + "~" + v0 + "~" + \
             t0, end_node, length, score, "|".join(
                 [c[0] + "~" + c[2] + "~" + c[1] for c in non_overlapped_path])
         non_overlapped_path_r.reverse()
         s0, t0, v0 = non_overlapped_path_r[0]
         end_node = non_overlapped_path_r[-1][1]
-        print >> ctg_paths, "%06dR" % ctg_id, "ctg_linear", s0 + "~" + v0 + "~" + \
+        print >> ctg_paths, "%06dR" % ctg_id, c_type_, s0 + "~" + v0 + "~" + \
             t0, end_node, length_r, score_r, "|".join(
                 [c[0] + "~" + c[2] + "~" + c[1] for c in non_overlapped_path_r])
         ctg_id += 1
