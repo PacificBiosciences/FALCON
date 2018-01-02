@@ -1,7 +1,7 @@
 #!/bin/bash
 
 type module >& /dev/null || . /mnt/software/Modules/current/init/bash
-module unload git gcc ccache
+module purge
 module load git
 module load gcc
 module load ccache
