@@ -9,6 +9,100 @@ import os.path
 LOG = logging.getLogger(__name__)
 
 
+TASK_LAS_MERGE_SCATTER_SCRIPT = """\
+python -m falcon_kit.mains.las_merge_scatter --db-prefix={params.db_prefix} --stage={params.stage} --run-jobs-fn={input.run_jobs} --gathered-las-fn={input.gathered_las} --wildcards={params.wildcards} --scattered-fn={output.scattered}
+"""
+TASK_LAS_MERGE_SCRIPT = """\
+# Note: HPC.daligner chooses a merged filename in its generated script, so we will symlink to it.
+python -m falcon_kit.mains.las_merge --las-paths-fn={input.las_paths} --merge-script-fn={input.merge_script} --las-merged-fn-fn={input.merged_las_json} --las-merged-symlink-fn={output.merged_las} --job-done-fn={output.job_done}
+"""
+TASK_LAS_MERGE_GATHER_SCRIPT = """\
+python -m falcon_kit.mains.las_merge_gather --gathered-fn={input.gathered} --las-fofn-fn={output.las_fofn} --las-fopfn-fn={output.las_fopfn}
+"""
+TASK_CONSENSUS_SCATTER_SCRIPT = """\
+python -m falcon_kit.mains.consensus_scatter --las-fopfn-fn={input.las_fopfn} --db-fn={input.raw_reads_db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --wildcards={params.wildcards} --scattered-fn={output.scattered}
+"""
+TASK_CONSENSUS_TASK_SCRIPT = """\
+python -m falcon_kit.mains.consensus_task --las-fn={input.las} --db-fn={input.db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --fasta-fn={output.fasta}
+"""
+TASK_CONSENSUS_GATHER_SCRIPT = """\
+python -m falcon_kit.mains.consensus_gather --gathered-fn={input.gathered} --preads-fofn-fn={output.preads_fofn}
+"""
+TASK_REPORT_PRE_ASSEMBLY_SCRIPT = """\
+python -m falcon_kit.mains.task_report_pre_assembly --config-fn={input.config} --length-cutoff-fn={input.length_cutoff} --raw-reads-db-fn={input.raw_reads_db} --preads-fofn-fn={input.preads_fofn} --pre-assembly-report-fn={output.pre_assembly_report}
+"""
+TASK_BUILD_RDB_SCRIPT = """\
+python -m falcon_kit.mains.build_rdb --input-fofn-fn={input.raw_reads_fofn} --config-fn={input.config} --run-jobs-fn={output.run_jobs} --length-cutoff-fn={output.length_cutoff} --job-done-fn={output.db_build_done}
+touch {output.db_build_done}
+"""
+TASK_BUILD_PDB_SCRIPT = """\
+python -m falcon_kit.mains.build_pdb --input-fofn-fn={input.preads_fofn} --config-fn={input.config} --run-jobs-fn={output.run_jobs} --job-done-fn={output.db_build_done}
+# TODO: Verify that input.preads_db exists.
+touch {output.db_build_done}
+"""
+TASK_DALIGNER_SCATTER_SCRIPT = """\
+python -m falcon_kit.mains.daligner_scatter --run-jobs-fn={input.run_jobs} --db-prefix={params.db_prefix} --db-fn={input.db} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --stage={params.stage} --wildcards={params.wildcards} --scattered-fn={output.scattered}
+"""
+TASK_DALIGNER_SCRIPT = """\
+# Note: HPC.daligner chooses a merged filename in its generated script, so we will symlink to it.
+python -m falcon_kit.mains.daligner --daligner-settings-fn={input.daligner_settings} --daligner-script-fn={input.daligner_script} --job-done-fn={output.job_done}
+"""
+TASK_DALIGNER_GATHER_SCRIPT = """\
+python -m falcon_kit.mains.daligner_gather --gathered-fn={input.gathered} --las-paths-fn={output.las_paths}
+"""
+TASK_DUMP_RAWREAD_IDS_SCRIPT = """\
+DBshow -n {input.rawread_db} | tr -d '>' | LD_LIBRARY_PATH= awk '{{print $1}}' > {output.rawread_id_file}
+"""
+TASK_DUMP_PREAD_IDS_SCRIPT = """\
+DBshow -n {input.pread_db} | tr -d '>' | LD_LIBRARY_PATH= awk '{{print $1}}' > {output.pread_id_file}
+"""
+TASK_GENERATE_READ_TO_CTG_MAP_SCRIPT = """\
+python -m falcon_kit.mains.generate_read_to_ctg_map --rawread-id={input.rawread_id_file} --pread-id={input.pread_id_file} --sg-edges-list={input.sg_edges_list} --utg-data={input.utg_data} --ctg-paths={input.ctg_paths} --output={output.read_to_contig_map}
+"""
+TASK_RUN_DB_TO_FALCON_SCRIPT = """\
+# Given preads.db,
+# write preads4falcon.fasta (implicitly) in CWD.
+time DB2Falcon -U {input.preads_db}
+[ -f {output.preads4falcon} ] || exit 1
+touch {output.job_done}
+"""
+TASK_RUN_FALCON_ASM_SCRIPT = """\
+# Given, las.fofn,
+# write preads.ovl:
+
+# mobs uses binwrappers, so it does not see our "entry-points".
+# So, after dropping "src/py_scripts/*.py", we can call these via python -m:
+
+time python -m falcon_kit.mains.ovlp_filter --db {input.db_file} --fofn {input.las_fofn} {params.overlap_filtering_setting} --min_len {params.length_cutoff_pr} --out-fn preads.ovl
+
+ln -sf {input.preads4falcon_fasta} ./preads4falcon.fasta
+
+# Given preads.ovl,
+# write sg_edges_list, c_path, utg_data, ctg_paths.
+time python -m falcon_kit.mains.ovlp_to_graph {params.fc_ovlp_to_graph_option} --overlap-file preads.ovl >| fc_ovlp_to_graph.log
+
+# Given sg_edges_list, utg_data, ctg_paths, preads4falcon.fasta,
+# write p_ctg.fa and a_ctg_all.fa,
+# plus a_ctg_base.fa, p_ctg_tiling_path, a_ctg_tiling_path, a_ctg_base_tiling_path:
+time python -m falcon_kit.mains.graph_to_contig
+
+# Given a_ctg_all.fa, write a_ctg.fa:
+time python -m falcon_kit.mains.dedup_a_tigs
+
+# Generate a GFA of all assembly graph edges. This GFA can contain
+# edges and nodes which are not part of primary and associate contigs.
+time python -m falcon_kit.mains.gen_gfa_v1 >| asm.gfa
+
+# Generate a GFA of all assembly graph edges. This GFA can contain
+# edges and nodes which are not part of primary and associate contigs.
+time python -m falcon_kit.mains.gen_gfa_v1 --add-string-graph >| sg.gfa
+
+#rm -f ./preads4falcon.fasta
+
+touch {output.falcon_asm_done}
+"""
+
+
 def fn(p): return p
 
 
@@ -429,9 +523,6 @@ def task_merge_gather(self):
     #system('find {}/m_*/ -name "preads.*.las" >| {}'.format(pread_dir, las_fofn_fn))
 
 
-TASK_DUMP_RAWREAD_IDS_SCRIPT = """\
-DBshow -n {input.rawread_db} | tr -d '>' | LD_LIBRARY_PATH= awk '{{print $1}}' > {output.rawread_id_file}
-"""
 def task_dump_rawread_ids(self):
     rawread_db = fn(self.rawread_db)
     rawread_id_file = fn(self.rawread_id_file)
@@ -442,9 +533,6 @@ def task_dump_rawread_ids(self):
     system(TASK_DUMP_RAWREAD_IDS_SCRIPT.format(**locals()))
 
 
-TASK_DUMP_PREAD_IDS_SCRIPT = """\
-DBshow -n {input.pread_db} | tr -d '>' | LD_LIBRARY_PATH= awk '{{print $1}}' > {output.pread_id_file}
-"""
 def task_dump_pread_ids(self):
     pread_db = fn(self.pread_db)
     pread_id_file = fn(self.pread_id_file)
@@ -455,9 +543,6 @@ def task_dump_pread_ids(self):
     system(TASK_DUMP_PREAD_IDS_SCRIPT.format(**locals()))
 
 
-TASK_GENERATE_READ_TO_CTG_MAP_SCRIPT = """\
-python -m falcon_kit.mains.generate_read_to_ctg_map --rawread-id={input.rawread_id_file} --pread-id={input.pread_id_file} --sg-edges-list={input.sg_edges_list} --utg-data={input.utg_data} --ctg-paths={input.ctg_paths} --output={output.read_to_contig_map}
-"""
 def task_generate_read_to_ctg_map(self):
     input = object()
     input.rawread_id_file = fn(self.rawread_id_file)

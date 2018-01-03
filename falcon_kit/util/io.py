@@ -208,16 +208,23 @@ def filesize(fn):
 
 
 def validated_fns(fofn):
-    """Return list of filenames from fofn.
-    Assert none are empty or non-existent.
+    return list(yield_validated_fns(fofn))
+
+
+def yield_validated_fns(fofn):
+    """Return list of filenames from fofn, either abs or relative to CWD instead of dir of fofn.
+    Assert none are empty/non-existent.
     """
+    dirname = os.path.normpath(os.path.dirname(fofn)) # normpath makes '' become '.'
     try:
         fns = open(fofn).read().strip().split()
         for fn in fns:
             assert fn
+            if not os.path.isabs(fn):
+                fn = os.path.normpath(os.path.join(dirname, fn))
             assert os.path.isfile(fn)
-            assert filesize(fn)
-        return fns
+            assert filesize(fn), '{!r} has size {}'.format(fn, filesize(fn))
+            yield fn
     except Exception:
         sys.stderr.write('Failed to validate FOFN {!r}\n'.format(fofn))
         raise
