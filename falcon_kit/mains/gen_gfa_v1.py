@@ -93,7 +93,7 @@ def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
     a_ctg_headers = set()
     f = FastaReader(a_ctg_fasta)
     for r in f:
-        a_ctg_headers.add(r.name)
+        a_ctg_headers.add(r.name.split(' ')[0])
 
     # Load and filter primary contig paths.
     p_paths, p_edge_to_ctg = load_tiling_paths(p_ctg_tiling_path, 'P')
