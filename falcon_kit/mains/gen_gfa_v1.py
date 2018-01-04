@@ -84,14 +84,9 @@ def filter_tiling_paths_by_len(tiling_paths, paths_len, min_len):
             ret_paths[ctg_id] = edges
     return ret_paths
 
-def filter_tiling_paths_by_ctgid(tiling_paths, ctgs_to_include):
-    """Filter out any contigs that don't exist in the list"""
-    return {k:v for k,v in filter(lambda x: x[0] in ctgs_to_include, tiling_paths.iteritems())}
-
-
 def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
                             p_ctg_tiling_path, a_ctg_tiling_path,
-                            min_p_len, min_a_len, gfa_graph, ctgs_to_include):
+                            min_p_len, min_a_len, gfa_graph, filter_tiling_paths_by_ctgid):
     # Associate tiling paths are not deduplicated.
     # We need the headers of the final haplotigs to filter
     # out the unnecessary tiling paths.
@@ -112,8 +107,7 @@ def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
     p_paths, p_edge_to_ctg = load_tiling_paths(p_ctg_tiling_path, 'P')
     _, p_ctg_len = calc_tiling_paths_len(p_paths)
     p_paths = filter_tiling_paths_by_len(p_paths, p_ctg_len, min_p_len)
-    if ctgs_to_include:
-        p_paths = filter_tiling_paths_by_ctgid(p_paths, ctgs_to_include)
+    p_paths = filter_tiling_paths_by_ctgid(p_paths)
     for ctg_id, path in p_paths.iteritems():
         gfa_graph.add_tiling_path(path, ctg_id)
 
@@ -121,8 +115,7 @@ def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
     a_paths, a_edge_to_ctg = load_tiling_paths(a_ctg_tiling_path, 'A')
     _, a_ctg_len = calc_tiling_paths_len(a_paths)
     a_paths = filter_tiling_paths_by_len(a_paths, a_ctg_len, min_a_len)
-    if ctgs_to_include:
-        a_paths = filter_tiling_paths_by_ctgid(a_paths, ctgs_to_include)
+    a_paths = filter_tiling_paths_by_ctgid(a_paths)
     for ctg_id, path in a_paths.iteritems():
         if ctg_id in a_ctg_headers:
             gfa_graph.add_tiling_path(path, ctg_id)
@@ -144,15 +137,18 @@ def gfa_from_assembly(fp_out, p_ctg_tiling_path, a_ctg_tiling_path,
     """
     gfa_graph = GFAGraph()
 
-    # Are we filtering for certain contigs?
-    ctgs_to_include = []
+    # noop filter for contig ids (default)
+    filter_tiling_paths_by_ctgid = lambda x: x
     if only_these_contigs:
-        ctgs_to_include = open(only_these_contigs).read().splitlines()
+        ctgs_to_include = set(open(only_these_contigs).read().splitlines())
+        def filter_tiling_paths_by_ctgid(tiling_paths):
+            """Filter out any contigs that don't exist in the set"""
+            return {k:v for k,v in filter(lambda x: x[0] in ctgs_to_include, tiling_paths.iteritems())}
 
     add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
                             p_ctg_tiling_path, a_ctg_tiling_path,
                             min_p_len, min_a_len,
-                            gfa_graph, ctgs_to_include)
+                            gfa_graph, filter_tiling_paths_by_ctgid)
 
     if add_string_graph:
         # Load the string graph.
