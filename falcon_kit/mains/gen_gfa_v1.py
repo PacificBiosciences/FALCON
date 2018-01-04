@@ -145,7 +145,7 @@ def gfa_from_assembly(fp_out, p_ctg_tiling_path, a_ctg_tiling_path,
         # pylint: disable=E0102
         def filter_tiling_paths_by_ctgid(tiling_paths):
             """Filter out any contigs that don't exist in the set"""
-            return {k:v for k,v in filter(lambda x: x[0] in ctgs_to_include, tiling_paths.iteritems())}
+            return {k:v for k,v in filter(lambda x: x[0].split('-')[0] in ctgs_to_include, tiling_paths.iteritems())}
 
     add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
                             p_ctg_tiling_path, a_ctg_tiling_path,
