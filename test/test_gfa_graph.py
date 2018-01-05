@@ -157,7 +157,7 @@ def wrap_write_gfa_v1_test(use_sg, use_nx, use_tp, write_reads, write_contigs, m
             helpers.get_test_data_dir(), 'gfa-1', 'a_ctg_tiling_path')
         gen_gfa_v1.add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
                                            p_ctg_tiling_path_file, a_ctg_tiling_path_file,
-                                           min_p_len, min_a_len, gfa_graph)
+                                           min_p_len, min_a_len, gfa_graph,lambda x:x)
 
     if use_nx:
         gexf_file = os.path.join(

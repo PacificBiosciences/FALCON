@@ -84,30 +84,22 @@ def filter_tiling_paths_by_len(tiling_paths, paths_len, min_len):
             ret_paths[ctg_id] = edges
     return ret_paths
 
-
 def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
                             p_ctg_tiling_path, a_ctg_tiling_path,
-                            min_p_len, min_a_len, gfa_graph):
+                            min_p_len, min_a_len, gfa_graph, filter_tiling_paths_by_ctgid):
     # Associate tiling paths are not deduplicated.
     # We need the headers of the final haplotigs to filter
     # out the unnecessary tiling paths.
     a_ctg_headers = set()
     f = FastaReader(a_ctg_fasta)
     for r in f:
-        a_ctg_headers.add(r.name)
-
-    # Associate tiling paths are not deduplicated.
-    # We need the headers of the final haplotigs to filter
-    # out the unnecessary tiling paths.
-    a_ctg_headers = set()
-    f = FastaReader(a_ctg_fasta)
-    for r in f:
-        a_ctg_headers.add(r.name)
+        a_ctg_headers.add(r.name.split(' ')[0])
 
     # Load and filter primary contig paths.
     p_paths, p_edge_to_ctg = load_tiling_paths(p_ctg_tiling_path, 'P')
     _, p_ctg_len = calc_tiling_paths_len(p_paths)
     p_paths = filter_tiling_paths_by_len(p_paths, p_ctg_len, min_p_len)
+    p_paths = filter_tiling_paths_by_ctgid(p_paths)
     for ctg_id, path in p_paths.iteritems():
         gfa_graph.add_tiling_path(path, ctg_id)
 
@@ -115,6 +107,7 @@ def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
     a_paths, a_edge_to_ctg = load_tiling_paths(a_ctg_tiling_path, 'A')
     _, a_ctg_len = calc_tiling_paths_len(a_paths)
     a_paths = filter_tiling_paths_by_len(a_paths, a_ctg_len, min_a_len)
+    a_paths = filter_tiling_paths_by_ctgid(a_paths)
     for ctg_id, path in a_paths.iteritems():
         if ctg_id in a_ctg_headers:
             gfa_graph.add_tiling_path(path, ctg_id)
@@ -124,7 +117,7 @@ def gfa_from_assembly(fp_out, p_ctg_tiling_path, a_ctg_tiling_path,
                       preads_fasta, p_ctg_fasta, a_ctg_fasta,
                       sg_edges_list, utg_data, ctg_paths,
                       add_string_graph, write_reads, write_contigs,
-                      min_p_len, min_a_len):
+                      min_p_len, min_a_len, only_these_contigs):
     """
     This method produces the GFA-1 formatted output of the
     FALCON assembly.
@@ -136,15 +129,26 @@ def gfa_from_assembly(fp_out, p_ctg_tiling_path, a_ctg_tiling_path,
     """
     gfa_graph = GFAGraph()
 
+    # noop filter for contig ids (default)
+    filter_tiling_paths_by_ctgid = lambda x: x
+    if only_these_contigs:
+        # then engage an actual filter
+        ctgs_to_include = set(open(only_these_contigs).read().splitlines())
+        # pylint: disable=E0102
+        def filter_tiling_paths_by_ctgid(tiling_paths):
+            """Filter out any contigs that don't exist in the set"""
+            return {k:v for k,v in filter(lambda x: x[0].split('-')[0] in ctgs_to_include, tiling_paths.iteritems())}
+
     add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
                             p_ctg_tiling_path, a_ctg_tiling_path,
                             min_p_len, min_a_len,
-                            gfa_graph)
+                            gfa_graph, filter_tiling_paths_by_ctgid)
 
     if add_string_graph:
         # Load the string graph.
         asm_graph = AsmGraph(sg_edges_list, utg_data, ctg_paths)
         gfa_graph.add_asm_graph(asm_graph)
+
 
     gfa_graph.write_gfa_v1(fp_out, preads_fasta, [
                            p_ctg_fasta, a_ctg_fasta], write_reads, write_contigs)
@@ -179,6 +183,8 @@ def parse_args(argv):
                         help='primary contig paths with length smaller than this will not be reported')
     parser.add_argument('--min-a-len', type=int, default=0,
                         help='associate contig paths with length smaller than this will not be reported')
+    parser.add_argument('--only-these-contigs', type=str, default='',
+                        help='limit output to specified contigs listed in file (one per line)')
     args = parser.parse_args(argv[1:])
     return args
 
