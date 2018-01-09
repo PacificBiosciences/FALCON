@@ -325,3 +325,18 @@ def test_filter_tiling_paths_by_len():
     with pytest.raises(Exception) as e_info:
         p_path_filtered = mod.filter_tiling_paths_by_len(
             p_path, p_ctg_len_degenerate, 0)
+
+
+def test_get_filter_tpbc(tmpdir):
+    noop = mod.get_filter_tpbc('')
+    x = list()
+    assert noop(x) is x
+
+    content = """
+aaa
+bbb
+"""
+    only_these_contigs = tmpdir.join('only.these')
+    only_these_contigs.write(content)
+    some = mod.get_filter_tpbc(str(only_these_contigs))
+    assert some({'aaa':1, 'bbb-foo':2, 'xxx':3}) == {'aaa':1, 'bbb-foo':2}
