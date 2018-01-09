@@ -114,16 +114,19 @@ def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
 
 
 def get_filter_tpbc(only_these_contigs):
-    # noop filter for contig ids (default)
-    filter_tiling_paths_by_ctgid = lambda x: x
+    """Given a string, return either a no-op filter (when bool(str) is False)
+    or a filter which keeps "only these contigs".
+    """
     if only_these_contigs:
         # then engage an actual filter
         ctgs_to_include = set(open(only_these_contigs).read().splitlines())
-        # pylint: disable=E0102
         def filter_tiling_paths_by_ctgid(tiling_paths):
             """Filter out any contigs that don't exist in the set"""
             return {k:v for k,v in filter(lambda x: x[0].split('-')[0] in ctgs_to_include, tiling_paths.iteritems())}
-    return filter_tiling_paths_by_ctgid
+        return filter_tiling_paths_by_ctgid
+    def noop_filter(tiling_paths):
+        return tiling_paths
+    return noop_filter
 
 
 def gfa_from_assembly(fp_out, p_ctg_tiling_path, a_ctg_tiling_path,
