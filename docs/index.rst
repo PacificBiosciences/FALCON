@@ -26,7 +26,7 @@ FALCON Assembler
    parameters
    glossary
    faq
-   tertiary
+   resources
 
 
 `FALCON <http://github.com/PacificBiosciences/FALCON>`_ is a diploid aware genome assembler designed for Pacific Biosciences long read data.
@@ -39,4 +39,4 @@ FALCON Assembler
 *  :ref:`Parameters                 <parameters>` - Descriptions of parameters found in fc_run.cfg
 *  :ref:`Glossary                     <glossary>` - Glossary of FALCON jargon
 *  :ref:`Frequently Asked Questions        <faq>` - Frequently asked questions
-*  :ref:`Tetiary Analysis             <tertiary>` - What next?
+*  :ref:`Resources             <resources>` - Talks and slides about PacBio
