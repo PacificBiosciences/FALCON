@@ -3,6 +3,13 @@
 Resources
 ========
 
+Relevant talks presented at PAGXXVI in San Diego, January 2018
+
+Zev Kronenberg (Phase Genomics, fmr Eichler Lab, UW) work on great ape genomes
+:download:`ZKronenberg_GreatApeComparativeGenomics_PAG2018.pdf <media/ZKronenberg_GreatApeComparativeGenomics_PAG2018.pdf>`
+
+
+
 Slides presented at Tools for Polyploids Meeting at San Diego Botanical Garden, Jan 12th, 2018
 :download:`KinganPacBio_ToolsForPolyploidsPAG2018.pdf <media/KinganPacBio_ToolsForPolyploidsPAG2018.pdf>`
 
