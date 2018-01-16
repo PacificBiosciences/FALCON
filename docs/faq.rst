@@ -185,6 +185,21 @@ paper above, but many people have successfully used it to help phase their genom
 free software on the internet, your mileage may vary.
 
 
+How much divergence can FALCON-Unzip handle?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The magnitude of haplotype divergence determines the structure of the resulting FALCON-Unzip assembly. Genomic regions with low 
+heterozygisty will be assembled as collapsed haplotype on a single primary contig. Haplotypes up to ~5% diverged will be Unzipped,
+while highly divergent haplotypes will be assembled on different primary contigs. In the latter case, it is up to the user to 
+identify these contigs as homologous using gene annotation or sequence alignment.
+
+For a variety of FALCON-Unzip assemblies, here is the distribution of haplotype divergence for unzipped regions. Each haplotig 
+was aligned to the corresponding primary contig with `nucmer <https://github.com/mummer4/mummer>`_, filtered with delta-filter and 
+divergence was estimated with show-choords.
+
+.. image:: media/unzippedHapDiv.png
+
+
 Why does FALCON have trouble assembling my amplicon data?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
