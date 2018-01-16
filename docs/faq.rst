@@ -195,7 +195,8 @@ identify these contigs as homologous using gene annotation or sequence alignment
 
 For a variety of FALCON-Unzip assemblies, here is the distribution of haplotype divergence for unzipped regions. Each haplotig 
 was aligned to the corresponding primary contig with `nucmer <https://github.com/mummer4/mummer>`_, filtered with delta-filter and 
-divergence was estimated with show-choords.
+divergence was estimated with show-choords. (Data credits to John Williams, Tim Smith, Paolo Ajmone-Marsan, David Hume, Erich Jarvis, 
+John Henning, Dave Hendrix, Carlos Machado, and Iago Hale). 
 
 .. image:: media/unzippedHapDiv.png
 
