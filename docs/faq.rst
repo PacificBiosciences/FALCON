@@ -185,7 +185,7 @@ paper above, but many people have successfully used it to help phase their genom
 free software on the internet, your mileage may vary.
 
 
-How much divergence can FALCON-Unzip handle?
+How much haplotype divergence can FALCON-Unzip handle?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The magnitude of haplotype divergence determines the structure of the resulting FALCON-Unzip assembly. Genomic regions with low 
