@@ -4,14 +4,14 @@ Resources
 ========
 
 Talks from SMRT Informatics Developers Conference, Jan 17th 2018, San Diego, CA
-:download:`SKoren_TrioBinning_SMRTInforDevConf_20180113.pdf 
-<media/SKoren_TrioBinning_SMRTInforDevConf_20180113/pdf>`
+:download:`SKoren_TrioBinning_SMRTInforDevConf_20180113.pdf <media/SKoren_TrioBinning_SMRTInforDevConf_20180113/pdf>`
 
 
 
 Relevant talks and posters presented at PAGXXVI in San Diego, January 2018
 
 PacBio Presented Posters
+
 :download:`Concepcion-PAG-2018-Maize_Soy_SV.pdf <media/Concepcion-PAG-2018-Maize_Soy_SV.pdf>`
 :download:`Concepcion-PAG-2018-S.californicum_de novo_assembly.pdf <media/Concepcion-PAG-2018-S.californicum_de 
 novo_assembly.pdf>`
