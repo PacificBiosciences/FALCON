@@ -8,6 +8,7 @@ Talks from SMRT Informatics Developers Conference, Jan 17th 2018, San Diego, CA
 :download:`ETseng_IsoPhase_20180104_PAG_SMRT_Developers.pdf <media/ETseng_IsoPhase_20180104_PAG_SMRT_Developers.pdf>`
 :download:`Wenger-SMRTInformatics-2017-Identifying-Structural-Variants-in-Individuals-and-Populations-with-PacBio-Long-Reads.pdf <media/Wenger-SMRTInformatics-2017-Identifying-Structural-Variants-in-Individuals-and-Populations-with-PacBio-Long-Reads.pdf>`
 :download:`BBowman_180116_PAG_NoAmp.pdf <media/BBowman_180116_PAG_NoAmp.pdf>`
+
 :download:`AConesa_IsoSeq_SMRT_developers_2018.pdf <media/AConesa_IsoSeq_SMRT_developers_2018.pdf>`
 :download:`ZKronenberg_PhaseGenomics_2018_PAG_SMRT_INFO.pdf <media/ZKronenberg_PhaseGenomics_2018_PAG_SMRT_INFO.pdf>`
 
