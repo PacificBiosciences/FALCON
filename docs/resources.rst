@@ -11,6 +11,12 @@ Jan 17th 2018, San Diego, CA
 
 :download:`Agenda <media/SMRTInformatics_PAG2018_Agenda.pdf>`
 
+*Keynote by Tim Smith*
+----------------------
+
+:download:`TimSmith_The_evolution_of_reference_assembly <media/Smith_PacBio_Developers_workshop_2018.pdf>`
+
+
 *Software Updates from PacBio*
 ------------------------------
 
