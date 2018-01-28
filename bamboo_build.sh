@@ -8,7 +8,7 @@ module load ccache
 module load python/2
 #module load make
 
-set -vx
+set -vex
 git --version
 which gcc
 which g++
@@ -21,9 +21,13 @@ export PATH=${PYTHONUSERBASE}/bin:${PATH}
 
 # We need latest local pypeFLOW, not from PyPI.
 pushd ../pypeFLOW
-pop install --user --edit .
+pip install --user --edit .
 popd
 # Back to FALCON.
+
+# Unfortunately, we need pypeflow for pylint.
+python -c 'import pypeflow as p; print p'
+python -c 'import pypeflow.sample_tasks as p; print p'
 
 make install-edit
 # Note: no --edit because we might be building artifacts.
