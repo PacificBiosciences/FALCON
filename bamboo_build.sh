@@ -19,6 +19,12 @@ mkdir -p LOCAL
 export PYTHONUSERBASE=$(pwd)/LOCAL
 export PATH=${PYTHONUSERBASE}/bin:${PATH}
 
+# We need latest local pypeFLOW, not from PyPI.
+pushd ../pypeFLOW
+pop install --user --edit .
+popd
+# Back to FALCON.
+
 make install-edit
 # Note: no --edit because we might be building artifacts.
 # ... Scratch that. We have trouble getting coverage for
