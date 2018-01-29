@@ -23,7 +23,7 @@ except Exception:
     local_version = ''
 
 setup(name='falcon_kit',
-      version='0.7' + local_version,
+      version='1.0' + local_version,
       description='a small toolkit for DNA seqeucne alignment, overlapping, and assembly',
       author='Jason Chin',
       author_email='jchin@pacificbiosciences.com',

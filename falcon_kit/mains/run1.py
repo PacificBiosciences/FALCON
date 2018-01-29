@@ -148,6 +148,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
                                  squash=squash
                                  )
     general_config_fn = './config.json' # must not be in a task-dir
+    config['ver'] = '100'
     io.serialize(general_config_fn, config)
     with open('foo.snake', 'w') as snakemake_writer:
         rule_writer = snakemake.SnakemakeRuleWriter(snakemake_writer)
