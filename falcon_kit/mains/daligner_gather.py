@@ -10,10 +10,10 @@ LOG = logging.getLogger()
 
 def convert_job_id_to_num(job_id):
     """
-    >>> convert_job_id_to_num('m_0011')
-    11
+    >>> convert_job_id_to_num('m_001d')
+    29
     """
-    return int(job_id[2:], base=10)
+    return int(job_id[2:], base=16)
 
 def run(gathered_fn, las_paths_fn):
     gathered = io.deserialize(gathered_fn)

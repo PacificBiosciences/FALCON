@@ -286,6 +286,7 @@ ln -sf ${{db_dir}}/.{db_prefix}.idx .
 ln -sf ${{db_dir}}/{db_prefix}.db .
 ln -sf ${{db_dir}}/.{db_prefix}.dust.anno .
 ln -sf ${{db_dir}}/.{db_prefix}.dust.data .
+rm -f *.las
 {daligner_cmd}
 rm -f *.C?.las *.C?.S.las *.C??.las *.C??.S.las *.C???.las *.C???.S.las
 rm -f *.N?.las *.N?.S.las *.N??.las *.N??.S.las *.N???.las *.N???.S.las
