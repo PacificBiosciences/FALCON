@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from falcon_kit.mains.graph_to_contig import main
 import sys
 

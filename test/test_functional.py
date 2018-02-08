@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import helpers
 import pytest
 import falcon_kit.functional as f

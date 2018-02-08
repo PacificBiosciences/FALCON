@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import unicode_literals
 from ctypes import (POINTER, c_char_p, c_uint, c_uint,
                     c_uint, c_uint, c_uint, c_double, string_at)
 from falcon_kit.multiproc import Pool

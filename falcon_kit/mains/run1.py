@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from ..pype import (gen_task, gen_parallel_tasks) # copied verbatim from falcon_unzip
 from .. import run_support as support
 from .. import bash, pype_tasks, snakemake

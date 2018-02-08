@@ -2,6 +2,7 @@
 needed to modify the TASK SCRIPT to use our copy of
 generic_gather.py
 """
+from __future__ import unicode_literals
 from pypeflow.sample_tasks import gen_task as pype_gen_task
 from . import io
 import os

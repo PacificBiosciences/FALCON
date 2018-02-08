@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from .. import functional as f
 import argparse
 import os

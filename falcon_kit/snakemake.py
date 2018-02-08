@@ -1,6 +1,7 @@
 """Exact copy of falcon_unzip/tasks/snakemake.py
 TODO: Consolidate.
 """
+from __future__ import unicode_literals
 import json
 import os
 import re

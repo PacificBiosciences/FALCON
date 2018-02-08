@@ -17,6 +17,7 @@ After that the dedup_a_tigs.py script is used to deduplicate fake a_ctg.
 But that script is simple, and only depends on the alignment info that the previous script stored in the a_ctg header.
 """
 from __future__ import print_function
+from __future__ import unicode_literals
 import sys
 import networkx as nx
 #from pbcore.io import FastaReader

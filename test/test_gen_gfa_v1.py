@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import falcon_kit.mains.gen_gfa_v1 as mod
 import helpers
 import pytest
