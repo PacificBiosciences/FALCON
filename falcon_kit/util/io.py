@@ -1,6 +1,7 @@
 """I/O utilities
 Not specific to FALCON.
 """
+from __future__ import unicode_literals
 import os
 import resource
 import shlex

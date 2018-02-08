@@ -7,6 +7,7 @@ See FALCON-pbsmrtpipe/pbfalcon/report_preassembly.py for XML version.
 #   http://swarm/files/depot/branches/springfield/S2.3/software/smrtanalysis/bioinformatics/tools/pbreports/pbreports/report/preassembly.py
 from __future__ import absolute_import
 from __future__ import division
+from __future__ import unicode_literals
 from .FastaReader import open_fasta_reader
 from .util.io import syscall
 from . import functional

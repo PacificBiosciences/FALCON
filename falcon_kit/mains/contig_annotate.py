@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import unicode_literals
 from falcon_kit.fc_asm_graph import AsmGraph
 import sys
 

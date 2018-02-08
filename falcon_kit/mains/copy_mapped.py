@@ -1,4 +1,5 @@
 #!/bin/env python2.7
+from __future__ import unicode_literals
 import argparse
 import json
 import logging

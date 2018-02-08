@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import unicode_literals
 # PypeTask functions now need to be module-level.
 from . import run_support as support
 from . import bash  # for scattering

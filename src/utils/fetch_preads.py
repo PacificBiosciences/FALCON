@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import unicode_literals
 from pbcore.io import FastaReader
 import networkx as nx
 import sys

@@ -2,6 +2,7 @@
 """
 from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
 import collections
 import re
 import StringIO
@@ -430,11 +431,11 @@ def choose_cat_fasta(fofn):
     Raise Exception on error.
 
     >>> choose_cat_fasta('abc.gz')
-    'zcat '
+    u'zcat '
     >>> choose_cat_fasta('abc.dexta')
-    'undexta -vkU -w60 -i < '
+    u'undexta -vkU -w60 -i < '
     >>> choose_cat_fasta('abc')
-    'cat '
+    u'cat '
     """
     first_line = fofn.splitlines()[0]
     if first_line.endswith('.gz'):

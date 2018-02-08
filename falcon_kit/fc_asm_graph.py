@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
 from .FastaReader import open_fasta_reader
 import networkx as nx
 

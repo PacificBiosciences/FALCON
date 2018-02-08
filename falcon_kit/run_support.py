@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from . import bash
 from .util.system import (make_fofn_abs, make_dirs, cd)
 import ConfigParser

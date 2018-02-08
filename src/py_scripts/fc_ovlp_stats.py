@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from falcon_kit.mains.ovlp_stats import main
 import sys
 

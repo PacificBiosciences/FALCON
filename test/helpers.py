@@ -2,6 +2,7 @@
 The equal_*() funcs are not really needed with pytest,
 but they do not hurt.
 """
+from __future__ import unicode_literals
 import difflib
 import os.path
 from StringIO import StringIO

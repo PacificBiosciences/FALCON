@@ -1,5 +1,6 @@
 """Most bash-scripting is generated here.
 """
+from __future__ import unicode_literals
 from . import functional
 import functools
 import getpass

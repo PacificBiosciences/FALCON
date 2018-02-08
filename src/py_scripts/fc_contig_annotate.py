@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from falcon_kit.mains.contig_annotate import main
 import sys
 
