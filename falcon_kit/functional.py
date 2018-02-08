@@ -431,11 +431,11 @@ def choose_cat_fasta(fofn):
     Raise Exception on error.
 
     >>> choose_cat_fasta('abc.gz')
-    'zcat '
+    u'zcat '
     >>> choose_cat_fasta('abc.dexta')
-    'undexta -vkU -w60 -i < '
+    u'undexta -vkU -w60 -i < '
     >>> choose_cat_fasta('abc')
-    'cat '
+    u'cat '
     """
     first_line = fofn.splitlines()[0]
     if first_line.endswith('.gz'):
