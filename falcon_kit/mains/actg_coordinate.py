@@ -1,3 +1,4 @@
+from __future__ import print_function
 from falcon_kit.FastaReader import open_fasta_reader
 import sys
 
@@ -24,7 +25,7 @@ def main(argv=sys.argv):
             rid = r.name.split()
             rid, v, w = rid[:3]
             pid = rid.split("-")[0]
-            print rid, p_ctg_coor_map[pid][v], p_ctg_coor_map[pid][w]
+            print(rid, p_ctg_coor_map[pid][v], p_ctg_coor_map[pid][w])
 
 
 if __name__ == "__main__":

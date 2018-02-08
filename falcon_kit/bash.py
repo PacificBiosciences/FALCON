@@ -24,7 +24,7 @@ def make_executable(path):
     """http://stackoverflow.com/questions/12791997/how-do-you-do-a-simple-chmod-x-from-within-python
     """
     mode = os.stat(path).st_mode
-    mode |= (mode & 0444) >> 2    # copy R bits to X
+    mode |= (mode & 0o444) >> 2    # copy R bits to X
     os.chmod(path, mode)
 
 

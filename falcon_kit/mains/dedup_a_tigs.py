@@ -1,3 +1,4 @@
+from __future__ import print_function
 from falcon_kit.FastaReader import open_fasta_reader
 import argparse
 import sys
@@ -25,8 +26,8 @@ def main(argv=sys.argv):
                 if 100 * float(idt) > args.max_idt and 100 * float(cov) > args.max_aln_cov and\
                    abs(int(delta_l)) < args.min_len_diff:
                     continue
-                print >>f, ">" + r.name
-                print >>f, r.sequence
+                print(">" + r.name, file=f)
+                print(r.sequence, file=f)
 
 
 if __name__ == "__main__":

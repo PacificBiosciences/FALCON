@@ -1,3 +1,4 @@
+from __future__ import print_function
 from ctypes import (POINTER, c_char_p, c_uint, c_uint,
                     c_uint, c_uint, c_uint, c_double, string_at)
 from falcon_kit.multiproc import Pool
@@ -234,8 +235,8 @@ def main(argv=sys.argv):
     args = parser.parse_args(argv[1:])
 
     def Start():
-        print>>sys.stderr, 'Started a worker in %d from parent %d' % (
-            os.getpid(), os.getppid())
+        print('Started a worker in %d from parent %d' % (
+            os.getpid(), os.getppid()), file=sys.stderr)
     exe_pool = Pool(args.n_core, initializer=Start)
     if args.trim:
         get_consensus = get_consensus_with_trim
@@ -252,8 +253,8 @@ def main(argv=sys.argv):
             continue
 
         if args.output_full:
-            print ">" + seed_id + "_f"
-            print cns
+            print(">" + seed_id + "_f")
+            print(cns)
         else:
             cns = good_region.findall(cns)
             if len(cns) == 0:
@@ -265,13 +266,13 @@ def main(argv=sys.argv):
                         continue
                     if seq_i >= 10:
                         break
-                    print ">prolog/%s%01d/%d_%d" % (seed_id, seq_i, 0, len(cns_seq))
-                    print format_seq(cns_seq, 80)
+                    print(">prolog/%s%01d/%d_%d" % (seed_id, seq_i, 0, len(cns_seq)))
+                    print(format_seq(cns_seq, 80))
                     seq_i += 1
             else:
                 cns.sort(key=lambda x: len(x))
-                print ">" + seed_id
-                print cns[-1]
+                print(">" + seed_id)
+                print(cns[-1])
 
 
 if __name__ == "__main__":

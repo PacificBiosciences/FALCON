@@ -1,9 +1,10 @@
+from __future__ import absolute_import
 import os
 import sys
 
 import networkx as nx
-from fc_asm_graph import AsmGraph
-import FastaReader
+from .fc_asm_graph import AsmGraph
+from . import FastaReader
 
 GFA_H_TAG = 'H'
 GFA_S_TAG = 'S'

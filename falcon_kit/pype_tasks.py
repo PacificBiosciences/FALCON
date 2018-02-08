@@ -1,3 +1,4 @@
+from __future__ import print_function
 # PypeTask functions now need to be module-level.
 from . import run_support as support
 from . import bash  # for scattering
@@ -503,7 +504,7 @@ def task_cns_gather(self):
     fofn_fn = fn(self.preads_fofn)
     with open(fofn_fn,  'w') as f:
         for filename in sorted(fn(plf) for plf in self.inputs.itervalues()):
-            print >>f, filename
+            print(filename, file=f)
 
 
 def task_merge_gather(self):
@@ -511,12 +512,12 @@ def task_merge_gather(self):
     with open(fofn_fn,  'w') as f:
         # The keys are p_ids.
         for filename in sorted(fn(plf) for plf in self.inputs.itervalues()):
-            print >>f, filename
+            print(filename, file=f)
     fopfn_fn = fn(self.las_fopfn)
     with open(fopfn_fn,  'w') as f:
         # The keys are p_ids.
         for filename, p_id in sorted((fn(plf), p_id) for (p_id, plf) in self.inputs.iteritems()):
-            print >>f, p_id, filename
+            print(p_id, filename, file=f)
     #wdir = os.path.dirname(las_fofn_fn)
     # pread_dir = os.path.dirname(wdir) # by convention, for now
     # Generate las.fofn in run-dir. # No longer needed!

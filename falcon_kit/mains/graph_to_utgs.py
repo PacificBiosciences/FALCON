@@ -1,3 +1,4 @@
+from __future__ import print_function
 from falcon_kit import kup, falcon, DWA
 from falcon_kit.fc_asm_graph import AsmGraph
 import networkx as nx
@@ -62,9 +63,9 @@ def main(argv=sys.argv):
         if type_ == "simple":
             path_or_edges = path_or_edges.split("~")
             seq = G_asm.get_seq_from_path(path_or_edges)
-            print >> utg_out, ">%s~%s~%s-%d %d %d" % (
-                s, v, t, 0, length, score)
-            print >> utg_out, seq
+            print(">%s~%s~%s-%d %d %d" % (
+                s, v, t, 0, length, score), file=utg_out)
+            print(seq, file=utg_out)
 
         if type_ == "compound":
 
@@ -165,9 +166,9 @@ def main(argv=sys.argv):
             sub_id = 0
             for data in atig_output:
                 v0, w0, tig_path, total_length, total_score, seq, atig_path_edges, a_idt, cov = data
-                print >> utg_out, ">%s~%s~%s-%d %d %d" % (
-                    v0, "NA", w0, sub_id,  total_length, total_score)
-                print >> utg_out, seq
+                print(">%s~%s~%s-%d %d %d" % (
+                    v0, "NA", w0, sub_id,  total_length, total_score), file=utg_out)
+                print(seq, file=utg_out)
                 sub_id += 1
 
 
