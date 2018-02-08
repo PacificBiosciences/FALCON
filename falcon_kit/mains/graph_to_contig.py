@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import networkx as nx
 #from pbcore.io import FastaReader
@@ -229,11 +230,11 @@ def main(argv=sys.argv):
             for vv, ww in one_path_edges:
                 rid, s, t, aln_score, idt, e_seq = edge_data[(vv, ww)]
                 sub_seqs.append(e_seq)
-                print >> p_ctg_t_out, "%s %s %s %s %d %d %d %0.2f" % (
-                    ctg_id, vv, ww, rid, s, t, aln_score, idt)
-            print >> p_ctg_out, ">%s %s %s %d %d" % (
-                ctg_id, ctg_label, c_type_, total_length, total_score)
-            print >> p_ctg_out, "".join(sub_seqs)
+                print("%s %s %s %s %d %d %d %0.2f" % (
+                    ctg_id, vv, ww, rid, s, t, aln_score, idt), file=p_ctg_t_out)
+            print(">%s %s %s %d %d" % (
+                ctg_id, ctg_label, c_type_, total_length, total_score), file=p_ctg_out)
+            print("".join(sub_seqs), file=p_ctg_out)
 
             a_id = 1
             for v, w, in a_ctg_group:
@@ -295,20 +296,20 @@ def main(argv=sys.argv):
                     for vv, ww in atig_path_edges:
                         rid, s, t, aln_score, idt, e_seq = edge_data[(vv, ww)]
                         if sub_id != 0:
-                            print >> a_ctg_t_out, "%s-%03d-%02d %s %s %s %d %d %d %0.2f" % (
-                                ctg_id, a_id, sub_id, vv, ww, rid, s, t, aln_score, idt)
+                            print("%s-%03d-%02d %s %s %s %d %d %d %0.2f" % (
+                                ctg_id, a_id, sub_id, vv, ww, rid, s, t, aln_score, idt), file=a_ctg_t_out)
                         else:
-                            print >> a_ctg_base_t_out, "%s-%03d-%02d %s %s %s %d %d %d %0.2f" % (
-                                ctg_id, a_id, sub_id, vv, ww, rid, s, t, aln_score, idt)
+                            print("%s-%03d-%02d %s %s %s %d %d %d %0.2f" % (
+                                ctg_id, a_id, sub_id, vv, ww, rid, s, t, aln_score, idt), file=a_ctg_base_t_out)
 
                     if sub_id != 0:
-                        print >> a_ctg_out, ">%s-%03d-%02d %s %s %d %d %d %d %0.2f %0.2f" % (
-                            ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), delta_len, a_idt, cov)
-                        print >> a_ctg_out, seq
+                        print(">%s-%03d-%02d %s %s %d %d %d %d %0.2f %0.2f" % (
+                            ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), delta_len, a_idt, cov), file=a_ctg_out)
+                        print(seq, file=a_ctg_out)
                     else:
-                        print >> a_ctg_base_out, ">%s-%03d-%02d %s %s %d %d %d %d %0.2f %0.2f" % (
-                            ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), delta_len, a_idt, cov)
-                        print >> a_ctg_base_out, seq
+                        print(">%s-%03d-%02d %s %s %d %d %d %d %0.2f %0.2f" % (
+                            ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), delta_len, a_idt, cov), file=a_ctg_base_out)
+                        print(seq, file=a_ctg_base_out)
 
                     sub_id += 1
 

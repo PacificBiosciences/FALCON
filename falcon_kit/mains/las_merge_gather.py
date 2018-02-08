@@ -1,5 +1,6 @@
 """Not sure anything uses the fopfn anymore.
 """
+from __future__ import print_function
 import argparse
 import logging
 import os
@@ -24,11 +25,11 @@ def run(gathered_fn, las_fofn_fn, las_fopfn_fn):
         las_fns[p_id] = desc['fns']['merged_las']
     with open(las_fofn_fn,  'w') as f:
         for filename in sorted(las_fns.values()):
-            print >>f, filename
+            print(filename, file=f)
     with open(las_fopfn_fn,  'w') as f:
         # The keys are p_ids.
         for p_id, filename in sorted(las_fns.items()):
-            print >>f, p_id, filename
+            print(p_id, filename, file=f)
     #wdir = os.path.dirname(las_fofn_fn)
     # pread_dir = os.path.dirname(wdir) # by convention, for now
     # Generate las.fofn in run-dir. # No longer needed!

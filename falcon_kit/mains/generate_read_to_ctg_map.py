@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import logging
 import sys
@@ -33,7 +34,7 @@ def run(rawread_id_fn, pread_id_fn, sg_edges_list_fn, utg_data_fn, ctg_paths_fn,
         for k in pread_to_contigs:
             pid, rid, oid = k
             for ctg in list(pread_to_contigs[k]):
-                print >>f, '%09d %09d %s %s' % (pid, rid, oid, ctg)
+                print('%09d %09d %s %s' % (pid, rid, oid, ctg), file=f)
 
 
 class HelpF(argparse.RawTextHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):

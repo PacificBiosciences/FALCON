@@ -1,5 +1,6 @@
 """
 """
+from __future__ import print_function
 import argparse
 import logging
 import os
@@ -24,7 +25,7 @@ def run(gathered_fn, preads_fofn_fn):
         fasta_fns[p_id] = desc['fns']['fasta']
     with open(preads_fofn_fn,  'w') as f:
         for filename in sorted(fasta_fns.values()):
-            print >>f, filename
+            print(filename, file=f)
 
 
 class HelpF(argparse.RawTextHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
