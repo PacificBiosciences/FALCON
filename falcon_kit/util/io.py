@@ -179,7 +179,7 @@ class CapturedProcessReaderContext(ProcessReaderContext):
         """
         output, _ = self.proc.communicate()
         # Process has terminated by now, so we can iterate without keeping it alive.
-        for line in splitlines_iter(output):
+        for line in splitlines_iter(unicode(output, 'utf-8')):
             yield line
 
 
