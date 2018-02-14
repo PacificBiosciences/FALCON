@@ -74,7 +74,7 @@ ln -s ${VENV} ${VENV_BASE}
 
 MUMMER_323='https://downloads.sourceforge.net/project/mummer/mummer/3.23/MUMmer3.23.tar.gz'
 cd ${SRC}
-wget ${MUMMER_323} -P ${SRC}
+wget ${MUMMER_323} -P ${SRC} --no-check-certificate
 tar zxvf MUMmer3.23.tar.gz
 cd MUMmer3.23
 make install
