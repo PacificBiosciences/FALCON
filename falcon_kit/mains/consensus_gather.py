@@ -1,7 +1,10 @@
 """
 """
+from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
+
+from future.utils import viewitems
 import argparse
 import logging
 import os
@@ -20,7 +23,7 @@ def convert_job_id_to_p_id(job_id):
 def run(gathered_fn, preads_fofn_fn):
     gathered = io.deserialize(gathered_fn)
     fasta_fns = dict()
-    for key, desc in gathered.items():
+    for (key, desc) in viewitems(gathered):
         job_id = key.split(',')[0].split('=')[1]
         p_id = convert_job_id_to_p_id(job_id)
         fasta_fns[p_id] = desc['fns']['fasta']

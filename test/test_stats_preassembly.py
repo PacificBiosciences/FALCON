@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
+
 import falcon_kit.stats_preassembly as M
 import helpers
-from cStringIO import StringIO
 
 
 def test_stats_from_sorted_readlengths():

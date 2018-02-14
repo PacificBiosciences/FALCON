@@ -1,4 +1,7 @@
+from __future__ import absolute_import
 from __future__ import unicode_literals
+
+from future.utils import viewitems
 import argparse
 import collections
 import logging
@@ -41,7 +44,7 @@ def run(las_fopfn_fn, db_fn, length_cutoff_fn, config_fn, wildcards, scattered_f
     jobs = list()
     p_ids_merge_las = read_gathered_las(las_fopfn_fn)
     tasks = []
-    for p_id, las_fns in p_ids_merge_las.iteritems():
+    for (p_id, las_fns) in viewitems(p_ids_merge_las):
         assert len(las_fns) == 1, repr(las_fns)
         # since we know each merge-task is for a single block
         las_fn = las_fns[0]

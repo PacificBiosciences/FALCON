@@ -1,4 +1,8 @@
 from __future__ import unicode_literals
+
+from future.utils import viewitems
+from builtins import str
+from builtins import range
 import falcon_kit.mains.gen_gfa_v1 as mod
 import helpers
 import pytest
@@ -219,7 +223,7 @@ def test_load_tiling_paths():
     assert(sorted(p_path.keys()) == sorted(
         ['000000F', '000001F', '000002F', '000003F', '000004F']))
 
-    for ctg_id, path in p_path.iteritems():
+    for (ctg_id, path) in viewitems(p_path):
         for edge in path:
             v, w, b, e, l, idt, etype = edge
             assert((v, w) in p_edge_to_ctg)
@@ -236,7 +240,7 @@ def test_load_tiling_paths_from_stream():
         p_paths, edge_to_ctg = mod.load_tiling_paths_from_stream(f, 'P')
     assert(sorted(p_paths.keys()) == sorted(
         ['000000F', '000001F', '000002F', '000003F', '000004F']))
-    for ctg_id, path in p_paths.iteritems():
+    for (ctg_id, path) in viewitems(p_paths):
         for edge in path:
             v, w, b, e, l, idt, etype = edge
             assert((v, w) in edge_to_ctg)
@@ -291,7 +295,7 @@ def test_calc_tiling_paths_len():
     p_path, p_edge_to_ctg = mod.load_tiling_paths(p_ctg_tiling_path_file, 'P')
     p_coords, p_ctg_len = mod.calc_tiling_paths_len(p_path)
 
-    for ctg_id in p_coords.keys():
+    for ctg_id in list(p_coords.keys()):
         shared_items = set(expected_coord_map[ctg_id].items()) & set(
             p_coords[ctg_id].items())
         assert(len(shared_items) == len(p_coords[ctg_id]))
@@ -319,9 +323,9 @@ def test_filter_tiling_paths_by_len():
     assert(sorted(p_path_filtered.keys()) == sorted([]))
 
     # Test a degenerate case where there is no length for a particular contig.
-    keys = p_ctg_len.keys()
+    keys = list(p_ctg_len.keys())
     p_ctg_len_degenerate = {}
-    for i in xrange(1, len(keys)):
+    for i in range(1, len(keys)):
         p_ctg_len_degenerate[keys[i]] = p_ctg_len[keys[i]]
     with pytest.raises(Exception) as e_info:
         p_path_filtered = mod.filter_tiling_paths_by_len(

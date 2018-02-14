@@ -1,5 +1,9 @@
+from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
+
+from builtins import zip
+from builtins import range
 import sys
 import networkx as nx
 #from pbcore.io import FastaReader
@@ -37,8 +41,8 @@ def get_aln_data(t_seq, q_seq):
     if kmer_match.count != 0:
         aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K * 5, 12)
         aln_range = aln_range_ptr[0]
-        x, y = zip(* [(kmer_match.query_pos[i], kmer_match.target_pos[i])
-                      for i in range(kmer_match.count)])
+        x, y = list(zip(* [(kmer_match.query_pos[i], kmer_match.target_pos[i])
+                      for i in range(kmer_match.count)]))
 
         s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
 
@@ -225,7 +229,7 @@ def main(argv=sys.argv):
             if len(one_path) == 0:
                 continue
 
-            one_path_edges = zip(one_path[:-1], one_path[1:])
+            one_path_edges = list(zip(one_path[:-1], one_path[1:]))
 
             sub_seqs = []
             for vv, ww in one_path_edges:
@@ -246,7 +250,7 @@ def main(argv=sys.argv):
                 atig_output = []
 
                 score, atig_path = a_ctg_group[(v, w)][0]
-                atig_path_edges = zip(atig_path[:-1], atig_path[1:])
+                atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
                 sub_seqs = []
                 total_length = 0
                 total_score = 0
@@ -261,7 +265,7 @@ def main(argv=sys.argv):
                     (v, w, atig_path, total_length, total_score, base_seq, atig_path_edges, 0, 1, 1))
 
                 for score, atig_path in a_ctg_group[(v, w)][1:]:
-                    atig_path_edges = zip(atig_path[:-1], atig_path[1:])
+                    atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
                     sub_seqs = []
                     total_length = 0
                     total_score = 0

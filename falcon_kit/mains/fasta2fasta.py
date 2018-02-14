@@ -11,7 +11,11 @@ Currently, we ignore zmw numbers and instead use a global counter.
 Inputs may be compressed, and may be either fasta or fastq.
 (For now, we ignore QVs.)
 """
+from __future__ import absolute_import
 from __future__ import unicode_literals
+
+from future.utils import itervalues
+from builtins import object
 from ..util.system import abs_fns
 import argparse
 import glob
@@ -163,10 +167,10 @@ def process(ifn, movie2write):
 
 class WriterMap(object):
     def basenames(self):
-        return self.__obn2movie.keys()
+        return list(self.__obn2movie.keys())
 
     def close(self):
-        for ofs in self.__movie2ofs.values():
+        for ofs in itervalues(self.__movie2ofs):
             ofs.close()
 
     def __getitem__(self, movie):

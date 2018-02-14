@@ -1,5 +1,8 @@
+from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
+from __future__ import division
+
 import argparse
 import logging
 import sys
@@ -26,7 +29,7 @@ def run(rawread_id_fn, pread_id_fn, sg_edges_list_fn, utg_data_fn, ctg_paths_fn,
                 pid = int(n.split(':')[0])
 
                 rid = pread_did_to_rid[pid].split('/')[1]
-                rid = int(int(rid) / 10)
+                rid = int(int(rid) // 10)
                 oid = rid_to_oid[rid]
                 k = (pid, rid, oid)
                 pread_to_contigs.setdefault(k, set())

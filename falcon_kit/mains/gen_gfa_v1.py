@@ -1,4 +1,7 @@
+from __future__ import absolute_import
 from __future__ import unicode_literals
+
+from future.utils import viewitems
 import argparse
 import os
 import sys
@@ -67,7 +70,7 @@ def calc_tiling_paths_len(tiling_paths):
     """
     path_coords = {}
     paths_len = {}
-    for ctg_id, edges in tiling_paths.iteritems():
+    for (ctg_id, edges) in viewitems(tiling_paths):
         path_coords[ctg_id], paths_len[ctg_id] = calc_node_coords(edges)
     return path_coords, paths_len
 
@@ -79,7 +82,7 @@ def filter_tiling_paths_by_len(tiling_paths, paths_len, min_len):
     tiling paths which are larger than the specified minimum length.
     """
     ret_paths = {}
-    for ctg_id, edges in tiling_paths.iteritems():
+    for (ctg_id, edges) in viewitems(tiling_paths):
         plen = paths_len[ctg_id]
         if plen >= min_len:
             ret_paths[ctg_id] = edges
@@ -101,7 +104,7 @@ def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
     _, p_ctg_len = calc_tiling_paths_len(p_paths)
     p_paths = filter_tiling_paths_by_len(p_paths, p_ctg_len, min_p_len)
     p_paths = filter_tiling_paths_by_ctgid(p_paths)
-    for ctg_id, path in p_paths.iteritems():
+    for (ctg_id, path) in viewitems(p_paths):
         gfa_graph.add_tiling_path(path, ctg_id)
 
     # Load and filter associate contig paths.
@@ -109,7 +112,7 @@ def add_tiling_paths_to_gfa(p_ctg_fasta, a_ctg_fasta,
     _, a_ctg_len = calc_tiling_paths_len(a_paths)
     a_paths = filter_tiling_paths_by_len(a_paths, a_ctg_len, min_a_len)
     a_paths = filter_tiling_paths_by_ctgid(a_paths)
-    for ctg_id, path in a_paths.iteritems():
+    for (ctg_id, path) in viewitems(a_paths):
         if ctg_id in a_ctg_headers:
             gfa_graph.add_tiling_path(path, ctg_id)
 
@@ -123,7 +126,7 @@ def get_filter_tpbc(only_these_contigs):
         ctgs_to_include = set(open(only_these_contigs).read().splitlines())
         def filter_tiling_paths_by_ctgid(tiling_paths):
             """Filter out any contigs that don't exist in the set"""
-            return {k:v for k,v in filter(lambda x: x[0].split('-')[0] in ctgs_to_include, tiling_paths.iteritems())}
+            return {k:v for k,v in [x for x in viewitems(tiling_paths) if x[0].split('-')[0] in ctgs_to_include]}
         return filter_tiling_paths_by_ctgid
     def noop_filter(tiling_paths):
         return tiling_paths

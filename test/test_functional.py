@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
+
+from builtins import str
 import helpers
 import pytest
 import falcon_kit.functional as f
-import StringIO
 import collections
 import os
 

@@ -1,5 +1,9 @@
+from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
+
+from builtins import zip
+from builtins import range
 from falcon_kit import kup, falcon, DWA
 from falcon_kit.fc_asm_graph import AsmGraph
 import networkx as nx
@@ -27,8 +31,8 @@ def get_aln_data(t_seq, q_seq):
     kmer_match = kmer_match_ptr[0]
     aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K * 5, 12)
     aln_range = aln_range_ptr[0]
-    x, y = zip(* [(kmer_match.query_pos[i], kmer_match.target_pos[i])
-                  for i in range(kmer_match.count)])
+    x, y = list(zip(* [(kmer_match.query_pos[i], kmer_match.target_pos[i])
+                  for i in range(kmer_match.count)]))
     kup.free_kmer_match(kmer_match_ptr)
     s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
 
@@ -115,7 +119,7 @@ def main(argv=sys.argv):
 
             atig_output = []
 
-            atig_path_edges = zip(atig_path[:-1], atig_path[1:])
+            atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
             sub_seqs = []
             total_length = 0
             total_score = 0
@@ -133,7 +137,7 @@ def main(argv=sys.argv):
 
             duplicated = True
             for score, atig_path in all_alt_path[1:]:
-                atig_path_edges = zip(atig_path[:-1], atig_path[1:])
+                atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
                 sub_seqs = []
                 total_length = 0
                 total_score = 0

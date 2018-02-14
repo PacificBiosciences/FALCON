@@ -1,5 +1,9 @@
+from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
+
+from future.utils import viewitems
+from future.utils import itervalues
 # PypeTask functions now need to be module-level.
 from . import run_support as support
 from . import bash  # for scattering
@@ -452,7 +456,7 @@ def task_consensus_scatter(self):
 
     p_ids_merge_las = read_gathered_las(gathered_fn)
     tasks = []
-    for p_id, las_fns in p_ids_merge_las.iteritems():
+    for (p_id, las_fns) in viewitems(p_ids_merge_las):
         assert len(las_fns) == 1, repr(las_fns)
         # since we know each merge-task is for a single block
         las_fn = las_fns[0]
@@ -495,7 +499,7 @@ def task_daligner_gather(self):
     nblock = self.parameters['nblock']
     LOG.debug('nblock=%d, out_dir:\n%s' % (nblock, out_dict))
     job_rundirs = [os.path.dirname(fn(dal_done))
-                   for dal_done in out_dict.values()]
+                   for dal_done in itervalues(out_dict)]
     with open(gathered_fn, 'w') as ofs:
         for block, las_path in support.daligner_gather_las(job_rundirs):
             ofs.write('{} {}\n'.format(block, las_path))
@@ -504,7 +508,7 @@ def task_daligner_gather(self):
 def task_cns_gather(self):
     fofn_fn = fn(self.preads_fofn)
     with open(fofn_fn,  'w') as f:
-        for filename in sorted(fn(plf) for plf in self.inputs.itervalues()):
+        for filename in sorted(fn(plf) for plf in itervalues(self.inputs)):
             print(filename, file=f)
 
 
@@ -512,12 +516,12 @@ def task_merge_gather(self):
     fofn_fn = fn(self.las_fofn)
     with open(fofn_fn,  'w') as f:
         # The keys are p_ids.
-        for filename in sorted(fn(plf) for plf in self.inputs.itervalues()):
+        for filename in sorted(fn(plf) for plf in itervalues(self.inputs)):
             print(filename, file=f)
     fopfn_fn = fn(self.las_fopfn)
     with open(fopfn_fn,  'w') as f:
         # The keys are p_ids.
-        for filename, p_id in sorted((fn(plf), p_id) for (p_id, plf) in self.inputs.iteritems()):
+        for (filename, p_id) in sorted((fn(plf), p_id) for (p_id, plf) in viewitems(self.inputs)):
             print(p_id, filename, file=f)
     #wdir = os.path.dirname(las_fofn_fn)
     # pread_dir = os.path.dirname(wdir) # by convention, for now

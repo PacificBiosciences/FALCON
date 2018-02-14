@@ -1,6 +1,9 @@
 """Most bash-scripting is generated here.
 """
+from __future__ import absolute_import
 from __future__ import unicode_literals
+
+from future.utils import viewitems
 from . import functional
 import functools
 import getpass
@@ -277,7 +280,7 @@ def scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, nblock, pread_aln=F
     except Exception:
         raise Exception('Could not parse job descriptions from file "{}":\n{}'.format(
             run_jobs_fn, traceback.format_exc()))
-    for i, (desc, bash) in enumerate(job_descs.iteritems()):
+    for i, (desc, bash) in enumerate(viewitems(job_descs)):
         job_uid = '%04x' % i
         daligner_cmd = xform_script(bash)
         bash = """

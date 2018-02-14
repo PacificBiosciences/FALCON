@@ -1,5 +1,9 @@
+from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
+from __future__ import division
+
+from builtins import range
 from ctypes import (POINTER, c_char_p, c_uint, c_uint,
                     c_uint, c_uint, c_uint, c_double, string_at)
 from falcon_kit.multiproc import Pool
@@ -57,8 +61,8 @@ def get_alignment(seq1, seq0, edge_tolerance=1000):
     aln_range = aln_range_ptr[0]
     kup.free_kmer_match(kmer_match_ptr)
     s1, e1, s0, e0, km_score = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2, aln_range.score
-    e1 += K + K / 2
-    e0 += K + K / 2
+    e1 += K + K // 2
+    e0 += K + K // 2
     kup.free_aln_range(aln_range)
     len_1 = len(seq1)
     len_0 = len(seq0)
@@ -196,7 +200,7 @@ def get_seq_data(config, min_n_read, min_len_aln):
 
 
 def format_seq(seq, col):
-    return "\n".join([seq[i:(i + col)] for i in xrange(0, len(seq), col)])
+    return "\n".join([seq[i:(i + col)] for i in range(0, len(seq), col)])
 
 
 def main(argv=sys.argv):

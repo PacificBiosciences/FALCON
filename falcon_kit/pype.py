@@ -2,7 +2,11 @@
 needed to modify the TASK SCRIPT to use our copy of
 generic_gather.py
 """
+from __future__ import absolute_import
 from __future__ import unicode_literals
+
+from future.utils import viewitems
+from future.utils import itervalues
 from pypeflow.sample_tasks import gen_task as pype_gen_task
 from . import io
 import os
@@ -21,7 +25,7 @@ def gen_task(rule_writer, script, inputs, outputs, parameters={}):
     # Make relative to CWD. (But better if caller does this.)
     def get_rel(maybe_abs):
         rel = dict()
-        for k,v in maybe_abs.items():
+        for (k, v) in viewitems(maybe_abs):
             if os.path.isabs(v):
                 v = os.path.relpath(v)
             rel[k] = v
@@ -72,7 +76,7 @@ def gen_parallel_tasks(
         inputs = job['input']
         outputs = job['output']
         params = job['params']
-        params.update({k: v for k,v in job['wildcards'].items()}) # include expanded wildcards
+        params.update({k: v for (k, v) in viewitems(job['wildcards'])}) # include expanded wildcards
         LOG.warning('OUT:{}'.format(outputs))
         wf.addTask(pype_gen_task(
                 script=run_dict['script'],
@@ -80,9 +84,9 @@ def gen_parallel_tasks(
                 outputs=outputs,
                 parameters=params,
         ))
-        wildcards_str = '_'.join(w for w in job['wildcards'].values())
+        wildcards_str = '_'.join(w for w in itervalues(job['wildcards']))
         job_name = 'job{}'.format(wildcards_str)
-        for output_name, output_fn in outputs.iteritems():
+        for (output_name, output_fn) in viewitems(outputs):
             giname = '{}_{}'.format(job_name, output_name)
             gather_inputs[giname] = output_fn
 
@@ -101,4 +105,4 @@ def gen_parallel_tasks(
 
 
 def dict_rel_paths(dict_paths):
-    return {k: os.path.relpath(v) for k,v in dict_paths.iteritems()}
+    return {k: os.path.relpath(v) for (k, v) in viewitems(dict_paths)}
