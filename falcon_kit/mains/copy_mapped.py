@@ -1,5 +1,9 @@
 #!/bin/env python2.7
+from __future__ import absolute_import
 from __future__ import unicode_literals
+
+from future.utils import viewitems
+from builtins import str
 import argparse
 import json
 import logging
@@ -53,7 +57,7 @@ def run(special_split_fn, fn_patterns):
     for job in jobs:
         inputs = job['input']
         wildcards = job['wildcards']
-        for fnkey, fn_pattern in fnkeypattdict.iteritems():
+        for (fnkey, fn_pattern) in viewitems(fnkeypattdict):
             val = inputs[fnkey]
             # val should be relative to the location of the special_split_fn.
             #assert not os.path.isabs(val), 'mapped input (dynamic output) filename {!r} must be relative (to serialzed file location {!r})'.format(

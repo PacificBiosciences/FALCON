@@ -1,7 +1,10 @@
 """I/O utilities
 Not specific to FALCON.
 """
+from __future__ import absolute_import
 from __future__ import unicode_literals
+from builtins import str
+from builtins import object
 import os
 import resource
 import shlex
@@ -179,7 +182,7 @@ class CapturedProcessReaderContext(ProcessReaderContext):
         """
         output, _ = self.proc.communicate()
         # Process has terminated by now, so we can iterate without keeping it alive.
-        for line in splitlines_iter(unicode(output, 'utf-8')):
+        for line in splitlines_iter(str(output, 'utf-8')):
             yield line
 
 

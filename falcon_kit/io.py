@@ -1,4 +1,8 @@
+from __future__ import absolute_import
 from __future__ import unicode_literals
+from __future__ import division
+
+from future.utils import viewitems
 import json
 import logging
 import msgpack
@@ -56,7 +60,7 @@ def mkdirs(*dirnames):
 
 
 def eng(number):
-    return '{:.1f}MB'.format(number / float(2**20))
+    return '{:.1f}MB'.format(number / 2**20)
 
 
 def read_as_msgpack(stream):
@@ -203,7 +207,7 @@ def substitute(yourdict):
     [('a', '_X_'), ('b', 'X')]
     """
     mydict = dict(yourdict)
-    for k, v in yourdict.items():
+    for (k, v) in viewitems(yourdict):
         if '{' in v:
             mydict[k] = v.format(**mydict)
     return mydict

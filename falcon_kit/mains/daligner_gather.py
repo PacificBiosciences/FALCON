@@ -1,6 +1,10 @@
 """Not sure anything uses the fopfn anymore.
 """
+from __future__ import absolute_import
 from __future__ import unicode_literals
+
+from future.utils import viewitems
+from future.utils import itervalues
 import argparse
 import logging
 import os
@@ -19,13 +23,13 @@ def convert_job_id_to_num(job_id):
 def run(gathered_fn, las_paths_fn):
     gathered = io.deserialize(gathered_fn)
     job_done_fns = dict()
-    for key, desc in gathered.items():
+    for (key, desc) in viewitems(gathered):
         job_id = key.split('=')[1]
         job_num = convert_job_id_to_num(job_id)
         job_done_fns[job_num] = desc['fns']['job_done']
     import pprint
     LOG.error(pprint.pformat(job_done_fns))
-    job_rundirs = sorted(os.path.dirname(fn) for fn in job_done_fns.values())
+    job_rundirs = sorted(os.path.dirname(fn) for fn in itervalues(job_done_fns))
     # Find all .las leaves so far.
     with open(las_paths_fn, 'w') as stream:
         for block, las_path in run_support.daligner_gather_las(job_rundirs):

@@ -1,5 +1,8 @@
+from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
+from __future__ import division
+
 from falcon_kit.FastaReader import open_fasta_reader
 import argparse
 import contextlib
@@ -32,7 +35,7 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
 
     def pid_to_oid(pid):
         fid = pid_to_fid[int(pid)]
-        rid = int(fid.split('/')[1]) / 10
+        rid = int(fid.split('/')[1]) // 10
         return rid_to_oid[int(rid)]
 
     with open_fasta_reader(ctg_fa) as ref_fasta:

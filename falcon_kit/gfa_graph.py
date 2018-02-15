@@ -1,5 +1,10 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
+
+from future.utils import viewitems
+from builtins import str
+from builtins import range
+from builtins import object
 import os
 import sys
 
@@ -17,7 +22,7 @@ GFA_SEQ_UNKNOWN = '*'
 GFA_LINK_CIGAR_UNKNOWN = '*'
 
 
-class GFAGraph:
+class GFAGraph(object):
     def __init__(self):
         self.paths = {}
         self.read_pairs = set()
@@ -116,7 +121,7 @@ class GFAGraph:
                                 [GFA_S_TAG, rname, r.sequence, 'LN:i:%d' % (len(r.sequence))]) + '\n')
 
         # Output links.
-        for key, edge in self.edges.iteritems():
+        for (key, edge) in viewitems(self.edges):
             link_line = self.format_gfa_v1_link_line(edge)
             fp_out.write(link_line + '\n')
 
@@ -181,7 +186,7 @@ class GFAGraph:
         curr_edge = self.edges[(v, w)]
         new_edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin,
                     overlap_end, cross_phase, src_graph, ctg_name, type_]
-        for i in xrange(len(curr_edge)):
+        for i in range(len(curr_edge)):
             if curr_edge[i] is None:
                 curr_edge[i] = new_edge[i]
 

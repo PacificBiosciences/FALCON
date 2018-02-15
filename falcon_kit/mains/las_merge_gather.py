@@ -1,7 +1,10 @@
 """Not sure anything uses the fopfn anymore.
 """
+from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
+
+from future.utils import viewitems
 import argparse
 import logging
 import os
@@ -20,7 +23,7 @@ def convert_job_id_to_p_id(job_id):
 def run(gathered_fn, las_fofn_fn, las_fopfn_fn):
     gathered = io.deserialize(gathered_fn)
     las_fns = dict()
-    for key, desc in gathered.items():
+    for (key, desc) in viewitems(gathered):
         job_id = key.split('=')[1]
         p_id = convert_job_id_to_p_id(job_id)
         las_fns[p_id] = desc['fns']['merged_las']
@@ -29,7 +32,7 @@ def run(gathered_fn, las_fofn_fn, las_fopfn_fn):
             print(filename, file=f)
     with open(las_fopfn_fn,  'w') as f:
         # The keys are p_ids.
-        for p_id, filename in sorted(las_fns.items()):
+        for (p_id, filename) in sorted(las_fns.items()):
             print(p_id, filename, file=f)
     #wdir = os.path.dirname(las_fofn_fn)
     # pread_dir = os.path.dirname(wdir) # by convention, for now

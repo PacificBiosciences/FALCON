@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
-from StringIO import StringIO
+
+from future.utils import viewitems
+import io
 import os
 
 import pytest
@@ -28,14 +30,14 @@ def test_add_tiling_path():
     gfa_graph = mod.GFAGraph()
 
     # Add the tiling paths.
-    for ctg_id, path in p_paths.iteritems():
+    for (ctg_id, path) in viewitems(p_paths):
         gfa_graph.add_tiling_path(path, ctg_id)
 
     # Check if we have the correct number of tiling paths.
-    assert(len(gfa_graph.paths.keys()) == len(p_paths.keys()))
+    assert(len(list(gfa_graph.paths.keys())) == len(list(p_paths.keys())))
 
     # They should be same as loaded.
-    for ctg_id, path in p_paths.iteritems():
+    for (ctg_id, path) in viewitems(p_paths):
         assert(ctg_id in gfa_graph.paths)
         assert(gfa_graph.paths[ctg_id] == path)
 
@@ -52,7 +54,7 @@ def test_add_asm_graph():
     gfa_graph = mod.GFAGraph()
     gfa_graph.add_asm_graph(asm_graph)
 
-    assert(len(gfa_graph.paths.keys()) == 0)
+    assert(len(list(gfa_graph.paths.keys())) == 0)
 
     expected = {
         ('000000016:B', '000000027:B'): ['000000016:B', '000000027:B', '*', 1540, 99.94, 449, 0, None, None, None, None],
@@ -63,9 +65,9 @@ def test_add_asm_graph():
         ('000000025:B', '000000018:B'): ['000000025:B', '000000018:B', '*', 1978, 99.95, 11, 0, None, None, None, None]
     }
 
-    assert(len(gfa_graph.edges.keys()) == len(expected.keys()))
+    assert(len(list(gfa_graph.edges.keys())) == len(list(expected.keys())))
 
-    for key, edge in gfa_graph.edges.iteritems():
+    for (key, edge) in viewitems(gfa_graph.edges):
         assert(key in expected)
         assert(expected[key] == edge)
 
@@ -81,7 +83,7 @@ def test_add_nx_string_graph():
     # The following block is taken from Unzip, graphs_to_h_tigs.py.
     nx_sg = nx.DiGraph()
     arid_to_phase = {}
-    for ctg_id in asm_graph.ctg_data.keys():
+    for ctg_id in list(asm_graph.ctg_data.keys()):
         ctg_G = asm_graph.get_sg_for_ctg(ctg_id)
         ctg_nodes = set(ctg_G.nodes())
         for v, w in ctg_G.edges():
@@ -166,7 +168,7 @@ def wrap_write_gfa_v1_test(use_sg, use_nx, use_tp, write_reads, write_contigs, m
         nx_sg = nx.read_gexf(gexf_file)
         gfa_graph.add_nx_string_graph(nx_sg)
 
-    fp_out = StringIO()
+    fp_out = io.StringIO()
     # Run the unit under test.
     gfa_graph.write_gfa_v1(fp_out, preads_file, [
                            p_ctg_fasta, a_ctg_fasta], write_reads, write_contigs)
@@ -217,7 +219,7 @@ def test_write_gfa_v1_2():
     p_paths, p_edge_to_ctg = gen_gfa_v1.load_tiling_paths(
         p_ctg_tiling_path_file, 'P')
     # Add the tiling paths to the GFA.
-    for ctg_id, path in p_paths.iteritems():
+    for (ctg_id, path) in viewitems(p_paths):
         gfa_graph.add_tiling_path(path, ctg_id)
 
     # Init paths to other input files.
@@ -231,7 +233,7 @@ def test_write_gfa_v1_2():
     write_reads = False
     write_contigs = False
 
-    fp_out = StringIO()
+    fp_out = io.StringIO()
 
     # Add a node which does not exist in the preads4falcon.fasta file.
     gfa_graph.add_read_from_node('12345:B')
@@ -281,14 +283,14 @@ def test_add_edge():
     gfa_graph.add_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin,
                        overlap_end, cross_phase, src_graph, ctg_name, type_)
     assert(len(gfa_graph.read_in_graph) == 2)
-    assert(len(gfa_graph.edges.keys()) == 1)
+    assert(len(list(gfa_graph.edges.keys())) == 1)
     assert((v, w) in gfa_graph.edges)
 
     # Check that multiedges cannot be added.
     gfa_graph.add_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin,
                        overlap_end, cross_phase, src_graph, ctg_name, type_)
     assert(len(gfa_graph.read_in_graph) == 2)
-    assert(len(gfa_graph.edges.keys()) == 1)
+    assert(len(list(gfa_graph.edges.keys())) == 1)
     assert((v, w) in gfa_graph.edges)
 
     assert(v.split(':')[0] in gfa_graph.read_in_graph)
@@ -304,7 +306,7 @@ def test_update_edge():
     cross_phase, src_graph, ctg_name, type_ = None, None, None, None
     gfa_graph.add_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin,
                        overlap_end, cross_phase, src_graph, ctg_name, type_)
-    assert(len(gfa_graph.edges.keys()) == 1)
+    assert(len(list(gfa_graph.edges.keys())) == 1)
     assert((v, w) in gfa_graph.edges)
     assert(gfa_graph.edges[(v, w)] == ['123:B', '456:E',
                                        '*', 10000, 99.9, 0, 9000, None, None, None, None])
@@ -315,7 +317,7 @@ def test_update_edge():
     cross_phase, src_graph, ctg_name, type_ = 'N', 'OP', '000000F', 'P'
     gfa_graph.update_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin,
                           overlap_end, cross_phase, src_graph, ctg_name, type_)
-    assert(len(gfa_graph.edges.keys()) == 1)
+    assert(len(list(gfa_graph.edges.keys())) == 1)
     assert((v, w) in gfa_graph.edges)
     assert(gfa_graph.edges[(v, w)] == ['123:B', '456:E',
                                        '*', 10000, 99.9, 0, 9000, 'N', 'OP', '000000F', 'P'])
@@ -326,7 +328,7 @@ def test_update_edge():
     cross_phase, src_graph, ctg_name, type_ = None, None, None, None
     gfa_graph.add_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin,
                        overlap_end, cross_phase, src_graph, ctg_name, type_)
-    assert(len(gfa_graph.edges.keys()) == 2)
+    assert(len(list(gfa_graph.edges.keys())) == 2)
     assert((v, w) in gfa_graph.edges)
     assert(gfa_graph.edges[(v, w)] == ['456:B', '789:E',
                                        '*', 10000, 99.9, 0, 9000, None, None, None, None])
@@ -337,7 +339,7 @@ def test_update_edge():
     cross_phase, src_graph, ctg_name, type_ = 'N', 'OP', '000000F', 'P'
     gfa_graph.update_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin,
                           overlap_end, cross_phase, src_graph, ctg_name, type_)
-    assert(len(gfa_graph.edges.keys()) == 2)
+    assert(len(list(gfa_graph.edges.keys())) == 2)
     assert((v, w) in gfa_graph.edges)
     assert(gfa_graph.edges[(v, w)] == ['456:B', '789:E',
                                        '*', 10000, 99.9, 0, 9000, 'N', 'OP', '000000F', 'P'])
@@ -360,7 +362,7 @@ def test_add_or_update_edge():
     cross_phase, src_graph, ctg_name, type_ = None, None, None, None
     gfa_graph.add_or_update_edge(v, w, cigar, overlap_len, overlap_idt,
                                  overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_)
-    assert(len(gfa_graph.edges.keys()) == 1)
+    assert(len(list(gfa_graph.edges.keys())) == 1)
     assert((v, w) in gfa_graph.edges)
     assert(gfa_graph.edges[(v, w)] == ['123:B', '456:E',
                                        '*', 10000, 99.9, 0, 9000, None, None, None, None])
@@ -371,7 +373,7 @@ def test_add_or_update_edge():
     cross_phase, src_graph, ctg_name, type_ = 'N', 'OP', '000000F', 'P'
     gfa_graph.add_or_update_edge(v, w, cigar, overlap_len, overlap_idt,
                                  overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_)
-    assert(len(gfa_graph.edges.keys()) == 1)
+    assert(len(list(gfa_graph.edges.keys())) == 1)
     assert((v, w) in gfa_graph.edges)
     assert(gfa_graph.edges[(v, w)] == ['123:B', '456:E',
                                        '*', 10000, 99.9, 0, 9000, 'N', 'OP', '000000F', 'P'])
@@ -430,7 +432,7 @@ def test_format_gfa_v1_path_line():
         '000004F': 'P\t000004F\t000014727+,000024020+,000060868+\t*,*,*',
     }
     seq_len_map = None
-    for ctg_id, path in p_paths.iteritems():
+    for (ctg_id, path) in viewitems(p_paths):
         path_line = gfa_graph.format_gfa_v1_path_line(
             ctg_id, path, seq_len_map)
         assert(path_line == expected[ctg_id])
@@ -445,7 +447,7 @@ def test_format_gfa_v1_path_line():
         '000003F': 'P\t000003F\t000084518+,000011674+,000057445-\t10000M,9432M,23096M',
         '000004F': 'P\t000004F\t000014727+,000024020+,000060868+\t10000M,5238M,3235M',
     }
-    for ctg_id, path in p_paths.iteritems():
+    for (ctg_id, path) in viewitems(p_paths):
         # Initialize all reads to a fixed value, just to be safe.
         seq_len_map = {}
         for edge in path:

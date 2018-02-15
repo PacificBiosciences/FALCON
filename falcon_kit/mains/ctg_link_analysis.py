@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 from falcon_kit import fc_asm_graph
@@ -17,7 +18,7 @@ def main(argv=sys.argv):
     utg_data = G_asm.utg_data
 
     ctg_pair_links = {}
-    for v, w in sg_edges.keys():
+    for (v, w) in list(sg_edges.keys()):
         if v in node_to_ctg and w in node_to_ctg:
             for ctg1 in list(node_to_ctg[v]):
                 for ctg2 in list(node_to_ctg[w]):
@@ -27,7 +28,7 @@ def main(argv=sys.argv):
                     ctg_pair_links[(ctg1, ctg2)].add((v, w))
 
     utg_pair_links = {}
-    for v, w in sg_edges.keys():
+    for (v, w) in list(sg_edges.keys()):
         if v in node_to_utg and w in node_to_utg:
             for u1 in list(node_to_utg[v]):
                 for u2 in list(node_to_utg[w]):

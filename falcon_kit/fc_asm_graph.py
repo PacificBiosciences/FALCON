@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
+from builtins import zip
+from builtins import object
 from .FastaReader import open_fasta_reader
 import networkx as nx
 
