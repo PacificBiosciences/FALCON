@@ -31,7 +31,7 @@ def test_get_daligner_job_descriptions_with_bad_arg():
     with pytest.raises(AssertionError) as excinfo:
         f.get_daligner_job_descriptions(
             'fake_filename.txt', 'raw_reads')
-    assert "[u'f', u'a', u'k', u'e'" in str(excinfo.value)
+    assert "['f', 'a', 'k', 'e'" in str(excinfo.value)
 
 
 def test_get_daligner_job_descriptions_small():
