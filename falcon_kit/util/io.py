@@ -130,6 +130,10 @@ class DataReaderContext(object):
 class ProcessReaderContext(object):
     """Prefer this to slurplines() or streamlines().
     """
+    def readlines(self):
+        """Generate lines of unicode.
+        """
+        raise NotImplementedError()
 
     def __enter__(self):
         LOG('{!r}'.format(self.cmd))
@@ -156,9 +160,10 @@ def splitlines_iter(text):
     """This is the same as splitlines, but with a generator.
     """
     # https://stackoverflow.com/questions/3054604/iterate-over-the-lines-of-a-string
+    assert isinstance(text, str)
     prevnl = -1
     while True:
-        nextnl = text.find('\n', prevnl + 1)
+        nextnl = text.find(u'\n', prevnl + 1)
         if nextnl < 0:
             break
         yield text[prevnl + 1:nextnl]
