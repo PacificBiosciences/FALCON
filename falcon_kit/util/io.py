@@ -130,10 +130,14 @@ class DataReaderContext(object):
 class ProcessReaderContext(object):
     """Prefer this to slurplines() or streamlines().
     """
+    def readlines(self):
+        """Generate lines of unicode.
+        """
+        raise NotImplementedError()
 
     def __enter__(self):
         LOG('{!r}'.format(self.cmd))
-        self.proc = sp.Popen(shlex.split(self.cmd), stdout=sp.PIPE)
+        self.proc = sp.Popen(shlex.split(self.cmd), stdout=sp.PIPE, universal_newlines=True)
 
     def __exit__(self, etype, evalue, etb):
         if etype is None:
@@ -156,9 +160,10 @@ def splitlines_iter(text):
     """This is the same as splitlines, but with a generator.
     """
     # https://stackoverflow.com/questions/3054604/iterate-over-the-lines-of-a-string
+    assert isinstance(text, str)
     prevnl = -1
     while True:
-        nextnl = text.find('\n', prevnl + 1)
+        nextnl = text.find(u'\n', prevnl + 1)
         if nextnl < 0:
             break
         yield text[prevnl + 1:nextnl]
@@ -200,7 +205,13 @@ class StreamedProcessReaderContext(ProcessReaderContext):
         Otherwise, after all lines are read, if 'cmd' failed, Exception is raised.
         """
         for line in self.proc.stdout:
-            yield line.rstrip()
+            # We expect unicode from py3 but raw-str from py2, given
+            # universal_newlines=True.
+            # Based on source-code in 'future/types/newstr.py',
+            # it seems that str(str(x)) has no extra penalty,
+            # and it should not crash either. Anyway,
+            # our tests would catch it.
+            yield str(line, 'utf-8').rstrip()
 
 
 def filesize(fn):
