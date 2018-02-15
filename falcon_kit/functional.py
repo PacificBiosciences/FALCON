@@ -100,7 +100,7 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
 
     lines = [line.strip() for line in run_jobs_stream]
     # in case caller passed filename, not stream
-    assert any(len(l) > 1 for l in lines), repr(lines)
+    assert any(len(l) > 1 for l in lines), repr('\n'.join(lines))
     lines_dali = [l for l in lines if l.startswith(
         'daligner')]  # could be daligner_p
     lines_sort = [l for l in lines if l.startswith('LAsort')]
