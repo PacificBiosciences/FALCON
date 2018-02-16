@@ -53,7 +53,7 @@ class SnakemakeRuleWriter(object):
         # so we rename them and plan to symlink.
         wildcard_inputs = dict(inputs)
         nonwildcard_inputs = dict()
-        for (key, fn) in viewitems(wildcard_inputs):
+        for (key, fn) in list(viewitems(wildcard_inputs)):
             if '{' not in fn:
                 del wildcard_inputs[key]
                 nonwildcard_inputs[key] = fn
