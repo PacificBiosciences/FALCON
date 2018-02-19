@@ -18,12 +18,7 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
-try:
-    # py3
-    from configparser import ConfigParser
-except ImportError:
-    # py2
-    from ConfigParser import SafeConfigParser as ConfigParser
+from ConfigParser import SafeConfigParser as ConfigParser
 
 
 def _prepend_env_paths(content, names):
@@ -151,7 +146,7 @@ def parse_config(config_fn):
         jdict = json.loads(open(config_fn).read())
         config = dict2config(jdict, "General")
     else:
-        config = ConfigParser(strict=False)
+        config = ConfigParser() #strict=False?
         config.readfp(open(config_fn))
     return config
 
