@@ -151,7 +151,7 @@ def parse_config(config_fn):
         jdict = json.loads(open(config_fn).read())
         config = dict2config(jdict, "General")
     else:
-        config = ConfigParser()
+        config = ConfigParser(strict=False)
         config.readfp(open(config_fn))
     return config
 
