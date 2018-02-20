@@ -72,7 +72,7 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
                 o_id = rid_to_oid[int(row[0])]
                 read_set[o_id] = hit_ctg
                 ctg_id_hits[hit_ctg] = ctg_id_hits.get(hit_ctg, 0) + 1
-    assert read_set, 'Empty read_set. Maybe empty {!}?'.format(map_fn)
+    assert read_set, 'Empty read_set. Maybe empty {!r}?'.format(map_fn)
     map_fn = os.path.join(read_map_dir, 'pread_to_contigs')
     with open(map_fn, 'r') as f:
         for row in f:
