@@ -1,0 +1,567 @@
+
+import json
+import os
+#import snakemake.utils
+
+def snake_merge_dynamic_dict(reldir, input_fns, pattern, wildcards):
+        '''Assume each wildcard appears at most once in the pattern.
+        '''
+        for k in wildcards:
+            pattern = pattern.replace('{%s}' %k, '(?P<%s>\w+)' %k)
+        re_dynamic = re.compile(pattern)
+        mapped = list()
+        for fn in input_fns:
+            mo = re_dynamic.search(fn)
+            assert mo, '{!r} did not match {!r}'.format(fn, re_dynamic.pattern)
+            file_description = dict()
+            file_description['wildcards'] = dict(mo.groupdict())
+            file_description['fn'] = os.path.relpath(fn, reldir)
+            mapped.append(file_description)
+        return mapped
+
+def snake_merge_multi_dynamic(output_fn, dict_of_input_fns, dict_of_patterns, wildcards):
+        outdir = os.path.normpath(os.path.dirname(output_fn))
+        if not os.path.isdir(outdir):
+            os.makedirs(outdir)
+        assert list(sorted(dict_of_input_fns.keys())) == list(sorted(dict_of_patterns.keys()))
+        all_mapped = dict()
+        for i in dict_of_patterns.keys():
+            input_fns = dict_of_input_fns[i]
+            pattern = dict_of_patterns[i]
+            mapped = snake_merge_dynamic_dict(outdir, input_fns, pattern, wildcards)
+            all_mapped[i] = mapped
+        all_grouped = dict()
+        for i, mapped in all_mapped.items():
+            #print(i, mapped)
+            for file_description in mapped:
+                #print(file_description)
+                #print(file_description['wildcards'])
+                #print(list(sorted(file_description['wildcards'].items())))
+                wildkey = ','.join('{}={}'.format(k,v) for k,v in sorted(file_description['wildcards'].items()))
+                if wildkey not in all_grouped:
+                    new_group = dict(
+                        wildcards=dict(file_description['wildcards']),
+                        fns=dict(),
+                    )
+                    all_grouped[wildkey] = new_group
+                group = all_grouped[wildkey]
+                wildcards = file_description['wildcards']
+                assert wildcards == group['wildcards'], '{!r} should match {!r} by snakemake convention'.format(
+                    wildcards, group['wildcards'])
+                fn = file_description['fn']
+                group['fns'][i] = fn
+        ser = json.dumps(all_grouped, indent=2, separators=(',', ': ')) + '\n'
+        with open(output_fn, 'w') as out:
+            out.write(ser)
+
+shell.prefix('''
+# Add -e vs. in falcon_unzip.
+set -vex
+hostname
+pwd
+''')
+
+rule static_0_rawreads:
+    input:  config='config.json', raw_reads_fofn='input.fofn'
+    output: db_build_done='0-rawreads/rdb_build_done', length_cutoff='0-rawreads/length_cutoff', raw_reads_db='0-rawreads/raw_reads.db', run_jobs='0-rawreads/run_jobs.sh'
+    params:
+        topdir=".."
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.build_rdb --input-fofn-fn=../{input.raw_reads_fofn} --config-fn=../{input.config} --run-jobs-fn=../{output.run_jobs} --length-cutoff-fn=../{output.length_cutoff} --job-done-fn=../{output.db_build_done}
+touch ../{output.db_build_done}
+
+date
+'''
+
+rule static_0_rawreads_daligner_scatter:
+    input:  db='0-rawreads/raw_reads.db', run_jobs='0-rawreads/run_jobs.sh'
+    output: scattered='0-rawreads/daligner-scatter/scattered.json'
+    params:
+        wildcards="dal0_id",
+        pread_aln="0",
+        topdir="../..",
+        db_prefix="raw_reads",
+        skip_checks="0",
+        stage="0-rawreads"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.daligner_scatter --run-jobs-fn=../../{input.run_jobs} --db-prefix={params.db_prefix} --db-fn=../../{input.db} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --stage={params.stage} --wildcards={params.wildcards} --scattered-fn=../../{output.scattered}
+
+date
+'''
+
+rule dynamic_foo_split:
+    input:  '0-rawreads/daligner-scatter/scattered.json'
+    output: daligner_settings=dynamic('0-rawreads/daligner-scripts/{dal0_id}.symlink/settings.json'), daligner_script=dynamic('0-rawreads/daligner-scripts/{dal0_id}.symlink/daligner-script.sh')
+    shell: 'python -m falcon_kit.mains.copy_mapped --special-split={input} daligner_settings="0-rawreads/daligner-scripts/{{dal0_id}}.symlink/settings.json" daligner_script="0-rawreads/daligner-scripts/{{dal0_id}}.symlink/daligner-script.sh"'
+
+rule static_0_rawreads__dal0_id_:
+    input:  daligner_script='0-rawreads/daligner-scripts/{dal0_id}.symlink/daligner-script.sh', daligner_settings='0-rawreads/daligner-scripts/{dal0_id}.symlink/settings.json'
+    output: job_done='0-rawreads/{dal0_id}/daligner.done'
+    params:
+        dal0_id="{dal0_id}"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+# Note: HPC.daligner chooses a merged filename in its generated script, so we will symlink to it.
+python -m falcon_kit.mains.daligner --daligner-settings-fn=../../{input.daligner_settings} --daligner-script-fn=../../{input.daligner_script} --job-done-fn=../../{output.job_done}
+
+date
+'''
+
+rule dynamic_foo_merge:
+    input:  job_done=ancient(dynamic('0-rawreads/{dal0_id}/daligner.done'))
+    output: '0-rawreads/daligner-gathered/gathered.json'
+    run:
+        snake_merge_multi_dynamic(output[0],
+            dict(
+              job_done=[str(i) for i in input.job_done]
+            ),
+            dict(
+              job_done="0-rawreads/{dal0_id}/daligner.done"
+            ),
+            ["dal0_id"] # all wildcards
+        )
+
+rule static_0_rawreads_daligner_intermediate_gathered_las:
+    input:  gathered='0-rawreads/daligner-gathered/gathered.json'
+    output: las_paths='0-rawreads/daligner-intermediate-gathered-las/gathered-las.txt'
+    params:
+        topdir="../.."
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.daligner_gather --gathered-fn=../../{input.gathered} --las-paths-fn=../../{output.las_paths}
+
+date
+'''
+
+rule static_0_rawreads_merge_scatter:
+    input:  gathered_las='0-rawreads/daligner-intermediate-gathered-las/gathered-las.txt', run_jobs='0-rawreads/run_jobs.sh'
+    output: scattered='0-rawreads/merge-scatter/scattered.json'
+    params:
+        db_prefix="raw_reads",
+        wildcards="mer0_id",
+        topdir="../..",
+        stage="0-rawreads"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.las_merge_scatter --db-prefix={params.db_prefix} --stage={params.stage} --run-jobs-fn=../../{input.run_jobs} --gathered-las-fn=../../{input.gathered_las} --wildcards={params.wildcards} --scattered-fn=../../{output.scattered}
+
+date
+'''
+
+rule dynamic_foo1_split:
+    input:  '0-rawreads/merge-scatter/scattered.json'
+    output: las_paths=dynamic('0-rawreads/merge-scripts/{mer0_id}.symlink/las_paths.json'), merged_las_json=dynamic('0-rawreads/merge-scripts/{mer0_id}.symlink/merged_las.json'), merge_script=dynamic('0-rawreads/merge-scripts/{mer0_id}.symlink/merge-script.sh')
+    shell: 'python -m falcon_kit.mains.copy_mapped --special-split={input} las_paths="0-rawreads/merge-scripts/{{mer0_id}}.symlink/las_paths.json" merged_las_json="0-rawreads/merge-scripts/{{mer0_id}}.symlink/merged_las.json" merge_script="0-rawreads/merge-scripts/{{mer0_id}}.symlink/merge-script.sh"'
+
+rule static_0_rawreads__mer0_id_:
+    input:  las_paths='0-rawreads/merge-scripts/{mer0_id}.symlink/las_paths.json', merge_script='0-rawreads/merge-scripts/{mer0_id}.symlink/merge-script.sh', merged_las_json='0-rawreads/merge-scripts/{mer0_id}.symlink/merged_las.json'
+    output: job_done='0-rawreads/{mer0_id}/merge.done', merged_las='0-rawreads/{mer0_id}/merged.las'
+    params:
+        mer0_id="{mer0_id}"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+# Note: HPC.daligner chooses a merged filename in its generated script, so we will symlink to it.
+python -m falcon_kit.mains.las_merge --las-paths-fn=../../{input.las_paths} --merge-script-fn=../../{input.merge_script} --las-merged-fn-fn=../../{input.merged_las_json} --las-merged-symlink-fn=../../{output.merged_las} --job-done-fn=../../{output.job_done}
+
+date
+'''
+
+rule dynamic_foo1_merge:
+    input:  job_done=ancient(dynamic('0-rawreads/{mer0_id}/merge.done')), merged_las=ancient(dynamic('0-rawreads/{mer0_id}/merged.las'))
+    output: '0-rawreads/merge-gathered/gathered.json'
+    run:
+        snake_merge_multi_dynamic(output[0],
+            dict(
+              job_done=[str(i) for i in input.job_done],
+              merged_las=[str(i) for i in input.merged_las]
+            ),
+            dict(
+              job_done="0-rawreads/{mer0_id}/merge.done",
+              merged_las="0-rawreads/{mer0_id}/merged.las"
+            ),
+            ["mer0_id"] # all wildcards
+        )
+
+rule static_0_rawreads_merged_las_fofn:
+    input:  gathered='0-rawreads/merge-gathered/gathered.json'
+    output: las_fofn='0-rawreads/merged-las-fofn/las.fofn', las_fopfn='0-rawreads/merged-las-fofn/las.fopfn'
+    params:
+        topdir="../.."
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.las_merge_gather --gathered-fn=../../{input.gathered} --las-fofn-fn=../../{output.las_fofn} --las-fopfn-fn=../../{output.las_fopfn}
+
+date
+'''
+
+rule static_0_rawreads_cns_scatter:
+    input:  config='config.json', las_fopfn='0-rawreads/merged-las-fofn/las.fopfn', length_cutoff='0-rawreads/length_cutoff', raw_reads_db='0-rawreads/raw_reads.db'
+    output: scattered='0-rawreads/cns-scatter/scattered.json'
+    params:
+        wildcards="cns0_id,cns0_id2",
+        topdir="../.."
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.consensus_scatter --las-fopfn-fn=../../{input.las_fopfn} --db-fn=../../{input.raw_reads_db} --length-cutoff-fn=../../{input.length_cutoff} --config-fn=../../{input.config} --wildcards={params.wildcards} --scattered-fn=../../{output.scattered}
+
+date
+'''
+
+rule dynamic_foo2_split:
+    input:  '0-rawreads/cns-scatter/scattered.json'
+    output: las=dynamic('0-rawreads/cns-scatter/{cns0_id}.symlink/merged.{cns0_id2}.las')
+    shell: 'python -m falcon_kit.mains.copy_mapped --special-split={input} las="0-rawreads/cns-scatter/{{cns0_id}}.symlink/merged.{{cns0_id2}}.las"'
+
+rule static_0_rawreads_consensus__cns0_id_:
+    input:  config='config.json', db='0-rawreads/raw_reads.db', las='0-rawreads/cns-scatter/{cns0_id}.symlink/merged.{cns0_id2}.las', length_cutoff='0-rawreads/length_cutoff'
+    output: fasta='0-rawreads/consensus/{cns0_id}/consensus.{cns0_id2}.fasta'
+    params:
+        cns0_id2="{cns0_id2}",
+        cns0_id="{cns0_id}"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.consensus_task --las-fn=../../../{input.las} --db-fn=../../../{input.db} --length-cutoff-fn=../../../{input.length_cutoff} --config-fn=../../../{input.config} --fasta-fn=../../../{output.fasta}
+
+date
+'''
+
+rule dynamic_foo2_merge:
+    input:  fasta=ancient(dynamic('0-rawreads/consensus/{cns0_id}/consensus.{cns0_id2}.fasta'))
+    output: '0-rawreads/cns-gather/gathered.json'
+    run:
+        snake_merge_multi_dynamic(output[0],
+            dict(
+              fasta=[str(i) for i in input.fasta]
+            ),
+            dict(
+              fasta="0-rawreads/consensus/{cns0_id}/consensus.{cns0_id2}.fasta"
+            ),
+            ["cns0_id", "cns0_id2"] # all wildcards
+        )
+
+rule static_0_rawreads_preads:
+    input:  gathered='0-rawreads/cns-gather/gathered.json'
+    output: preads_fofn='0-rawreads/preads/input_preads.fofn'
+    params:
+        topdir="../.."
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.consensus_gather --gathered-fn=../../{input.gathered} --preads-fofn-fn=../../{output.preads_fofn}
+
+date
+'''
+
+rule static_0_rawreads_report:
+    input:  config='config.json', length_cutoff='0-rawreads/length_cutoff', preads_fofn='0-rawreads/preads/input_preads.fofn', raw_reads_db='0-rawreads/raw_reads.db'
+    output: pre_assembly_report='0-rawreads/report/pre_assembly_stats.json'
+    params:
+        length_cutoff_user="-1",
+        topdir="../..",
+        genome_length="5000"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.task_report_pre_assembly --config-fn=../../{input.config} --length-cutoff-fn=../../{input.length_cutoff} --raw-reads-db-fn=../../{input.raw_reads_db} --preads-fofn-fn=../../{input.preads_fofn} --pre-assembly-report-fn=../../{output.pre_assembly_report}
+
+date
+'''
+
+rule static_1_preads_ovl:
+    input:  config='config.json', preads_fofn='0-rawreads/preads/input_preads.fofn'
+    output: db_build_done='1-preads_ovl/pdb_build_done', preads_db='1-preads_ovl/preads.db', run_jobs='1-preads_ovl/run_jobs.sh'
+    params:
+        topdir=".."
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.build_pdb --input-fofn-fn=../{input.preads_fofn} --config-fn=../{input.config} --run-jobs-fn=../{output.run_jobs} --job-done-fn=../{output.db_build_done}
+# TODO: Verify that input.preads_db exists.
+touch ../{output.db_build_done}
+
+date
+'''
+
+rule static_1_preads_ovl_daligner_scatter:
+    input:  db='1-preads_ovl/preads.db', run_jobs='1-preads_ovl/run_jobs.sh'
+    output: scattered='1-preads_ovl/daligner-scatter/scattered.json'
+    params:
+        wildcards="dal1_id",
+        pread_aln="1",
+        topdir="../..",
+        db_prefix="preads",
+        skip_checks="0",
+        stage="1-preads_ovl"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.daligner_scatter --run-jobs-fn=../../{input.run_jobs} --db-prefix={params.db_prefix} --db-fn=../../{input.db} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --stage={params.stage} --wildcards={params.wildcards} --scattered-fn=../../{output.scattered}
+
+date
+'''
+
+rule dynamic_foo3_split:
+    input:  '1-preads_ovl/daligner-scatter/scattered.json'
+    output: daligner_settings=dynamic('1-preads_ovl/daligner-scripts/{dal1_id}.symlink/settings.json'), daligner_script=dynamic('1-preads_ovl/daligner-scripts/{dal1_id}.symlink/daligner-script.sh')
+    shell: 'python -m falcon_kit.mains.copy_mapped --special-split={input} daligner_settings="1-preads_ovl/daligner-scripts/{{dal1_id}}.symlink/settings.json" daligner_script="1-preads_ovl/daligner-scripts/{{dal1_id}}.symlink/daligner-script.sh"'
+
+rule static_1_preads_ovl__dal1_id_:
+    input:  daligner_script='1-preads_ovl/daligner-scripts/{dal1_id}.symlink/daligner-script.sh', daligner_settings='1-preads_ovl/daligner-scripts/{dal1_id}.symlink/settings.json'
+    output: job_done='1-preads_ovl/{dal1_id}/daligner.done'
+    params:
+        dal1_id="{dal1_id}"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+# Note: HPC.daligner chooses a merged filename in its generated script, so we will symlink to it.
+python -m falcon_kit.mains.daligner --daligner-settings-fn=../../{input.daligner_settings} --daligner-script-fn=../../{input.daligner_script} --job-done-fn=../../{output.job_done}
+
+date
+'''
+
+rule dynamic_foo3_merge:
+    input:  job_done=ancient(dynamic('1-preads_ovl/{dal1_id}/daligner.done'))
+    output: '1-preads_ovl/daligner-gathered/gathered.json'
+    run:
+        snake_merge_multi_dynamic(output[0],
+            dict(
+              job_done=[str(i) for i in input.job_done]
+            ),
+            dict(
+              job_done="1-preads_ovl/{dal1_id}/daligner.done"
+            ),
+            ["dal1_id"] # all wildcards
+        )
+
+rule static_1_preads_ovl_daligner_intermediate_gathered_las:
+    input:  gathered='1-preads_ovl/daligner-gathered/gathered.json'
+    output: las_paths='1-preads_ovl/daligner-intermediate-gathered-las/gathered-las.txt'
+    params:
+        topdir="../.."
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.daligner_gather --gathered-fn=../../{input.gathered} --las-paths-fn=../../{output.las_paths}
+
+date
+'''
+
+rule static_1_preads_ovl_merge_scatter:
+    input:  gathered_las='1-preads_ovl/daligner-intermediate-gathered-las/gathered-las.txt', run_jobs='1-preads_ovl/run_jobs.sh'
+    output: scattered='1-preads_ovl/merge-scatter/scattered.json'
+    params:
+        db_prefix="preads",
+        wildcards="mer1_id",
+        topdir="../..",
+        stage="1-preads_ovl"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.las_merge_scatter --db-prefix={params.db_prefix} --stage={params.stage} --run-jobs-fn=../../{input.run_jobs} --gathered-las-fn=../../{input.gathered_las} --wildcards={params.wildcards} --scattered-fn=../../{output.scattered}
+
+date
+'''
+
+rule dynamic_foo4_split:
+    input:  '1-preads_ovl/merge-scatter/scattered.json'
+    output: las_paths=dynamic('1-preads_ovl/merge-scripts/{mer1_id}.symlink/las_paths.json'), merged_las_json=dynamic('1-preads_ovl/merge-scripts/{mer1_id}.symlink/merged_las.json'), merge_script=dynamic('1-preads_ovl/merge-scripts/{mer1_id}.symlink/merge-script.sh')
+    shell: 'python -m falcon_kit.mains.copy_mapped --special-split={input} las_paths="1-preads_ovl/merge-scripts/{{mer1_id}}.symlink/las_paths.json" merged_las_json="1-preads_ovl/merge-scripts/{{mer1_id}}.symlink/merged_las.json" merge_script="1-preads_ovl/merge-scripts/{{mer1_id}}.symlink/merge-script.sh"'
+
+rule static_1_preads_ovl__mer1_id_:
+    input:  las_paths='1-preads_ovl/merge-scripts/{mer1_id}.symlink/las_paths.json', merge_script='1-preads_ovl/merge-scripts/{mer1_id}.symlink/merge-script.sh', merged_las_json='1-preads_ovl/merge-scripts/{mer1_id}.symlink/merged_las.json'
+    output: job_done='1-preads_ovl/{mer1_id}/merge.done', merged_las='1-preads_ovl/{mer1_id}/merged.las'
+    params:
+        mer1_id="{mer1_id}"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+# Note: HPC.daligner chooses a merged filename in its generated script, so we will symlink to it.
+python -m falcon_kit.mains.las_merge --las-paths-fn=../../{input.las_paths} --merge-script-fn=../../{input.merge_script} --las-merged-fn-fn=../../{input.merged_las_json} --las-merged-symlink-fn=../../{output.merged_las} --job-done-fn=../../{output.job_done}
+
+date
+'''
+
+rule dynamic_foo4_merge:
+    input:  job_done=ancient(dynamic('1-preads_ovl/{mer1_id}/merge.done')), merged_las=ancient(dynamic('1-preads_ovl/{mer1_id}/merged.las'))
+    output: '1-preads_ovl/merge-gathered/gathered.json'
+    run:
+        snake_merge_multi_dynamic(output[0],
+            dict(
+              job_done=[str(i) for i in input.job_done],
+              merged_las=[str(i) for i in input.merged_las]
+            ),
+            dict(
+              job_done="1-preads_ovl/{mer1_id}/merge.done",
+              merged_las="1-preads_ovl/{mer1_id}/merged.las"
+            ),
+            ["mer1_id"] # all wildcards
+        )
+
+rule static_1_preads_ovl_merged_las_fofn:
+    input:  gathered='1-preads_ovl/merge-gathered/gathered.json'
+    output: las_fofn='1-preads_ovl/merged-las-fofn/las.fofn', las_fopfn='1-preads_ovl/merged-las-fofn/las.fopfn'
+    params:
+        topdir="../.."
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+python -m falcon_kit.mains.las_merge_gather --gathered-fn=../../{input.gathered} --las-fofn-fn=../../{output.las_fofn} --las-fopfn-fn=../../{output.las_fopfn}
+
+date
+'''
+
+rule static_1_preads_ovl_db2falcon:
+    input:  las_fofn='1-preads_ovl/merged-las-fofn/las.fofn', preads_db='1-preads_ovl/preads.db'
+    output: job_done='1-preads_ovl/db2falcon/db2falcon_done', preads4falcon='1-preads_ovl/db2falcon/preads4falcon.fasta'
+    params:
+        topdir="../.."
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+# Given preads.db,
+# write preads4falcon.fasta (implicitly) in CWD.
+time DB2Falcon -U ../../{input.preads_db}
+[ -f ../../{output.preads4falcon} ] || exit 1
+touch ../../{output.job_done}
+
+date
+'''
+
+rule static_2_asm_falcon:
+    input:  config='config.json', db2falcon_done='1-preads_ovl/db2falcon/db2falcon_done', db_file='1-preads_ovl/preads.db', las_fofn='1-preads_ovl/merged-las-fofn/las.fofn', preads4falcon_fasta='1-preads_ovl/db2falcon/preads4falcon.fasta'
+    output: falcon_asm_done='2-asm-falcon/falcon_asm_done'
+    params:
+        topdir="..",
+        length_cutoff_pr="1",
+        overlap_filtering_setting="--max_diff 10000 --max_cov 100000 --min_cov 1 --min_len 1 --bestn 1000 --n_core 0",
+        fc_ovlp_to_graph_option=" --min_len 1"
+    shell:
+        '''
+outdir=$(dirname {output[0]})
+#mkdir -p ${{outdir}}
+cd ${{outdir}}
+date
+
+# Given, las.fofn,
+# write preads.ovl:
+
+# mobs uses binwrappers, so it does not see our "entry-points".
+# So, after dropping "src/py_scripts/*.py", we can call these via python -m:
+
+time python -m falcon_kit.mains.ovlp_filter --db ../{input.db_file} --fofn ../{input.las_fofn} {params.overlap_filtering_setting} --min_len {params.length_cutoff_pr} --out-fn preads.ovl
+
+ln -sf ../{input.preads4falcon_fasta} ./preads4falcon.fasta
+
+# Given preads.ovl,
+# write sg_edges_list, c_path, utg_data, ctg_paths.
+time python -m falcon_kit.mains.ovlp_to_graph {params.fc_ovlp_to_graph_option} --overlap-file preads.ovl >| fc_ovlp_to_graph.log
+
+# Given sg_edges_list, utg_data, ctg_paths, preads4falcon.fasta,
+# write p_ctg.fa and a_ctg_all.fa,
+# plus a_ctg_base.fa, p_ctg_tiling_path, a_ctg_tiling_path, a_ctg_base_tiling_path:
+time python -m falcon_kit.mains.graph_to_contig
+
+# Given a_ctg_all.fa, write a_ctg.fa:
+time python -m falcon_kit.mains.dedup_a_tigs
+
+# Generate a GFA of all assembly graph edges. This GFA can contain
+# edges and nodes which are not part of primary and associate contigs.
+time python -m falcon_kit.mains.gen_gfa_v1 >| asm.gfa
+
+# Generate a GFA of all assembly graph edges. This GFA can contain
+# edges and nodes which are not part of primary and associate contigs.
+time python -m falcon_kit.mains.gen_gfa_v1 --add-string-graph >| sg.gfa
+
+#rm -f ./preads4falcon.fasta
+
+touch ../{output.falcon_asm_done}
+
+date
+'''

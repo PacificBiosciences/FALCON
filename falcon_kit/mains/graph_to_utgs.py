@@ -1,3 +1,9 @@
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
+from builtins import zip
+from builtins import range
 from falcon_kit import kup, falcon, DWA
 from falcon_kit.fc_asm_graph import AsmGraph
 import networkx as nx
@@ -25,8 +31,8 @@ def get_aln_data(t_seq, q_seq):
     kmer_match = kmer_match_ptr[0]
     aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K * 5, 12)
     aln_range = aln_range_ptr[0]
-    x, y = zip(* [(kmer_match.query_pos[i], kmer_match.target_pos[i])
-                  for i in range(kmer_match.count)])
+    x, y = list(zip(* [(kmer_match.query_pos[i], kmer_match.target_pos[i])
+                  for i in range(kmer_match.count)]))
     kup.free_kmer_match(kmer_match_ptr)
     s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
 
@@ -62,9 +68,9 @@ def main(argv=sys.argv):
         if type_ == "simple":
             path_or_edges = path_or_edges.split("~")
             seq = G_asm.get_seq_from_path(path_or_edges)
-            print >> utg_out, ">%s~%s~%s-%d %d %d" % (
-                s, v, t, 0, length, score)
-            print >> utg_out, seq
+            print(">%s~%s~%s-%d %d %d" % (
+                s, v, t, 0, length, score), file=utg_out)
+            print(seq, file=utg_out)
 
         if type_ == "compound":
 
@@ -113,7 +119,7 @@ def main(argv=sys.argv):
 
             atig_output = []
 
-            atig_path_edges = zip(atig_path[:-1], atig_path[1:])
+            atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
             sub_seqs = []
             total_length = 0
             total_score = 0
@@ -131,7 +137,7 @@ def main(argv=sys.argv):
 
             duplicated = True
             for score, atig_path in all_alt_path[1:]:
-                atig_path_edges = zip(atig_path[:-1], atig_path[1:])
+                atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
                 sub_seqs = []
                 total_length = 0
                 total_score = 0
@@ -165,9 +171,9 @@ def main(argv=sys.argv):
             sub_id = 0
             for data in atig_output:
                 v0, w0, tig_path, total_length, total_score, seq, atig_path_edges, a_idt, cov = data
-                print >> utg_out, ">%s~%s~%s-%d %d %d" % (
-                    v0, "NA", w0, sub_id,  total_length, total_score)
-                print >> utg_out, seq
+                print(">%s~%s~%s-%d %d %d" % (
+                    v0, "NA", w0, sub_id,  total_length, total_score), file=utg_out)
+                print(seq, file=utg_out)
                 sub_id += 1
 
 

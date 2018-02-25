@@ -1,9 +1,14 @@
 """Purely functional code.
 """
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+from future.utils import viewitems
 import collections
 import re
-import StringIO
+import io
 
 
 def _verify_pairs(pairs1, pairs2):
@@ -19,7 +24,7 @@ def _verify_pairs(pairs1, pairs2):
 
 def skip_LAcheck(bash):
     def lines():
-        for line in StringIO.StringIO(bash):
+        for line in io.StringIO(bash):
             if 'LAcheck' in line:
                 yield 'set +e\n'
                 yield line
@@ -35,7 +40,7 @@ def get_daligner_job_descriptions_sans_LAcheck(run_jobs_stream, db_prefix, singl
     """
     descs = get_daligner_job_descriptions(run_jobs_stream, db_prefix, single)
     result = {}
-    for k, v in descs.iteritems():
+    for (k, v) in viewitems(descs):
         bash = skip_LAcheck(v)
         bash = bash.replace(
             'LAsort', 'python2.7 -m falcon_kit.mains.LAsort {}'.format(db_prefix))
@@ -95,7 +100,7 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
 
     lines = [line.strip() for line in run_jobs_stream]
     # in case caller passed filename, not stream
-    assert any(len(l) > 1 for l in lines), repr(lines)
+    assert any(len(l) > 1 for l in lines), repr('\n'.join(lines))
     lines_dali = [l for l in lines if l.startswith(
         'daligner')]  # could be daligner_p
     lines_sort = [l for l in lines if l.startswith('LAsort')]
@@ -118,7 +123,7 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
     _verify_pairs(sorted(pair2dali.keys()), sorted(pair2sort.keys()))
     dali2pairs = collections.defaultdict(set)
     total_pairs = 0
-    for pair, dali in pair2dali.items():
+    for (pair, dali) in viewitems(pair2dali):
         dali2pairs[dali].add(pair)
         total_pairs += 1
     if single:
@@ -126,7 +131,7 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
             total_pairs)
         assert list(pair2dali.keys())[0] == ('.1', '.1'), repr(pair2dali)
     result = {}
-    for dali, pairs in dali2pairs.items():
+    for (dali, pairs) in viewitems(dali2pairs):
         pairs = list(pairs)
         pairs.sort(key=lambda k: ((int(k[0][1:]) if k[0].startswith(
             '.') else 0), (int(k[1][1:]) if k[1].startswith('.') else 0)))
@@ -172,7 +177,7 @@ def get_las_filenames(mjob_data, db_prefix):
     result = {}
     re_LAmerge = re.compile(r'^LAmerge\s+(?:\-\S+\s+)(\S+)')
     re_LAcheck = re.compile(r'^LAcheck\s+(?:\-\S+\s+)\S+\s+(\S+)')
-    for p_id, bash_lines in mjob_data.iteritems():
+    for (p_id, bash_lines) in viewitems(mjob_data):
         if not bash_lines:
             # The daligner+LAsort+LAmerge job produced the final .las
             # for this block. We will symlink it later.
@@ -400,7 +405,7 @@ def average_difference(dictA, dictB):
     If a value is missing from dictB, raise Exception.
     """
     total_diff = 0.0
-    for k, va in dictA.iteritems():
+    for (k, va) in viewitems(dictA):
         vb = dictB[k]
         total_diff += (va - vb)
     return total_diff / len(dictA)

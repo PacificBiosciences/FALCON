@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import unicode_literals
 from falcon_kit.multiproc import Pool
 import falcon_kit.util.io as io
 import argparse
@@ -99,7 +101,7 @@ def run_track_reads(exe_pool, base_dir, file_list, min_len, bestn, db_fn):
                     ctg_score[ctg][1] += 1
 
             #oid = rid_to_oid[int(bread)]
-            ctg_score = ctg_score.items()
+            ctg_score = list(ctg_score.items())
             ctg_score.sort(key=lambda k: k[1][0])
             rank = 0
 

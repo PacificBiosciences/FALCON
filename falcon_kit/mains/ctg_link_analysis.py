@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 from falcon_kit import fc_asm_graph
 import sys
 
@@ -15,7 +18,7 @@ def main(argv=sys.argv):
     utg_data = G_asm.utg_data
 
     ctg_pair_links = {}
-    for v, w in sg_edges.keys():
+    for (v, w) in list(sg_edges.keys()):
         if v in node_to_ctg and w in node_to_ctg:
             for ctg1 in list(node_to_ctg[v]):
                 for ctg2 in list(node_to_ctg[w]):
@@ -25,7 +28,7 @@ def main(argv=sys.argv):
                     ctg_pair_links[(ctg1, ctg2)].add((v, w))
 
     utg_pair_links = {}
-    for v, w in sg_edges.keys():
+    for (v, w) in list(sg_edges.keys()):
         if v in node_to_utg and w in node_to_utg:
             for u1 in list(node_to_utg[v]):
                 for u2 in list(node_to_utg[w]):
@@ -74,8 +77,8 @@ def main(argv=sys.argv):
                     s2, t2, v2 = u2
                     len_1 = ctg_data[ctg1][3]
                     len_2 = ctg_data[ctg2][3]
-                    print '{} {} {:7d}\t{:7d}\t{}\t{}\t{}\t{} {} {}'.format(
-                        ctg1, ctg2, len_1, len_2, len(utg1), len(utg2), len(links), "~".join((s1, v1, t1)),  "~".join((s2, v2, t2)), len(c))
+                    print('{} {} {:7d}\t{:7d}\t{}\t{}\t{}\t{} {} {}'.format(
+                        ctg1, ctg2, len_1, len_2, len(utg1), len(utg2), len(links), "~".join((s1, v1, t1)),  "~".join((s2, v2, t2)), len(c)))
 
 
 if __name__ == "__main__":

@@ -1,7 +1,9 @@
+from __future__ import unicode_literals
+
+from builtins import str
 import helpers
 import pytest
 import falcon_kit.functional as f
-import StringIO
 import collections
 import os
 
@@ -29,7 +31,7 @@ def test_get_daligner_job_descriptions_with_bad_arg():
     with pytest.raises(AssertionError) as excinfo:
         f.get_daligner_job_descriptions(
             'fake_filename.txt', 'raw_reads')
-    assert "['f', 'a', 'k', 'e'" in str(excinfo.value)
+    assert r"f\na\nk\ne" in str(excinfo.value)
 
 
 def test_get_daligner_job_descriptions_small():

@@ -16,6 +16,12 @@ It aligns them to produce the identity score
 After that the dedup_a_tigs.py script is used to deduplicate fake a_ctg.
 But that script is simple, and only depends on the alignment info that the previous script stored in the a_ctg header.
 """
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
+from builtins import zip
+from builtins import range
 import sys
 import networkx as nx
 #from pbcore.io import FastaReader
@@ -53,8 +59,8 @@ def get_aln_data(t_seq, q_seq):
     if kmer_match.count != 0:
         aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K * 5, 12)
         aln_range = aln_range_ptr[0]
-        x, y = zip(* [(kmer_match.query_pos[i], kmer_match.target_pos[i])
-                      for i in range(kmer_match.count)])
+        x, y = list(zip(* [(kmer_match.query_pos[i], kmer_match.target_pos[i])
+                      for i in range(kmer_match.count)]))
 
         s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
 
@@ -257,17 +263,17 @@ def main(argv=sys.argv):
             if len(one_path) == 0:
                 continue
 
-            one_path_edges = zip(one_path[:-1], one_path[1:])
+            one_path_edges = list(zip(one_path[:-1], one_path[1:]))
 
             sub_seqs = list(yield_first_seq(one_path_edges, seqs))
             for vv, ww in one_path_edges:
                 rid, s, t, aln_score, idt, e_seq = edge_data[(vv, ww)]
                 sub_seqs.append(e_seq)
-                print >> p_ctg_t_out, "%s %s %s %s %d %d %d %0.2f" % (
-                    ctg_id, vv, ww, rid, s, t, aln_score, idt)
-            print >> p_ctg_out, ">%s %s %s %d %d" % (
-                ctg_id, ctg_label, c_type_, total_length, total_score)
-            print >> p_ctg_out, "".join(sub_seqs)
+                print("%s %s %s %s %d %d %d %0.2f" % (
+                    ctg_id, vv, ww, rid, s, t, aln_score, idt), file=p_ctg_t_out)
+            print(">%s %s %s %d %d" % (
+                ctg_id, ctg_label, c_type_, total_length, total_score), file=p_ctg_out)
+            print("".join(sub_seqs), file=p_ctg_out)
 
             a_id = 1
             for v, w, in a_ctg_group:
@@ -275,7 +281,7 @@ def main(argv=sys.argv):
                 atig_output = []
 
                 score, atig_path = a_ctg_group[(v, w)][0]
-                atig_path_edges = zip(atig_path[:-1], atig_path[1:])
+                atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
                 sub_seqs = list(yield_first_seq(atig_path_edges, seqs))
                 for vv, ww in atig_path_edges:
                     rid, s, t, aln_score, idt, e_seq = edge_data[(vv, ww)]
@@ -286,7 +292,7 @@ def main(argv=sys.argv):
                     (v, w, atig_path, total_length, total_score, base_seq, atig_path_edges, 0, 1, 1))
 
                 for score, atig_path in a_ctg_group[(v, w)][1:]:
-                    atig_path_edges = zip(atig_path[:-1], atig_path[1:])
+                    atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
                     sub_seqs = list(yield_first_seq(atig_path_edges, seqs))
                     total_length = 0
                     total_score = 0
@@ -322,20 +328,20 @@ def main(argv=sys.argv):
                     for vv, ww in atig_path_edges:
                         rid, s, t, aln_score, idt, e_seq = edge_data[(vv, ww)]
                         if sub_id != 0:
-                            print >> a_ctg_t_out, "%s-%03d-%02d %s %s %s %d %d %d %0.2f" % (
-                                ctg_id, a_id, sub_id, vv, ww, rid, s, t, aln_score, idt)
+                            print("%s-%03d-%02d %s %s %s %d %d %d %0.2f" % (
+                                ctg_id, a_id, sub_id, vv, ww, rid, s, t, aln_score, idt), file=a_ctg_t_out)
                         else:
-                            print >> a_ctg_base_t_out, "%s-%03d-%02d %s %s %s %d %d %d %0.2f" % (
-                                ctg_id, a_id, sub_id, vv, ww, rid, s, t, aln_score, idt)
+                            print("%s-%03d-%02d %s %s %s %d %d %d %0.2f" % (
+                                ctg_id, a_id, sub_id, vv, ww, rid, s, t, aln_score, idt), file=a_ctg_base_t_out)
 
                     if sub_id != 0:
-                        print >> a_ctg_out, ">%s-%03d-%02d %s %s %d %d %d %d %0.2f %0.2f" % (
-                            ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), delta_len, a_idt, cov)
-                        print >> a_ctg_out, seq
+                        print(">%s-%03d-%02d %s %s %d %d %d %d %0.2f %0.2f" % (
+                            ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), delta_len, a_idt, cov), file=a_ctg_out)
+                        print(seq, file=a_ctg_out)
                     else:
-                        print >> a_ctg_base_out, ">%s-%03d-%02d %s %s %d %d %d %d %0.2f %0.2f" % (
-                            ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), delta_len, a_idt, cov)
-                        print >> a_ctg_base_out, seq
+                        print(">%s-%03d-%02d %s %s %d %d %d %d %0.2f %0.2f" % (
+                            ctg_id, a_id, sub_id, v0, w0, total_length, total_score, len(atig_path_edges), delta_len, a_idt, cov), file=a_ctg_base_out)
+                        print(seq, file=a_ctg_base_out)
 
                     sub_id += 1
 

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+from builtins import str
 import falcon_kit.util.system as mod
 from falcon_kit.run_support import cd
 from falcon_kit.bash import mkdir

@@ -1,5 +1,9 @@
 """Most bash-scripting is generated here.
 """
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+from future.utils import viewitems
 from . import functional
 import functools
 import getpass
@@ -24,7 +28,7 @@ def make_executable(path):
     """http://stackoverflow.com/questions/12791997/how-do-you-do-a-simple-chmod-x-from-within-python
     """
     mode = os.stat(path).st_mode
-    mode |= (mode & 0444) >> 2    # copy R bits to X
+    mode |= (mode & 0o444) >> 2    # copy R bits to X
     os.chmod(path, mode)
 
 
@@ -54,7 +58,7 @@ def write_sub_script(ofs, script):
 
 def write_script(script, script_fn, job_done_fn=None):
     if job_done_fn:
-        script += '\ntouch {}'.format(job_done_fn)
+        script += '\ntouch {}\n'.format(job_done_fn)
     with open(script_fn, 'w') as ofs:
         exe = write_sub_script(ofs, script)
 
@@ -175,7 +179,7 @@ def get_last_block(fn):
     return (new_db, last_block)
 
 
-def script_build_rdb(config, input_fofn_fn, run_jobs_bfn):
+def script_build_rdb(config, input_fofn_fn, run_jobs_bfn, length_cutoff_fn='length_cutoff'):
     """
     raw_reads.db will be output into CWD, should not already exist.
     run_jobs_bfn will be output into CWD.
@@ -212,7 +216,7 @@ while read fn; do  {cat_fasta} $fn | fasta2DB -v raw_reads -i${{fn##*/}}; done <
 LB={count}
 rm -f {run_jobs_bfn}
 CUTOFF={bash_cutoff}
-echo -n $CUTOFF >| length_cutoff
+echo -n $CUTOFF >| {length_cutoff_fn}
 HPC.daligner {pa_HPCdaligner_option} -mdust -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_bfn}
 """.format(**params)
     return script
@@ -223,6 +227,7 @@ HPC.daligner {pa_HPCdaligner_option} -mdust -H$CUTOFF raw_reads {last_block}-$LB
 
 
 def script_build_pdb(config, input_fofn_bfn, run_jobs_bfn):
+    # "bfn" used to mean base-file-name, but I do not remember why. ~cd
     last_block = 1
     count = """$(cat preads.db | LD_LIBRARY_PATH= awk '$1 == "blocks" {print $3}')"""
     params = dict(config)
@@ -234,7 +239,9 @@ def script_build_pdb(config, input_fofn_bfn, run_jobs_bfn):
 
     params.update(locals())
     script = """\
-while read fn; do fasta2DB -v preads $fn; done < {input_fofn_bfn}
+python -m falcon_kit.mains.copy_fofn --in={input_fofn_bfn} --out=preads.fofn --abs
+rm -f preads.db .preads.* # in case of re-run
+while read fn; do fasta2DB -v preads $fn; done < preads.fofn
 DBsplit {ovlp_DBsplit_option} preads
 {DBdust}
 LB={count}
@@ -273,7 +280,7 @@ def scripts_daligner(run_jobs_fn, db_prefix, rdb_build_done, nblock, pread_aln=F
     except Exception:
         raise Exception('Could not parse job descriptions from file "{}":\n{}'.format(
             run_jobs_fn, traceback.format_exc()))
-    for i, (desc, bash) in enumerate(job_descs.iteritems()):
+    for i, (desc, bash) in enumerate(viewitems(job_descs)):
         job_uid = '%04x' % i
         daligner_cmd = xform_script(bash)
         bash = """
@@ -283,6 +290,7 @@ ln -sf ${{db_dir}}/.{db_prefix}.idx .
 ln -sf ${{db_dir}}/{db_prefix}.db .
 ln -sf ${{db_dir}}/.{db_prefix}.dust.anno .
 ln -sf ${{db_dir}}/.{db_prefix}.dust.data .
+rm -f *.las
 {daligner_cmd}
 rm -f *.C?.las *.C?.S.las *.C??.las *.C??.S.las *.C???.las *.C???.S.las
 rm -f *.N?.las *.N?.S.las *.N??.las *.N??.S.las *.N???.las *.N???.S.las

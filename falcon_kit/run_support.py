@@ -1,18 +1,24 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+from future.utils import viewitems
+from builtins import str
 from . import bash
 from .util.system import (make_fofn_abs, make_dirs, cd)
-import ConfigParser
 import json
 import logging
 import logging.config
 import os
 import re
-import StringIO
+import io
 import sys
 import tempfile
 import time
 import uuid
 
 logger = logging.getLogger(__name__)
+
+from ConfigParser import SafeConfigParser as ConfigParser
 
 
 def _prepend_env_paths(content, names):
@@ -126,10 +132,10 @@ def get_config(config):
 
 
 def dict2config(jdict, section):
-    config = ConfigParser.ConfigParser()
+    config = ConfigParser()
     if not config.has_section(section):
         config.add_section(section)
-    for k, v in jdict.iteritems():
+    for (k, v) in viewitems(jdict):
         config.set(section, k, str(v))
     return config
 
@@ -140,7 +146,7 @@ def parse_config(config_fn):
         jdict = json.loads(open(config_fn).read())
         config = dict2config(jdict, "General")
     else:
-        config = ConfigParser.ConfigParser()
+        config = ConfigParser() #strict=False?
         config.readfp(open(config_fn))
     return config
 
@@ -507,7 +513,7 @@ def _setup_logging(logging_config_fn):
             return
         logger_fileobj = open(logging_config_fn)
     else:
-        logger_fileobj = StringIO.StringIO(default_logging_config)
+        logger_fileobj = io.StringIO(default_logging_config)
     defaults = {
     }
     logging.config.fileConfig(
