@@ -252,7 +252,7 @@ def try_run_ovlp_filter(out_fn, n_core, fofn, max_diff, max_cov, min_cov, min_le
         raise
 
 
-def ovlp_filter(out_fn, n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
+def ovlp_filter(out_fn, n_core, las_fofn, max_diff, max_cov, min_cov, min_len, bestn, db_fn, debug, silent, stream):
     if debug:
         n_core = 0
         silent = False
@@ -261,7 +261,7 @@ def ovlp_filter(out_fn, n_core, fofn, max_diff, max_cov, min_cov, min_len, bestn
     if stream:
         global Reader
         Reader = io.StreamedProcessReaderContext
-    try_run_ovlp_filter(out_fn, n_core, fofn, max_diff, max_cov,
+    try_run_ovlp_filter(out_fn, n_core, las_fofn, max_diff, max_cov,
                         min_cov, min_len, bestn, db_fn)
 
 
@@ -283,8 +283,8 @@ def parse_args(argv):
         '--n_core', type=int, default=4,
         help='number of processes used for generating consensus; 0 for main process only')
     parser.add_argument(
-        '--fofn', type=str,
-        help='file contains the path of all LAS file to be processed in parallel')
+        '--las-fofn', type=str,
+        help='file contains the paths of all LAS files to be processed in parallel')
     parser.add_argument(
         '--db', type=str, dest='db_fn',
         help='read db file path')

@@ -11,6 +11,7 @@ import shlex
 import subprocess as sp
 import sys
 import traceback
+from ..io import deserialize
 
 
 def write_nothing(*args):
@@ -232,7 +233,11 @@ def yield_validated_fns(fofn):
     """
     dirname = os.path.normpath(os.path.dirname(fofn)) # normpath makes '' become '.'
     try:
+        fns = deserialize(fofn)
+    except:
+        #LOG('las fofn {!r} does not seem to be JSON; try to switch, so we can detect truncated files.'.format(fofn))
         fns = open(fofn).read().strip().split()
+    try:
         for fn in fns:
             assert fn
             if not os.path.isabs(fn):

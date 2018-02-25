@@ -56,7 +56,7 @@ def mkdirs(*dirnames):
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
             if len(dirnames) == 1:
-                log('mkdir -p {!r}'.format(dirnames[0]))
+                log('mkdir -p "{}"'.format(dirnames[0]))
 
 
 def eng(number):
