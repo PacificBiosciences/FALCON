@@ -19,6 +19,7 @@ def run(bash_template_fn, db_prefix, pread_aln, skip_checks, run_jobs_fn, db_fn,
     nblock = run_support.get_nblock(db_fn)
 
     db_build_done_fn = None
+    assert isinstance(pread_aln, int)
     daligner_scripts = bash.scripts_daligner(run_jobs_fn, db_prefix, db_build_done_fn, nblock=nblock, pread_aln=bool(pread_aln), skip_check=skip_checks)
     basedir = os.path.dirname(os.path.abspath(split_fn))
     rootdir = os.path.dirname(os.path.dirname(basedir)) # for now
@@ -70,13 +71,13 @@ def parse_args(argv):
         '--db-prefix', default='raw_reads',
         help='Either preads or raw_reads.')
     parser.add_argument(
-        '--skip-checks', default=0,
+        '--skip-checks', default=0, type=int,
         help='Skip LAcheck calls after daligner. (0 => do not skip)')
     parser.add_argument(
         '--db-fn',
         help='Dazzler DB of reads. (Used to calculate number of blocks.)')
     parser.add_argument(
-        '--pread-aln', default=0,
+        '--pread-aln', default=0, type=int,
         help='If non-zero, use pread alignment mode. (Run daligner_p instead of daligner.)')
     parser.add_argument(
         '--stage', default='0-rawreads',

@@ -68,7 +68,7 @@ def parse_args(argv):
         help='Either preads or raw_reads.',
     )
     parser.add_argument(
-        '--skip-checks', default=0,
+        '--skip-checks', default=0, type=int,
         help='Skip LAcheck calls after daligner. (0 => do not skip)',
     )
     parser.add_argument(
@@ -76,7 +76,7 @@ def parse_args(argv):
         help='Dazzler DB of reads. (Used to calculate number of blocks.)',
     )
     parser.add_argument(
-        '--pread-aln', default=0,
+        '--pread-aln', default=0, type=int,
         help='If non-zero, use pread alignment mode. (Run daligner_p instead of daligner.)',
     )
     parser.add_argument(
