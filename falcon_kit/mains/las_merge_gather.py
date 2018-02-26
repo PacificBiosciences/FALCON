@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from future.utils import viewitems
+#from future.utils import viewitems
 import argparse
 import logging
 import os
@@ -13,31 +13,16 @@ from .. import io
 
 LOG = logging.getLogger()
 
-def convert_job_id_to_p_id(job_id):
-    """
-    >>> convert_job_id_to_p_id('m_0011')
-    11
-    """
-    return int(job_id[2:], base=10)
 
-def run(gathered_fn, las_fofn_fn, las_fopfn_fn):
+def run(gathered_fn, las_fn, p_id2las_fn):
     gathered = io.deserialize(gathered_fn)
-    las_fns = dict()
-    for (key, desc) in viewitems(gathered):
-        job_id = key.split('=')[1]
-        p_id = convert_job_id_to_p_id(job_id)
-        las_fns[p_id] = desc['fns']['merged_las']
-    with open(las_fofn_fn,  'w') as f:
-        for filename in sorted(las_fns.values()):
-            print(filename, file=f)
-    with open(las_fopfn_fn,  'w') as f:
-        # The keys are p_ids.
-        for (p_id, filename) in sorted(las_fns.items()):
-            print(p_id, filename, file=f)
-    #wdir = os.path.dirname(las_fofn_fn)
-    # pread_dir = os.path.dirname(wdir) # by convention, for now
-    # Generate las.fofn in run-dir. # No longer needed!
-    #system('find {}/m_*/ -name "preads.*.las" >| {}'.format(pread_dir, las_fofn_fn))
+    p_id2las = dict()
+    for desc in gathered:
+        p_id_fn = desc['p_id']
+        p_id = int(open(p_id_fn).read()) #io.deserialize(p_id_fn) # someday? requires file-extension
+        p_id2las[p_id] = desc['merged_las']
+    io.serialize(p_id2las_fn, p_id2las)
+    io.serialize(las_fn, list(p_id2las.values()))
 
 
 class HelpF(argparse.RawTextHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
@@ -54,16 +39,13 @@ def parse_args(argv):
     )
     parser.add_argument(
         '--gathered-fn',
-        help='Input. (Not sure of content yet.)',
-    )
+        help='Input. JSON list of output dicts.')
     parser.add_argument(
-        '--las-fofn-fn',
-        help='Output. FOFN of las files.',
-    )
+        '--las-fn',
+        help='Output. JSON list of las paths.')
     parser.add_argument(
-        '--las-fopfn-fn',
-        help='Output. FOFN of las files, but with a p_id first, then a space.',
-    )
+        '--p-id2las-fn',
+        help='Output. JSON dict of p_id to las.')
     args = parser.parse_args(argv[1:])
     return args
 

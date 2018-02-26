@@ -3,37 +3,37 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from future.utils import viewitems
-from future.utils import itervalues
+#from future.utils import viewitems
+#from future.utils import itervalues
 import argparse
+import glob
 import logging
 import os
 import sys
-from .. import io, run_support
+from .. import io #, run_support
 
 LOG = logging.getLogger()
 
-def convert_job_id_to_num(job_id):
-    """
-    >>> convert_job_id_to_num('m_001d')
-    29
-    """
-    return int(job_id[2:], base=16)
 
 def run(gathered_fn, las_paths_fn):
     gathered = io.deserialize(gathered_fn)
-    job_done_fns = dict()
-    for (key, desc) in viewitems(gathered):
-        job_id = key.split('=')[1]
-        job_num = convert_job_id_to_num(job_id)
-        job_done_fns[job_num] = desc['fns']['job_done']
+    job_done_fns = list()
+    for job_output in gathered:
+        for fn in job_output.values():
+            job_done_fns.append(fn)
     import pprint
-    LOG.error(pprint.pformat(job_done_fns))
-    job_rundirs = sorted(os.path.dirname(fn) for fn in itervalues(job_done_fns))
+    LOG.info('job_done_fns: {}'.format(pprint.pformat(job_done_fns)))
+    job_rundirs = sorted(os.path.dirname(fn) for fn in job_done_fns)
     # Find all .las leaves so far.
-    with open(las_paths_fn, 'w') as stream:
-        for block, las_path in run_support.daligner_gather_las(job_rundirs):
-            stream.write('{} {}\n'.format(block, las_path))
+    #[block, las_path in run_support.daligner_gather_las(job_rundirs)]
+    las_paths = list()
+    for uow_dir in job_rundirs:
+        # We could assert the existence of a job_done file here.
+        d = os.path.abspath(uow_dir)
+        las_path_glob = glob.glob(os.path.join(d, '*.las'))
+        LOG.debug('dir={!r}, glob={!r}'.format(d, las_path_glob))
+        las_paths.extend(las_path_glob)
+    io.serialize(las_paths_fn, las_paths)
 
 
 class HelpF(argparse.RawTextHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):

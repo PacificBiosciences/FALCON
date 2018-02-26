@@ -9,7 +9,9 @@ from .. import bash  # for write_script
 
 LOG = logging.getLogger()
 
-def run(las_paths_fn, merge_script_fn, las_merged_fn_fn, las_merged_symlink_fn, job_done_fn):
+def run(p_id_num, las_paths_fn, merge_script_fn, las_merged_fn_fn, las_merged_symlink_fn, job_done_fn, p_id_fn):
+    with open(p_id_fn, 'w') as stream:
+        stream.write(p_id_num)
     cwd = os.getcwd()
     LOG.info('Merging las files from {!r} using {!r} to write {!r} (symlink to name from {!r}) (and {!r})'.format(
         las_paths_fn, merge_script_fn, las_merged_symlink_fn, las_merged_fn_fn, job_done_fn))
@@ -52,24 +54,25 @@ def parse_args(argv):
     )
     parser.add_argument(
         '--las-paths-fn',
-        help='Input. JSON list of las filenames to merge.',
-    )
+        help='Input. JSON list of las filenames to merge.')
     parser.add_argument(
         '--merge-script-fn',
-        help='Input. Part of the output of HPC.daligner.',
-    )
+        help='Input. Part of the output of HPC.daligner.')
     parser.add_argument(
         '--las-merged-fn-fn',
-        help='Input. File which contains the file-name of the merged .las file to be generated (presumably in CWD) by the script.',
-    )
+        help='Input. File which contains the file-name of the merged .las file to be generated (presumably in CWD) by the script.')
+    parser.add_argument(
+        '--p-id-num',
+        help='Input. Just an integer, which is sort of the block number for consensus. This will go into p-id-fn.')
     parser.add_argument(
         '--las-merged-symlink-fn',
-        help='Output. Symlink to the result of the script.',
-    )
+        help='Output. Symlink to the result of the script.')
+    parser.add_argument(
+        '--p-id-fn',
+        help='Output. File containing just a single integer, the p-id-num.')
     parser.add_argument(
         '--job-done-fn',
-        help='Output. Just a sentinel. (TODO: Drop.)',
-    )
+        help='Output. Just a sentinel. (TODO: Drop.)')
     args = parser.parse_args(argv[1:])
     return args
 

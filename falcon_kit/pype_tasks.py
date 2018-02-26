@@ -18,21 +18,27 @@ LOG = logging.getLogger(__name__)
 TASK_LAS_MERGE_SCATTER_SCRIPT = """\
 python -m falcon_kit.mains.las_merge_scatter --db-prefix={params.db_prefix} --stage={params.stage} --run-jobs-fn={input.run_jobs} --gathered-las-fn={input.gathered_las} --wildcards={params.wildcards} --scattered-fn={output.scattered}
 """
+TASK_LAS_MERGE_SPLIT_SCRIPT = """\
+python -m falcon_kit.mains.las_merge_split --db-prefix={params.db_prefix} --stage={params.stage} --run-jobs-fn={input.run_jobs} --gathered-las-fn={input.gathered_las} --wildcards={params.wildcards} --split-fn={output.split} --bash-template-fn={output.bash_template}
+"""
 TASK_LAS_MERGE_SCRIPT = """\
 # Note: HPC.daligner chooses a merged filename in its generated script, so we will symlink to it.
-python -m falcon_kit.mains.las_merge --las-paths-fn={input.las_paths} --merge-script-fn={input.merge_script} --las-merged-fn-fn={input.merged_las_json} --las-merged-symlink-fn={output.merged_las} --job-done-fn={output.job_done}
+python -m falcon_kit.mains.las_merge --las-paths-fn={input.las_paths} --merge-script-fn={input.merge_script} --las-merged-fn-fn={input.merged_las_json} --las-merged-symlink-fn={output.merged_las} --job-done-fn={output.job_done} --p-id-fn={output.p_id} --p-id-num={params.p_id_num}
 """
 TASK_LAS_MERGE_GATHER_SCRIPT = """\
-python -m falcon_kit.mains.las_merge_gather --gathered-fn={input.gathered} --las-fofn-fn={output.las_fofn} --las-fopfn-fn={output.las_fopfn}
+python -m falcon_kit.mains.las_merge_gather --gathered-fn={input.gathered} --p-id2las-fn={output.p_id2las} --las-fn={output.las}
 """
 TASK_CONSENSUS_SCATTER_SCRIPT = """\
 python -m falcon_kit.mains.consensus_scatter --las-fopfn-fn={input.las_fopfn} --db-fn={input.raw_reads_db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --wildcards={params.wildcards} --scattered-fn={output.scattered}
+"""
+TASK_CONSENSUS_SPLIT_SCRIPT = """\
+python -m falcon_kit.mains.consensus_split --p-id2las-fn={input.p_id2las} --db-fn={input.raw_reads_db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --wildcards={params.wildcards} --split-fn={output.split} --bash-template-fn={output.bash_template}
 """
 TASK_CONSENSUS_TASK_SCRIPT = """\
 python -m falcon_kit.mains.consensus_task --las-fn={input.las} --db-fn={input.db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --fasta-fn={output.fasta}
 """
 TASK_CONSENSUS_GATHER_SCRIPT = """\
-python -m falcon_kit.mains.consensus_gather --gathered-fn={input.gathered} --preads-fofn-fn={output.preads_fofn}
+python -m falcon_kit.mains.consensus_gather_fasta_fofn --gathered-fn={input.gathered} --preads-fofn-fn={output.preads_fofn}
 """
 TASK_REPORT_PRE_ASSEMBLY_SCRIPT = """\
 python -m falcon_kit.mains.task_report_pre_assembly --config-fn={input.config} --length-cutoff-fn={input.length_cutoff} --raw-reads-db-fn={input.raw_reads_db} --preads-fofn-fn={input.preads_fofn} --pre-assembly-report-fn={output.pre_assembly_report}
@@ -49,12 +55,19 @@ touch {output.db_build_done}
 TASK_DALIGNER_SCATTER_SCRIPT = """\
 python -m falcon_kit.mains.daligner_scatter --run-jobs-fn={input.run_jobs} --db-prefix={params.db_prefix} --db-fn={input.db} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --stage={params.stage} --wildcards={params.wildcards} --scattered-fn={output.scattered}
 """
+TASK_DALIGNER_SPLIT_SCRIPT = """\
+python -m falcon_kit.mains.daligner_split --run-jobs-fn={input.run_jobs} --db-prefix={params.db_prefix} --db-fn={input.db} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --stage={params.stage} --wildcards={params.wildcards} --split-fn={output.split} --bash-template-fn={output.bash_template}
+"""
+#TASK_DALIGNER_RUNS_SCRIPT = """\
+#python -m falcon_kit.mains.daligner_runs --units-of-work-fn={input.units_of_work} --las-paths-fn={output.las_paths}
+#"""
 TASK_DALIGNER_SCRIPT = """\
 # Note: HPC.daligner chooses a merged filename in its generated script, so we will symlink to it.
 python -m falcon_kit.mains.daligner --daligner-settings-fn={input.daligner_settings} --daligner-script-fn={input.daligner_script} --job-done-fn={output.job_done}
 """
-TASK_DALIGNER_GATHER_SCRIPT = """\
-python -m falcon_kit.mains.daligner_gather --gathered-fn={input.gathered} --las-paths-fn={output.las_paths}
+
+TASK_DALIGNER_FIND_LAS_SCRIPT = """\
+python -m falcon_kit.mains.daligner_gather_las_list --gathered-fn={input.gathered} --las-paths-fn={output.las_paths}
 """
 TASK_DUMP_RAWREAD_IDS_SCRIPT = """\
 DBshow -n {input.rawread_db} | tr -d '>' | LD_LIBRARY_PATH= awk '{{print $1}}' > {output.rawread_id_file}
@@ -73,13 +86,13 @@ time DB2Falcon -U {input.preads_db}
 touch {output.job_done}
 """
 TASK_RUN_FALCON_ASM_SCRIPT = """\
-# Given, las.fofn,
+# Given, las_fofn.json,
 # write preads.ovl:
 
 # mobs uses binwrappers, so it does not see our "entry-points".
 # So, after dropping "src/py_scripts/*.py", we can call these via python -m:
 
-time python -m falcon_kit.mains.ovlp_filter --db {input.db_file} --fofn {input.las_fofn} {params.overlap_filtering_setting} --min_len {params.length_cutoff_pr} --out-fn preads.ovl
+time python -m falcon_kit.mains.ovlp_filter --db {input.db_file} --las-fofn {input.las_fofn} {params.overlap_filtering_setting} --min_len {params.length_cutoff_pr} --out-fn preads.ovl
 
 ln -sf {input.preads4falcon_fasta} ./preads4falcon.fasta
 

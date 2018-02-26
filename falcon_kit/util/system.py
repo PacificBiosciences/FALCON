@@ -70,12 +70,12 @@ def find_files(root_path, pattern):
 @contextlib.contextmanager
 def cd(newdir):
     prevdir = os.getcwd()
-    log.debug('CD: %r <- %r' % (newdir, prevdir))
+    log.warning('CD: %r <- %r' % (newdir, prevdir))
     os.chdir(os.path.expanduser(newdir))
     try:
         yield
     finally:
-        log.debug('CD: %r -> %r' % (newdir, prevdir))
+        log.warning('CD: %r -> %r' % (newdir, prevdir))
         os.chdir(prevdir)
 
 

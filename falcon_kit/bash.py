@@ -208,6 +208,7 @@ def script_build_rdb(config, input_fofn_fn, run_jobs_bfn, length_cutoff_fn='leng
     script = """\
 echo "PBFALCON_ERRFILE=$PBFALCON_ERRFILE"
 set -o pipefail
+rm -f raw_reads.db .raw_reads.* # in case of re-run
 #fc_fasta2fasta < {input_fofn_fn} >| fc.fofn
 while read fn; do  {cat_fasta} $fn | fasta2DB -v raw_reads -i${{fn##*/}}; done < {input_fofn_fn}
 #cat fc.fofn | xargs rm -f
@@ -393,7 +394,7 @@ def script_run_falcon_asm(config, las_fofn_fn, preads4falcon_fasta_fn, db_file_f
 # mobs uses binwrappers, so it does not see our "entry-points".
 # So, after dropping "src/py_scripts/*.py", we can call these via python -m:
 
-time python -m falcon_kit.mains.ovlp_filter --db {db_file_fn} --fofn {las_fofn_fn} {overlap_filtering_setting} --min_len {length_cutoff_pr} --out-fn preads.ovl
+time python -m falcon_kit.mains.ovlp_filter --db {db_file_fn} --las-fofn {las_fofn_fn} {overlap_filtering_setting} --min_len {length_cutoff_pr} --out-fn preads.ovl
 
 ln -sf {preads4falcon_fasta_fn} ./preads4falcon.fasta
 

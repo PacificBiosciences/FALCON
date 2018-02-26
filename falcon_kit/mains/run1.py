@@ -219,8 +219,10 @@ def run(wf, config, rule_writer,
         wf.max_jobs = config['da_concurrent_jobs']
         rawreads_db_fn = os.path.join(rawread_dir, 'raw_reads.db')
         #config['sge_option_da'] = config['sge_option_pda']
-        scattered_fn = os.path.join(
-            rawread_dir, 'daligner-scatter', 'scattered.json')
+        daligner_all_units_fn = os.path.join(
+            rawread_dir, 'daligner-split', 'all-units-of-work.json')
+        daligner_bash_template_fn = os.path.join(
+            rawread_dir, 'daligner-split', 'daligner_bash_template.sh')
         params = dict() #dict(parameters)
         params['db_prefix'] = 'raw_reads'
         params['stage'] = os.path.basename(rawread_dir)
@@ -228,38 +230,42 @@ def run(wf, config, rule_writer,
         params['skip_checks'] = int(config.get('skip_checks', 0))
         params['wildcards'] = 'dal0_id'
         wf.addTask(gen_task(
-            script=pype_tasks.TASK_DALIGNER_SCATTER_SCRIPT,
+            script=pype_tasks.TASK_DALIGNER_SPLIT_SCRIPT,
             inputs={
                 'run_jobs': run_jobs_fn,
                 'db': rawreads_db_fn,
             },
             outputs={
-                'scattered': scattered_fn,
+                'split': daligner_all_units_fn,
+                'bash_template': daligner_bash_template_fn
             },
             parameters=params,
             rule_writer=rule_writer,
         ))
 
-        gathered_fn = os.path.join(rawread_dir, 'daligner-gathered', 'gathered.json')
+        gathered_fn = os.path.join(rawread_dir, 'daligner-gathered', 'gathered-done-files.json')
         gen_parallel_tasks(
             wf, rule_writer,
-            scattered_fn, gathered_fn,
+            daligner_all_units_fn, gathered_fn,
             run_dict=dict(
-                script=pype_tasks.TASK_DALIGNER_SCRIPT,
+                bash_template_fn=daligner_bash_template_fn,
+                script=pype_tasks.TASK_DALIGNER_SCRIPT, # for snakemake stuff
                 inputs={
-                    'daligner_script': '0-rawreads/daligner-scripts/{dal0_id}/daligner-script.sh',
-                    'daligner_settings': '0-rawreads/daligner-scripts/{dal0_id}/settings.json',
+                    #'daligner_script': '0-rawreads/daligner-scripts/{dal0_id}/daligner-script.sh',
+                    #'daligner_settings': '0-rawreads/daligner-scripts/{dal0_id}/settings.json',
+                    'units_of_work': '0-rawreads/daligner-chunks/{dal0_id}/some-units-of-work.json',
                 },
                 outputs={
-                    'job_done': '0-rawreads/{dal0_id}/daligner.done',
+                    #'job_done': '0-rawreads/{dal0_id}/daligner.done',
+                    'results': '0-rawreads/daligner-runs/{dal0_id}/some-done-files.json',
                 },
                 parameters={},
             ),
         )
 
-        r_gathered_las_fn = os.path.join(rawread_dir, 'daligner-intermediate-gathered-las', 'gathered-las.txt')
+        r_gathered_las_fn = os.path.join(rawread_dir, 'daligner-intermediate-gathered-las', 'gathered-las.json')
         wf.addTask(gen_task(
-            script=pype_tasks.TASK_DALIGNER_GATHER_SCRIPT,
+            script=pype_tasks.TASK_DALIGNER_FIND_LAS_SCRIPT,
             inputs={'gathered': gathered_fn,
             },
             outputs={'las_paths': r_gathered_las_fn,
@@ -270,51 +276,56 @@ def run(wf, config, rule_writer,
 
         # Merge .las files.
         wf.max_jobs = config['la_concurrent_jobs']
-        scattered_fn = os.path.join(rawread_dir, 'merge-scatter', 'scattered.json')
+        las_merge_all_units_fn = os.path.join(rawread_dir, 'las-merge-split', 'all-units-of-work.json')
+        bash_template_fn = os.path.join(rawread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
         params = dict() #(parameters)
         params['db_prefix'] = 'raw_reads'
         params['stage'] = os.path.basename(rawread_dir) # TODO(CD): Make this more clearly constant.
         params['wildcards'] = 'mer0_id'
         wf.addTask(gen_task(
-            script=pype_tasks.TASK_LAS_MERGE_SCATTER_SCRIPT,
+            script=pype_tasks.TASK_LAS_MERGE_SPLIT_SCRIPT,
             inputs={
                 'run_jobs': run_jobs_fn,
                 'gathered_las': r_gathered_las_fn,
             },
             outputs={
-                'scattered': scattered_fn,
+                'split': las_merge_all_units_fn,
+                'bash_template': bash_template_fn,
             },
             parameters=params,
             rule_writer=rule_writer,
         ))
 
-        gathered_fn = os.path.join(rawread_dir, 'merge-gathered', 'gathered.json')
+        gathered_fn = os.path.join(rawread_dir, 'las-merge-gathered', 'gathered.json')
         gen_parallel_tasks(
             wf, rule_writer,
-            scattered_fn, gathered_fn,
+            las_merge_all_units_fn, gathered_fn,
             run_dict=dict(
-                script=pype_tasks.TASK_LAS_MERGE_SCRIPT,
+                bash_template_fn=bash_template_fn,
+                script=pype_tasks.TASK_LAS_MERGE_SCRIPT, # for snakemake
                 inputs={
-                    'las_paths': './0-rawreads/merge-scripts/{mer0_id}/las_paths.json',
-                    'merge_script': './0-rawreads/merge-scripts/{mer0_id}/merge-script.sh',
-                    'merged_las_json': './0-rawreads/merge-scripts/{mer0_id}/merged_las.json',
+                    #'las_paths': './0-rawreads/merge-scripts/{mer0_id}/las_paths.json',
+                    #'merge_script': './0-rawreads/merge-scripts/{mer0_id}/merge-script.sh',
+                    #'merged_las_json': './0-rawreads/merge-scripts/{mer0_id}/merged_las.json',
+                    'units_of_work': '0-rawreads/las-merge-chunks/{mer0_id}/some-units-of-work.json',
                 },
                 outputs={
-                    'merged_las': './0-rawreads/{mer0_id}/merged.las',
-                    'job_done': './0-rawreads/{mer0_id}/merge.done',
+                    #'merged_las': './0-rawreads/{mer0_id}/merged.las',
+                    #'job_done': './0-rawreads/{mer0_id}/merge.done',
+                    'results': '0-rawreads/las-merge-runs/{mer0_id}/some-las-paths.json',
                 },
                 parameters={},
             ),
         )
 
-        las_fofn_fn = os.path.join(rawread_dir, 'merged-las-fofn', 'las.fofn')
-        las_fopfn_fn = os.path.join(rawread_dir, 'merged-las-fofn', 'las.fopfn')
+        p_id2las_fn = os.path.join(rawread_dir, 'las-gather', 'p_id2las.json')
+        las_fofn_fn = os.path.join(rawread_dir, 'las-gather', 'las_fofn.json')
         wf.addTask(gen_task(
             script=pype_tasks.TASK_LAS_MERGE_GATHER_SCRIPT,
             inputs={'gathered': gathered_fn,
             },
-            outputs={'las_fofn': las_fofn_fn,
-                     'las_fopfn': las_fopfn_fn,
+            outputs={'p_id2las': p_id2las_fn,
+                     'las': las_fofn_fn,
             },
             parameters={},
             rule_writer=rule_writer,
@@ -326,20 +337,23 @@ def run(wf, config, rule_writer,
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
         wf.max_jobs = config['cns_concurrent_jobs']
 
-        scattered_fn = os.path.join(
-            rawread_dir, 'cns-scatter', 'scattered.json')
+        split_fn = os.path.join(
+            rawread_dir, 'cns-split', 'split.json')
+        bash_template_fn = os.path.join(
+            rawread_dir, 'cns-split', 'consensus-bash-template.sh')
         params = dict()
         params['wildcards'] = 'cns0_id,cns0_id2'
         wf.addTask(gen_task(
-            script=pype_tasks.TASK_CONSENSUS_SCATTER_SCRIPT,
+            script=pype_tasks.TASK_CONSENSUS_SPLIT_SCRIPT,
             inputs={
-                'las_fopfn': las_fopfn_fn,
+                'p_id2las': p_id2las_fn,
                 'raw_reads_db': raw_reads_db_fn,
                 'length_cutoff': length_cutoff_fn,
                 'config': general_config_fn,
             },
             outputs={
-                'scattered': scattered_fn,
+                'split': split_fn,
+                'bash_template': bash_template_fn,
             },
             parameters=params,
             rule_writer=rule_writer,
@@ -348,17 +362,20 @@ def run(wf, config, rule_writer,
         gathered_fn = os.path.join(rawread_dir, 'cns-gather', 'gathered.json')
         gen_parallel_tasks(
             wf, rule_writer,
-            scattered_fn, gathered_fn,
+            split_fn, gathered_fn,
             run_dict=dict(
-                script=pype_tasks.TASK_CONSENSUS_TASK_SCRIPT,
+                bash_template_fn=bash_template_fn,
+                script=pype_tasks.TASK_CONSENSUS_TASK_SCRIPT, # for snakemake only
                 inputs = {
-                    'las': '0-rawreads/cns-scatter/{cns0_id}/merged.{cns0_id2}.las',
-                    'db': raw_reads_db_fn,
-                    'length_cutoff': length_cutoff_fn,
-                    'config': general_config_fn,
+                    #'las': '0-rawreads/cns-split/{cns0_id}/merged.{cns0_id2}.las',
+                    #'db': raw_reads_db_fn,
+                    #'length_cutoff': length_cutoff_fn,
+                    #'config': general_config_fn,
+                    'units_of_work': '0-rawreads/cns-chunks/{cns0_id}/some-units-of-work.json',
                 },
                 outputs = {
-                    'fasta': '0-rawreads/consensus/{cns0_id}/consensus.{cns0_id2}.fasta',
+                    #'fasta': '0-rawreads/consensus/{cns0_id}/consensus.{cns0_id2}.fasta',
+                    'results': '0-rawreads/cns-runs/{cns0_id}/some-done-files.json',
                 },
                 parameters={},
             ),
@@ -443,8 +460,10 @@ def run(wf, config, rule_writer,
     # run daligner
     wf.max_jobs = config['pda_concurrent_jobs']
     #config['sge_option_da'] = config['sge_option_pda']
-    scattered_fn = os.path.join(
-        pread_dir, 'daligner-scatter', 'scattered.json')
+    daligner_all_units_fn = os.path.join(
+        pread_dir, 'daligner-split', 'all-units-of-work.json')
+    daligner_bash_template_fn = os.path.join(
+        pread_dir, 'daligner-split', 'daligner_bash_template.sh')
     params = dict() #dict(parameters)
     params['db_prefix'] = 'preads'
     params['stage'] = os.path.basename(pread_dir)
@@ -453,38 +472,42 @@ def run(wf, config, rule_writer,
     params['skip_checks'] = int(config.get('skip_checks', 0))
     params['wildcards'] = 'dal1_id'
     wf.addTask(gen_task(
-        script=pype_tasks.TASK_DALIGNER_SCATTER_SCRIPT,
+        script=pype_tasks.TASK_DALIGNER_SPLIT_SCRIPT,
         inputs={
             'run_jobs': run_jobs_fn,
             'db': preads_db_fn,
         },
         outputs={
-            'scattered': scattered_fn,
+            'split': daligner_all_units_fn,
+            'bash_template': daligner_bash_template_fn
         },
         parameters=params,
         rule_writer=rule_writer,
     ))
 
-    gathered_fn = os.path.join(pread_dir, 'daligner-gathered', 'gathered.json')
+    gathered_fn = os.path.join(pread_dir, 'daligner-gathered', 'gathered-done-files.json')
     gen_parallel_tasks(
         wf, rule_writer,
-        scattered_fn, gathered_fn,
+        daligner_all_units_fn, gathered_fn,
         run_dict=dict(
-            script=pype_tasks.TASK_DALIGNER_SCRIPT,
+            bash_template_fn=daligner_bash_template_fn,
+            script=pype_tasks.TASK_DALIGNER_SCRIPT, # for snakemake stuff
             inputs={
-                'daligner_script': '1-preads_ovl/daligner-scripts/{dal1_id}/daligner-script.sh',
-                'daligner_settings': '1-preads_ovl/daligner-scripts/{dal1_id}/settings.json',
+                #'daligner_script': '1-preads_ovl/daligner-scripts/{dal1_id}/daligner-script.sh',
+                #'daligner_settings': '1-preads_ovl/daligner-scripts/{dal1_id}/settings.json',
+                'units_of_work': '1-preads_ovl/daligner-chunks/{dal1_id}/some-units-of-work.json',
             },
             outputs={
-                'job_done': '1-preads_ovl/{dal1_id}/daligner.done',
+                #'job_done': '1-preads_ovl/{dal1_id}/daligner.done',
+                'results': '1-preads_ovl/daligner-runs/{dal1_id}/some-done-files.json',
             },
             parameters={},
         ),
     )
 
-    p_gathered_las_fn = os.path.join(pread_dir, 'daligner-intermediate-gathered-las', 'gathered-las.txt')
+    p_gathered_las_fn = os.path.join(pread_dir, 'daligner-intermediate-gathered-las', 'gathered-las.json')
     wf.addTask(gen_task(
-        script=pype_tasks.TASK_DALIGNER_GATHER_SCRIPT,
+        script=pype_tasks.TASK_DALIGNER_FIND_LAS_SCRIPT,
         inputs={'gathered': gathered_fn,
         },
         outputs={'las_paths': p_gathered_las_fn,
@@ -496,53 +519,56 @@ def run(wf, config, rule_writer,
     # Merge .las files.
     #wf.max_jobs = config['pla_concurrent_jobs']
     #config['sge_option_la'] = config['sge_option_pla']
-    scattered_fn = os.path.join(pread_dir, 'merge-scatter', 'scattered.json')
-    #task = make_task(pype_tasks.task_merge_scatter)
-    #wf.refreshTargets(exitOnFailure=exitOnFailure)
+    las_merge_all_units_fn = os.path.join(pread_dir, 'las-merge-split', 'all-units-of-work.json')
+    bash_template_fn = os.path.join(pread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
     params = dict() #(parameters)
     params['db_prefix'] = 'preads'
     params['stage'] = os.path.basename(pread_dir) # TODO(CD): Make this more clearly constant.
     params['wildcards'] = 'mer1_id'
     wf.addTask(gen_task(
-        script=pype_tasks.TASK_LAS_MERGE_SCATTER_SCRIPT,
+        script=pype_tasks.TASK_LAS_MERGE_SPLIT_SCRIPT,
         inputs={
             'run_jobs': run_jobs_fn,
             'gathered_las': p_gathered_las_fn,
         },
         outputs={
-            'scattered': scattered_fn,
+            'split': las_merge_all_units_fn,
+            'bash_template': bash_template_fn,
         },
         parameters=params,
         rule_writer=rule_writer,
     ))
 
-    gathered_fn = os.path.join(pread_dir, 'merge-gathered', 'gathered.json')
+    gathered_fn = os.path.join(pread_dir, 'las-merge-gathered', 'gathered.json')
     gen_parallel_tasks(
         wf, rule_writer,
-        scattered_fn, gathered_fn,
+        las_merge_all_units_fn, gathered_fn,
         run_dict=dict(
-            script=pype_tasks.TASK_LAS_MERGE_SCRIPT,
+            bash_template_fn=bash_template_fn,
+            script=pype_tasks.TASK_LAS_MERGE_SCRIPT, # for snakemake
             inputs={
-                'las_paths': './1-preads_ovl/merge-scripts/{mer1_id}/las_paths.json',
-                'merge_script': './1-preads_ovl/merge-scripts/{mer1_id}/merge-script.sh',
-                'merged_las_json': './1-preads_ovl/merge-scripts/{mer1_id}/merged_las.json',
+                #'las_paths': './1-preads_ovl/merge-scripts/{mer1_id}/las_paths.json',
+                #'merge_script': './1-preads_ovl/merge-scripts/{mer1_id}/merge-script.sh',
+                #'merged_las_json': './1-preads_ovl/merge-scripts/{mer1_id}/merged_las.json',
+                'units_of_work': '1-preads_ovl/las-merge-chunks/{mer1_id}/some-units-of-work.json',
             },
             outputs={
-                'merged_las': './1-preads_ovl/{mer1_id}/merged.las',
-                'job_done': './1-preads_ovl/{mer1_id}/merge.done',
+                #'merged_las': './1-preads_ovl/{mer1_id}/merged.las',
+                #'job_done': './1-preads_ovl/{mer1_id}/merge.done',
+                'results': '1-preads_ovl/las-merge-runs/{mer1_id}/some-las-paths.json',
             },
             parameters={},
         ),
     )
 
-    las_fofn_fn = os.path.join(pread_dir, 'merged-las-fofn', 'las.fofn')
-    las_fopfn_fn = os.path.join(pread_dir, 'merged-las-fofn', 'las.fopfn')
+    p_id2las_fn = os.path.join(pread_dir, 'las-gather', 'p_id2las.json')
+    las_fofn_fn = os.path.join(pread_dir, 'las-gather', 'las_fofn.json')
     wf.addTask(gen_task(
         script=pype_tasks.TASK_LAS_MERGE_GATHER_SCRIPT,
         inputs={'gathered': gathered_fn,
         },
-        outputs={'las_fofn': las_fofn_fn,
-                 'las_fopfn': las_fopfn_fn,
+        outputs={'p_id2las': p_id2las_fn,
+                 'las': las_fofn_fn,
         },
         parameters={},
         rule_writer=rule_writer,
@@ -555,7 +581,7 @@ def run(wf, config, rule_writer,
     preads4falcon_fn = os.path.join(db2falcon_dir, 'preads4falcon.fasta')
     wf.addTask(gen_task(
         script=pype_tasks.TASK_RUN_DB_TO_FALCON_SCRIPT,
-        inputs={'las_fofn': las_fofn_fn,
+        inputs={'p_id2las': p_id2las_fn,
                 'preads_db': preads_db_fn,
                 },
         outputs={'job_done': db2falcon_done_fn,

@@ -13,22 +13,14 @@ from .. import io
 
 LOG = logging.getLogger()
 
-def convert_job_id_to_p_id(job_id):
-    """
-    >>> convert_job_id_to_p_id('cns_0011')
-    11
-    """
-    return int(job_id[4:], base=10)
 
 def run(gathered_fn, preads_fofn_fn):
     gathered = io.deserialize(gathered_fn)
-    fasta_fns = dict()
-    for (key, desc) in viewitems(gathered):
-        job_id = key.split(',')[0].split('=')[1]
-        p_id = convert_job_id_to_p_id(job_id)
-        fasta_fns[p_id] = desc['fns']['fasta']
+    fasta_fns = list()
+    for desc in gathered:
+        fasta_fns.append(desc['fasta'])
     with open(preads_fofn_fn,  'w') as f:
-        for filename in sorted(fasta_fns.values()):
+        for filename in sorted(fasta_fns):
             print(filename, file=f)
 
 
@@ -46,8 +38,7 @@ def parse_args(argv):
     )
     parser.add_argument(
         '--gathered-fn',
-        help='Input. (Not sure of content yet.)',
-    )
+        help='Input. JSON list of output dicts.')
     parser.add_argument(
         '--preads-fofn-fn',
         help='Output. FOFN of preads (fasta files).',
