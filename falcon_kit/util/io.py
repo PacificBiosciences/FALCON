@@ -242,7 +242,7 @@ def yield_validated_fns(fofn):
             assert fn
             if not os.path.isabs(fn):
                 fn = os.path.normpath(os.path.join(dirname, fn))
-            assert os.path.isfile(fn)
+            assert os.path.isfile(fn), 'File {!r} is not a file.'.format(fn)
             assert filesize(fn), '{!r} has size {}'.format(fn, filesize(fn))
             yield fn
     except Exception:

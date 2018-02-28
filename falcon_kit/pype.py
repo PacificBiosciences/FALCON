@@ -115,7 +115,7 @@ def gen_parallel_tasks(
                 LOG.warning('v={!r}'.format(v))
                 result[k] = v.format(**wildcards)
             return result
-        task_inputs = resolved_dict(run_dict['inputs'])
+        #task_inputs = resolved_dict(run_dict['inputs'])
         task_outputs = resolved_dict(run_dict['outputs'])
         task_parameters = resolved_dict(run_dict['parameters'])
 

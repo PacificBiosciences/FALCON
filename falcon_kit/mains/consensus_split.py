@@ -98,28 +98,22 @@ def parse_args(argv):
     )
     parser.add_argument(
         '--p-id2las-fn',
-        help='Input. JSON dict of p-id to las.)',
-    )
+        help='Input. JSON dict of p-id to las.)')
     parser.add_argument(
         '--db-fn',
-        help='Input. Dazzler DB of raw_reads.',
-    )
+        help='Input. Dazzler DB of raw_reads.')
     parser.add_argument(
         '--length-cutoff-fn',
-        help='Input. Contains a single integer, the length-cutoff.',
-    )
+        help='Input. Contains a single integer, the length-cutoff.')
     parser.add_argument(
         '--config-fn',
-        help='Input. JSON of relevant configuration (currently from General section of full-prog config).',
-    )
+        help='Input. JSON of relevant configuration (currently from General section of full-prog config).')
     parser.add_argument(
         '--wildcards',
-        help='To be used in substitutions',
-    )
+        help='Input. Comma-separated wildcard names. Might be needed downstream.')
     parser.add_argument(
         '--split-fn',
-        help='Output. JSON list of jobs, where each is a dict of input/output/params/wildcards.',
-    )
+        help='Output. JSON list of jobs, where each is a dict of input/output/params/wildcards.')
     parser.add_argument(
         '--bash-template-fn',
         help='Output. Copy of known daligner bash template, for use later.')

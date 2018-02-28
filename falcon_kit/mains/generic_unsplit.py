@@ -36,12 +36,10 @@ def parse_args(argv):
     )
     parser.add_argument(
         '--result-fn-list-fn',
-        help='Input: Combined list of filenames of results (pseudo output, expected to exist already in our run-dir)',
-    )
+        help='Input: Combined list of filenames of results (pseudo output, expected to exist already in our run-dir)')
     parser.add_argument(
         '--gathered-fn',
-        help='Output: serialized something-or-other',
-    )
+        help='Output: serialized something-or-other')
     args = parser.parse_args(argv[1:])
     return args
 

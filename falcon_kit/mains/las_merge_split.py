@@ -33,7 +33,7 @@ def read_gathered_las(las_fns):
     return result
 
 
-def run(bash_template_fn, run_jobs_fn, gathered_las_fn, db_prefix, stage, wildcards, split_fn):
+def run(bash_template_fn, run_jobs_fn, gathered_las_fn, db_prefix, wildcards, split_fn):
     with open(bash_template_fn, 'w') as stream:
         stream.write(pype_tasks.TASK_LAS_MERGE_SCRIPT)
     LOG.info('Splitting las file-list from {!r} (based on {!r}) into {!r}.'.format(
@@ -45,15 +45,14 @@ def run(bash_template_fn, run_jobs_fn, gathered_las_fn, db_prefix, stage, wildca
     LOG.info('Gathered {} las files.'.format(len(gathered_dict)))
     gathered_dict_dir = os.path.normpath(os.path.dirname(gathered_las_fn))
 
-    basedir = os.path.dirname(os.path.abspath(split_fn))
-    rootdir = os.path.dirname(os.path.dirname(basedir)) # for now
+    cwd = os.getcwd()
     jobs = list()
     for p_id, merge_script, merged_las_fn in merge_scripts:
         job_id = 'm_%05d' %p_id
         # Write the split inputs.
-        merge_script_fn = '{rootdir}/{stage}/las-merge-scripts/{job_id}/merge-script.sh'.format(**locals())
-        las_paths_fn = '{rootdir}/{stage}/las-merge-scripts/{job_id}/las_paths.json'.format(**locals())
-        merged_las_json_fn = '{rootdir}/{stage}/las-merge-scripts/{job_id}/merged_las.json'.format(**locals())
+        merge_script_fn = '{cwd}/las-merge-scripts/{job_id}/merge-script.sh'.format(**locals())
+        las_paths_fn = '{cwd}/las-merge-scripts/{job_id}/las_paths.json'.format(**locals())
+        merged_las_json_fn = '{cwd}/las-merge-scripts/{job_id}/merged_las.json'.format(**locals())
         io.mkdirs(os.path.dirname(merge_script_fn), os.path.dirname(las_paths_fn), os.path.dirname(merged_las_json_fn))
         with open(merge_script_fn, 'w') as stream:
             stream.write(merge_script)
@@ -102,33 +101,23 @@ def parse_args(argv):
     )
     parser.add_argument(
         '--run-jobs-fn',
-        help='Input. Result of HPC.daligner.',
-    )
+        help='Input. Result of HPC.daligner.')
     parser.add_argument(
         '--gathered-las-fn',
-        help='Input. (Not sure of content yet.)',
-    )
+        help='Input. (Not sure of content yet.)')
     parser.add_argument(
         '--db-prefix', default='raw_reads',
-        help='Either preads or raw_reads.',
-    )
-    parser.add_argument(
-        '--stage', default='0-rawreads',
-        help='Either 0-rawreads or 1-preads_ovl, for now.',
-    )
+        help='Either preads or raw_reads.')
     parser.add_argument(
         '--wildcards',
-        help='To be used in substitutions',
-    )
+        help='Input. Comma-separated wildcard names. Might be needed downstream.')
     # Do we need config too?
     parser.add_argument(
         '--split-fn',
-        help='Output. JSON list of jobs, where each is a dict of input/output/params/wildcards.',
-    )
+        help='Output. JSON list of jobs, where each is a dict of input/output/params/wildcards.')
     parser.add_argument(
         '--bash-template-fn',
-        help='Output. Known template of bash for running las-merge.',
-    )
+        help='Output. Known template of bash for running las-merge.')
     args = parser.parse_args(argv[1:])
     return args
 

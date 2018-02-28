@@ -12,7 +12,7 @@ from .. import pype_tasks
 
 LOG = logging.getLogger()
 
-def run(bash_template_fn, db_prefix, pread_aln, skip_checks, run_jobs_fn, db_fn, stage, wildcards, split_fn):
+def run(bash_template_fn, db_prefix, pread_aln, skip_checks, run_jobs_fn, db_fn, wildcards, split_fn):
     with open(bash_template_fn, 'w') as stream:
         stream.write(pype_tasks.TASK_DALIGNER_SCRIPT)
 
@@ -21,16 +21,17 @@ def run(bash_template_fn, db_prefix, pread_aln, skip_checks, run_jobs_fn, db_fn,
     db_build_done_fn = None
     assert isinstance(pread_aln, int)
     daligner_scripts = bash.scripts_daligner(run_jobs_fn, db_prefix, db_build_done_fn, nblock=nblock, pread_aln=bool(pread_aln), skip_check=skip_checks)
-    basedir = os.path.dirname(os.path.abspath(split_fn))
-    rootdir = os.path.dirname(os.path.dirname(basedir)) # for now
+    #basedir = os.path.dirname(os.path.abspath(split_fn))
+    #rootdir = os.path.dirname(os.path.dirname(basedir)) # for now
+    cwd = os.getcwd()
     jobs = list()
     for job_uid, script in daligner_scripts:
         job_id = 'j_{}'.format(job_uid)
         daligner_settings = dict(db_prefix=db_prefix)
 
         # Write script/settings for a unit-of-work.
-        daligner_script_fn = '{rootdir}/{stage}/daligner-scripts/{job_id}/daligner-script.sh'.format(**locals())
-        daligner_settings_fn = '{rootdir}/{stage}/daligner-scripts/{job_id}/settings.json'.format(**locals())
+        daligner_script_fn = '{cwd}/daligner-scripts/{job_id}/daligner-script.sh'.format(**locals())
+        daligner_settings_fn = '{cwd}/daligner-scripts/{job_id}/settings.json'.format(**locals())
         io.mkdirs(os.path.dirname(daligner_script_fn))
         with open(daligner_script_fn, 'w') as stream:
             stream.write(script)
@@ -80,11 +81,8 @@ def parse_args(argv):
         '--pread-aln', default=0, type=int,
         help='If non-zero, use pread alignment mode. (Run daligner_p instead of daligner.)')
     parser.add_argument(
-        '--stage', default='0-rawreads',
-        help='Either 0-rawreads or 1-preads_ovl, for now.')
-    parser.add_argument(
         '--wildcards',
-        help='To be used in substitutions')
+        help='Input. Comma-separated wildcard names. Might be needed downstream.')
     parser.add_argument(
         '--split-fn',
         help='Output. JSON list of units of work.')
