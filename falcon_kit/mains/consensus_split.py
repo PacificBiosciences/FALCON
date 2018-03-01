@@ -38,6 +38,9 @@ def run(bash_template_fn, p_id2las_fn, db_fn, length_cutoff_fn, config_fn, wildc
     with open(bash_template_fn, 'w') as stream:
         stream.write(pype_tasks.TASK_CONSENSUS_TASK_SCRIPT)
 
+    db_fn = os.path.realpath(db_fn)
+    # Because DazzlerDB is not a "FileType" in pbcommand,
+    # it might be a symlink with a weird extension.
     LOG.info('Scattering las from {!r} (based on {!r}) into {!r}.'.format(
         p_id2las_fn, db_fn, split_fn))
 
