@@ -22,7 +22,7 @@ def run(config_fn, length_cutoff_fn, input_fofn_fn, job_done_fn, run_jobs_fn):
             stream.write('\n')
     config = io.deserialize(config_fn)
     run_jobs_fn = os.path.basename(run_jobs_fn)
-    script = bash.script_build_rdb(config, my_input_fofn_fn, run_jobs_fn)
+    script = bash.script_build_rdb(config, my_input_fofn_fn, run_jobs_fn, length_cutoff_fn)
     script_fn = 'build_rdb.sh'
     bash.write_script(script, script_fn, job_done_fn)
     io.syscall('bash -vex {}'.format(script_fn))

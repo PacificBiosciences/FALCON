@@ -15,11 +15,11 @@ import os.path
 LOG = logging.getLogger(__name__)
 
 
-TASK_LAS_MERGE_SCATTER_SCRIPT = """\
-python -m falcon_kit.mains.las_merge_scatter --db-prefix={params.db_prefix} --stage={params.stage} --run-jobs-fn={input.run_jobs} --gathered-las-fn={input.gathered_las} --wildcards={params.wildcards} --scattered-fn={output.scattered}
-"""
+#TASK_LAS_MERGE_SCATTER_SCRIPT = """\
+#python -m falcon_kit.mains.las_merge_scatter --db-prefix={params.db_prefix} --stage={params.stage} --run-jobs-fn={input.run_jobs} --gathered-las-fn={input.gathered_las} --wildcards={params.wildcards} --scattered-fn={output.scattered}
+#"""
 TASK_LAS_MERGE_SPLIT_SCRIPT = """\
-python -m falcon_kit.mains.las_merge_split --db-prefix={params.db_prefix} --stage={params.stage} --run-jobs-fn={input.run_jobs} --gathered-las-fn={input.gathered_las} --wildcards={params.wildcards} --split-fn={output.split} --bash-template-fn={output.bash_template}
+python -m falcon_kit.mains.las_merge_split --wildcards={params.wildcards} --db-prefix={params.db_prefix} --run-jobs-fn={input.run_jobs} --gathered-las-fn={input.gathered_las} --split-fn={output.split} --bash-template-fn={output.bash_template}
 """
 TASK_LAS_MERGE_SCRIPT = """\
 # Note: HPC.daligner chooses a merged filename in its generated script, so we will symlink to it.
@@ -28,11 +28,11 @@ python -m falcon_kit.mains.las_merge --las-paths-fn={input.las_paths} --merge-sc
 TASK_LAS_MERGE_GATHER_SCRIPT = """\
 python -m falcon_kit.mains.las_merge_gather --gathered-fn={input.gathered} --p-id2las-fn={output.p_id2las} --las-fn={output.las}
 """
-TASK_CONSENSUS_SCATTER_SCRIPT = """\
-python -m falcon_kit.mains.consensus_scatter --las-fopfn-fn={input.las_fopfn} --db-fn={input.raw_reads_db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --wildcards={params.wildcards} --scattered-fn={output.scattered}
-"""
+#TASK_CONSENSUS_SCATTER_SCRIPT = """\
+#python -m falcon_kit.mains.consensus_scatter --las-fopfn-fn={input.las_fopfn} --db-fn={input.raw_reads_db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --wildcards={params.wildcards} --scattered-fn={output.scattered}
+#"""
 TASK_CONSENSUS_SPLIT_SCRIPT = """\
-python -m falcon_kit.mains.consensus_split --p-id2las-fn={input.p_id2las} --db-fn={input.raw_reads_db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --wildcards={params.wildcards} --split-fn={output.split} --bash-template-fn={output.bash_template}
+python -m falcon_kit.mains.consensus_split --wildcards={params.wildcards} --p-id2las-fn={input.p_id2las} --db-fn={input.raw_reads_db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --split-fn={output.split} --bash-template-fn={output.bash_template}
 """
 TASK_CONSENSUS_TASK_SCRIPT = """\
 python -m falcon_kit.mains.consensus_task --las-fn={input.las} --db-fn={input.db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --fasta-fn={output.fasta}
@@ -52,11 +52,11 @@ python -m falcon_kit.mains.build_pdb --input-fofn-fn={input.preads_fofn} --confi
 # TODO: Verify that input.preads_db exists.
 touch {output.db_build_done}
 """
-TASK_DALIGNER_SCATTER_SCRIPT = """\
-python -m falcon_kit.mains.daligner_scatter --run-jobs-fn={input.run_jobs} --db-prefix={params.db_prefix} --db-fn={input.db} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --stage={params.stage} --wildcards={params.wildcards} --scattered-fn={output.scattered}
-"""
+#TASK_DALIGNER_SCATTER_SCRIPT = """\
+#python -m falcon_kit.mains.daligner_scatter --run-jobs-fn={input.run_jobs} --db-prefix={params.db_prefix} --db-fn={input.db} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --stage={params.stage} --wildcards={params.wildcards} --scattered-fn={output.scattered}
+#"""
 TASK_DALIGNER_SPLIT_SCRIPT = """\
-python -m falcon_kit.mains.daligner_split --run-jobs-fn={input.run_jobs} --db-prefix={params.db_prefix} --db-fn={input.db} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --stage={params.stage} --wildcards={params.wildcards} --split-fn={output.split} --bash-template-fn={output.bash_template}
+python -m falcon_kit.mains.daligner_split --wildcards={params.wildcards} --db-prefix={params.db_prefix} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --run-jobs-fn={input.run_jobs} --db-fn={input.db} --split-fn={output.split} --bash-template-fn={output.bash_template}
 """
 #TASK_DALIGNER_RUNS_SCRIPT = """\
 #python -m falcon_kit.mains.daligner_runs --units-of-work-fn={input.units_of_work} --las-paths-fn={output.las_paths}

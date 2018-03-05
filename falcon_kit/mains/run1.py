@@ -225,7 +225,7 @@ def run(wf, config, rule_writer,
             rawread_dir, 'daligner-split', 'daligner_bash_template.sh')
         params = dict() #dict(parameters)
         params['db_prefix'] = 'raw_reads'
-        params['stage'] = os.path.basename(rawread_dir)
+        #params['stage'] = os.path.basename(rawread_dir)
         params['pread_aln'] = 0
         params['skip_checks'] = int(config.get('skip_checks', 0))
         params['wildcards'] = 'dal0_id'
@@ -280,7 +280,7 @@ def run(wf, config, rule_writer,
         bash_template_fn = os.path.join(rawread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
         params = dict() #(parameters)
         params['db_prefix'] = 'raw_reads'
-        params['stage'] = os.path.basename(rawread_dir) # TODO(CD): Make this more clearly constant.
+        #params['stage'] = os.path.basename(rawread_dir) # TODO(CD): Make this more clearly constant.
         params['wildcards'] = 'mer0_id'
         wf.addTask(gen_task(
             script=pype_tasks.TASK_LAS_MERGE_SPLIT_SCRIPT,
@@ -466,7 +466,7 @@ def run(wf, config, rule_writer,
         pread_dir, 'daligner-split', 'daligner_bash_template.sh')
     params = dict() #dict(parameters)
     params['db_prefix'] = 'preads'
-    params['stage'] = os.path.basename(pread_dir)
+    #params['stage'] = os.path.basename(pread_dir)
     params['pread_aln'] = 1
     #params['nblock'] = preads_nblock
     params['skip_checks'] = int(config.get('skip_checks', 0))
@@ -523,7 +523,7 @@ def run(wf, config, rule_writer,
     bash_template_fn = os.path.join(pread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
     params = dict() #(parameters)
     params['db_prefix'] = 'preads'
-    params['stage'] = os.path.basename(pread_dir) # TODO(CD): Make this more clearly constant.
+    #params['stage'] = os.path.basename(pread_dir) # TODO(CD): Make this more clearly constant.
     params['wildcards'] = 'mer1_id'
     wf.addTask(gen_task(
         script=pype_tasks.TASK_LAS_MERGE_SPLIT_SCRIPT,
