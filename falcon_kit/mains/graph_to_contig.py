@@ -37,14 +37,16 @@ ctg_data_file = "ctg_paths"
 RCMAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
 
 
+class TooLongError(Exception): pass
+
 def rc(seq):
     return "".join([RCMAP[c] for c in seq[::-1]])
 
 
 def get_aln_data(t_seq, q_seq):
     aln_data = []
-    x = []
-    y = []
+    #x = []
+    #y = []
     K = 8
     seq0 = t_seq
     lk_ptr = kup.allocate_kmer_lookup(1 << (K * 2))
@@ -60,13 +62,16 @@ def get_aln_data(t_seq, q_seq):
     if kmer_match.count != 0:
         aln_range_ptr = kup.find_best_aln_range(kmer_match_ptr, K, K * 5, 12)
         aln_range = aln_range_ptr[0]
-        x, y = list(zip(* [(kmer_match.query_pos[i], kmer_match.target_pos[i])
-                      for i in range(kmer_match.count)]))
+        #x, y = list(zip(* [(kmer_match.query_pos[i], kmer_match.target_pos[i])
+        #              for i in range(kmer_match.count)]))
 
         s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
 
+        if (e1 - s1) >= 500001 or (e2 - s2) >= 500001:
+            # DW.align() would crash, so raise here.
+            raise TooLongError('q_len={} or t_len={} are too big, over 500k'.format(
+                (e1-s1), (e2-s2)))
         if e1 - s1 > 100:
-
             alignment = DWA.align(q_seq[s1:e1], e1 - s1,
                                   seq0[s2:e2], e2 - s2,
                                   1500, 1)
@@ -85,7 +90,7 @@ def get_aln_data(t_seq, q_seq):
     kup.free_kmer_lookup(lk_ptr)
     kup.free_seq_array(sa_ptr)
     kup.free_seq_addr_array(sda_ptr)
-    return aln_data, x, y
+    return aln_data #, x, y
 
 
 def reverse_end(node_id):
@@ -325,13 +330,17 @@ def run(improper):
                     idt = 0.0
                     cov = 0.0
                     if len(base_seq) > 2000 and len(seq) > 2000:
-                        aln_data, x, y = get_aln_data(base_seq, seq)
-                        if len(aln_data) != 0:
+                        try:
+                          aln_data = get_aln_data(base_seq, seq)
+                          if len(aln_data) != 0:
                             idt = 1.0 - 1.0 * \
                                 aln_data[-1][-1] / aln_data[-1][-2]
                             cov = 1.0 * \
                                 (aln_data[-1][3] - aln_data[-1]
                                  [2]) / aln_data[-1][4]
+                        except TooLongError:
+                            idt = 1000000.
+                            cov = 1000000.
 
                     atig_output.append(
                         (v, w, atig_path, total_length, total_score, seq, atig_path_edges, delta_len, idt, cov))
