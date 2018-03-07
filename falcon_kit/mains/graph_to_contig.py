@@ -39,6 +39,12 @@ RCMAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
 
 class TooLongError(Exception): pass
 
+
+def log(msg):
+    sys.stderr.write(msg)
+    sys.stderr.write('\n')
+
+
 def rc(seq):
     return "".join([RCMAP[c] for c in seq[::-1]])
 
@@ -68,7 +74,7 @@ def get_aln_data(t_seq, q_seq):
         s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
 
         if (e1 - s1) >= 500001 or (e2 - s2) >= 500001:
-            # DW.align() would crash, so raise here.
+            # DW.align() would crash, so raise here. (500000 is the approx. upper bound.)
             raise TooLongError('q_len={} or t_len={} are too big, over 500k'.format(
                 (e1-s1), (e2-s2)))
         if e1 - s1 > 100:
@@ -339,6 +345,7 @@ def run(improper):
                                 (aln_data[-1][3] - aln_data[-1]
                                  [2]) / aln_data[-1][4]
                         except TooLongError:
+                            log('WARNING: Seqs were too long for get_aln_data(), so we set idt/cov high enough to prevent filtering, at atig_path[:-1] == {}'.format(atig_path[:-1]))
                             idt = 1000000.
                             cov = 1000000.
 
