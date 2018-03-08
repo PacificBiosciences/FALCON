@@ -345,9 +345,9 @@ def run(improper):
                                 (aln_data[-1][3] - aln_data[-1]
                                  [2]) / aln_data[-1][4]
                         except TooLongError:
-                            log('WARNING: Seqs were too long for get_aln_data(), so we set idt/cov high enough to prevent filtering, at atig_path[:-1] == {}'.format(atig_path[:-1]))
-                            idt = 1000000.
-                            cov = 1000000.
+                            log('WARNING: Seqs were too long for get_aln_data(), so we set idt/cov low enough to prevent filtering by dedup_a_tigs, at atig_path[:-1] == {}'.format(atig_path[:-1]))
+                            idt = -1.0
+                            cov = -1.0
 
                     atig_output.append(
                         (v, w, atig_path, total_length, total_score, seq, atig_path_edges, delta_len, idt, cov))
