@@ -405,7 +405,7 @@ time python -m falcon_kit.mains.ovlp_to_graph {fc_ovlp_to_graph_option} --overla
 # Given sg_edges_list, utg_data, ctg_paths, preads4falcon.fasta,
 # write p_ctg.fa and a_ctg_all.fa,
 # plus a_ctg_base.fa, p_ctg_tiling_path, a_ctg_tiling_path, a_ctg_base_tiling_path:
-time python -m falcon_kit.mains.graph_to_proper_contig
+time python -m falcon_kit.mains.graph_to_contig
 
 # Given a_ctg_all.fa, write a_ctg.fa:
 time python -m falcon_kit.mains.dedup_a_tigs
