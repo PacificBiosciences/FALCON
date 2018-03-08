@@ -1,3 +1,21 @@
+"""
+TODO: (from convo w/ Ivan)
+the issue with this script (but would still like to re-read it to refresh my memory). The script loads all edge sequences and tries to do two things at once: create p_ctg and a_ctg sequences, and align the bubbles using those sequences
+
+
+If we generate:
+1. All paths first (as tiling paths) for all p_ctg and all a_ctg without loading sequences - this should not consume much space (take a look at *_tiling_paths files).
+2. Load the first read of each tiling path fully, and only edge sequences for every transition, we can generate the output sequences with the same memory/disk consumption.
+3. Align bubbles after that.
+
+Our resource consumption should be same
+
+Bubbles?
+It aligns them to produce the identity score
+
+After that the dedup_a_tigs.py script is used to deduplicate fake a_ctg.
+But that script is simple, and only depends on the alignment info that the previous script stored in the a_ctg header.
+"""
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
@@ -75,12 +93,26 @@ def reverse_end(node_id):
     return node_id + ":" + new_end
 
 
+def yield_first_seq(one_path_edges, seqs):
+            if one_path_edges and one_path_edges[0][0] != one_path_edges[-1][1]:
+                # If non-empty, and non-circular,
+                # prepend the entire first read.
+                (vv, ww) = one_path_edges[0]
+                (vv_rid, vv_letter) = vv.split(":")
+                if vv_letter == 'E':
+                    first_seq = seqs[vv_rid]
+                else:
+                    assert vv_letter == 'B'
+                    first_seq = "".join([RCMAP[c] for c in seqs[vv_rid][::-1]])
+                yield first_seq
+
+
 def main(argv=sys.argv):
     reads_in_layout = set()
     with open(edge_data_file) as f:
         for l in f:
             l = l.strip().split()
-            """001039799:E 000333411:E 000333411 17524 20167 17524 99.62"""
+            """001039799:E 000333411:E 000333411 17524 20167 17524 99.62 G"""
             v, w, rid, s, t, aln_score, idt, type_ = l
             if type_ != "G":
                 continue
@@ -95,21 +127,21 @@ def main(argv=sys.argv):
         for r in f:
             if r.name not in reads_in_layout:
                 continue
-            seqs[r.name] = r.sequence.upper()
+            seqs[r.name] = r.sequence.upper() # name == rid-string
 
     edge_data = {}
     with open(edge_data_file) as f:
         for l in f:
             l = l.strip().split()
-            """001039799:E 000333411:E 000333411 17524 20167 17524 99.62"""
+            """001039799:E 000333411:E 000333411 17524 20167 17524 99.62 G"""
             v, w, rid, s, t, aln_score, idt, type_ = l
 
             if type_ != "G":
                 continue
-            r1 = v.split(":")[0]
-            reads_in_layout.add(r1)
-            r2 = w.split(":")[0]
-            reads_in_layout.add(r2)
+            r1, dir1 = v.split(":")
+            reads_in_layout.add(r1) # redundant, but harmless
+            r2, dir2 = w.split(":")
+            reads_in_layout.add(r2) # redundant, but harmless
 
             s = int(s)
             t = int(t)
@@ -118,10 +150,12 @@ def main(argv=sys.argv):
 
             if s < t:
                 e_seq = seqs[rid][s:t]
+                assert 'E' == dir2
             else:
                 # t and s were swapped for 'c' alignments in ovlp_to_graph.generate_string_graph():702
                 # They were translated from reverse-dir to forward-dir coordinate system in LA4Falcon.
                 e_seq = "".join([RCMAP[c] for c in seqs[rid][t:s][::-1]])
+                assert 'B' == dir2
             edge_data[(v, w)] = (rid, s, t, aln_score, idt, e_seq)
 
     utg_data = {}
@@ -244,9 +278,6 @@ def main(argv=sys.argv):
             a_id = 1
             for v, w, in a_ctg_group:
                 # get the base sequence used in the primary contig
-                #count = len( [x for x in a_ctg_group[ (v, w) ] if len(x[1]) > 3] )
-                # if count < 2:
-                #    continue
                 atig_output = []
 
                 score, atig_path = a_ctg_group[(v, w)][0]

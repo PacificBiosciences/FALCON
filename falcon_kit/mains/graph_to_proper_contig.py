@@ -283,9 +283,13 @@ def main(argv=sys.argv):
                 score, atig_path = a_ctg_group[(v, w)][0]
                 atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
                 sub_seqs = list(yield_first_seq(atig_path_edges, seqs))
+                total_length = 0
+                total_score = 0
                 for vv, ww in atig_path_edges:
                     rid, s, t, aln_score, idt, e_seq = edge_data[(vv, ww)]
                     sub_seqs.append(e_seq)
+                    total_length += abs(s - t)
+                    total_score += aln_score
 
                 base_seq = "".join(sub_seqs)
                 atig_output.append(
