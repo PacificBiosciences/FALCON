@@ -22,6 +22,7 @@ from __future__ import unicode_literals
 
 from builtins import zip
 from builtins import range
+import argparse
 import sys
 import networkx as nx
 #from pbcore.io import FastaReader
@@ -107,7 +108,10 @@ def yield_first_seq(one_path_edges, seqs):
                 yield first_seq
 
 
-def main(argv=sys.argv):
+def run(improper):
+    """improper==True => Neglect the initial read.
+    We used to need that for unzip.
+    """
     reads_in_layout = set()
     with open(edge_data_file) as f:
         for l in f:
@@ -265,7 +269,10 @@ def main(argv=sys.argv):
 
             one_path_edges = list(zip(one_path[:-1], one_path[1:]))
 
-            sub_seqs = []
+            if improper:
+                sub_seqs = []
+            else:
+                sub_seqs = list(yield_first_seq(one_path_edges, seqs))
             for vv, ww in one_path_edges:
                 rid, s, t, aln_score, idt, e_seq = edge_data[(vv, ww)]
                 sub_seqs.append(e_seq)
@@ -282,7 +289,10 @@ def main(argv=sys.argv):
 
                 score, atig_path = a_ctg_group[(v, w)][0]
                 atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
-                sub_seqs = []
+                if improper:
+                    sub_seqs = []
+                else:
+                    sub_seqs = list(yield_first_seq(atig_path_edges, seqs))
                 total_length = 0
                 total_score = 0
                 for vv, ww in atig_path_edges:
@@ -297,7 +307,10 @@ def main(argv=sys.argv):
 
                 for score, atig_path in a_ctg_group[(v, w)][1:]:
                     atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
-                    sub_seqs = []
+                    if improper:
+                        sub_seqs = []
+                    else:
+                        sub_seqs = list(yield_first_seq(atig_path_edges, seqs))
                     total_length = 0
                     total_score = 0
                     for vv, ww in atig_path_edges:
@@ -358,6 +371,35 @@ def main(argv=sys.argv):
     a_ctg_base_t_out.close()
     a_ctg_t_out.close()
     p_ctg_t_out.close()
+
+
+def main(argv=sys.argv):
+    description = 'Generate the primary and alternate contig fasta files and tiling paths, given the string graph.'
+    epilog = """
+We assume these input files, in cwd:
+
+    read_fasta = "preads4falcon.fasta"
+    edge_data_file = "sg_edges_list"
+    utg_data_file = "utg_data"
+    ctg_data_file = "ctg_paths"
+
+We write these:
+
+    p_ctg_out = open("p_ctg.fa", "w")
+    a_ctg_out = open("a_ctg_all.fa", "w")
+    a_ctg_base_out = open("a_ctg_base.fa", "w")
+    p_ctg_t_out = open("p_ctg_tiling_path", "w")
+    a_ctg_t_out = open("a_ctg_tiling_path", "w")
+    a_ctg_base_t_out = open("a_ctg_base_tiling_path", "w")
+"""
+    parser = argparse.ArgumentParser(
+            description=description,
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog=epilog)
+    parser.add_argument('--improper', action='store_true',
+            help='Skip the initial read in each path. This used to be needed for falcon-unzip.')
+    args = parser.parse_args(argv[1:])
+    run(**vars(args))
 
 
 if __name__ == "__main__":
