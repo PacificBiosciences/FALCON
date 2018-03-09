@@ -191,6 +191,10 @@ def run(wf, config, rule_writer,
     # Store config as JSON, available to many tasks.
 
     if config['input_type'] == 'raw':
+        parameters = {
+                    'sge_option': config['sge_option_da'],
+        }
+
         rdb_build_done = os.path.join(rawread_dir, 'rdb_build_done')
         run_jobs_fn = os.path.join(rawread_dir, 'run_jobs.sh')
         length_cutoff_fn = os.path.join(rawread_dir, 'length_cutoff')
@@ -211,7 +215,7 @@ def run(wf, config, rule_writer,
                 'length_cutoff': length_cutoff_fn,
                 'db_build_done': rdb_build_done, # only for ordering
             },
-            parameters={},
+            parameters=parameters, #{},
             rule_writer=rule_writer,
         ))
 
@@ -223,7 +227,7 @@ def run(wf, config, rule_writer,
             rawread_dir, 'daligner-split', 'all-units-of-work.json')
         daligner_bash_template_fn = os.path.join(
             rawread_dir, 'daligner-split', 'daligner_bash_template.sh')
-        params = dict() #dict(parameters)
+        params = dict(parameters)
         params['db_prefix'] = 'raw_reads'
         #params['stage'] = os.path.basename(rawread_dir)
         params['pread_aln'] = 0
@@ -259,7 +263,7 @@ def run(wf, config, rule_writer,
                     #'job_done': '0-rawreads/{dal0_id}/daligner.done',
                     'results': '0-rawreads/daligner-runs/{dal0_id}/some-done-files.json',
                 },
-                parameters={},
+                parameters=parameters, #{},
             ),
         )
 
@@ -270,15 +274,18 @@ def run(wf, config, rule_writer,
             },
             outputs={'las_paths': r_gathered_las_fn,
             },
-            parameters={},
+            parameters=parameters, #{},
             rule_writer=rule_writer,
         ))
 
         # Merge .las files.
+        parameters = {
+                        'sge_option': config['sge_option_la'],
+        }
         wf.max_jobs = config['la_concurrent_jobs']
         las_merge_all_units_fn = os.path.join(rawread_dir, 'las-merge-split', 'all-units-of-work.json')
         bash_template_fn = os.path.join(rawread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
-        params = dict() #(parameters)
+        params = dict(parameters)
         params['db_prefix'] = 'raw_reads'
         #params['stage'] = os.path.basename(rawread_dir) # TODO(CD): Make this more clearly constant.
         params['wildcards'] = 'mer0_id'
@@ -314,7 +321,7 @@ def run(wf, config, rule_writer,
                     #'job_done': './0-rawreads/{mer0_id}/merge.done',
                     'results': '0-rawreads/las-merge-runs/{mer0_id}/some-las-paths.json',
                 },
-                parameters={},
+                parameters=parameters, #{},
             ),
         )
 
@@ -327,7 +334,7 @@ def run(wf, config, rule_writer,
             outputs={'p_id2las': p_id2las_fn,
                      'las': las_fofn_fn,
             },
-            parameters={},
+            parameters=parameters, #{},
             rule_writer=rule_writer,
         ))
 
@@ -335,13 +342,16 @@ def run(wf, config, rule_writer,
             sys.exit(0)
 
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
+        parameters = {
+                        'sge_option': config['sge_option_cns'],
+        }
         wf.max_jobs = config['cns_concurrent_jobs']
 
         split_fn = os.path.join(
             rawread_dir, 'cns-split', 'split.json')
         bash_template_fn = os.path.join(
             rawread_dir, 'cns-split', 'consensus-bash-template.sh')
-        params = dict()
+        params = dict(parameters)
         params['wildcards'] = 'cns0_id,cns0_id2'
         wf.addTask(gen_task(
             script=pype_tasks.TASK_CONSENSUS_SPLIT_SCRIPT,
@@ -377,7 +387,7 @@ def run(wf, config, rule_writer,
                     #'fasta': '0-rawreads/consensus/{cns0_id}/consensus.{cns0_id2}.fasta',
                     'results': '0-rawreads/cns-runs/{cns0_id}/some-done-files.json',
                 },
-                parameters={},
+                parameters=parameters, #{},
             ),
         )
         preads_fofn_fn = os.path.join(rawread_dir, 'preads', 'input_preads.fofn')
@@ -389,13 +399,13 @@ def run(wf, config, rule_writer,
             outputs={
                 'preads_fofn': preads_fofn_fn,
             },
-            parameters={}, #=parameters,
+            parameters=parameters, #{},
             rule_writer=rule_writer,
         ))
 
         rdir = os.path.join(rawread_dir, 'report')
         pre_assembly_report_fn = os.path.join(rdir, 'pre_assembly_stats.json')
-        params = dict() #dict(parameters)
+        params = dict(parameters)
         params['length_cutoff_user'] = config['length_cutoff']
         params['genome_length'] = config['genome_size'] # note different name; historical
         wf.addTask(gen_task(
@@ -431,11 +441,11 @@ def run(wf, config, rule_writer,
         """
         raise Exception('TODO')
 
-    #parameters = {'work_dir': pread_dir,
-    #              'sge_option': config['sge_option_pda'],
-    #              #'config_fn': input_config_fn,
-    #              'config': config}
-    parameters = dict()
+    parameters = {#'work_dir': pread_dir,
+                  'sge_option': config['sge_option_pda'],
+                  #'config_fn': input_config_fn,
+                  #'config': config,
+    }
 
     pdb_build_done = os.path.join(pread_dir, 'pdb_build_done')
     run_jobs_fn = os.path.join(pread_dir, 'run_jobs.sh')
@@ -453,7 +463,7 @@ def run(wf, config, rule_writer,
             'preads_db': preads_db_fn,
             'db_build_done': pdb_build_done, # only for ordering
         },
-        parameters={},
+        parameters=parameters, #{},
         rule_writer=rule_writer,
     ))
 
@@ -464,7 +474,7 @@ def run(wf, config, rule_writer,
         pread_dir, 'daligner-split', 'all-units-of-work.json')
     daligner_bash_template_fn = os.path.join(
         pread_dir, 'daligner-split', 'daligner_bash_template.sh')
-    params = dict() #dict(parameters)
+    params = dict(parameters)
     params['db_prefix'] = 'preads'
     #params['stage'] = os.path.basename(pread_dir)
     params['pread_aln'] = 1
@@ -517,11 +527,14 @@ def run(wf, config, rule_writer,
     ))
 
     # Merge .las files.
-    #wf.max_jobs = config['pla_concurrent_jobs']
+    parameters = {
+                    'sge_option': config['sge_option_pla'],
+    }
+    wf.max_jobs = config['pla_concurrent_jobs']
     #config['sge_option_la'] = config['sge_option_pla']
     las_merge_all_units_fn = os.path.join(pread_dir, 'las-merge-split', 'all-units-of-work.json')
     bash_template_fn = os.path.join(pread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
-    params = dict() #(parameters)
+    params = dict(parameters)
     params['db_prefix'] = 'preads'
     #params['stage'] = os.path.basename(pread_dir) # TODO(CD): Make this more clearly constant.
     params['wildcards'] = 'mer1_id'
@@ -557,7 +570,7 @@ def run(wf, config, rule_writer,
                 #'job_done': './1-preads_ovl/{mer1_id}/merge.done',
                 'results': '1-preads_ovl/las-merge-runs/{mer1_id}/some-las-paths.json',
             },
-            parameters={},
+            parameters=parameters, #{},
         ),
     )
 
@@ -570,7 +583,7 @@ def run(wf, config, rule_writer,
         outputs={'p_id2las': p_id2las_fn,
                  'las': las_fofn_fn,
         },
-        parameters={},
+        parameters=parameters, #{},
         rule_writer=rule_writer,
     ))
 
@@ -587,13 +600,13 @@ def run(wf, config, rule_writer,
         outputs={'job_done': db2falcon_done_fn,
                  'preads4falcon': preads4falcon_fn,
                  },
-        parameters={},
+        parameters=parameters, #{},
         rule_writer=rule_writer,
     ))
 
     falcon_asm_done_fn = os.path.join(falcon_asm_dir, 'falcon_asm_done')
     parameters = {
-        #'sge_option': config['sge_option_fc'], # if we want this, we must use double curlies
+                'sge_option': config['sge_option_fc'],
     }
     for key in ('overlap_filtering_setting', 'length_cutoff_pr', 'fc_ovlp_to_graph_option'):
         parameters[key] = config[key]

@@ -235,7 +235,7 @@ def yield_validated_fns(fofn):
     try:
         fns = deserialize(fofn)
     except:
-        #LOG('las fofn {!r} does not seem to be JSON; try to switch, so we can detect truncated files.'.format(fofn))
+        #LOG('las fofn {!r} does not seem to be JSON or msgpack; try to switch, so we can detect truncated files.'.format(fofn))
         fns = open(fofn).read().strip().split()
     try:
         for fn in fns:
