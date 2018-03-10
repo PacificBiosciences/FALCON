@@ -2,8 +2,8 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from future.utils import viewitems
+from pypeflow.io import cd
 from .io import system
-import contextlib
 import logging
 import os
 import pprint
@@ -65,18 +65,6 @@ def find_files(root_path, pattern):
         dirs.sort()
         for filename in sorted(fnmatch.filter(files, pattern)):
             yield os.path.join(root, filename)
-
-
-@contextlib.contextmanager
-def cd(newdir):
-    prevdir = os.getcwd()
-    log.warning('CD: %r <- %r' % (newdir, prevdir))
-    os.chdir(os.path.expanduser(newdir))
-    try:
-        yield
-    finally:
-        log.warning('CD: %r -> %r' % (newdir, prevdir))
-        os.chdir(prevdir)
 
 
 def abs_fns(ifofns, idir=None):

@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from ..pype import (gen_task, gen_parallel_tasks) # copied verbatim from falcon_unzip
+from ..pype import (wrap_gen_task as gen_task, gen_parallel_tasks, Dist)
 from .. import run_support as support
 from .. import bash, pype_tasks, snakemake
 from ..util.system import (only_these_symlinks, lfs_setstripe_maybe)

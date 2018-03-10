@@ -8,8 +8,6 @@ import os
 import sys
 import pypeflow.do_task
 from .. import io
-from .. import bash  # for write_script
-from ..util import system
 
 LOG = logging.getLogger()
 

@@ -2,13 +2,12 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 from __future__ import division
 
-from future.utils import viewitems
-import json
+from pypeflow.io import (
+        syscall, capture, cd,
+        mkdirs, symlink, rm, touch, filesize, exists_and_not_empty) # needed?
 import logging
-import msgpack
 import os
 import pprint
-import subprocess
 
 LOG = logging.getLogger()
 
@@ -49,39 +48,33 @@ def update_env_from_config(config, fn):
     validate_config(config)
 
 
-def mkdirs(*dirnames):
-    for dirname in dirnames:
-        if not dirname:
-            continue # '' => curdir
-        if not os.path.isdir(dirname):
-            os.makedirs(dirname)
-            if len(dirnames) == 1:
-                log('mkdir -p "{}"'.format(dirnames[0]))
-
-
 def eng(number):
     return '{:.1f}MB'.format(number / 2**20)
 
 
 def read_as_msgpack(stream):
+    import msgpack
     content = stream.read()
     log('  Read {} as msgpack'.format(eng(len(content))))
     return msgpack.loads(content)
 
 
 def read_as_json(stream):
+    import json
     content = stream.read()
     log('  Read {} as json'.format(eng(len(content))))
     return json.loads(content)
 
 
 def write_as_msgpack(stream, val):
+    import msgpack
     content = msgpack.dumps(val)
     log('  Serialized to {} as msgpack'.format(eng(len(content))))
     stream.write(content)
 
 
 def write_as_json(stream, val):
+    import json
     content = json.dumps(val, indent=2, separators=(',', ': '))
     log('  Serialized to {} as json'.format(eng(len(content))))
     stream.write(content)
@@ -118,7 +111,7 @@ def serialize(fn, val):
 
 
 def yield_bam_fn(input_bam_fofn_fn):
-    log('Reading BAM names from FOFN {!r}'.format(input_bam_fofn_fn))
+    LOG.info('Reading BAM names from FOFN {!r}'.format(input_bam_fofn_fn))
     fofn_basedir = os.path.normpath(os.path.dirname(input_bam_fofn_fn))
 
     def abs_fn(maybe_rel_fn):
@@ -144,70 +137,3 @@ def yield_abspath_from_fofn(fofn_fn):
     except Exception:
         LOG.error('Problem resolving paths in FOFN {!r}'.format(fofn_fn))
         raise
-
-
-def syscall(call, nocheck=False):
-    """Raise Exception in error, unless nocheck==True
-    """
-    LOG.info('$(%s)' % repr(call))
-    rc = os.system(call)
-    msg = 'Call %r returned %d.' % (call, rc)
-    if rc:
-        LOG.warning(msg)
-        if not nocheck:
-            raise Exception(msg)
-    else:
-        LOG.debug(msg)
-    return rc
-
-
-def capture(cmd):
-    """Return stdout, fully captured.
-    Wait for subproc to finish.
-    Raise if empty.
-    Raise on non-zero exit-code.
-    """
-    LOG.info('$ {} >'.format(cmd))
-    output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
-    if not output:
-        msg = '{!r} failed to produce any output.'.format(cmd)
-        LOG.warning(msg)
-    return output
-
-
-def symlink(src, name, force=True):
-    if os.path.lexists(name):
-        os.unlink(name)
-    os.symlink(src, name)
-
-def rm(*f):
-    syscall('rm -f {}'.format(' '.join(f)))
-
-
-def touch(f):
-    syscall('touch {}'.format(f))
-
-
-def filesize(fn):
-    return os.stat(fn).st_size
-
-
-def exists_and_not_empty(fn):
-    if not os.path.exists(fn):
-        return False
-    if 0 == filesize(fn):
-        LOG.debug('File {} is empty.'.format(fn))
-        return False
-    return True
-
-
-def substitute(yourdict):
-    """
-    >>> list(sorted(substitute({'a': '_{b}_', 'b': 'X'}).items()))
-    [('a', '_X_'), ('b', 'X')]
-    """
-    mydict = dict(yourdict)
-    for (k, v) in viewitems(yourdict):
-        if '{' in v:
-            mydict[k] = v.format(**mydict)
-    return mydict

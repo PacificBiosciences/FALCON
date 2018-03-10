@@ -1,18 +1,15 @@
 """This was copied from falcon_unzip, but we
 needed to modify the TASK SCRIPT to use our copy of
-generic_gather.py
+generic_gather.py (not used now).
 """
 from __future__ import absolute_import
 from __future__ import unicode_literals
-
-from future.utils import viewitems
-from future.utils import itervalues
-from pypeflow.sample_tasks import gen_task as pype_gen_task
-from . import io
-import os
-import tempfile
-
 import logging
+import os
+from pypeflow.simple_pwatcher_bridge import (PypeTask, Dist)
+from pypeflow.tasks import gen_task as pype_gen_task
+from . import io
+
 LOG = logging.getLogger(__name__)
 
 TASK_GENERIC_RUN_UNITS_SCRIPT = """\
@@ -25,11 +22,13 @@ TASK_GENERIC_UNSPLIT_SCRIPT = """
 python -m falcon_kit.mains.generic_unsplit --result-fn-list-fn={output.result_fn_list} --gathered-fn={output.gathered}
 """
 #TASK_GENERIC_CHUNKING_SCRIPT = """\
+# This is done via pbtag now, I think.
 #python -m falcon_kit.mains.generic_chunking split-fn={input.split} --bash-template-temp-fn={input.bash_template_temp} --units-of-work-fn={output.units_of_work} --uow-template-fn={output.uow_template} --split-idx={params.split_idx}
 #"""
 
 
-def gen_task(rule_writer, script, inputs, outputs, parameters={}):
+def wrap_gen_task(rule_writer, script, inputs, outputs, parameters={}, dist=Dist()):
+    from future.utils import viewitems
     rel_inputs = dict()
     rel_outputs = dict()
     # Make relative to CWD. (But better if caller does this.)
@@ -48,7 +47,7 @@ def gen_task(rule_writer, script, inputs, outputs, parameters={}):
     params = dict(parameters)
     params['topdir'] = rel_topdir
 
-    pt = pype_gen_task(script, inputs, outputs, params)
+    pt = pype_gen_task(script, inputs, outputs, params, dist)
 
     # Run pype_gen_task first because it can valid some stuff.
     rule_writer(inputs, outputs, params, script)
@@ -60,6 +59,7 @@ def gen_parallel_tasks(
         split_fn,
         gathered_fn,
         run_dict,
+        dist=Dist(),
 ):
     """
     By convention, the first (wildcard) output in run_dict['outputs'] must be the gatherable list,
@@ -67,6 +67,8 @@ def gen_parallel_tasks(
 
     For now, we require a single such output, since we do not yet test for wildcards.
     """
+    from future.utils import itervalues
+    #from future.utils import viewitems
     # run_dict['inputs'] should be patterns to match the inputs in split_fn, by convention.
 
     # Write 3 wildcard rules for snakemake, 2 with dynamic.
@@ -110,9 +112,9 @@ def gen_parallel_tasks(
             return v.format(**wildcards)
         def resolved_dict(d):
             result = dict(d)
-            LOG.warning('wildcards={!r}'.format(wildcards))
+            LOG.warning(' wildcards={!r}'.format(wildcards))
             for k,v in d.items():
-                LOG.warning('v={!r}'.format(v))
+                LOG.warning('  k={}, v={!r}'.format(k, v))
                 result[k] = v.format(**wildcards)
             return result
         #task_inputs = resolved_dict(run_dict['inputs'])
@@ -133,6 +135,7 @@ def gen_parallel_tasks(
                 parameters={
                     'split_idx': split_idx,
                 },
+                dist=Dist(local=True),
         ))
 
         wf.addTask(pype_gen_task(
@@ -143,6 +146,7 @@ def gen_parallel_tasks(
                 },
                 outputs=task_outputs,
                 parameters=task_parameters,
+                dist=dist,
         ))
         wildcards_str = '_'.join(w for w in itervalues(job['wildcards']))
         job_name = 'job{}'.format(wildcards_str)
@@ -163,8 +167,10 @@ def gen_parallel_tasks(
             'result_fn_list': result_fn_list_fn,
         },
         parameters={},
+        dist=Dist(local=True),
     ))
 
 
 def dict_rel_paths(dict_paths):
+    from future.utils import viewitems
     return {k: os.path.relpath(v) for (k, v) in viewitems(dict_paths)}
