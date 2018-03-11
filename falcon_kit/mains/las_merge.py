@@ -29,7 +29,7 @@ def run(p_id_num, las_paths_fn, merge_script_fn, las_merged_fn_fn, las_merged_sy
         else:
             src = os.path.relpath(las_path, cwd)
         name = os.path.join(cwd, os.path.basename(las_path))
-        LOG.debug('symlink {!r} <- {!r}'.format(src, name))
+        LOG.info('symlink {!r} <- {!r}'.format(src, name))
         if os.path.lexists(name):
             os.unlink(name)
         os.symlink(src, name)

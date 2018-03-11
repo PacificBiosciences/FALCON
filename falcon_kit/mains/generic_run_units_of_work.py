@@ -48,7 +48,10 @@ def run(bash_template_fn, units_of_work_fn, results_fn):
         with io.cd(uow_dir):
             pypeflow.do_task.run_bash(script, inputs, outputs, params)
             resolved_outputs = {k: os.path.abspath(v) for k,v in outputs.items()}
-            results.append(resolved_outputs)
+        results.append({k: os.path.relpath(v) for k,v in resolved_outputs.items()})
+        # Must be relative to this dir.
+        # (We assume outputs are under the current directory.)
+
         #wildcards_str = '_'.join(w for w in itervalues(job['wildcards']))
         #job_name = 'job{}'.format(wildcards_str)
         #for (output_name, output_fn) in viewitems(outputs):
