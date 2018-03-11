@@ -73,11 +73,16 @@ def get_aln_data(t_seq, q_seq):
 
         s1, e1, s2, e2 = aln_range.s1, aln_range.e1, aln_range.s2, aln_range.e2
 
-        if (e1 - s1) >= 500001 or (e2 - s2) >= 500001:
-            # DW.align() would crash, so raise here. (500000 is the approx. upper bound.)
+        max_len = 250000 # to keep allocations < 16GB, given band_tol=1500
+        if (e1 - s1) >= max_len or (e2 - s2) >= max_len:
+            # DW.align() would crash, so raise here.
+            # (500000 is the approx. upper bound for int overflow,
+            #  but some users run out of memory anyway.)
             raise TooLongError('q_len={} or t_len={} are too big, over 500k'.format(
                 (e1-s1), (e2-s2)))
         if e1 - s1 > 100:
+            log('Calling DW_banded.align(q, {}, t, {}, 1500, 1)'.format(
+                e1-s1, e2-s2))
             alignment = DWA.align(q_seq[s1:e1], e1 - s1,
                                   seq0[s2:e2], e2 - s2,
                                   1500, 1)
