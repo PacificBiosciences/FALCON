@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from ..pype import (gen_task, gen_parallel_tasks) # copied verbatim from falcon_unzip
+from ..pype import (wrap_gen_task as gen_task, gen_parallel_tasks, Dist)
 from .. import run_support as support
 from .. import bash, pype_tasks, snakemake
 from ..util.system import (only_these_symlinks, lfs_setstripe_maybe)
@@ -190,7 +190,10 @@ def run(wf, config, rule_writer,
 
     # Store config as JSON, available to many tasks.
 
+    sge_option = config['sge_option_da']
+
     if config['input_type'] == 'raw':
+        parameters = {}
         rdb_build_done = os.path.join(rawread_dir, 'rdb_build_done')
         run_jobs_fn = os.path.join(rawread_dir, 'run_jobs.sh')
         length_cutoff_fn = os.path.join(rawread_dir, 'length_cutoff')
@@ -213,6 +216,7 @@ def run(wf, config, rule_writer,
             },
             parameters={},
             rule_writer=rule_writer,
+            dist=Dist(NPROC=1, sge_option=sge_option),
         ))
 
         # run daligner
@@ -223,7 +227,7 @@ def run(wf, config, rule_writer,
             rawread_dir, 'daligner-split', 'all-units-of-work.json')
         daligner_bash_template_fn = os.path.join(
             rawread_dir, 'daligner-split', 'daligner_bash_template.sh')
-        params = dict() #dict(parameters)
+        params = dict(parameters)
         params['db_prefix'] = 'raw_reads'
         #params['stage'] = os.path.basename(rawread_dir)
         params['pread_aln'] = 0
@@ -241,6 +245,7 @@ def run(wf, config, rule_writer,
             },
             parameters=params,
             rule_writer=rule_writer,
+            dist=Dist(local=True),
         ))
 
         gathered_fn = os.path.join(rawread_dir, 'daligner-gathered', 'gathered-done-files.json')
@@ -261,6 +266,7 @@ def run(wf, config, rule_writer,
                 },
                 parameters={},
             ),
+            dist=Dist(NPROC=4, MB=4000, sge_option=sge_option),
         )
 
         r_gathered_las_fn = os.path.join(rawread_dir, 'daligner-intermediate-gathered-las', 'gathered-las.json')
@@ -272,13 +278,15 @@ def run(wf, config, rule_writer,
             },
             parameters={},
             rule_writer=rule_writer,
+            dist=Dist(local=True),
         ))
 
         # Merge .las files.
+        sge_option = config['sge_option_la']
         wf.max_jobs = config['la_concurrent_jobs']
         las_merge_all_units_fn = os.path.join(rawread_dir, 'las-merge-split', 'all-units-of-work.json')
         bash_template_fn = os.path.join(rawread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
-        params = dict() #(parameters)
+        params = dict(parameters)
         params['db_prefix'] = 'raw_reads'
         #params['stage'] = os.path.basename(rawread_dir) # TODO(CD): Make this more clearly constant.
         params['wildcards'] = 'mer0_id'
@@ -294,6 +302,7 @@ def run(wf, config, rule_writer,
             },
             parameters=params,
             rule_writer=rule_writer,
+            dist=Dist(local=True, sge_option=sge_option),
         ))
 
         gathered_fn = os.path.join(rawread_dir, 'las-merge-gathered', 'gathered.json')
@@ -316,6 +325,7 @@ def run(wf, config, rule_writer,
                 },
                 parameters={},
             ),
+            dist=Dist(NPROC=1, sge_option=sge_option)
         )
 
         p_id2las_fn = os.path.join(rawread_dir, 'las-gather', 'p_id2las.json')
@@ -329,19 +339,21 @@ def run(wf, config, rule_writer,
             },
             parameters={},
             rule_writer=rule_writer,
+            dist=Dist(local=True),
         ))
 
         if config['target'] == 'overlapping':
             sys.exit(0)
 
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
+        sge_option = config['sge_option_cns']
         wf.max_jobs = config['cns_concurrent_jobs']
 
         split_fn = os.path.join(
             rawread_dir, 'cns-split', 'split.json')
         bash_template_fn = os.path.join(
             rawread_dir, 'cns-split', 'consensus-bash-template.sh')
-        params = dict()
+        params = dict(parameters)
         params['wildcards'] = 'cns0_id,cns0_id2'
         wf.addTask(gen_task(
             script=pype_tasks.TASK_CONSENSUS_SPLIT_SCRIPT,
@@ -357,6 +369,7 @@ def run(wf, config, rule_writer,
             },
             parameters=params,
             rule_writer=rule_writer,
+            dist=Dist(local=True),
         ))
 
         gathered_fn = os.path.join(rawread_dir, 'cns-gather', 'gathered.json')
@@ -379,6 +392,7 @@ def run(wf, config, rule_writer,
                 },
                 parameters={},
             ),
+            dist=Dist(NPROC=6, sge_option=sge_option),
         )
         preads_fofn_fn = os.path.join(rawread_dir, 'preads', 'input_preads.fofn')
         wf.addTask(gen_task(
@@ -389,13 +403,14 @@ def run(wf, config, rule_writer,
             outputs={
                 'preads_fofn': preads_fofn_fn,
             },
-            parameters={}, #=parameters,
+            parameters=parameters, #{},
             rule_writer=rule_writer,
+            dist=Dist(local=True),
         ))
 
         rdir = os.path.join(rawread_dir, 'report')
         pre_assembly_report_fn = os.path.join(rdir, 'pre_assembly_stats.json')
-        params = dict() #dict(parameters)
+        params = dict(parameters)
         params['length_cutoff_user'] = config['length_cutoff']
         params['genome_length'] = config['genome_size'] # note different name; historical
         wf.addTask(gen_task(
@@ -409,6 +424,7 @@ def run(wf, config, rule_writer,
             },
             parameters=params,
             rule_writer=rule_writer,
+            dist=Dist(local=True),
         ))
 
     if config['target'] == 'pre-assembly':
@@ -431,11 +447,7 @@ def run(wf, config, rule_writer,
         """
         raise Exception('TODO')
 
-    #parameters = {'work_dir': pread_dir,
-    #              'sge_option': config['sge_option_pda'],
-    #              #'config_fn': input_config_fn,
-    #              'config': config}
-    parameters = dict()
+    sge_option = config['sge_option_pda']
 
     pdb_build_done = os.path.join(pread_dir, 'pdb_build_done')
     run_jobs_fn = os.path.join(pread_dir, 'run_jobs.sh')
@@ -453,18 +465,19 @@ def run(wf, config, rule_writer,
             'preads_db': preads_db_fn,
             'db_build_done': pdb_build_done, # only for ordering
         },
-        parameters={},
+        parameters=parameters, #{},
         rule_writer=rule_writer,
+        dist=Dist(NPROC=1, sge_option=sge_option),
     ))
 
     # run daligner
     wf.max_jobs = config['pda_concurrent_jobs']
-    #config['sge_option_da'] = config['sge_option_pda']
+    sge_option = config['sge_option_pda']
     daligner_all_units_fn = os.path.join(
         pread_dir, 'daligner-split', 'all-units-of-work.json')
     daligner_bash_template_fn = os.path.join(
         pread_dir, 'daligner-split', 'daligner_bash_template.sh')
-    params = dict() #dict(parameters)
+    params = dict(parameters)
     params['db_prefix'] = 'preads'
     #params['stage'] = os.path.basename(pread_dir)
     params['pread_aln'] = 1
@@ -483,6 +496,7 @@ def run(wf, config, rule_writer,
         },
         parameters=params,
         rule_writer=rule_writer,
+        dist=Dist(local=True),
     ))
 
     gathered_fn = os.path.join(pread_dir, 'daligner-gathered', 'gathered-done-files.json')
@@ -503,6 +517,7 @@ def run(wf, config, rule_writer,
             },
             parameters={},
         ),
+        dist=Dist(NPROC=4, MB=4000, sge_option=sge_option),
     )
 
     p_gathered_las_fn = os.path.join(pread_dir, 'daligner-intermediate-gathered-las', 'gathered-las.json')
@@ -514,14 +529,15 @@ def run(wf, config, rule_writer,
         },
         parameters={},
         rule_writer=rule_writer,
+        dist=Dist(local=True),
     ))
 
     # Merge .las files.
-    #wf.max_jobs = config['pla_concurrent_jobs']
-    #config['sge_option_la'] = config['sge_option_pla']
+    sge_option = config['sge_option_pla']
+    wf.max_jobs = config['pla_concurrent_jobs']
     las_merge_all_units_fn = os.path.join(pread_dir, 'las-merge-split', 'all-units-of-work.json')
     bash_template_fn = os.path.join(pread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
-    params = dict() #(parameters)
+    params = dict(parameters)
     params['db_prefix'] = 'preads'
     #params['stage'] = os.path.basename(pread_dir) # TODO(CD): Make this more clearly constant.
     params['wildcards'] = 'mer1_id'
@@ -537,6 +553,7 @@ def run(wf, config, rule_writer,
         },
         parameters=params,
         rule_writer=rule_writer,
+        dist=Dist(local=True),
     ))
 
     gathered_fn = os.path.join(pread_dir, 'las-merge-gathered', 'gathered.json')
@@ -559,6 +576,7 @@ def run(wf, config, rule_writer,
             },
             parameters={},
         ),
+        dist=Dist(NPROC=1, sge_option=sge_option),
     )
 
     p_id2las_fn = os.path.join(pread_dir, 'las-gather', 'p_id2las.json')
@@ -572,10 +590,12 @@ def run(wf, config, rule_writer,
         },
         parameters={},
         rule_writer=rule_writer,
+        dist=Dist(local=True),
     ))
 
     # Draft assembly (called 'fc_' for now)
     wf.max_jobs = config['fc_concurrent_jobs']
+    sge_option = config['sge_option_fc'] # Should this apply only to asm?
     db2falcon_dir = os.path.join(pread_dir, 'db2falcon')
     db2falcon_done_fn = os.path.join(db2falcon_dir, 'db2falcon_done')
     preads4falcon_fn = os.path.join(db2falcon_dir, 'preads4falcon.fasta')
@@ -589,12 +609,10 @@ def run(wf, config, rule_writer,
                  },
         parameters={},
         rule_writer=rule_writer,
+        dist=Dist(NPROC=4, sge_option=sge_option),
     ))
 
     falcon_asm_done_fn = os.path.join(falcon_asm_dir, 'falcon_asm_done')
-    parameters = {
-        #'sge_option': config['sge_option_fc'], # if we want this, we must use double curlies
-    }
     for key in ('overlap_filtering_setting', 'length_cutoff_pr', 'fc_ovlp_to_graph_option'):
         parameters[key] = config[key]
     wf.addTask(gen_task(
@@ -607,6 +625,7 @@ def run(wf, config, rule_writer,
         outputs={'falcon_asm_done': falcon_asm_done_fn},
         parameters=parameters,
         rule_writer=rule_writer,
+        dist=Dist(NPROC=4, sge_option=sge_option),
     ))
     wf.refreshTargets()
 

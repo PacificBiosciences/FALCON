@@ -17,7 +17,16 @@ def run(result_fn_list_fn, gathered_fn):
     gathered = list()
     for result_fn in result_fn_list:
         some_results = io.deserialize(result_fn)
-        gathered.extend(some_results)
+        d = os.path.abspath(os.path.dirname(result_fn))
+        # By construction, this is a list of dicts of k:output,
+        # where outputs are relative to the location of result_fn.
+        some_abs_results = list()
+        for one in some_results:
+            for v in one.itervalues():
+                assert not os.path.isabs(v), '{!r} was expected to be relative'.format(v)
+            abs_one = {k: os.path.join(d, v) for k,v in one.items()}
+            some_abs_results.append(abs_one)
+        gathered.extend(some_abs_results)
     io.serialize(gathered_fn, gathered)
 
 
