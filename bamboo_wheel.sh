@@ -1,13 +1,13 @@
 #!/bin/bash
 type module >& /dev/null || . /mnt/software/Modules/current/init/bash
+module purge
+module load gcc
+module load ccache
 set -vex
 ls -larth ..
 ls -larth
 pwd
 
-module purge
-module load gcc
-module load ccache
 
 module load python/2-UCS2
 make wheel WHEELHOUSE=artifacts/gcc-6.4.0/wheelhouse

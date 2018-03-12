@@ -11,10 +11,9 @@ install_requires = [
     "future >= 0.16.0",
     #"logging_tree",
     #"pbcore >= 0.6.3",
-    #"pypeFLOW", # We exclude pypeFLOW because it is not needed for the unit-tests.
+    "pypeFLOW >= 1.1.0",
 ]
 
-# scripts = glob.glob("src/py_scripts/*.py") # Prefer entry-points, for shebang lines.
 scripts = []
 
 try:
@@ -78,6 +77,5 @@ setup(name='falcon_kit',
       },
       scripts=scripts,
       zip_safe=False,
-      setup_requires=install_requires,
-      install_requires=install_requires
-      )
+      install_requires=install_requires,
+)
