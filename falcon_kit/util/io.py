@@ -1,12 +1,17 @@
 """I/O utilities
 Not specific to FALCON.
 """
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import str
+from builtins import object
 import os
 import resource
 import shlex
 import subprocess as sp
 import sys
 import traceback
+from ..io import deserialize
 
 
 def write_nothing(*args):
@@ -126,10 +131,14 @@ class DataReaderContext(object):
 class ProcessReaderContext(object):
     """Prefer this to slurplines() or streamlines().
     """
+    def readlines(self):
+        """Generate lines of unicode.
+        """
+        raise NotImplementedError()
 
     def __enter__(self):
         LOG('{!r}'.format(self.cmd))
-        self.proc = sp.Popen(shlex.split(self.cmd), stdout=sp.PIPE)
+        self.proc = sp.Popen(shlex.split(self.cmd), stdout=sp.PIPE, universal_newlines=True)
 
     def __exit__(self, etype, evalue, etb):
         if etype is None:
@@ -152,9 +161,10 @@ def splitlines_iter(text):
     """This is the same as splitlines, but with a generator.
     """
     # https://stackoverflow.com/questions/3054604/iterate-over-the-lines-of-a-string
+    assert isinstance(text, str)
     prevnl = -1
     while True:
-        nextnl = text.find('\n', prevnl + 1)
+        nextnl = text.find(u'\n', prevnl + 1)
         if nextnl < 0:
             break
         yield text[prevnl + 1:nextnl]
@@ -178,7 +188,7 @@ class CapturedProcessReaderContext(ProcessReaderContext):
         """
         output, _ = self.proc.communicate()
         # Process has terminated by now, so we can iterate without keeping it alive.
-        for line in splitlines_iter(output):
+        for line in splitlines_iter(str(output, 'utf-8')):
             yield line
 
 
@@ -196,7 +206,13 @@ class StreamedProcessReaderContext(ProcessReaderContext):
         Otherwise, after all lines are read, if 'cmd' failed, Exception is raised.
         """
         for line in self.proc.stdout:
-            yield line.rstrip()
+            # We expect unicode from py3 but raw-str from py2, given
+            # universal_newlines=True.
+            # Based on source-code in 'future/types/newstr.py',
+            # it seems that str(str(x)) has no extra penalty,
+            # and it should not crash either. Anyway,
+            # our tests would catch it.
+            yield str(line, 'utf-8').rstrip()
 
 
 def filesize(fn):
@@ -208,16 +224,27 @@ def filesize(fn):
 
 
 def validated_fns(fofn):
-    """Return list of filenames from fofn.
-    Assert none are empty or non-existent.
+    return list(yield_validated_fns(fofn))
+
+
+def yield_validated_fns(fofn):
+    """Return list of filenames from fofn, either abs or relative to CWD instead of dir of fofn.
+    Assert none are empty/non-existent.
     """
+    dirname = os.path.normpath(os.path.dirname(fofn)) # normpath makes '' become '.'
     try:
+        fns = deserialize(fofn)
+    except:
+        #LOG('las fofn {!r} does not seem to be JSON or msgpack; try to switch, so we can detect truncated files.'.format(fofn))
         fns = open(fofn).read().strip().split()
+    try:
         for fn in fns:
             assert fn
-            assert os.path.isfile(fn)
-            assert filesize(fn)
-        return fns
+            if not os.path.isabs(fn):
+                fn = os.path.normpath(os.path.join(dirname, fn))
+            assert os.path.isfile(fn), 'File {!r} is not a file.'.format(fn)
+            assert filesize(fn), '{!r} has size {}'.format(fn, filesize(fn))
+            yield fn
     except Exception:
         sys.stderr.write('Failed to validate FOFN {!r}\n'.format(fofn))
         raise

@@ -10,6 +10,10 @@ One caveat: At the moment, parts of falcon-unzip actually write into the
 falcon dirs. We should fix that. But for now, we create writable run-dirs.
 We do *not* write into the HGAP4 run-dir.
 """
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+from future.utils import viewitems
 from ..util.system import (cd, touch, make_dirs)
 import argparse
 import contextlib
@@ -156,10 +160,6 @@ falcon_ns.tasks.task_falcon2_run_asm-0
 1-preads_ovl/db2falcon
 
 2-asm-falcon/
-2-asm-falcon/read_maps
-2-asm-falcon/read_maps/dump_pread_ids
-2-asm-falcon/read_maps/dump_rawread_ids
-2-asm-falcon/read_maps/get_ctg_read_map
 """
 
 
@@ -269,7 +269,7 @@ def symlink(jo):
                 dn, fn = os.path.split(path)
                 dn2fn[dn] = fn
         with mkcd('0-rawreads/'):
-            for dn, fn in dn2fn.items():
+            for (dn, fn) in viewitems(dn2fn):
                 with mkcd(dn):
                     link(os.path.join(rdir, dn), fn)
         with mkcd('0-rawreads/merge-gather/'):
@@ -362,7 +362,7 @@ def symlink(jo):
                 dn, fn = os.path.split(path)
                 dn2fn[dn] = fn
         with mkcd('1-preads_ovl/'):
-            for dn, fn in dn2fn.items():
+            for (dn, fn) in viewitems(dn2fn):
                 with mkcd(dn):
                     link(os.path.join(rdir, dn), fn)
         #rdir = abstdir('falcon_ns.tasks.task_falcon1_merge-0')

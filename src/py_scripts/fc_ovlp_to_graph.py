@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
 from falcon_kit.mains.ovlp_to_graph import main
 import sys
 

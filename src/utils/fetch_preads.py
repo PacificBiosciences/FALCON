@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 from pbcore.io import FastaReader
 import networkx as nx
 import sys
@@ -66,5 +69,5 @@ all_nodes_ids = set([s.split(":")[0] for s in list(all_nodes)])
 with open("p_sgraph_nodes.fa", "w") as f:
     for r in preads:
         if r.name in all_nodes_ids:
-            print >>f, ">" + r.name
-            print >>f, r.sequence
+            print(">" + r.name, file=f)
+            print(r.sequence, file=f)

@@ -1,5 +1,11 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+from builtins import next
+from builtins import range
+from builtins import object
 from os.path import abspath, expanduser
-from cStringIO import StringIO
+import io
 import contextlib
 import gzip
 import md5
@@ -13,7 +19,7 @@ import subprocess
 
 def wrap(s, columns):
     return "\n".join(s[start:start + columns]
-                     for start in xrange(0, len(s), columns))
+                     for start in range(0, len(s), columns))
 
 
 def splitFastaHeader(name):
@@ -34,7 +40,7 @@ def splitFileContents(f, delimiter, BLOCKSIZE=8192):
     Same semantics as f.read().split(delimiter), but with memory usage
     determined by largest chunk rather than entire file size
     """
-    remainder = StringIO()
+    remainder = io.StringIO()
     while True:
         block = f.read(BLOCKSIZE)
         if not block:
@@ -43,7 +49,7 @@ def splitFileContents(f, delimiter, BLOCKSIZE=8192):
         remainder.write(parts[0])
         for part in parts[1:]:
             yield remainder.getvalue()
-            remainder = StringIO()
+            remainder = io.StringIO()
             remainder.write(part)
     yield remainder.getvalue()
 

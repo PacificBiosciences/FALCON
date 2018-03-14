@@ -7,3 +7,4 @@ def test_help():
     except SystemExit:
         pass
 '''
+from __future__ import unicode_literals

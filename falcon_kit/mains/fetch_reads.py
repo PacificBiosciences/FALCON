@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+
 from falcon_kit.FastaReader import open_fasta_reader
 import argparse
 import contextlib
@@ -30,7 +35,7 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
 
     def pid_to_oid(pid):
         fid = pid_to_fid[int(pid)]
-        rid = int(fid.split('/')[1]) / 10
+        rid = int(fid.split('/')[1]) // 10
         return rid_to_oid[int(rid)]
 
     with open_fasta_reader(ctg_fa) as ref_fasta:
@@ -49,8 +54,8 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
             else:
                 ref_out = open(os.path.join(out_dir, '%s_ref.fa' % s_id), 'w')
 
-            print >>ref_out, '>%s' % s_id
-            print >>ref_out, s.sequence
+            print('>%s' % s_id, file=ref_out)
+            print(s.sequence, file=ref_out)
             all_ctg_ids.add(s_id)
             ref_out.close()
 
@@ -67,7 +72,7 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
                 o_id = rid_to_oid[int(row[0])]
                 read_set[o_id] = hit_ctg
                 ctg_id_hits[hit_ctg] = ctg_id_hits.get(hit_ctg, 0) + 1
-    assert read_set, 'Empty read_set. Maybe empty {!}?'.format(map_fn)
+    assert read_set, 'Empty read_set. Maybe empty {!r}?'.format(map_fn)
     map_fn = os.path.join(read_map_dir, 'pread_to_contigs')
     with open(map_fn, 'r') as f:
         for row in f:
@@ -86,7 +91,7 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
             # ignore small circle contigs, they need different approach
             if ctg_id[-1] not in ['F', 'R']:
                 continue
-            print >>f, ctg_id
+            print(ctg_id, file=f)
 
     read_out_files = {}
 
@@ -117,8 +122,8 @@ def fetch_ref_and_reads(base_dir, fofn, ctg_id, out_dir, min_ctg_lenth):
                         ctg_id = 'unassigned'
 
                     with reopened_fasta_out(ctg_id) as read_out:
-                        print >>read_out, '>' + rid
-                        print >>read_out, r.sequence
+                        print('>' + rid, file=read_out)
+                        print(r.sequence, file=read_out)
 
 
 def parse_args(argv):

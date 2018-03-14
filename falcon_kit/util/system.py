@@ -1,5 +1,9 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+from future.utils import viewitems
+from pypeflow.io import cd
 from .io import system
-import contextlib
 import logging
 import os
 import pprint
@@ -17,7 +21,7 @@ def only_these_symlinks(dir2paths):
     """
     log.info('Symlink .las files for further merging:\n{}'.format(
         pprint.pformat(dict(dir2paths))))
-    for d, paths in dir2paths.iteritems():
+    for (d, paths) in viewitems(dir2paths):
         bases = [os.path.basename(path) for path in paths]
         base2rel = {os.path.basename(path): os.path.relpath(
             path, d) for path in paths}
@@ -34,7 +38,7 @@ def only_these_symlinks(dir2paths):
                         del base2rel[existing_base]  # Just keep it.
                 else:
                     os.unlink(existing_path)  # Old? Remove it for safety.
-        for base, rel in base2rel.iteritems():
+        for (base, rel) in viewitems(base2rel):
             path = os.path.join(d, base)
             os.symlink(rel, path)
 
@@ -61,18 +65,6 @@ def find_files(root_path, pattern):
         dirs.sort()
         for filename in sorted(fnmatch.filter(files, pattern)):
             yield os.path.join(root, filename)
-
-
-@contextlib.contextmanager
-def cd(newdir):
-    prevdir = os.getcwd()
-    log.debug('CD: %r <- %r' % (newdir, prevdir))
-    os.chdir(os.path.expanduser(newdir))
-    try:
-        yield
-    finally:
-        log.debug('CD: %r -> %r' % (newdir, prevdir))
-        os.chdir(prevdir)
 
 
 def abs_fns(ifofns, idir=None):

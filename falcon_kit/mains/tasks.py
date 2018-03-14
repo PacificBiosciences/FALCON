@@ -4,6 +4,9 @@ To be called by pbsmrtpipe.
 
 pypeFLOW uses its own adaptors instead.
 """
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 from .. import run_support as support
 import sys
 

@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from builtins import str
 from falcon_kit.multiproc import Pool
 import falcon_kit.util.io as io
 import argparse
@@ -73,7 +77,7 @@ def run_ovlp_stats(exe_pool, file_list, min_len):
             inputs.append((run_filter_stats, fn, min_len))
     for res in exe_pool.imap(io.run_func, inputs):
         for l in res[1]:
-            print " ".join([str(c) for c in l])
+            print(" ".join([str(c) for c in l]))
 
 
 def try_run_ovlp_stats(n_core, fofn, min_len):

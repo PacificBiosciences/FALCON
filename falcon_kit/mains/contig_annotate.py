@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 from falcon_kit.fc_asm_graph import AsmGraph
 import sys
 
@@ -18,13 +21,13 @@ def main(argv=sys.argv):
                 coor += abs(int(b) - int(e))
                 p_ctg_coor_map[ctg_id][w] = coor
                 G_asm.node_to_ctg[w]
-                print ctg_id, v, 0, " ".join(list(G_asm.node_to_ctg[v]))
-                print ctg_id, w, coor, " ".join(list(G_asm.node_to_ctg[w]))
+                print(ctg_id, v, 0, " ".join(list(G_asm.node_to_ctg[v])))
+                print(ctg_id, w, coor, " ".join(list(G_asm.node_to_ctg[w])))
                 continue
             else:
                 coor += abs(int(b) - int(e))
                 p_ctg_coor_map[ctg_id][w] = coor
-                print ctg_id, w, coor, " ".join(list(G_asm.node_to_ctg[w]))
+                print(ctg_id, w, coor, " ".join(list(G_asm.node_to_ctg[w])))
         f.close()
 
 
