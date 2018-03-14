@@ -6,10 +6,13 @@
 ##This script should work on both Ubuntu/CentOS as long as the following dependencies are installed and
 ##available in your $PATH
 
-source /mnt/software/Modules/current/init/bash
-module load python/2.7.9
-module load virtualenv/13.0.1
-module load git
+#source /mnt/software/Modules/current/init/bash
+#module load python/2.7.9
+#module load virtualenv/13.0.1
+###These three are necessary for Unzip
+#module load samtools
+#module load gcc/6.4.0
+#module load git
 
 ###Variables
 INPUT=$1
@@ -29,7 +32,7 @@ DL_CLOUD="https://downloads.pacbcloud.com/public/falcon/"
 
 ###Test whether you need ucs4 or ucs2 tarball with this command:
 UCS_VER=$(python2.7 -c 'import sysconfig,pprint; pprint.pprint(sysconfig.get_config_vars()["Py_UNICODE_SIZE"])')
-UNZIP_TARBALL="falcon-2017.11.02-16.04-py2.7-ucs${UCS_VER}.tar.gz"
+UNZIP_TARBALL="falcon-2018.03.12-04.00-py2.7-ucs${UCS_VER}.tar.gz"
 
 ###Cleanup
 if [ ! -d ${ROOT} ]; then
