@@ -45,8 +45,9 @@ def run(bash_template_fn, p_id2las_fn, db_fn, length_cutoff_fn, config_fn, wildc
         p_id2las_fn, db_fn, split_fn))
 
     wildcards = wildcards.split(',')
-    basedir = os.path.dirname(os.path.abspath(split_fn))
-    rootdir = os.path.dirname(os.path.dirname(basedir)) # for now
+    #basedir = os.path.dirname(os.path.abspath(split_fn))
+    #rootdir = os.path.dirname(os.path.dirname(basedir)) # for now
+    outdir = os.path.abspath(os.path.dirname(split_fn))
     jobs = list()
     p_ids_merge_las = read_gathered_las(p_id2las_fn)
     tasks = []
@@ -58,7 +59,8 @@ def run(bash_template_fn, p_id2las_fn, db_fn, length_cutoff_fn, config_fn, wildc
         cns_id2 = cns_id
         ##out_done_fn = '%s_done' % cns_label
         #out_file_fn = '%s.fasta' % cns_label
-        symlinked_las_fn = '{rootdir}/0-rawreads/cns-split/{cns_id}/merged.{cns_id2}.las'.format(**locals())
+        #symlinked_las_fn = '{rootdir}/0-rawreads/cns-split/{cns_id}/merged.{cns_id2}.las'.format(**locals())
+        symlinked_las_fn = '{outdir}/cns-symlinks/{cns_id}/merged.{cns_id2}.las'.format(**locals())
         io.mkdirs(os.path.normpath(os.path.dirname(symlinked_las_fn)))
         src = os.path.relpath(las_fn,
             os.path.normpath(os.path.dirname(symlinked_las_fn)))

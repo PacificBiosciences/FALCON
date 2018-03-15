@@ -58,9 +58,6 @@ touch {output.db_build_done}
 TASK_DALIGNER_SPLIT_SCRIPT = """\
 python -m falcon_kit.mains.daligner_split --wildcards={params.wildcards} --db-prefix={params.db_prefix} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --run-jobs-fn={input.run_jobs} --db-fn={input.db} --split-fn={output.split} --bash-template-fn={output.bash_template}
 """
-#TASK_DALIGNER_RUNS_SCRIPT = """\
-#python -m falcon_kit.mains.daligner_runs --units-of-work-fn={input.units_of_work} --las-paths-fn={output.las_paths}
-#"""
 TASK_DALIGNER_SCRIPT = """\
 # Note: HPC.daligner chooses a merged filename in its generated script, so we will symlink to it.
 python -m falcon_kit.mains.daligner --daligner-settings-fn={input.daligner_settings} --daligner-script-fn={input.daligner_script} --job-done-fn={output.job_done}
