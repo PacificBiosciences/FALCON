@@ -16,9 +16,14 @@ LOG = logging.getLogger()
 
 def run(gathered_fn, preads_fofn_fn):
     gathered = io.deserialize(gathered_fn)
+    d = os.path.abspath(os.path.realpath(os.path.dirname(gathered_fn)))
+    def abspath(fn):
+        if os.path.isabs(fn):
+            return fn # I expect this never to happen though.
+        return os.path.join(d, fn)
     fasta_fns = list()
     for desc in gathered:
-        fasta_fns.append(desc['fasta'])
+        fasta_fns.append(abspath(desc['fasta']))
     with open(preads_fofn_fn,  'w') as f:
         for filename in sorted(fasta_fns):
             print(filename, file=f)

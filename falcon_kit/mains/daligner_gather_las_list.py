@@ -17,10 +17,16 @@ LOG = logging.getLogger()
 
 def run(gathered_fn, las_paths_fn):
     gathered = io.deserialize(gathered_fn)
+    d = os.path.abspath(os.path.realpath(os.path.dirname(gathered_fn)))
+    def abspath(fn):
+        if os.path.isabs(fn):
+            return fn # I expect this never to happen though.
+        return os.path.join(d, fn)
     job_done_fns = list()
     for job_output in gathered:
         for fn in job_output.values():
-            job_done_fns.append(fn)
+            abs_fn = abspath(fn)
+            job_done_fns.append(abs_fn)
     import pprint
     LOG.info('job_done_fns: {}'.format(pprint.pformat(job_done_fns)))
     job_rundirs = sorted(os.path.dirname(fn) for fn in job_done_fns)
