@@ -765,7 +765,7 @@ def generate_string_graph(args):
             g_b, g_e = g_e, g_b
 
         # build the string graph edges for each overlap
-        if f_b > 1:
+        if f_b > 0:
             if g_b < g_e:
                 """
                      f.B         f.E
