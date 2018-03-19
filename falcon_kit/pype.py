@@ -60,6 +60,7 @@ def gen_parallel_tasks(
         gathered_fn,
         run_dict,
         dist=Dist(),
+        run_script=TASK_GENERIC_RUN_UNITS_SCRIPT,
 ):
     """
     By convention, the first (wildcard) output in run_dict['outputs'] must be the gatherable list,
@@ -139,7 +140,7 @@ def gen_parallel_tasks(
         ))
 
         wf.addTask(pype_gen_task(
-                script=TASK_GENERIC_RUN_UNITS_SCRIPT,
+                script=run_script, # usually TASK_GENERIC_RUN_UNITS_SCRIPT, unless individual load-time is slow
                 inputs={
                     'units_of_work': one_uow_fn,
                     'bash_template': bash_template_fn,
