@@ -28,7 +28,8 @@ def validate(bash_template, inputs, outputs, parameterss):
     validate_dict(parameterss)
 
 
-def run(bash_template_fn, units_of_work_fn, results_fn):
+def run(bash_template_fn, units_of_work_fn, nproc,
+        results_fn):
     uows = io.deserialize(units_of_work_fn)
     uow_dirs = list()
     results = list()
@@ -36,7 +37,11 @@ def run(bash_template_fn, units_of_work_fn, results_fn):
         job = uow
         inputs = job['input']
         outputs = job['output'] # assumed to be relative to run-dir
-        params = job['params']
+        params = dict(job['params'])
+        params['pypeflow_nproc'] = nproc
+        # We could also verify that any nproc from a splitter (which was a hint for splitting)
+        # matches pypeflow_nproc.
+
         #params.update({k: v for (k, v) in viewitems(job['wildcards'])}) # include expanded wildcards
         LOG.warning('INPUT:{}'.format(inputs))
         LOG.warning('OUTPUT:{}'.format(outputs))
@@ -74,6 +79,9 @@ def parse_args(argv):
         epilog=epilog,
         formatter_class=HelpF,
     )
+    parser.add_argument(
+        '--nproc',
+        help='Number of processors to be used.')
     parser.add_argument(
         '--bash-template-fn',
         help='Input. Template of bash script to run on each unit-of-work, with snakemake-style substitutions.')

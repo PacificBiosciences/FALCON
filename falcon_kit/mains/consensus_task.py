@@ -3,14 +3,32 @@ from __future__ import unicode_literals
 import argparse
 import logging
 import os
+import re
 import sys
 from .. import io
 from .. import bash
 
 LOG = logging.getLogger()
 
+def get_falcon_sense_option(opt, nproc):
+    if '--n_core' in opt:
+        LOG.warning('You should not set --n_core in falcon_sense_option. Your value will be ignored. nproc={}'.format(
+            nproc))
+        opt = re.sub(r'--n_core[^\d]+(\d+)', '--n_core={}'.format(nproc), opt)
+    else:
+        opt += ' --n_core={}'.format(nproc)
+    return opt
+
+def get_pa_dazcon_option(opt, nproc):
+    if '-j' in opt:
+        LOG.warning('You should not set -j in pa_dazcon_option. Your value will be ignored. nproc={}'.format(nproc))
+        opt = re.sub(r'-j\s*\d+', '-j {}'.format(nproc), opt)
+    else:
+        opt += ' -j {}'.format(nproc)
+    return opt
+
 # This function was copied from bash.py and modified.
-def script_run_consensus(config, db_fn, las_fn, out_file_fn):
+def script_run_consensus(config, db_fn, las_fn, out_file_fn, nproc):
     """config: dazcon, falcon_sense_greedy, falcon_sense_skip_contained, LA4Falcon_preload
     """
     io.rm(out_file_fn) # in case of resume
@@ -18,7 +36,9 @@ def script_run_consensus(config, db_fn, las_fn, out_file_fn):
     params = dict(config)
     length_cutoff = params['length_cutoff']
     bash_cutoff = '{}'.format(length_cutoff)
-    params.update(locals())
+    params['falcon_sense_option'] = get_falcon_sense_option(params.get('falcon_sense_option', ''), nproc)
+    params['pa_dazcon_option'] = get_pa_dazcon_option(params.get('pa_dazcon_option', ''), nproc)
+    params.update(locals()) # not needed
     LA4Falcon_flags = 'P' if params.get('LA4Falcon_preload') else ''
     if config["falcon_sense_skip_contained"]:
         LA4Falcon_flags += 'fso'
@@ -45,13 +65,17 @@ mv -f {out_file_bfn} {out_file_fn}
     return script.format(**params)
 
 
-def run(config_fn, length_cutoff_fn, las_fn, db_fn, fasta_fn):
+def run(config_fn, length_cutoff_fn, las_fn, db_fn, nproc,
+        fasta_fn):
     job_done_fn = 'job.done'
     length_cutoff = int(open(length_cutoff_fn).read())
     config = io.deserialize(config_fn)
     config['length_cutoff'] = length_cutoff
     script = script_run_consensus(
-        config, db_fn, las_fn, os.path.basename(fasta_fn)) # not sure basename is really needed here
+        config, db_fn, las_fn,
+        os.path.basename(fasta_fn), # not sure basename is really needed here
+        nproc=nproc,
+    )
     script_fn = 'run_consensus.sh'
     bash.write_script(script, script_fn, job_done_fn)
     io.syscall('bash -vex {}'.format(script_fn))
@@ -69,6 +93,9 @@ def parse_args(argv):
         epilog=epilog,
         formatter_class=HelpF,
     )
+    parser.add_argument(
+        '--nproc',
+        help='Number of processors to be used.')
     parser.add_argument(
         '--las-fn',
         help='Input. Merged .las file.',

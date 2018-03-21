@@ -35,7 +35,7 @@ TASK_CONSENSUS_SPLIT_SCRIPT = """\
 python -m falcon_kit.mains.consensus_split --wildcards={params.wildcards} --p-id2las-fn={input.p_id2las} --db-fn={input.raw_reads_db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --split-fn={output.split} --bash-template-fn={output.bash_template}
 """
 TASK_CONSENSUS_TASK_SCRIPT = """\
-python -m falcon_kit.mains.consensus_task --las-fn={input.las} --db-fn={input.db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --fasta-fn={output.fasta}
+python -m falcon_kit.mains.consensus_task --nproc={params.pypeflow_nproc} --las-fn={input.las} --db-fn={input.db} --length-cutoff-fn={input.length_cutoff} --config-fn={input.config} --fasta-fn={output.fasta}
 """
 TASK_CONSENSUS_GATHER_SCRIPT = """\
 python -m falcon_kit.mains.consensus_gather_fasta_fofn --gathered-fn={input.gathered} --preads-fofn-fn={output.preads_fofn}

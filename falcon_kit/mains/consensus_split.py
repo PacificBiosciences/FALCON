@@ -34,7 +34,8 @@ def read_gathered_las(path):
     return result
 
 
-def run(bash_template_fn, p_id2las_fn, db_fn, length_cutoff_fn, config_fn, wildcards, split_fn):
+def run(p_id2las_fn, db_fn, length_cutoff_fn, config_fn, wildcards,
+        bash_template_fn, split_fn):
     with open(bash_template_fn, 'w') as stream:
         stream.write(pype_tasks.TASK_CONSENSUS_TASK_SCRIPT)
 
