@@ -12,11 +12,15 @@ from .. import pype_tasks
 
 LOG = logging.getLogger()
 
-def run(bash_template_fn, db_prefix, pread_aln, skip_checks, run_jobs_fn, db_fn, wildcards, split_fn):
+def run(bash_template_fn, db_prefix, pread_aln, skip_checks, run_jobs_fn, db_fn, wildcards, nproc, split_fn):
     with open(bash_template_fn, 'w') as stream:
         stream.write(pype_tasks.TASK_DALIGNER_SCRIPT)
 
     nblock = run_support.get_nblock(db_fn)
+
+    # TODO: nproc can restrict -T => 1 or 2 (never 3)
+    if 4 != nproc:
+        LOG.warning('Currently ignoring nproc={} in daligner_split.'.format(nproc))
 
     db_build_done_fn = None
     assert isinstance(pread_aln, int)
@@ -83,6 +87,10 @@ def parse_args(argv):
     parser.add_argument(
         '--wildcards',
         help='Input. Comma-separated wildcard names. Might be needed downstream.')
+    parser.add_argument(
+        '--nproc', type=int, default=4,
+        help='(Ignored for now.) Number of processors available to this run. Should restrict -T if < 4.',
+    )
     parser.add_argument(
         '--split-fn',
         help='Output. JSON list of units of work.')
