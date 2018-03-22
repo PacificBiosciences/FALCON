@@ -245,7 +245,7 @@ def run(wf, config, rule_writer,
             },
             parameters=params,
             rule_writer=rule_writer,
-            dist=Dist(local=True),
+            dist=Dist(local=True, NPROC=4), # really, NPROC=1, but we need to know the max
         ))
 
         gathered_fn = os.path.join(rawread_dir, 'daligner-gathered', 'gathered-done-files.json')
@@ -496,7 +496,7 @@ def run(wf, config, rule_writer,
         },
         parameters=params,
         rule_writer=rule_writer,
-        dist=Dist(local=True),
+        dist=Dist(local=True, NPROC=4),
     ))
 
     gathered_fn = os.path.join(pread_dir, 'daligner-gathered', 'gathered-done-files.json')

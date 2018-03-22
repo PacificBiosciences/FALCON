@@ -348,6 +348,7 @@ rmfollow() {
 
 def script_run_consensus(config, db_fn, las_fn, out_file_bfn):
     """config: falcon_sense_option, length_cutoff
+    TODO: Delete this version. Should not be used anywhere.
     """
     params = dict(config)
     # We calculate length_cutoff again! This is because we do not want

@@ -33,7 +33,8 @@ def read_gathered_las(las_fns):
     return result
 
 
-def run(bash_template_fn, run_jobs_fn, gathered_las_fn, db_prefix, wildcards, split_fn):
+def run(run_jobs_fn, gathered_las_fn, db_prefix, wildcards,
+        split_fn, bash_template_fn):
     with open(bash_template_fn, 'w') as stream:
         stream.write(pype_tasks.TASK_LAS_MERGE_SCRIPT)
     LOG.info('Splitting las file-list from {!r} (based on {!r}) into {!r}.'.format(
@@ -111,7 +112,6 @@ def parse_args(argv):
     parser.add_argument(
         '--wildcards',
         help='Input. Comma-separated wildcard names. Might be needed downstream.')
-    # Do we need config too?
     parser.add_argument(
         '--split-fn',
         help='Output. JSON list of jobs, where each is a dict of input/output/params/wildcards.')
