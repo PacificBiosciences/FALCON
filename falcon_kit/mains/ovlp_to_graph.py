@@ -1209,7 +1209,7 @@ def identify_spurs(ug, u_edge_data, spur_len):
                     except Exception:
                         pass
 
-                if ug2.in_edges(v2) == 0:
+                if ug2.in_degree(v2) == 0:
                     s_candidates.add(v2)
                 v1 = v2
             break
