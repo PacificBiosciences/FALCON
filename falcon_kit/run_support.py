@@ -575,11 +575,8 @@ def daligner_gather_las(job_rundirs):
 
 def get_length_cutoff(length_cutoff, fn):
     if length_cutoff < 0:
-        try:
-            length_cutoff = int(open(fn).read().strip())
-            logger.info('length_cutoff=%d from %r' % (length_cutoff, fn))
-        except Exception:
-            logger.exception('Unable to read length_cutoff from "%s".' % fn)
+        length_cutoff = int(open(fn).read().strip())
+        logger.info('length_cutoff=%d from %r' % (length_cutoff, fn))
     return length_cutoff  # possibly updated
 
 
