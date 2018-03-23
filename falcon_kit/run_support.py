@@ -16,6 +16,8 @@ import sys
 import tempfile
 import time
 import uuid
+import warnings
+import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +144,8 @@ def dict2config(jdict, section):
 
 
 def parse_config(config_fn):
+    """Return ConfigParser object.
+    """
     ext = os.path.splitext(config_fn)[1]
     if ext in ('.json', '.js'):
         jdict = json.loads(open(config_fn).read())
@@ -151,8 +155,110 @@ def parse_config(config_fn):
         config.readfp(open(config_fn))
     return config
 
+def parse_cfg_file(config_fn):
+    """Return as dict.
+    """
+    config = get_dict_from_old_falcon_cfg(
+        parse_config(config_fn))
+    # New: Parse sections too (and case-insentively), into sub-dicts.
+    with open(config_fn) as stream:
+        cfg2 = parse_cfg_with_sections(stream)
+        update_config_from_sections(config, cfg2)
+    update_job_sections(config)
+    return config
 
-import warnings
+def update_job_sections(config):
+    """Some crap for backwards compatibility with stuff from 'General' section.
+    """
+    pwatcher_type = config.get('General', {}).get('pwatcher_type', config.get('pwatcher_type'))
+    job_type = config.get('General', {}).get('job_type', '').lower()
+    job_queue = config.get('General', {}).get('job_queue', '')
+    sge_option = config.get('General', {}).get('sge_option', '')
+    if 'submit' not in config['job.defaults']:
+        if 'blocking' == pwatcher_type:
+            config['job.defaults']['submit'] = config['job_queue']
+        elif 'fs_based' == pwatcher_type or 'network_based' == pwatcher_type:
+            if not job_type:
+                raise Exception('job.defaults.submit is not set; General.pwatcher_type={}; but General.job_type is not set. Maybe try "job_type=local" first.'.format(pwatcher_type))
+            allowed_job_types = ['sge', 'pbs', 'torque', 'slurm', 'lsf', 'local']
+            assert job_type in allowed_job_types, 'job_type={} not in {}'.format(
+                    job_type, allowed_job_types)
+            if job_queue and 'JOB_QUEUE' not in config['job.defaults']:
+                config['job.defaults']['JOB_QUEUE'] = job_queue
+        else:
+            raise Exception('Unknown pwatcher_type={}'.format(pwatcher_type))
+    #assert 'submit' in config['job.defaults'], repr(config)
+    if sge_option and 'JOB_OPTS' not in config['job.defaults']:
+        config['job.defaults']['JOB_OPTS'] = sge_option
+    if 'num_concurrent' not in config['job.defaults']:
+        config['job.defaults']['num_concurrent'] = config.get('default_concurrent_jobs', 8) # GLOBAL DEFAULT CONCURRENCY
+    def update_step_job_opts(name):
+        if config.get('sge_option_'+name) and 'JOB_OPTS' not in config['job.step.'+name]:
+            config['job.step.'+name]['JOB_OPTS'] = config['sge_option_'+name]
+    def update_step_num_concurrent(name):
+        if config.get(name+'_concurrent_jobs') and 'num_concurrent' not in config['job.step.'+name]:
+            config['job.step.'+name]['num_concurrent'] = int(config[name+'_concurrent_jobs'])
+    for name in ['da', 'la', 'pda', 'pla', 'cns', 'fc', 'asm']:
+        update_step_job_opts(name)
+        update_step_num_concurrent(name)
+    # Prefer 'asm' to 'fc'.
+    asm = dict(config['job.step.asm'])
+    config['job.step.asm'] = config['job.step.fc']
+    del config['job.step.fc']
+    config['job.step.asm'].update(asm)
+
+def parse_cfg_with_sections(stream):
+    """Return as dict of dict of ...
+    """
+    #Experimental:
+    """
+    ConfigParser sections become sub-sub sections when separated by dots.
+
+        [foo.bar]
+        baz = 42
+
+    is equivalent to JSON
+
+        {"foo": {"bar": {"baz": 42}}}
+    """
+    content = stream.read()
+    result = dict()
+    try:
+        jdict = json.loads(StringIO.StringIO(content).read())
+        return jdict
+    except ValueError:
+        pass #logger.exception('Could not parse stream as JSON.')
+    try:
+        config = ConfigParser() #strict=False?
+        config.optionxform = str
+        config.readfp(StringIO.StringIO(content))
+        sections = config.sections()
+        for sec in sections:
+            result[sec] = dict(config.items(sec))
+        return result
+    except:
+        raise
+
+
+def update_config_from_sections(config, cfg):
+    allowed_sections = set(['General',
+            'job.step.da', 'job.step.pda',
+            'job.step.la', 'job.step.pla',
+            'job.step.cns', 'job.step.fc',
+            'job.step.asm',
+            'job.defaults',
+    ])
+    all_sections = set(k for k,v in cfg.items() if isinstance(v, dict))
+    unexpected = all_sections - allowed_sections
+    if unexpected:
+        msg = 'You have {} unexpected cfg sections: {}'.format(
+            len(unexpected), unexpected)
+        raise Exception(msg)
+    config.update(cfg)
+    # Guarantee they all exist.
+    for sec in allowed_sections:
+        if sec not in config:
+            config[sec] = dict()
 
 
 def get_dict_from_old_falcon_cfg(config):
@@ -165,7 +271,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'sge_option'):
         sge_option = config.get(section, 'sge_option')
     else:
-        sge_option = config.get(section, 'sge_option_da')
+        sge_option = ''
 
     job_queue = ""
     if config.has_option(section, 'job_queue'):
