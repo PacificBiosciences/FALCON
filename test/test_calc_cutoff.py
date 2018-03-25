@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+
 from builtins import str
 import falcon_kit.mains.calc_cutoff as mod
 import helpers
