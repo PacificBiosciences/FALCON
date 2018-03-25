@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 
 from future.utils import viewitems
-from builtins import str
+
 from . import bash
 from .util.system import (make_fofn_abs, make_dirs, cd)
 import json

@@ -1,7 +1,7 @@
 
 
 from future.utils import viewitems
-from builtins import str
+
 from builtins import range
 import falcon_kit.mains.gen_gfa_v1 as mod
 import helpers

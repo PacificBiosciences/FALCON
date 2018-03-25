@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 
 from future.utils import viewitems
-from builtins import str
+
 from builtins import range
 from builtins import object
 import os

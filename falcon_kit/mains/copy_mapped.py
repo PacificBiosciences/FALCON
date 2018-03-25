@@ -3,7 +3,7 @@ from __future__ import absolute_import
 
 
 from future.utils import viewitems
-from builtins import str
+
 import argparse
 import json
 import logging

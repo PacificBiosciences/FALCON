@@ -1,7 +1,7 @@
 
 import time
 import pytest
-from builtins import str
+
 import falcon_kit.util.io as M
 
 

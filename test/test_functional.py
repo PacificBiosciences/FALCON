@@ -1,6 +1,6 @@
 
 
-from builtins import str
+
 import helpers
 import pytest
 import falcon_kit.functional as f
