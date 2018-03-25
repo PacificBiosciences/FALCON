@@ -267,12 +267,6 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'job_type'):
         job_type = config.get(section, 'job_type')
 
-    # This was not set in the past, so we must treat is specially.
-    if config.has_option(section, 'sge_option'):
-        sge_option = config.get(section, 'sge_option')
-    else:
-        sge_option = ''
-
     job_queue = ""
     if config.has_option(section, 'job_queue'):
         job_queue = config.get(section, 'job_queue')
@@ -530,13 +524,6 @@ def get_dict_from_old_falcon_cfg(config):
         "seed_coverage": seed_coverage,
         "length_cutoff": length_cutoff,
         "length_cutoff_pr": length_cutoff_pr,
-        "sge_option": sge_option,
-        "sge_option_da": config.get(section, 'sge_option_da'),
-        "sge_option_la": config.get(section, 'sge_option_la'),
-        "sge_option_pda": config.get(section, 'sge_option_pda'),
-        "sge_option_pla": config.get(section, 'sge_option_pla'),
-        "sge_option_fc": config.get(section, 'sge_option_fc'),
-        "sge_option_cns": config.get(section, 'sge_option_cns'),
         "pa_HPCdaligner_option": pa_HPCdaligner_option,
         "pa_use_tanmask": pa_use_tanmask,
         "pa_HPCtanmask_option": pa_HPCtanmask_option,
@@ -563,6 +550,13 @@ def get_dict_from_old_falcon_cfg(config):
         "pwatcher_directory": pwatcher_directory,
         TEXT_FILE_BUSY: bash.BUG_avoid_Text_file_busy,
     }
+    possible_extra_keys = ['sge_option']
+    for suffix in ['da', 'la', 'pda', 'pla', 'fc', 'cns', 'asm']:
+        key = 'sge_option_' + suffix
+        possible_extra_keys.append(key)
+    for key in possible_extra_keys:
+        if config.has_option(section, key):
+            hgap_config[key] = config.get(section, key)
     provided = dict(config.items(section))
     unused = set(provided) - set(k.lower() for k in hgap_config)
     if unused:
