@@ -2,11 +2,10 @@
 The equal_*() funcs are not really needed with pytest,
 but they do not hurt.
 """
-
-
+from builtins import bytes
+from falcon_kit.io import NativeIO as StringIO
 import difflib
 import os.path
-import io
 
 
 def equal_list(a, b):
@@ -31,7 +30,9 @@ def get_test_data_dir():
 
 
 def assert_filecmp(got, expected_path):
-    result = [line.strip() for line in io.StringIO(got)]
+    #result = [line.strip() for line in StringIO(got)] # fails on unicode
+    #result = [line.strip() for line in io.TextIOWrapper(io.StringIO(got))] # for unicode
+    result = [line.strip() for line in StringIO(bytes(got, 'utf-8'))]
     expected = [line.strip() for line in open(expected_path)]
     diffs = list(difflib.context_diff(result, expected, fromfile='got', tofile='expected'))
     if diffs:

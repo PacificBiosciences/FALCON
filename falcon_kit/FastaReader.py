@@ -5,7 +5,7 @@ from builtins import next
 from builtins import range
 from builtins import object
 from os.path import abspath, expanduser
-import io
+from .io import NativeIO as StringIO
 import contextlib
 import gzip
 import md5
@@ -40,7 +40,7 @@ def splitFileContents(f, delimiter, BLOCKSIZE=8192):
     Same semantics as f.read().split(delimiter), but with memory usage
     determined by largest chunk rather than entire file size
     """
-    remainder = io.StringIO()
+    remainder = StringIO()
     while True:
         block = f.read(BLOCKSIZE)
         if not block:
@@ -49,7 +49,7 @@ def splitFileContents(f, delimiter, BLOCKSIZE=8192):
         remainder.write(parts[0])
         for part in parts[1:]:
             yield remainder.getvalue()
-            remainder = io.StringIO()
+            remainder = StringIO()
             remainder.write(part)
     yield remainder.getvalue()
 

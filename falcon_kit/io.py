@@ -1,13 +1,19 @@
 from __future__ import absolute_import
-
 from __future__ import division
 
 from pypeflow.io import (
         syscall, capture, cd,
         mkdirs, symlink, rm, touch, filesize, exists_and_not_empty) # needed?
+import io
 import logging
 import os
 import pprint
+import sys
+
+if sys.version_info >= (3, 0):
+    NativeIO = io.StringIO
+else:
+    NativeIO = io.BytesIO
 
 LOG = logging.getLogger()
 

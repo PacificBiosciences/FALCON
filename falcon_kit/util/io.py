@@ -165,7 +165,7 @@ def splitlines_iter(text):
     assert isinstance(text, str)
     prevnl = -1
     while True:
-        nextnl = text.find(u'\n', prevnl + 1)
+        nextnl = text.find('\n', prevnl + 1) # u'\n' would force unicode
         if nextnl < 0:
             break
         yield text[prevnl + 1:nextnl]

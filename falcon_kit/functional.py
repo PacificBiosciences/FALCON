@@ -6,9 +6,9 @@ from __future__ import print_function
 
 
 from future.utils import viewitems
+from .io import NativeIO as StringIO
 import collections
 import re
-import io
 
 
 def _verify_pairs(pairs1, pairs2):
@@ -24,7 +24,7 @@ def _verify_pairs(pairs1, pairs2):
 
 def skip_LAcheck(bash):
     def lines():
-        for line in io.StringIO(bash):
+        for line in StringIO(bash):
             if 'LAcheck' in line:
                 yield 'set +e\n'
                 yield line

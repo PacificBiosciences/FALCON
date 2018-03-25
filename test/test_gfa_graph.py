@@ -1,12 +1,12 @@
 
 
 from future.utils import viewitems
-import io
 import os
 
 import pytest
 import networkx as nx
 
+from falcon_kit.io import NativeIO as StringIO
 from falcon_kit.fc_asm_graph import AsmGraph
 from falcon_kit.mains.ovlp_to_graph import reverse_end
 from falcon_kit.util import system
@@ -168,7 +168,7 @@ def wrap_write_gfa_v1_test(use_sg, use_nx, use_tp, write_reads, write_contigs, m
         nx_sg = nx.read_gexf(gexf_file)
         gfa_graph.add_nx_string_graph(nx_sg)
 
-    fp_out = io.StringIO()
+    fp_out = StringIO()
     # Run the unit under test.
     gfa_graph.write_gfa_v1(fp_out, preads_file, [
                            p_ctg_fasta, a_ctg_fasta], write_reads, write_contigs)
@@ -233,7 +233,7 @@ def test_write_gfa_v1_2():
     write_reads = False
     write_contigs = False
 
-    fp_out = io.StringIO()
+    fp_out = StringIO()
 
     # Add a node which does not exist in the preads4falcon.fasta file.
     gfa_graph.add_read_from_node('12345:B')
