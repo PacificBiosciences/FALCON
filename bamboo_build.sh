@@ -15,6 +15,7 @@ which g++
 gcc --version
 which python
 
+rm -rf LOCAL
 mkdir -p LOCAL
 export PYTHONUSERBASE=$(pwd)/LOCAL
 export PATH=${PYTHONUSERBASE}/bin:${PATH}
