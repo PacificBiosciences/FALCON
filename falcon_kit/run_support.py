@@ -1,9 +1,10 @@
 from __future__ import absolute_import
-from __future__ import unicode_literals
+
 
 from future.utils import viewitems
-from builtins import str
+
 from . import bash
+from .io import NativeIO as StringIO
 from .util.system import (make_fofn_abs, make_dirs, cd)
 import json
 import logging
@@ -513,7 +514,7 @@ def _setup_logging(logging_config_fn):
             return
         logger_fileobj = open(logging_config_fn)
     else:
-        logger_fileobj = io.StringIO(default_logging_config)
+        logger_fileobj = StringIO(default_logging_config)
     defaults = {
     }
     logging.config.fileConfig(

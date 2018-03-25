@@ -1,7 +1,7 @@
 """Not sure anything uses the fopfn anymore.
 """
 from __future__ import absolute_import
-from __future__ import unicode_literals
+
 
 #from future.utils import viewitems
 #from future.utils import itervalues

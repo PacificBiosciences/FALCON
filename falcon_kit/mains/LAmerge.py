@@ -10,7 +10,7 @@ This differs from LAsort.py in that the first las file is actually
 an *explicit* output, whereas LAsort relies on *implicit* outputs.
 """
 from __future__ import absolute_import
-from __future__ import unicode_literals
+
 import sys
 import os
 

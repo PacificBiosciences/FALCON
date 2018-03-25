@@ -3,7 +3,7 @@ needed to modify the TASK SCRIPT to use our copy of
 generic_gather.py (not used now).
 """
 from __future__ import absolute_import
-from __future__ import unicode_literals
+
 import logging
 import os
 from pypeflow.simple_pwatcher_bridge import (PypeTask, Dist)

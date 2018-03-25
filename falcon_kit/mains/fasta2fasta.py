@@ -12,7 +12,7 @@ Inputs may be compressed, and may be either fasta or fastq.
 (For now, we ignore QVs.)
 """
 from __future__ import absolute_import
-from __future__ import unicode_literals
+
 
 from future.utils import itervalues
 from builtins import object

@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+
 import falcon_kit.mains.graph_to_contig as mod
 
 '''
