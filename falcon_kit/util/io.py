@@ -3,7 +3,7 @@ Not specific to FALCON.
 """
 from __future__ import absolute_import
 
-from builtins import str
+#from builtins import str
 from builtins import object
 import os
 import resource
@@ -132,8 +132,9 @@ class ProcessReaderContext(object):
     """Prefer this to slurplines() or streamlines().
     """
     def readlines(self):
-        """Generate lines of unicode.
+        """Generate lines of native str.
         """
+        # In py2, not unicode.
         raise NotImplementedError()
 
     def __enter__(self):
@@ -188,7 +189,8 @@ class CapturedProcessReaderContext(ProcessReaderContext):
         """
         output, _ = self.proc.communicate()
         # Process has terminated by now, so we can iterate without keeping it alive.
-        for line in splitlines_iter(str(output, 'utf-8')):
+        #for line in splitlines_iter(str(output, 'utf-8')):
+        for line in splitlines_iter(output):
             yield line
 
 
@@ -212,7 +214,8 @@ class StreamedProcessReaderContext(ProcessReaderContext):
             # it seems that str(str(x)) has no extra penalty,
             # and it should not crash either. Anyway,
             # our tests would catch it.
-            yield str(line, 'utf-8').rstrip()
+            #yield str(line, 'utf-8').rstrip()
+            yield line.rstrip()
 
 
 def filesize(fn):
