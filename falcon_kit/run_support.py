@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from future.utils import viewitems
 
 from . import bash
-from .io import NativeIO as StringIO
+from .io import NativeIO
 from .util.system import (make_fofn_abs, make_dirs, cd)
 import json
 import logging
@@ -17,7 +17,6 @@ import tempfile
 import time
 import uuid
 import warnings
-import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -237,14 +236,14 @@ def parse_cfg_with_sections(stream):
     content = stream.read()
     result = dict()
     try:
-        jdict = json.loads(StringIO.StringIO(content).read())
+        jdict = json.loads(NativeIO(content).read())
         return jdict
     except ValueError:
         pass #logger.exception('Could not parse stream as JSON.')
     try:
         config = ConfigParser() #strict=False?
         config.optionxform = str
-        config.readfp(StringIO.StringIO(content))
+        config.readfp(NativeIO(content))
         sections = config.sections()
         for sec in sections:
             result[sec] = dict(config.items(sec))
@@ -564,7 +563,7 @@ def _setup_logging(logging_config_fn):
             return
         logger_fileobj = open(logging_config_fn)
     else:
-        logger_fileobj = StringIO(default_logging_config)
+        logger_fileobj = NativeIO(default_logging_config)
     defaults = {
     }
     logging.config.fileConfig(
