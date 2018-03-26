@@ -267,25 +267,6 @@ def update_config_from_sections(config, cfg):
 def get_dict_from_old_falcon_cfg(config):
     job_type = "SGE"
     section = 'General'
-    if config.has_option(section, 'job_type'):
-        job_type = config.get(section, 'job_type')
-
-    job_queue = ""
-    if config.has_option(section, 'job_queue'):
-        job_queue = config.get(section, 'job_queue')
-
-    job_name_style = ""
-    if config.has_option(section, 'job_name_style'):
-        job_name_style = config.get(section, 'job_name_style')
-
-    pwatcher_type = 'fs_based'
-    if config.has_option(section, 'pwatcher_type'):
-        pwatcher_type = config.get(section, 'pwatcher_type')
-
-    pwatcher_directory = 'mypwatcher'
-    if config.has_option(section, 'pwatcher_directory'):
-        pwatcher_directory = config.get(section, 'pwatcher_directory')
-
 
     input_type = "raw"
     if config.has_option(section, 'input_type'):
@@ -464,9 +445,6 @@ def get_dict_from_old_falcon_cfg(config):
     hgap_config = {  # "input_fofn_fn" : input_fofn_fn, # deprecated
         "input_fofn": input_fofn_fn,
         "target": target,
-        "job_type": job_type,
-        "job_queue": job_queue,
-        "job_name_style": job_name_style,
         "input_type": input_type,
         "overlap_filtering_setting": overlap_filtering_setting,
         "genome_size": genome_size,
@@ -495,19 +473,29 @@ def get_dict_from_old_falcon_cfg(config):
         "LA4Falcon_preload": LA4Falcon_preload,
         "stop_all_jobs_on_failure": stop_all_jobs_on_failure,
         "use_tmpdir": use_tmpdir,
-        "pwatcher_type": pwatcher_type,
-        "pwatcher_directory": pwatcher_directory,
         TEXT_FILE_BUSY: bash.BUG_avoid_Text_file_busy,
     }
-    possible_extra_keys = ['sge_option', 'default_concurrent_jobs']
+    possible_extra_keys = [
+            'sge_option', 'default_concurrent_jobs',
+            'pwatcher_type', 'pwatcher_directory',
+            'job_type', 'job_queue', 'job_name_style',
+    ]
     for step in ['da', 'la', 'pda', 'pla', 'fc', 'cns', 'asm']:
         sge_option_key = 'sge_option_' + step
         possible_extra_keys.append(sge_option_key)
         concurrent_jobs_key = step + '_concurrent_jobs'
         possible_extra_keys.append(concurrent_jobs_key)
+    added = list()
     for key in possible_extra_keys:
         if config.has_option(section, key):
+            added.append(key)
             hgap_config[key] = config.get(section, key)
+    if added:
+        added.sort()
+        msg = 'You have several old-style options. These should be provided in the `[job.defaults]` or `[job.step.*]` sections, and possibly renamed. See https://github.com/PacificBiosciences/FALCON/wiki/Configuration\n {}'.format(added)
+        warnings.warn(msg)
+
+    # Warn on unused variables.
     provided = dict(config.items(section))
     unused = set(provided) - set(k.lower() for k in hgap_config)
     if unused:
