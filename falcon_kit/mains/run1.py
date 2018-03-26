@@ -140,14 +140,9 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     input_fofn_plf = makePypeLocalFile(config['input_fofn'])
     genome_size = config.get('genome_size')
     squash = True if 0 < genome_size < 1000000 else False
-    wf = PypeProcWatcherWorkflow(job_type=config['job_type'],
-                                 job_defaults=config['job.defaults'],
-                                 job_name_style=config['job_name_style'],
-                                 watcher_type=config['pwatcher_type'],
-                                 watcher_directory=config['pwatcher_directory'],
-                                 use_tmpdir=config.get('use_tmpdir'),
-                                 squash=squash
-                                 )
+    wf = PypeProcWatcherWorkflow(job_defaults=config['job.defaults'],
+                                 squash=squash,
+    )
     general_config_fn = './config.json' # must not be in a task-dir
     config['ver'] = '100'
     io.serialize(general_config_fn, config)

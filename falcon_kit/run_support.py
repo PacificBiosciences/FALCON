@@ -194,7 +194,17 @@ def update_job_sections(config):
         config['job.defaults']['JOB_OPTS'] = sge_option
     if 'njobs' not in config['job.defaults']:
         config['job.defaults']['njobs'] = int(General.get('default_concurrent_jobs', 8)) # GLOBAL DEFAULT CONCURRENCY
-
+    legacy_names = [
+            'pwatcher_type', 'pwatcher_directory',
+            'job_type', 'job_queue', 'job_name_style',
+            'use_tmpdir',
+    ]
+    def update_if_missing(name, sub_dict):
+        if General.get(name) and name not in sub_dict:
+            sub_dict[name] = General[name]
+    for name in legacy_names:
+        update_if_missing(name, config['job.defaults'])
+    # Update a few where the names change and the section is non-default.
     def update_step_job_opts(name):
         if General.get('sge_option_'+name) and 'JOB_OPTS' not in config['job.step.'+name]:
             config['job.step.'+name]['JOB_OPTS'] = General['sge_option_'+name]
@@ -479,6 +489,7 @@ def get_dict_from_old_falcon_cfg(config):
             'sge_option', 'default_concurrent_jobs',
             'pwatcher_type', 'pwatcher_directory',
             'job_type', 'job_queue', 'job_name_style',
+            'use_tmpdir',
     ]
     for step in ['da', 'la', 'pda', 'pla', 'fc', 'cns', 'asm']:
         sge_option_key = 'sge_option_' + step
