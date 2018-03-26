@@ -159,14 +159,14 @@ def parse_cfg_file(config_fn):
     """
     config = get_dict_from_old_falcon_cfg(
         parse_config(config_fn))
-    # New: Parse sections too (and case-insensitively), into sub-dicts.
+    # New: Parse sections too (and case-sensitively), into sub-dicts.
     with open(config_fn) as stream:
         cfg2 = parse_cfg_with_sections(stream)
         update_config_from_sections(config, cfg2)
     update_job_sections(config)
     return config
 
-def update_job_sections(config):
+def update_job_defaults_section(config):
     """Some crap for backwards compatibility with stuff from 'General' section.
     """
     General = config['General']
@@ -203,6 +203,13 @@ def update_job_sections(config):
             sub_dict[name] = General[name]
     for name in legacy_names:
         update_if_missing(name, config['job.defaults'])
+
+def update_job_sections(config):
+    """More crap for backwards compatibility with stuff from 'General' section.
+    """
+    update_job_defaults_section(config)
+    General = config['General']
+
     # Update a few where the names change and the section is non-default.
     def update_step_job_opts(name):
         if General.get('sge_option_'+name) and 'JOB_OPTS' not in config['job.step.'+name]:
