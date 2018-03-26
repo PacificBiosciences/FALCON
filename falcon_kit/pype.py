@@ -27,7 +27,11 @@ python -m falcon_kit.mains.generic_unsplit --result-fn-list-fn={output.result_fn
 #"""
 
 
-def wrap_gen_task(rule_writer, script, inputs, outputs, parameters={}, dist=Dist()):
+def wrap_gen_task(rule_writer, script, inputs, outputs, parameters=None, dist=None):
+    if parameters is None:
+        parameters = dict()
+    if dist is None:
+        dist = Dist()
     from future.utils import viewitems
     rel_inputs = dict()
     rel_outputs = dict()
@@ -59,7 +63,7 @@ def gen_parallel_tasks(
         split_fn,
         gathered_fn,
         run_dict,
-        dist=Dist(),
+        dist=None,
         run_script=TASK_GENERIC_RUN_UNITS_SCRIPT,
 ):
     """
@@ -68,6 +72,8 @@ def gen_parallel_tasks(
 
     For now, we require a single such output, since we do not yet test for wildcards.
     """
+    if dist is None:
+        dist = Dist()
     from future.utils import itervalues
     #from future.utils import viewitems
     # run_dict['inputs'] should be patterns to match the inputs in split_fn, by convention.
