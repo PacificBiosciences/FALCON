@@ -182,8 +182,8 @@ def run(wf, config, rule_writer,
 
     # only matter for parallel jobs
     exitOnFailure = config['stop_all_jobs_on_failure']
-    default_num_concurrent = config['job.defaults']['num_concurrent']
-    wf.max_jobs = default_num_concurrent
+    default_njobs = config['job.defaults']['njobs']
+    wf.max_jobs = default_njobs
 
     assert config['input_type'] in (
         'raw', 'preads'), 'Invalid input_type=={!r}'.format(config['input_type'])
@@ -218,7 +218,7 @@ def run(wf, config, rule_writer,
         ))
 
         # run daligner
-        wf.max_jobs = config['job.step.da'].get('num_concurrent', default_num_concurrent)
+        wf.max_jobs = config['job.step.da'].get('njobs', default_njobs)
         rawreads_db_fn = os.path.join(rawread_dir, 'raw_reads.db')
         daligner_all_units_fn = os.path.join(
             rawread_dir, 'daligner-split', 'all-units-of-work.json')
@@ -278,7 +278,7 @@ def run(wf, config, rule_writer,
         ))
 
         # Merge .las files.
-        wf.max_jobs = config['job.step.la'].get('num_concurrent', default_num_concurrent)
+        wf.max_jobs = config['job.step.la'].get('njobs', default_njobs)
         las_merge_all_units_fn = os.path.join(rawread_dir, 'las-merge-split', 'all-units-of-work.json')
         bash_template_fn = os.path.join(rawread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
         params = dict(parameters)
@@ -340,7 +340,7 @@ def run(wf, config, rule_writer,
             sys.exit(0)
 
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
-        wf.max_jobs = config['job.step.cns'].get('num_concurrent', default_num_concurrent)
+        wf.max_jobs = config['job.step.cns'].get('njobs', default_njobs)
 
         split_fn = os.path.join(
             rawread_dir, 'cns-split', 'split.json')
@@ -462,7 +462,7 @@ def run(wf, config, rule_writer,
     ))
 
     # run daligner
-    wf.max_jobs = config['job.step.pda'].get('num_concurrent', default_num_concurrent)
+    wf.max_jobs = config['job.step.pda'].get('njobs', default_njobs)
     daligner_all_units_fn = os.path.join(
         pread_dir, 'daligner-split', 'all-units-of-work.json')
     daligner_bash_template_fn = os.path.join(
@@ -523,7 +523,7 @@ def run(wf, config, rule_writer,
     ))
 
     # Merge .las files.
-    wf.max_jobs = config['job.step.pla'].get('num_concurrent', default_num_concurrent)
+    wf.max_jobs = config['job.step.pla'].get('njobs', default_njobs)
     las_merge_all_units_fn = os.path.join(pread_dir, 'las-merge-split', 'all-units-of-work.json')
     bash_template_fn = os.path.join(pread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
     params = dict(parameters)
@@ -581,7 +581,7 @@ def run(wf, config, rule_writer,
         dist=Dist(local=True),
     ))
 
-    wf.max_jobs = config['job.step.asm'].get('num_concurrent', default_num_concurrent)
+    wf.max_jobs = config['job.step.asm'].get('njobs', default_njobs)
     db2falcon_dir = os.path.join(pread_dir, 'db2falcon')
     db2falcon_done_fn = os.path.join(db2falcon_dir, 'db2falcon_done')
     preads4falcon_fn = os.path.join(db2falcon_dir, 'preads4falcon.fasta')

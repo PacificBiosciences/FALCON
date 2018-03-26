@@ -160,7 +160,7 @@ def parse_cfg_file(config_fn):
     """
     config = get_dict_from_old_falcon_cfg(
         parse_config(config_fn))
-    # New: Parse sections too (and case-insentively), into sub-dicts.
+    # New: Parse sections too (and case-insensitively), into sub-dicts.
     with open(config_fn) as stream:
         cfg2 = parse_cfg_with_sections(stream)
         update_config_from_sections(config, cfg2)
@@ -170,13 +170,15 @@ def parse_cfg_file(config_fn):
 def update_job_sections(config):
     """Some crap for backwards compatibility with stuff from 'General' section.
     """
-    pwatcher_type = config.get('General', {}).get('pwatcher_type', config.get('pwatcher_type'))
-    job_type = config.get('General', {}).get('job_type', '').lower()
-    job_queue = config.get('General', {}).get('job_queue', '')
-    sge_option = config.get('General', {}).get('sge_option', '')
+    General = config['General']
+
+    pwatcher_type = General.get('pwatcher_type', config.get('pwatcher_type'))
+    job_type = General.get('job_type', '').lower()
+    job_queue = General.get('job_queue', '')
+    sge_option = General.get('sge_option', '')
     if 'submit' not in config['job.defaults']:
         if 'blocking' == pwatcher_type:
-            config['job.defaults']['submit'] = config['job_queue']
+            config['job.defaults']['submit'] = General['job_queue']
         elif 'fs_based' == pwatcher_type or 'network_based' == pwatcher_type:
             if not job_type:
                 raise Exception('job.defaults.submit is not set; General.pwatcher_type={}; but General.job_type is not set. Maybe try "job_type=local" first.'.format(pwatcher_type))
@@ -190,17 +192,18 @@ def update_job_sections(config):
     #assert 'submit' in config['job.defaults'], repr(config)
     if sge_option and 'JOB_OPTS' not in config['job.defaults']:
         config['job.defaults']['JOB_OPTS'] = sge_option
-    if 'num_concurrent' not in config['job.defaults']:
-        config['job.defaults']['num_concurrent'] = config.get('default_concurrent_jobs', 8) # GLOBAL DEFAULT CONCURRENCY
+    if 'njobs' not in config['job.defaults']:
+        config['job.defaults']['njobs'] = int(General.get('default_concurrent_jobs', 8)) # GLOBAL DEFAULT CONCURRENCY
+
     def update_step_job_opts(name):
-        if config.get('sge_option_'+name) and 'JOB_OPTS' not in config['job.step.'+name]:
-            config['job.step.'+name]['JOB_OPTS'] = config['sge_option_'+name]
-    def update_step_num_concurrent(name):
-        if config.get(name+'_concurrent_jobs') and 'num_concurrent' not in config['job.step.'+name]:
-            config['job.step.'+name]['num_concurrent'] = int(config[name+'_concurrent_jobs'])
+        if General.get('sge_option_'+name) and 'JOB_OPTS' not in config['job.step.'+name]:
+            config['job.step.'+name]['JOB_OPTS'] = General['sge_option_'+name]
+    def update_step_njobs(name):
+        if General.get(name+'_concurrent_jobs') and 'njobs' not in config['job.step.'+name]:
+            config['job.step.'+name]['njobs'] = int(General[name+'_concurrent_jobs'])
     for name in ['da', 'la', 'pda', 'pla', 'cns', 'fc', 'asm']:
         update_step_job_opts(name)
-        update_step_num_concurrent(name)
+        update_step_njobs(name)
     # Prefer 'asm' to 'fc'.
     asm = dict(config['job.step.asm'])
     config['job.step.asm'] = config['job.step.fc']
@@ -279,56 +282,10 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'pwatcher_type'):
         pwatcher_type = config.get(section, 'pwatcher_type')
 
-    default_concurrent_jobs = 8
-    if config.has_option(section, 'default_concurrent_jobs'):
-        default_concurrent_jobs = config.getint(
-            section, 'default_concurrent_jobs')
-
     pwatcher_directory = 'mypwatcher'
     if config.has_option(section, 'pwatcher_directory'):
         pwatcher_directory = config.get(section, 'pwatcher_directory')
 
-    da_concurrent_jobs = default_concurrent_jobs
-    la_concurrent_jobs = default_concurrent_jobs
-    cns_concurrent_jobs = default_concurrent_jobs
-    pda_concurrent_jobs = default_concurrent_jobs
-    pla_concurrent_jobs = default_concurrent_jobs
-    fc_concurrent_jobs = default_concurrent_jobs
-
-    if config.has_option(section, 'pa_concurrent_jobs'):
-        pa_concurrent_jobs = config.getint(section, 'pa_concurrent_jobs')
-        warnings.warn(
-            "Deprecated setting in config: 'pa_concurrent_jobs' -- Prefer da_concurrent_jobs and la_concurrent_jobs separately")
-        da_concurrent_jobs = la_concurrent_jobs = pa_concurrent_jobs
-    if config.has_option(section, 'ovlp_concurrent_jobs'):
-        ovlp_concurrent_jobs = config.getint(section, 'ovlp_concurrent_jobs')
-        warnings.warn(
-            "Deprecated setting in config: 'ovlp_concurrent_jobs' -- Prefer pda_concurrent_jobs and pla_concurrent_jobs separately")
-        pda_concurrent_jobs = pla_concurrent_jobs = ovlp_concurrent_jobs
-    if config.has_option(section, 'da_concurrent_jobs'):
-        da_concurrent_jobs = config.getint(section, 'da_concurrent_jobs')
-    if config.has_option(section, 'la_concurrent_jobs'):
-        la_concurrent_jobs = config.getint(section, 'la_concurrent_jobs')
-    if config.has_option(section, 'cns_concurrent_jobs'):
-        cns_concurrent_jobs = config.getint(section, 'cns_concurrent_jobs')
-    if config.has_option(section, 'pda_concurrent_jobs'):
-        pda_concurrent_jobs = config.getint(section, 'pda_concurrent_jobs')
-    if config.has_option(section, 'pla_concurrent_jobs'):
-        pla_concurrent_jobs = config.getint(section, 'pla_concurrent_jobs')
-    if config.has_option(section, 'fc_concurrent_jobs'):
-        fc_concurrent_jobs = config.getint(section, 'fc_concurrent_jobs')
-
-    #appending = False
-    # if config.has_option(section, 'appending'):
-    #    appending = config.get(section, 'appending')
-    #    if appending == "True":
-    #        appending = True
-
-    #openending = False
-    # if config.has_option(section, 'openending'):
-    #    openending = config.get(section, 'openending')
-    #    if openending == "True":
-    #        openending = True
 
     input_type = "raw"
     if config.has_option(section, 'input_type'):
@@ -511,14 +468,6 @@ def get_dict_from_old_falcon_cfg(config):
         "job_queue": job_queue,
         "job_name_style": job_name_style,
         "input_type": input_type,
-        #"openending": openending,
-        "default_concurrent_jobs": default_concurrent_jobs,
-        "da_concurrent_jobs": da_concurrent_jobs,
-        "la_concurrent_jobs": la_concurrent_jobs,
-        "cns_concurrent_jobs": cns_concurrent_jobs,
-        "pda_concurrent_jobs": pda_concurrent_jobs,
-        "pla_concurrent_jobs": pla_concurrent_jobs,
-        "fc_concurrent_jobs": fc_concurrent_jobs,
         "overlap_filtering_setting": overlap_filtering_setting,
         "genome_size": genome_size,
         "seed_coverage": seed_coverage,
@@ -550,10 +499,12 @@ def get_dict_from_old_falcon_cfg(config):
         "pwatcher_directory": pwatcher_directory,
         TEXT_FILE_BUSY: bash.BUG_avoid_Text_file_busy,
     }
-    possible_extra_keys = ['sge_option']
-    for suffix in ['da', 'la', 'pda', 'pla', 'fc', 'cns', 'asm']:
-        key = 'sge_option_' + suffix
-        possible_extra_keys.append(key)
+    possible_extra_keys = ['sge_option', 'default_concurrent_jobs']
+    for step in ['da', 'la', 'pda', 'pla', 'fc', 'cns', 'asm']:
+        sge_option_key = 'sge_option_' + step
+        possible_extra_keys.append(sge_option_key)
+        concurrent_jobs_key = step + '_concurrent_jobs'
+        possible_extra_keys.append(concurrent_jobs_key)
     for key in possible_extra_keys:
         if config.has_option(section, key):
             hgap_config[key] = config.get(section, key)

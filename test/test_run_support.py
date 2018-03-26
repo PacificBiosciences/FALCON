@@ -2,6 +2,19 @@ import pytest
 import StringIO
 import falcon_kit.run_support as mod
 
+
+def parse_config(content):
+    """Used by tests.
+    (Clean this code up later.)
+    """
+    config = dict()
+    stream = StringIO.StringIO
+    cfg2 = mod.parse_cfg_with_sections(stream(content))
+    mod.update_config_from_sections(config, cfg2)
+    mod.update_job_sections(config)
+    return config
+
+
 FC_RUN_CFG = """\
 [General]
 job_name_style = 1
@@ -44,6 +57,7 @@ sge_option_pla = -pe smp 2 -q %(job_queue)s
 sge_option_fc = -pe smp 24 -q %(job_queue)s
 sge_option_cns = -pe smp 8 -q %(job_queue)s
 
+default_concurrent_jobs = 64
 da_concurrent_jobs = 32
 la_concurrent_jobs = 32
 cns_concurrent_jobs = 32
@@ -71,7 +85,20 @@ submit = bash -C ${CMD} 2> ${STDERR_FILE}.${NPROC}.txt
 
 [job.step.da]
 NPROC = 256
+
+[job.step.pda]
+njobs = 42
 """
+
+def test_update_config_from_sections():
+    config = parse_config(FC_RUN_CFG)
+
+    assert int(config['General']['default_concurrent_jobs']) == 64
+    assert int(config['General']['da_concurrent_jobs']) == 32
+    assert int(config['job.defaults']['njobs']) == 64
+    assert int(config['job.step.da']['njobs']) == 32
+    assert int(config['job.step.da']['NPROC']) == 256
+    assert int(config['job.step.pda']['njobs']) == 42
 
 def test_update_config_from_sections_foo():
     config = dict()
@@ -83,13 +110,6 @@ def test_update_config_from_sections_foo():
         mod.update_config_from_sections(config, cfg2)
     assert 'You have 1 unexpected cfg sections' in str(excinfo.value)
 
-def test_update_config_from_sections_foo():
-    config = dict()
-    cfg2 = mod.parse_cfg_with_sections(StringIO.StringIO(FC_RUN_CFG))
-
-    mod.update_config_from_sections(config, cfg2)
-
-    assert 'NPROC' in config['job.step.da']
 
 CFG_SANS_SUBMIT_LOCAL = """\
 [General]
@@ -99,10 +119,7 @@ job_type = local
 # empty
 """
 def test_update_job_sections0():
-    stream = StringIO.StringIO
-    config = dict()
-    config = mod.parse_cfg_with_sections(stream(CFG_SANS_SUBMIT_LOCAL))
-    mod.update_job_sections(config)
+    config = parse_config(CFG_SANS_SUBMIT_LOCAL)
     assert 'submit' not in config['job.defaults']
     #assert config['job.defaults']['submit'] == 'bash -C ${CMD}'
 
@@ -114,11 +131,8 @@ pwatcher_type = fs_based
 # empty
 """
 def test_update_job_sections1():
-    stream = StringIO.StringIO
-    config = dict()
-    config = mod.parse_cfg_with_sections(stream(CFG_SANS_SUBMIT_SANS_JOB_TYPE))
     with pytest.raises(Exception) as excinfo:
-        mod.update_job_sections(config)
+        parse_config(CFG_SANS_SUBMIT_SANS_JOB_TYPE)
     assert 'but General.job_type is not set' in str(excinfo.value)
 
 CFG_SANS_SUBMIT_UNKNOWN_JOB_TYPE = """\
@@ -129,11 +143,8 @@ job_type = foo
 # empty
 """
 def test_update_job_sections2():
-    stream = StringIO.StringIO
-    config = dict()
-    config = mod.parse_cfg_with_sections(stream(CFG_SANS_SUBMIT_UNKNOWN_JOB_TYPE))
     with pytest.raises(Exception) as excinfo:
-        mod.update_job_sections(config)
+        config = parse_config(CFG_SANS_SUBMIT_UNKNOWN_JOB_TYPE)
     assert 'job_type=foo not in ' in str(excinfo.value)
 
 CFG_SANS_SUBMIT_UNKNOWN_PWATCHER_TYPE = """\
@@ -144,9 +155,6 @@ job_type = sge
 # empty
 """
 def test_update_job_sections3():
-    stream = StringIO.StringIO
-    config = dict()
-    config = mod.parse_cfg_with_sections(stream(CFG_SANS_SUBMIT_UNKNOWN_PWATCHER_TYPE))
     with pytest.raises(Exception) as excinfo:
-        mod.update_job_sections(config)
+        config = parse_config(CFG_SANS_SUBMIT_UNKNOWN_PWATCHER_TYPE)
     assert 'Unknown pwatcher_type' in str(excinfo.value)
