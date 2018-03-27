@@ -9,6 +9,7 @@ from falcon_kit.multiproc import Pool
 from falcon_kit import falcon
 import argparse
 import logging
+import multiprocessing
 import os
 import re
 import sys
@@ -253,6 +254,9 @@ def run(args):
     logging.basicConfig(level=int(round(10*args.verbose_level)))
 
     good_region = re.compile("[ACGT]+")
+
+    assert args.n_core <= multiprocessing.cpu_count(), 'Requested n_core={} > cpu_count={}'.format(
+            args.n_core, multiprocessing.cpu_count())
 
     def Start():
         LOG.info('Started a worker in {} from parent {}'.format(

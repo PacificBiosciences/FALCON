@@ -1,11 +1,9 @@
-
-
-
 import helpers
 import pytest
 import falcon_kit.functional as f
 import collections
 import os
+import re
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 example_HPCdaligner_fn = os.path.join(thisdir, 'HPCdaligner_synth0.sh')
@@ -295,11 +293,20 @@ def test_Readers():
 
 
 from falcon_kit.mains import consensus_task
+# These are now redudant with the doctests, but I guess they don't hurt anything.
+# And I'm not sure whether SonarQube sees doctest results. (I think so.) ~cd
 
 def test_get_falcon_sense_option():
     assert consensus_task.get_falcon_sense_option('', 11) == ' --n_core=11'
-    assert consensus_task.get_falcon_sense_option('--n_core=24', 10) == '--n_core=10'
+    assert consensus_task.get_falcon_sense_option('--n_core=24', 10) == ' --n_core=10'
 
 def test_get_pa_dazcon_option():
     assert consensus_task.get_pa_dazcon_option('', 12) == ' -j 12'
-    assert consensus_task.get_pa_dazcon_option('-j  48', 13) == '-j 13'
+    assert consensus_task.get_pa_dazcon_option('-j  48', 13) == ' -j 13'
+
+def test_get_option_with_proper_nproc():
+    regexp = re.compile(r'-j[^\d]*(\d+)')
+    assert consensus_task.get_option_with_proper_nproc(regexp, 'foo -j 5', 'baz', nproc=7, cpu_count=6) == ('foo ', 5)
+    assert consensus_task.get_option_with_proper_nproc(regexp, 'foo -j 5', 'baz', nproc=3, cpu_count=4) == ('foo ', 3)
+    assert consensus_task.get_option_with_proper_nproc(regexp, 'foo -j 5', 'baz', nproc=3, cpu_count=2) == ('foo ', 2)
+    assert consensus_task.get_option_with_proper_nproc(regexp, 'foo', 'baz', nproc=3, cpu_count=3) == ('foo', 3)
