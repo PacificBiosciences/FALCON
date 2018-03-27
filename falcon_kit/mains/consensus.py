@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from __future__ import print_function
-
 from __future__ import division
 
 from builtins import range
@@ -9,11 +8,13 @@ from ctypes import (POINTER, c_char_p, c_uint, c_uint,
 from falcon_kit.multiproc import Pool
 from falcon_kit import falcon
 import argparse
+import logging
 import os
 import re
 import sys
 import falcon_kit
 
+LOG = logging.getLogger()
 
 falcon.generate_consensus.argtypes = [
     POINTER(c_char_p), c_uint, c_uint, c_uint, c_double]
@@ -99,6 +100,8 @@ def get_alignment(seq1, seq0, edge_tolerance=1000):
 
 def get_consensus_without_trim(c_input):
     seqs, seed_id, config = c_input
+    LOG.debug('Starting get_consensus_without_trim(len(seqs)=={}, seed_id={})'.format(
+        len(seqs), seed_id))
     min_cov, K, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
     if len(seqs) > max_n_read:
         seqs = get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True)
@@ -109,13 +112,17 @@ def get_consensus_without_trim(c_input):
 
     consensus = string_at(consensus_data_ptr[0].sequence)[:]
     eff_cov = consensus_data_ptr[0].eff_cov[:len(consensus)]
+    LOG.debug(' Freeing1')
     falcon.free_consensus_data(consensus_data_ptr)
     del seqs_ptr
+    LOG.debug(' Finishing get_consensus_without_trim(seed_id={})'.format(seed_id))
     return consensus, seed_id
 
 
 def get_consensus_with_trim(c_input):
     seqs, seed_id, config = c_input
+    LOG.debug('Starting get_consensus_with_trim(len(seqs)=={}, seed_id={})'.format(
+        len(seqs), seed_id))
     min_cov, K, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
     trim_seqs = []
     seed = seqs[0]
@@ -143,8 +150,10 @@ def get_consensus_with_trim(c_input):
         seqs_ptr, len(trim_seqs), min_cov, K, min_idt)
     consensus = string_at(consensus_data_ptr[0].sequence)[:]
     eff_cov = consensus_data_ptr[0].eff_cov[:len(consensus)]
+    LOG.debug(' Freeing2')
     falcon.free_consensus_data(consensus_data_ptr)
     del seqs_ptr
+    LOG.debug(' Finishing get_consensus_with_trim(seed_id={})'.format(seed_id))
     return consensus, seed_id
 
 
@@ -203,7 +212,7 @@ def format_seq(seq, col):
     return "\n".join([seq[i:(i + col)] for i in range(0, len(seq), col)])
 
 
-def main(argv=sys.argv):
+def parse_args(argv):
     parser = argparse.ArgumentParser(description='a simple multi-processor consensus sequence generator',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--n_core', type=int, default=24,
@@ -236,12 +245,18 @@ def main(argv=sys.argv):
                         help='for trimming, the there is unaligned edge leng > edge_tolerance, ignore the read')
     parser.add_argument('--trim_size', type=int, default=50,
                         help='the size for triming both ends from initial sparse aligned region')
+    parser.add_argument('-v', '--verbose-level', type=float, default=2.0,
+                        help='logging level (WARNING=3, INFO=2, DEBUG=1)')
+    return parser.parse_args(argv[1:])
+
+def run(args):
+    logging.basicConfig(level=int(round(10*args.verbose_level)))
+
     good_region = re.compile("[ACGT]+")
-    args = parser.parse_args(argv[1:])
 
     def Start():
-        print('Started a worker in %d from parent %d' % (
-            os.getpid(), os.getppid()), file=sys.stderr)
+        LOG.info('Started a worker in {} from parent {}'.format(
+            os.getpid(), os.getppid()))
     exe_pool = Pool(args.n_core, initializer=Start)
     if args.trim:
         get_consensus = get_consensus_with_trim
@@ -279,6 +294,9 @@ def main(argv=sys.argv):
                 print(">" + seed_id)
                 print(cns[-1])
 
+def main(argv=sys.argv):
+    args = parse_args(argv)
+    run(args)
 
 if __name__ == "__main__":
     main(sys.argv)
