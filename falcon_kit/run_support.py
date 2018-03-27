@@ -104,8 +104,17 @@ def update_HPCdaligner_option(option):
     return option
 
 
-def validate_config_dict(cd):
-    pass
+def clean_falcon_options(fc):
+    """Update some values in fc.
+    Replace _ with - in a couple places.
+    """
+    for key in ['falcon_sense_option', 'overlap_filtering_setting']:
+        if key in fc:
+            val = fc[key]
+            if '_' in val:
+                new_val = val.replace('_', '-')
+                logger.warning('Option {key} contains flags with "_":\n "{key}={val}".\nThose should be "-", as in\n "{key}={new_val}".'.format(**locals()))
+                fc[key] = new_val
 
 
 def get_config(config):
@@ -164,10 +173,12 @@ def parse_cfg_file(config_fn):
         cfg2 = parse_cfg_with_sections(stream)
         update_config_from_sections(config, cfg2)
     update_job_sections(config)
+    clean_falcon_options(config)
+    clean_falcon_options(config.get('General', {}))
     return config
 
 def update_job_defaults_section(config):
-    """Some crap for backwards compatibility with stuff from 'General' section.
+    """For backwards compatibility with stuff from 'General' section.
     """
     General = config['General']
 
@@ -205,7 +216,7 @@ def update_job_defaults_section(config):
         update_if_missing(name, config['job.defaults'])
 
 def update_job_sections(config):
-    """More crap for backwards compatibility with stuff from 'General' section.
+    """More for backwards compatibility with stuff from 'General' section.
     """
     update_job_defaults_section(config)
     General = config['General']
