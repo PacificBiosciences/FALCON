@@ -89,7 +89,7 @@ TASK_RUN_FALCON_ASM_SCRIPT = """\
 # mobs uses binwrappers, so it does not see our "entry-points".
 # So, after dropping "src/py_scripts/*.py", we can call these via python -m:
 
-time python -m falcon_kit.mains.ovlp_filter --db {input.db_file} --las-fofn {input.las_fofn} {params.overlap_filtering_setting} --min_len {params.length_cutoff_pr} --out-fn preads.ovl
+time python -m falcon_kit.mains.ovlp_filter --db {input.db_file} --las-fofn {input.las_fofn} {params.overlap_filtering_setting} --min-len {params.length_cutoff_pr} --out-fn preads.ovl
 
 ln -sf {input.preads4falcon_fasta} ./preads4falcon.fasta
 

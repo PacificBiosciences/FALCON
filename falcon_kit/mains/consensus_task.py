@@ -44,13 +44,13 @@ def get_option_with_proper_nproc(regexp, opt, opt_name, nproc, cpu_count=multipr
 def get_falcon_sense_option(opt, nproc):
     """
     >>> get_falcon_sense_option('', 11)
-    ' --n_core=11'
-    >>> get_falcon_sense_option('--n_core=24', 10)
-    ' --n_core=10'
+    ' --n-core=11'
+    >>> get_falcon_sense_option('--n-core=24', 10)
+    ' --n-core=10'
     """
-    re_n_core = re.compile(r'--n_core[^\d]+(\d+)')
+    re_n_core = re.compile(r'--n-core[^\d]+(\d+)')
     opt, nproc = get_option_with_proper_nproc(re_n_core, opt, 'falcon_sense_option', nproc)
-    opt += ' --n_core={}'.format(nproc)
+    opt += ' --n-core={}'.format(nproc)
     return opt
 
 def get_pa_dazcon_option(opt, nproc):

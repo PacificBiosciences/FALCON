@@ -297,8 +297,8 @@ from falcon_kit.mains import consensus_task
 # And I'm not sure whether SonarQube sees doctest results. (I think so.) ~cd
 
 def test_get_falcon_sense_option():
-    assert consensus_task.get_falcon_sense_option('', 11) == ' --n_core=11'
-    assert consensus_task.get_falcon_sense_option('--n_core=24', 10) == ' --n_core=10'
+    assert consensus_task.get_falcon_sense_option('', 11) == ' --n-core=11'
+    assert consensus_task.get_falcon_sense_option('--n-core=24', 10) == ' --n-core=10'
 
 def test_get_pa_dazcon_option():
     assert consensus_task.get_pa_dazcon_option('', 12) == ' -j 12'

@@ -158,3 +158,16 @@ def test_update_job_sections3():
     with pytest.raises(Exception) as excinfo:
         config = parse_config(CFG_SANS_SUBMIT_UNKNOWN_PWATCHER_TYPE)
     assert 'Unknown pwatcher_type' in str(excinfo.value)
+
+
+def test_clean_falcon_options():
+    fc = dict(
+        falcon_sense_option='foo --opt_one --opt-two --opt_three_x',
+        overlap_filtering_setting='bar --Opt_one --Opt-two --Opt_three_x',
+    )
+    expected = dict(
+        falcon_sense_option='foo --opt-one --opt-two --opt-three-x',
+        overlap_filtering_setting='bar --Opt-one --Opt-two --Opt-three-x',
+    )
+    mod.clean_falcon_options(fc)
+    assert fc == expected
