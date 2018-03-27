@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import argparse
 import logging
+import multiprocessing
 import os
 import re
 import sys
@@ -10,22 +11,60 @@ from .. import bash
 
 LOG = logging.getLogger()
 
-def get_falcon_sense_option(opt, nproc):
-    if '--n_core' in opt:
-        LOG.warning('You should not set --n_core in falcon_sense_option. Your value will be ignored. nproc={}'.format(
-            nproc))
-        opt = re.sub(r'--n_core[^\d]+(\d+)', '--n_core={}'.format(nproc), opt)
+def get_option_with_proper_nproc(regexp, opt, opt_name, nproc, cpu_count=multiprocessing.cpu_count()):
+    """Return opts sans the regexp match, and proper nproc.
+    >>> regexp = re.compile(r'-j[^\d]*(\d+)')
+    >>> get_option_with_proper_nproc(regexp, 'foo -j 5', 'baz', nproc=7, cpu_count=6)
+    ('foo ', 5)
+    >>> get_option_with_proper_nproc(regexp, 'foo -j 5', 'baz', nproc=3, cpu_count=4)
+    ('foo ', 3)
+    >>> get_option_with_proper_nproc(regexp, 'foo -j 5', 'baz', nproc=3, cpu_count=2)
+    ('foo ', 2)
+    """
+    job_nproc = int(nproc)
+    mo = regexp.search(opt)
+    if mo:
+        opt_nproc = int(mo.group(1))
+        if job_nproc < opt_nproc:
+            LOG.warning('NPROC={}, but falcon_sense_option="{}", so we will ignore that option and use {}'.format(
+                job_nproc, opt, job_nproc))
+        elif job_nproc > opt_nproc:
+            LOG.warning('NPROC={}, but falcon_sense_option="{}", so we will override NPROC and use {}'.format(
+                job_nproc, opt, opt_nproc))
+        nproc = min(job_nproc, opt_nproc)
+        opt = regexp.sub('', opt) # remove --n_core, for now
     else:
-        opt += ' --n_core={}'.format(nproc)
+        nproc = job_nproc
+    if nproc > cpu_count:
+        LOG.warning('Requested nproc={} > cpu_count={}; using {}'.format(
+            nproc, cpu_count, cpu_count))
+        nproc = cpu_count
+    return opt, nproc
+
+def get_falcon_sense_option(opt, nproc):
+    """
+    >>> get_falcon_sense_option('', 11)
+    ' --n_core=11'
+    >>> get_falcon_sense_option('--n_core=24', 10)
+    ' --n_core=10'
+    """
+    re_n_core = re.compile(r'--n_core[^\d]+(\d+)')
+    opt, nproc = get_option_with_proper_nproc(re_n_core, opt, 'falcon_sense_option', nproc)
+    opt += ' --n_core={}'.format(nproc)
     return opt
 
 def get_pa_dazcon_option(opt, nproc):
-    if '-j' in opt:
-        LOG.warning('You should not set -j in pa_dazcon_option. Your value will be ignored. nproc={}'.format(nproc))
-        opt = re.sub(r'-j\s*\d+', '-j {}'.format(nproc), opt)
-    else:
-        opt += ' -j {}'.format(nproc)
+    """
+    >>> get_pa_dazcon_option('', 12)
+    ' -j 12'
+    >>> get_pa_dazcon_option('-j  48', 13)
+    ' -j 13'
+    """
+    re_j = re.compile(r'-j[^\d]+(\d+)')
+    opt, nproc = get_option_with_proper_nproc(re_j, opt, 'pa_dazcon_option', nproc)
+    opt += ' -j {}'.format(nproc)
     return opt
+
 
 # This function was copied from bash.py and modified.
 def script_run_consensus(config, db_fn, las_fn, out_file_fn, nproc):
