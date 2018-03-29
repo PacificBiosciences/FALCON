@@ -3,7 +3,7 @@ needed to modify the TASK SCRIPT to use our copy of
 generic_gather.py (not used now).
 """
 from __future__ import absolute_import
-from __future__ import unicode_literals
+
 import logging
 import os
 from pypeflow.simple_pwatcher_bridge import (PypeTask, Dist)
@@ -13,7 +13,7 @@ from . import io
 LOG = logging.getLogger(__name__)
 
 TASK_GENERIC_RUN_UNITS_SCRIPT = """\
-python -m falcon_kit.mains.generic_run_units_of_work --units-of-work-fn={input.units_of_work} --bash-template-fn={input.bash_template} --results-fn={output.results}
+python -m falcon_kit.mains.generic_run_units_of_work --nproc={params.pypeflow_nproc} --units-of-work-fn={input.units_of_work} --bash-template-fn={input.bash_template} --results-fn={output.results}
 """
 TASK_GENERIC_SCATTER_ONE_UOW_SCRIPT = """\
 python -m falcon_kit.mains.generic_scatter_one_uow --all-uow-list-fn={input.all} --one-uow-list-fn={output.one} --split-idx={params.split_idx}
@@ -27,7 +27,11 @@ python -m falcon_kit.mains.generic_unsplit --result-fn-list-fn={output.result_fn
 #"""
 
 
-def wrap_gen_task(rule_writer, script, inputs, outputs, parameters={}, dist=Dist()):
+def wrap_gen_task(rule_writer, script, inputs, outputs, parameters=None, dist=None):
+    if parameters is None:
+        parameters = dict()
+    if dist is None:
+        dist = Dist()
     from future.utils import viewitems
     rel_inputs = dict()
     rel_outputs = dict()
@@ -59,7 +63,8 @@ def gen_parallel_tasks(
         split_fn,
         gathered_fn,
         run_dict,
-        dist=Dist(),
+        dist=None,
+        run_script=TASK_GENERIC_RUN_UNITS_SCRIPT,
 ):
     """
     By convention, the first (wildcard) output in run_dict['outputs'] must be the gatherable list,
@@ -67,6 +72,8 @@ def gen_parallel_tasks(
 
     For now, we require a single such output, since we do not yet test for wildcards.
     """
+    if dist is None:
+        dist = Dist()
     from future.utils import itervalues
     #from future.utils import viewitems
     # run_dict['inputs'] should be patterns to match the inputs in split_fn, by convention.
@@ -139,7 +146,7 @@ def gen_parallel_tasks(
         ))
 
         wf.addTask(pype_gen_task(
-                script=TASK_GENERIC_RUN_UNITS_SCRIPT,
+                script=run_script, # usually TASK_GENERIC_RUN_UNITS_SCRIPT, unless individual load-time is slow
                 inputs={
                     'units_of_work': one_uow_fn,
                     'bash_template': bash_template_fn,

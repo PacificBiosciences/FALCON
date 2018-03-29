@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from __future__ import unicode_literals
+
 
 from future.utils import viewitems
 from future.utils import itervalues
@@ -765,7 +765,7 @@ def generate_string_graph(args):
             g_b, g_e = g_e, g_b
 
         # build the string graph edges for each overlap
-        if f_b > 1:
+        if f_b > 0:
             if g_b < g_e:
                 """
                      f.B         f.E
@@ -1209,7 +1209,7 @@ def identify_spurs(ug, u_edge_data, spur_len):
                     except Exception:
                         pass
 
-                if ug2.in_edges(v2) == 0:
+                if ug2.in_degree(v2) == 0:
                     s_candidates.add(v2)
                 v1 = v2
             break

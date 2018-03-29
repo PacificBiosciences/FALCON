@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from __future__ import unicode_literals
+
 from ..pype import (wrap_gen_task as gen_task, gen_parallel_tasks, Dist)
 from .. import run_support as support
 from .. import bash, pype_tasks, snakemake
@@ -61,8 +61,6 @@ def create_merge_tasks(basedir, scatter_fn):
         outputs = section['outputs']
         URL = section['URL']
         p_id = parameters['job_id']
-        #merge_script = parameters['merge_script']
-        #sge_option = parameters['sge_option']
         wdir = os.path.join(basedir, 'm_%05d' % p_id)
         make_task = PypeTask(inputs=inputs,
                              outputs=outputs,
@@ -132,23 +130,19 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
 
     LOG.info('fc_run started with configuration %s', input_config_fn)
     try:
-        config = support.get_dict_from_old_falcon_cfg(
-            support.parse_config(input_config_fn))
+        config = support.parse_cfg_file(input_config_fn)
+        import json
+        dumped = json.dumps(config, indent=2, separators=(',', ': '), sort_keys=True)
+        LOG.warning('cfg=\n{}'.format(dumped))
     except Exception:
         LOG.exception('Failed to parse config "{}".'.format(input_config_fn))
         raise
     input_fofn_plf = makePypeLocalFile(config['input_fofn'])
     genome_size = config.get('genome_size')
     squash = True if 0 < genome_size < 1000000 else False
-    wf = PypeProcWatcherWorkflow(job_type=config['job_type'],
-                                 job_queue=config['job_queue'],
-                                 job_name_style=config['job_name_style'],
-                                 sge_option=config.get('sge_option', ''),
-                                 watcher_type=config['pwatcher_type'],
-                                 watcher_directory=config['pwatcher_directory'],
-                                 use_tmpdir=config.get('use_tmpdir'),
-                                 squash=squash
-                                 )
+    wf = PypeProcWatcherWorkflow(job_defaults=config['job.defaults'],
+                                 squash=squash,
+    )
     general_config_fn = './config.json' # must not be in a task-dir
     config['ver'] = '100'
     io.serialize(general_config_fn, config)
@@ -183,14 +177,13 @@ def run(wf, config, rule_writer,
 
     # only matter for parallel jobs
     exitOnFailure = config['stop_all_jobs_on_failure']
-    wf.max_jobs = config['default_concurrent_jobs']
+    default_njobs = config['job.defaults']['njobs']
+    wf.max_jobs = default_njobs
 
     assert config['input_type'] in (
         'raw', 'preads'), 'Invalid input_type=={!r}'.format(config['input_type'])
 
     # Store config as JSON, available to many tasks.
-
-    sge_option = config['sge_option_da']
 
     if config['input_type'] == 'raw':
         parameters = {}
@@ -216,20 +209,18 @@ def run(wf, config, rule_writer,
             },
             parameters={},
             rule_writer=rule_writer,
-            dist=Dist(NPROC=1, sge_option=sge_option),
+            dist=Dist(NPROC=1, job_dict=config['job.step.da']),
         ))
 
         # run daligner
-        wf.max_jobs = config['da_concurrent_jobs']
+        wf.max_jobs = config['job.step.da'].get('njobs', default_njobs)
         rawreads_db_fn = os.path.join(rawread_dir, 'raw_reads.db')
-        #config['sge_option_da'] = config['sge_option_pda']
         daligner_all_units_fn = os.path.join(
             rawread_dir, 'daligner-split', 'all-units-of-work.json')
         daligner_bash_template_fn = os.path.join(
             rawread_dir, 'daligner-split', 'daligner_bash_template.sh')
         params = dict(parameters)
         params['db_prefix'] = 'raw_reads'
-        #params['stage'] = os.path.basename(rawread_dir)
         params['pread_aln'] = 0
         params['skip_checks'] = int(config.get('skip_checks', 0))
         params['wildcards'] = 'dal0_id'
@@ -245,7 +236,7 @@ def run(wf, config, rule_writer,
             },
             parameters=params,
             rule_writer=rule_writer,
-            dist=Dist(local=True),
+            dist=Dist(local=True, NPROC=4), # really, NPROC=1, but we need to know the max
         ))
 
         gathered_fn = os.path.join(rawread_dir, 'daligner-gathered', 'gathered-done-files.json')
@@ -266,7 +257,7 @@ def run(wf, config, rule_writer,
                 },
                 parameters={},
             ),
-            dist=Dist(NPROC=4, MB=4000, sge_option=sge_option),
+            dist=Dist(NPROC=4, MB=4000, job_dict=config['job.step.da']),
         )
 
         r_gathered_las_fn = os.path.join(rawread_dir, 'daligner-intermediate-gathered-las', 'gathered-las.json')
@@ -282,13 +273,11 @@ def run(wf, config, rule_writer,
         ))
 
         # Merge .las files.
-        sge_option = config['sge_option_la']
-        wf.max_jobs = config['la_concurrent_jobs']
+        wf.max_jobs = config['job.step.la'].get('njobs', default_njobs)
         las_merge_all_units_fn = os.path.join(rawread_dir, 'las-merge-split', 'all-units-of-work.json')
         bash_template_fn = os.path.join(rawread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
         params = dict(parameters)
         params['db_prefix'] = 'raw_reads'
-        #params['stage'] = os.path.basename(rawread_dir) # TODO(CD): Make this more clearly constant.
         params['wildcards'] = 'mer0_id'
         wf.addTask(gen_task(
             script=pype_tasks.TASK_LAS_MERGE_SPLIT_SCRIPT,
@@ -302,7 +291,7 @@ def run(wf, config, rule_writer,
             },
             parameters=params,
             rule_writer=rule_writer,
-            dist=Dist(local=True, sge_option=sge_option),
+            dist=Dist(local=True),
         ))
 
         gathered_fn = os.path.join(rawread_dir, 'las-merge-gathered', 'gathered.json')
@@ -325,7 +314,7 @@ def run(wf, config, rule_writer,
                 },
                 parameters={},
             ),
-            dist=Dist(NPROC=1, sge_option=sge_option)
+            dist=Dist(NPROC=1, job_dict=config['job.step.la']),
         )
 
         p_id2las_fn = os.path.join(rawread_dir, 'las-gather', 'p_id2las.json')
@@ -346,8 +335,7 @@ def run(wf, config, rule_writer,
             sys.exit(0)
 
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
-        sge_option = config['sge_option_cns']
-        wf.max_jobs = config['cns_concurrent_jobs']
+        wf.max_jobs = config['job.step.cns'].get('njobs', default_njobs)
 
         split_fn = os.path.join(
             rawread_dir, 'cns-split', 'split.json')
@@ -392,7 +380,7 @@ def run(wf, config, rule_writer,
                 },
                 parameters={},
             ),
-            dist=Dist(NPROC=6, sge_option=sge_option),
+            dist=Dist(NPROC=6, job_dict=config['job.step.cns']),
         )
         preads_fofn_fn = os.path.join(rawread_dir, 'preads', 'input_preads.fofn')
         wf.addTask(gen_task(
@@ -447,8 +435,6 @@ def run(wf, config, rule_writer,
         """
         raise Exception('TODO')
 
-    sge_option = config['sge_option_pda']
-
     pdb_build_done = os.path.join(pread_dir, 'pdb_build_done')
     run_jobs_fn = os.path.join(pread_dir, 'run_jobs.sh')
     preads_db_fn = os.path.join(pread_dir, 'preads.db')
@@ -467,12 +453,11 @@ def run(wf, config, rule_writer,
         },
         parameters=parameters, #{},
         rule_writer=rule_writer,
-        dist=Dist(NPROC=1, sge_option=sge_option),
+        dist=Dist(NPROC=1, job_dict=config['job.step.pda']),
     ))
 
     # run daligner
-    wf.max_jobs = config['pda_concurrent_jobs']
-    sge_option = config['sge_option_pda']
+    wf.max_jobs = config['job.step.pda'].get('njobs', default_njobs)
     daligner_all_units_fn = os.path.join(
         pread_dir, 'daligner-split', 'all-units-of-work.json')
     daligner_bash_template_fn = os.path.join(
@@ -496,7 +481,7 @@ def run(wf, config, rule_writer,
         },
         parameters=params,
         rule_writer=rule_writer,
-        dist=Dist(local=True),
+        dist=Dist(local=True, NPROC=4),
     ))
 
     gathered_fn = os.path.join(pread_dir, 'daligner-gathered', 'gathered-done-files.json')
@@ -517,7 +502,7 @@ def run(wf, config, rule_writer,
             },
             parameters={},
         ),
-        dist=Dist(NPROC=4, MB=4000, sge_option=sge_option),
+        dist=Dist(NPROC=4, MB=4000, job_dict=config['job.step.pda']),
     )
 
     p_gathered_las_fn = os.path.join(pread_dir, 'daligner-intermediate-gathered-las', 'gathered-las.json')
@@ -533,13 +518,11 @@ def run(wf, config, rule_writer,
     ))
 
     # Merge .las files.
-    sge_option = config['sge_option_pla']
-    wf.max_jobs = config['pla_concurrent_jobs']
+    wf.max_jobs = config['job.step.pla'].get('njobs', default_njobs)
     las_merge_all_units_fn = os.path.join(pread_dir, 'las-merge-split', 'all-units-of-work.json')
     bash_template_fn = os.path.join(pread_dir, 'las-merge-split', 'las-merge-bash-template.sh')
     params = dict(parameters)
     params['db_prefix'] = 'preads'
-    #params['stage'] = os.path.basename(pread_dir) # TODO(CD): Make this more clearly constant.
     params['wildcards'] = 'mer1_id'
     wf.addTask(gen_task(
         script=pype_tasks.TASK_LAS_MERGE_SPLIT_SCRIPT,
@@ -576,7 +559,7 @@ def run(wf, config, rule_writer,
             },
             parameters={},
         ),
-        dist=Dist(NPROC=1, sge_option=sge_option),
+        dist=Dist(NPROC=1, job_dict=config['job.step.pla']),
     )
 
     p_id2las_fn = os.path.join(pread_dir, 'las-gather', 'p_id2las.json')
@@ -593,9 +576,7 @@ def run(wf, config, rule_writer,
         dist=Dist(local=True),
     ))
 
-    # Draft assembly (called 'fc_' for now)
-    wf.max_jobs = config['fc_concurrent_jobs']
-    sge_option = config['sge_option_fc'] # Should this apply only to asm?
+    wf.max_jobs = config['job.step.asm'].get('njobs', default_njobs)
     db2falcon_dir = os.path.join(pread_dir, 'db2falcon')
     db2falcon_done_fn = os.path.join(db2falcon_dir, 'db2falcon_done')
     preads4falcon_fn = os.path.join(db2falcon_dir, 'preads4falcon.fasta')
@@ -609,7 +590,7 @@ def run(wf, config, rule_writer,
                  },
         parameters={},
         rule_writer=rule_writer,
-        dist=Dist(NPROC=4, sge_option=sge_option),
+        dist=Dist(NPROC=4, job_dict=config['job.step.asm']),
     ))
 
     falcon_asm_done_fn = os.path.join(falcon_asm_dir, 'falcon_asm_done')
@@ -625,7 +606,7 @@ def run(wf, config, rule_writer,
         outputs={'falcon_asm_done': falcon_asm_done_fn},
         parameters=parameters,
         rule_writer=rule_writer,
-        dist=Dist(NPROC=4, sge_option=sge_option),
+        dist=Dist(NPROC=4, job_dict=config['job.step.asm']),
     ))
     wf.refreshTargets()
 

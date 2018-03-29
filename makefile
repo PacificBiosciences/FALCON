@@ -11,6 +11,8 @@ PIP=pip wheel --wheel-dir ${WHEELHOUSE}
 
 MY_TEST_FLAGS?=-v -s --durations=0
 
+DOCTEST_MODULES=falcon_kit/mains/consensus_task.py falcon_kit/functional.py
+
 install-edit:
 	pip -v install --user --edit .
 install: wheel
@@ -20,7 +22,7 @@ pylint:
 test:
 	python -c 'import falcon_kit; print falcon_kit.falcon'
 	which py.test || pip install --user pytest
-	py.test ${MY_TEST_FLAGS} --junit-xml=test.xml --doctest-modules falcon_kit/functional.py test/
+	py.test ${MY_TEST_FLAGS} --junit-xml=test.xml --doctest-modules ${DOCTEST_MODULES} test/
 autopep8:
 	autopep8 --max-line-length=120 -ir -j0 falcon_kit/ examples/ test/ setup.py
 

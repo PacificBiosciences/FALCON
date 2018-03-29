@@ -1,7 +1,7 @@
-from __future__ import unicode_literals
+
 import time
 import pytest
-from builtins import str
+
 import falcon_kit.util.io as M
 
 

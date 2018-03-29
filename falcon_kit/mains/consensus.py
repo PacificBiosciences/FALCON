@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from __future__ import unicode_literals
 from __future__ import division
 
 from builtins import range
@@ -9,11 +8,14 @@ from ctypes import (POINTER, c_char_p, c_uint, c_uint,
 from falcon_kit.multiproc import Pool
 from falcon_kit import falcon
 import argparse
+import logging
+import multiprocessing
 import os
 import re
 import sys
 import falcon_kit
 
+LOG = logging.getLogger()
 
 falcon.generate_consensus.argtypes = [
     POINTER(c_char_p), c_uint, c_uint, c_uint, c_double]
@@ -99,6 +101,8 @@ def get_alignment(seq1, seq0, edge_tolerance=1000):
 
 def get_consensus_without_trim(c_input):
     seqs, seed_id, config = c_input
+    LOG.debug('Starting get_consensus_without_trim(len(seqs)=={}, seed_id={})'.format(
+        len(seqs), seed_id))
     min_cov, K, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
     if len(seqs) > max_n_read:
         seqs = get_longest_reads(seqs, max_n_read, max_cov_aln, sort=True)
@@ -109,13 +113,17 @@ def get_consensus_without_trim(c_input):
 
     consensus = string_at(consensus_data_ptr[0].sequence)[:]
     eff_cov = consensus_data_ptr[0].eff_cov[:len(consensus)]
+    LOG.debug(' Freeing1')
     falcon.free_consensus_data(consensus_data_ptr)
     del seqs_ptr
+    LOG.debug(' Finishing get_consensus_without_trim(seed_id={})'.format(seed_id))
     return consensus, seed_id
 
 
 def get_consensus_with_trim(c_input):
     seqs, seed_id, config = c_input
+    LOG.debug('Starting get_consensus_with_trim(len(seqs)=={}, seed_id={})'.format(
+        len(seqs), seed_id))
     min_cov, K, max_n_read, min_idt, edge_tolerance, trim_size, min_cov_aln, max_cov_aln = config
     trim_seqs = []
     seed = seqs[0]
@@ -143,8 +151,10 @@ def get_consensus_with_trim(c_input):
         seqs_ptr, len(trim_seqs), min_cov, K, min_idt)
     consensus = string_at(consensus_data_ptr[0].sequence)[:]
     eff_cov = consensus_data_ptr[0].eff_cov[:len(consensus)]
+    LOG.debug(' Freeing2')
     falcon.free_consensus_data(consensus_data_ptr)
     del seqs_ptr
+    LOG.debug(' Finishing get_consensus_with_trim(seed_id={})'.format(seed_id))
     return consensus, seed_id
 
 
@@ -203,45 +213,54 @@ def format_seq(seq, col):
     return "\n".join([seq[i:(i + col)] for i in range(0, len(seq), col)])
 
 
-def main(argv=sys.argv):
+def parse_args(argv):
     parser = argparse.ArgumentParser(description='a simple multi-processor consensus sequence generator',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--n_core', type=int, default=24,
+    parser.add_argument('--n-core', type=int, default=24,
                         help='number of processes used for generating consensus; '
                         '0 for main process only')
-    parser.add_argument('--min_cov', type=int, default=6,
+    parser.add_argument('--min-cov', type=int, default=6,
                         help='minimum coverage to break the consensus')
-    parser.add_argument('--min_cov_aln', type=int, default=10,
+    parser.add_argument('--min-cov-aln', type=int, default=10,
                         help='minimum coverage of alignment data; a seed read with less than MIN_COV_ALN average depth' +
                         ' of coverage will be completely ignored')
-    parser.add_argument('--max_cov_aln', type=int, default=0,  # 0 to emulate previous behavior
+    parser.add_argument('--max-cov-aln', type=int, default=0,  # 0 to emulate previous behavior
                         help='maximum coverage of alignment data; a seed read with more than MAX_COV_ALN average depth' + \
                         ' of coverage of the longest alignments will be capped, excess shorter alignments will be ignored')
-    parser.add_argument('--min_len_aln', type=int, default=0,  # 0 to emulate previous behavior
+    parser.add_argument('--min-len-aln', type=int, default=0,  # 0 to emulate previous behavior
                         help='minimum length of a sequence in an alignment to be used in consensus; any shorter sequence will be completely ignored')
-    parser.add_argument('--min_n_read', type=int, default=10,
+    parser.add_argument('--min-n-read', type=int, default=10,
                         help='1 + minimum number of reads used in generating the consensus; a seed read with fewer alignments will ' +
                         'be completely ignored')
-    parser.add_argument('--max_n_read', type=int, default=500,
+    parser.add_argument('--max-n-read', type=int, default=500,
                         help='1 + maximum number of reads used in generating the consensus')
     parser.add_argument('--trim', action="store_true", default=False,
                         help='trim the input sequence with k-mer spare dynamic programming to find the mapped range')
-    parser.add_argument('--output_full', action="store_true", default=False,
+    parser.add_argument('--output-full', action="store_true", default=False,
                         help='output uncorrected regions too')
-    parser.add_argument('--output_multi', action="store_true", default=False,
+    parser.add_argument('--output-multi', action="store_true", default=False,
                         help='output multi correct regions')
-    parser.add_argument('--min_idt', type=float, default=0.70,
+    parser.add_argument('--min-idt', type=float, default=0.70,
                         help='minimum identity of the alignments used for correction')
-    parser.add_argument('--edge_tolerance', type=int, default=1000,
+    parser.add_argument('--edge-tolerance', type=int, default=1000,
                         help='for trimming, the there is unaligned edge leng > edge_tolerance, ignore the read')
-    parser.add_argument('--trim_size', type=int, default=50,
+    parser.add_argument('--trim-size', type=int, default=50,
                         help='the size for triming both ends from initial sparse aligned region')
+    parser.add_argument('-v', '--verbose-level', type=float, default=2.0,
+                        help='logging level (WARNING=3, INFO=2, DEBUG=1)')
+    return parser.parse_args(argv[1:])
+
+def run(args):
+    logging.basicConfig(level=int(round(10*args.verbose_level)))
+
     good_region = re.compile("[ACGT]+")
-    args = parser.parse_args(argv[1:])
+
+    assert args.n_core <= multiprocessing.cpu_count(), 'Requested n_core={} > cpu_count={}'.format(
+            args.n_core, multiprocessing.cpu_count())
 
     def Start():
-        print('Started a worker in %d from parent %d' % (
-            os.getpid(), os.getppid()), file=sys.stderr)
+        LOG.info('Started a worker in {} from parent {}'.format(
+            os.getpid(), os.getppid()))
     exe_pool = Pool(args.n_core, initializer=Start)
     if args.trim:
         get_consensus = get_consensus_with_trim
@@ -279,6 +298,9 @@ def main(argv=sys.argv):
                 print(">" + seed_id)
                 print(cns[-1])
 
+def main(argv=sys.argv):
+    args = parse_args(argv)
+    run(args)
 
 if __name__ == "__main__":
     main(sys.argv)

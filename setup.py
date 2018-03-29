@@ -11,7 +11,7 @@ install_requires = [
     "future >= 0.16.0",
     #"logging_tree",
     #"pbcore >= 0.6.3",
-    "pypeFLOW >= 1.1.0",
+    "pypeFLOW >= 2.0.0",
 ]
 
 scripts = []

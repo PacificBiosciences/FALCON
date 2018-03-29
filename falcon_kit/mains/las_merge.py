@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from __future__ import unicode_literals
+
 import argparse
 import logging
 import os
@@ -9,7 +9,8 @@ from .. import bash  # for write_script
 
 LOG = logging.getLogger()
 
-def run(p_id_num, las_paths_fn, merge_script_fn, las_merged_fn_fn, las_merged_symlink_fn, job_done_fn, p_id_fn):
+def run(p_id_num, las_paths_fn, merge_script_fn, las_merged_fn_fn,
+        las_merged_symlink_fn, job_done_fn, p_id_fn):
     with open(p_id_fn, 'w') as stream:
         stream.write(p_id_num)
     cwd = os.getcwd()

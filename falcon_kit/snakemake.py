@@ -2,11 +2,11 @@
 TODO: Consolidate.
 """
 from __future__ import absolute_import
-from __future__ import unicode_literals
+
 
 from future.utils import viewitems
 from future.utils import itervalues
-from builtins import str
+
 from builtins import object
 import json
 import os
