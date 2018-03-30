@@ -63,38 +63,39 @@ def filter_stats(readlines, min_len):
     return rtn_data
 
 
-def run_filter_stats(fn, min_len):
-    cmd = "LA4Falcon -mo ../1-preads_ovl/preads.db %s" % fn
+def run_filter_stats(db_fn, fn, min_len):
+    cmd = "LA4Falcon -mo {} {}".format(db_fn, fn)
     reader = Reader(cmd)
     with reader:
         return fn, filter_stats(reader.readlines, min_len)
 
 
-def run_ovlp_stats(exe_pool, file_list, min_len):
+def run_ovlp_stats(exe_pool, db_fn, file_list, min_len):
     inputs = []
     for fn in file_list:
         if len(fn) != 0:
-            inputs.append((run_filter_stats, fn, min_len))
+            inputs.append((run_filter_stats, db_fn, fn, min_len))
     for res in exe_pool.imap(io.run_func, inputs):
         for l in res[1]:
             print(" ".join([str(c) for c in l]))
 
 
-def try_run_ovlp_stats(n_core, fofn, min_len):
+def try_run_ovlp_stats(n_core, db_fn, fofn, min_len):
     io.LOG('starting ovlp_stats')
     file_list = io.validated_fns(fofn)
-    io.LOG('fofn %r: %r' % (fofn, file_list))
+    io.LOG('fofn {!r}: {}'.format(fofn, file_list))
+    io.LOG('db {!r}; n_core={}'.format(db_fn, n_core))
     n_core = min(n_core, len(file_list))
     exe_pool = Pool(n_core)
     try:
-        run_ovlp_stats(exe_pool, file_list, min_len)
+        run_ovlp_stats(exe_pool, db_fn, file_list, min_len)
         io.LOG('finished ovlp_stats')
     except KeyboardInterrupt:
         io.LOG('terminating ovlp_stats workers...')
         exe_pool.terminate()
 
 
-def ovlp_stats(fofn, min_len, n_core, stream, debug, silent):
+def ovlp_stats(db_fn, fofn, min_len, n_core, stream, debug, silent):
     if debug:
         n_core = 0
         silent = False
@@ -103,7 +104,7 @@ def ovlp_stats(fofn, min_len, n_core, stream, debug, silent):
     if stream:
         global Reader
         Reader = io.StreamedProcessReaderContext
-    try_run_ovlp_stats(n_core, fofn, min_len)
+    try_run_ovlp_stats(n_core, db_fn, fofn, min_len)
 
 
 def parse_args(argv):
@@ -116,6 +117,8 @@ def parse_args(argv):
                         help='file contains the path of all LAS file to be processed in parallel')
     parser.add_argument('--min-len', type=int, default=2500,
                         help="min length of the reads")
+    parser.add_argument('--db-fn', default='./1-preads_ovl/preads.db',
+                        help="DAZZLER DB of preads")
     parser.add_argument('--stream', action='store_true',
                         help='stream from LA4Falcon, instead of slurping all at once; can save memory for large data')
     parser.add_argument('--debug', '-g', action='store_true',
