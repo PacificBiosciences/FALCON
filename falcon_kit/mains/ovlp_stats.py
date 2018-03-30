@@ -8,6 +8,7 @@ import argparse
 import shlex
 import subprocess as sp
 import sys
+import traceback
 
 Reader = io.CapturedProcessReaderContext
 
@@ -64,11 +65,15 @@ def filter_stats(readlines, min_len):
 
 
 def run_filter_stats(db_fn, fn, min_len):
-    cmd = "LA4Falcon -mo {} {}".format(db_fn, fn)
-    reader = Reader(cmd)
-    with reader:
-        return fn, filter_stats(reader.readlines, min_len)
-
+    try:
+        cmd = "LA4Falcon -mo {} {}".format(db_fn, fn)
+        reader = Reader(cmd)
+        with reader:
+            return fn, filter_stats(reader.readlines, min_len)
+    except Exception:
+        stack = traceback.format_exc()
+        io.LOG(stack)
+        raise
 
 def run_ovlp_stats(exe_pool, db_fn, file_list, min_len):
     inputs = []
