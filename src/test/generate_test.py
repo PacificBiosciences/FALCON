@@ -1,6 +1,13 @@
 import random
 random.seed(42)
 
+"""
+For generating the `test.in` files:
+```
+python3 generate_test.py > test.in
+```
+"""
+
 def sim_error(seq, pi=0.05, pd=0.05, ps=0.01):
     out_seq = []
     for c in seq:
