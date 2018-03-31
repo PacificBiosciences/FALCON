@@ -231,13 +231,13 @@ void free_delta_group( msa_delta_group_t * g) {
 
 void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, uint8_t p_delta, char p_q_base) {
     int updated = 0;
-    int kk;
+    int link;
     col->count += 1;
-    for (kk = 0; kk < col->n_link; kk++) {
-        if ( p_t_pos == col->p_t_pos[kk] &&
-             p_delta == col->p_delta[kk] &&
-             p_q_base == col->p_q_base[kk] ) {
-            col->link_count[kk] ++;
+    for (link = 0; link < col->n_link; link++) {
+        if ( p_t_pos == col->p_t_pos[link] &&
+             p_delta == col->p_delta[link] &&
+             p_q_base == col->p_q_base[link] ) {
+            col->link_count[link] ++;
             updated = 1;
             break;
         }
@@ -252,12 +252,12 @@ void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, uint8_t p_delta, cha
             assert( col->size < UINT16_MAX-1 );
             realloc_aln_col(col);
         }
-        kk = col->n_link;
+        link = col->n_link;
 
-        col->p_t_pos[kk] = p_t_pos;
-        col->p_delta[kk] = p_delta;
-        col->p_q_base[kk] = p_q_base;
-        col->link_count[kk] = 1;
+        col->p_t_pos[link] = p_t_pos;
+        col->p_delta[link] = p_delta;
+        col->p_q_base[link] = p_q_base;
+        col->link_count[link] = 1;
         col->n_link++;
     }
 }
