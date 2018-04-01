@@ -89,7 +89,7 @@ def syscall(cmd):
     Raise if empty.
     Raise on non-zero exit-code.
     """
-    LOG('$ %s >' % cmd)
+    LOG('$ {!r} >'.format(cmd))
     output = sp.check_output(shlex.split(cmd))
     if not output:
         msg = '%r failed to produce any output.' % cmd
