@@ -140,6 +140,7 @@ def metric_fragmentation(preads_fofn):
     # https://jira.pacificbiosciences.com/browse/SAT-105
     # sed -nr 's;>prolog/([0-9]*)[0-9]/.*;\1;p' %s/*.fasta | sort | uniq -c | awk '{print $1}' | sort | uniq -c
     fastas = abs_filenames(preads_fofn)
+    assert fastas, 'No fasta found in {!r}'.format(preads_fofn)
     call = """perl -e 'while (<>) { if ( m{>[^/]+/(\d+)\d/} ) { $id{$1}++; } }; while (my ($k, $v) = each %%id) { $counts{$v}++; }; while (my ($k, $v) = each %%counts) { print "$v $k\n"; };' %s""" % (' '.join(fastas))
     counts = syscall(call)
     return functional.calc_metric_fragmentation(counts)
@@ -148,6 +149,7 @@ def metric_fragmentation(preads_fofn):
 def metric_truncation(db, preads_fofn):
     # https://jira.pacificbiosciences.com/browse/SAT-105
     fastas = abs_filenames(preads_fofn)
+    assert fastas, 'No fasta found in {!r}'.format(preads_fofn)
     call = """perl -e 'while (<>) { if ( m{>[^/]+/0*(\d+)\d/(\d+)_(\d+)} ) { $lengths{(1 + $1)} += ($3 - $2); } }; while (my ($k, $v) = each %%lengths) { print "$k $v\n"; };' %s""" % (' '.join(fastas))
     # The +1 is because of the DBdump readids start at 1, but these start at 0.
     length_pairs_output = syscall(call)

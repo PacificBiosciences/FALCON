@@ -6,7 +6,7 @@ import os
 import re
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
-example_HPCdaligner_fn = os.path.join(thisdir, 'HPCdaligner_synth0.sh')
+example_HPCdaligner_fn = os.path.join(thisdir, 'HPCdaligner_synth0_new.sh')
 example_HPCdaligner_small_fn = os.path.join(
     thisdir, 'HPCdaligner_synth0_preads.sh')
 
@@ -20,8 +20,10 @@ def test_get_daligner_job_descriptions():
     result = f.get_daligner_job_descriptions(
         example_HPCdaligner, 'raw_reads')
     assert result
-    helpers.equal_multiline(result[('.1', '.1')], "daligner -v -h1 -t16 -H1 -e0.7 -l1 -s1000 raw_reads.1 raw_reads.1\nLAcheck -v raw_reads *.las\nLAsort -v raw_reads.1.raw_reads.1.C0 raw_reads.1.raw_reads.1.N0 && LAmerge -v L1.1.1 raw_reads.1.raw_reads.1.C0.S raw_reads.1.raw_reads.1.N0.S && rm raw_reads.1.raw_reads.1.C0.S.las raw_reads.1.raw_reads.1.N0.S.las\nLAcheck -vS raw_reads L1.1.1\n")
-    helpers.equal_multiline(result[('.2', '.1', '.2')], "daligner -v -h1 -t16 -H1 -e0.7 -l1 -s1000 raw_reads.2 raw_reads.1 raw_reads.2\nLAcheck -v raw_reads *.las\nLAsort -v raw_reads.1.raw_reads.2.C0 raw_reads.1.raw_reads.2.N0 && LAmerge -v L1.1.2 raw_reads.1.raw_reads.2.C0.S raw_reads.1.raw_reads.2.N0.S && rm raw_reads.1.raw_reads.2.C0.S.las raw_reads.1.raw_reads.2.N0.S.las\nLAsort -v raw_reads.2.raw_reads.1.C0 raw_reads.2.raw_reads.1.N0 && LAmerge -v L1.2.1 raw_reads.2.raw_reads.1.C0.S raw_reads.2.raw_reads.1.N0.S && rm raw_reads.2.raw_reads.1.C0.S.las raw_reads.2.raw_reads.1.N0.S.las\nLAsort -v raw_reads.2.raw_reads.2.C0 raw_reads.2.raw_reads.2.N0 && LAmerge -v L1.2.2 raw_reads.2.raw_reads.2.C0.S raw_reads.2.raw_reads.2.N0.S && rm raw_reads.2.raw_reads.2.C0.S.las raw_reads.2.raw_reads.2.N0.S.las\nLAcheck -vS raw_reads L1.1.2\nLAcheck -vS raw_reads L1.2.1\nLAcheck -vS raw_reads L1.2.2\n")
+    import sys, pprint
+    sys.stderr.write(pprint.pformat(result))
+    helpers.equal_multiline(result[('.1', '.1')], 'daligner -v -w1 -h1 -t50 -H2000 -e0.99 -l1 -s1000 -P=. -mdust raw_reads.1 raw_reads.1\nLAcheck -v raw_reads *.las\n')
+    helpers.equal_multiline(result[('.2', '.1', '.2')], 'daligner -v -w1 -h1 -t50 -H2000 -e0.99 -l1 -s1000 -P=. -mdust raw_reads.2 raw_reads.1 raw_reads.2\nLAcheck -v raw_reads *.las\n')
     eq_(len(result), 2)
 
 
@@ -38,7 +40,7 @@ def test_get_daligner_job_descriptions_small():
     result = f.get_daligner_job_descriptions(
         example_HPCdaligner, 'preads', single=True)
     assert result
-    helpers.equal_multiline(result[('.1', '.1')], "daligner -v -h1 -t50 -H1 -e0.99 -l1 -s1000 preads.1 preads.1\nLAcheck -v preads *.las\nLAsort -v preads.1.preads.1.C0 preads.1.preads.1.N0 preads.1.preads.1.C1 preads.1.preads.1.N1 preads.1.preads.1.C2 preads.1.preads.1.N2 preads.1.preads.1.C3 preads.1.preads.1.N3 && LAmerge -v preads.1 preads.1.preads.1.C0.S preads.1.preads.1.N0.S preads.1.preads.1.C1.S preads.1.preads.1.N1.S preads.1.preads.1.C2.S preads.1.preads.1.N2.S preads.1.preads.1.C3.S preads.1.preads.1.N3.S\nLAcheck -vS preads preads.1\n")
+    helpers.equal_multiline(result[('.1', '.1')], 'daligner -v -h1 -t50 -H1 -e0.99 -l1 -s1000 preads.1 preads.1\nLAcheck -v preads *.las\n')
     eq_(len(result), 1)
 
 
@@ -58,9 +60,11 @@ def test_get_mjob_data():
         example_HPCdaligner)
     assert result
     eq_(result[1], [
-        'LAmerge -v raw_reads.1 L1.1.1 L1.1.2 && rm L1.1.1.las L1.1.2.las'])
+        'LAmerge -v raw_reads.1 raw_reads.1.raw_reads.1 raw_reads.1.raw_reads.2',
+        'rm raw_reads.1.raw_reads.1.las raw_reads.1.raw_reads.2.las'])
     eq_(result[2], [
-        'LAmerge -v raw_reads.2 L1.2.1 L1.2.2 ; rm L1.2.1.las L1.2.2.las'])
+        'LAmerge -v raw_reads.2 raw_reads.2.raw_reads.1 raw_reads.2.raw_reads.2',
+        'rm raw_reads.2.raw_reads.1.las raw_reads.2.raw_reads.2.las'])
 
 
 def test_skip_LAcheck():

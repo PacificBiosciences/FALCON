@@ -218,7 +218,10 @@ LB={count}
 rm -f {run_jobs_bfn}
 CUTOFF={bash_cutoff}
 echo -n $CUTOFF >| {length_cutoff_fn}
-HPC.daligner {pa_HPCdaligner_option} -mdust -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_bfn}
+echo "SMRT_PYTHON_PATH_PREPEND=$SMRT_PYTHON_PATH_PREPEND"
+echo "PATH=$PATH"
+which HPC.daligner
+HPC.daligner -P. {pa_HPCdaligner_option} -mdust -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_bfn}
 """.format(**params)
     return script
     # Note: We dump the 'length_cutoff' file for later reference within the preassembly report
@@ -246,7 +249,8 @@ while read fn; do fasta2DB -v preads $fn; done < preads.fofn
 DBsplit {ovlp_DBsplit_option} preads
 {DBdust}
 LB={count}
-HPC.daligner {ovlp_HPCdaligner_option} -mdust -H{length_cutoff_pr} preads {last_block}-$LB >| {run_jobs_bfn}
+which HPC.daligner
+HPC.daligner -P. {ovlp_HPCdaligner_option} -mdust -H{length_cutoff_pr} preads {last_block}-$LB >| {run_jobs_bfn}
 """.format(**params)
     return script
 

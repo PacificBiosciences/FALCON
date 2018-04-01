@@ -8,7 +8,10 @@ from __future__ import print_function
 from future.utils import viewitems
 from .io import NativeIO as StringIO
 import collections
+import logging
 import re
+
+#LOG = logging.getLogger(__name__)
 
 
 def _verify_pairs(pairs1, pairs2):
@@ -53,28 +56,17 @@ def get_daligner_job_descriptions_sans_LAcheck(run_jobs_stream, db_prefix, singl
 def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
     """Return a dict of job-desc-tuple -> HPCdaligner bash-job.
 
-    Comments and lines starting with LAmerge are ignored.
+    Comments are ignored.
 
     E.g., each item will look like:
-      ('.2', '.1', '.2', '.3'): 'daligner ...; LAsort ...; LAmerge ...; LAcheck ...; rm ...'
+      ('.2', '.1', '.2', '.3'): 'daligner
 
     Rationale
     ---------
-    For i/o efficiency, we will combine daligner calls with LAsort lines, which include 0-level merge.
-    Example:
-      daligner -v -t16 -H12000 -e0.7 -s1000 raw_reads.2 raw_reads.1 raw_reads.2
-    That would be combined with two LAsort lines:
-      LAsort -v raw_reads.2.raw_reads.1.C0 ...
-      LAsort -v raw_reads.2.raw_reads.2.C0 ...
-    For each returned job, the result of
-      daligner X A B C; LAsort*
-    will then be
-      L1.X.A, L1.X.B, and L1.X.C
-    where A, B, or C could be X.
-    (In the example, X=2 A=1 B=2.)
+    For i/o efficiency, we want to daligner calls with LAsort/LAmerge lines. But
+    Gene has done this himself too. So now, we only want the daligner calls here.
 
-    Oddly, b/c of a recent change by GM, if there is only 1 block,
-    then the merged file is named differently. To achieve that, use single=True.
+    Later, we will do the extra LAmerge lines, grouped by A-read.
     """
     re_block_dali = re.compile(r'%s(\.\d+|)' % db_prefix)
 
@@ -85,68 +77,18 @@ def get_daligner_job_descriptions(run_jobs_stream, db_prefix, single=False):
         return [mo.group(1) for mo in re_block_dali.finditer(line)]
     # X == blocks[0]; A/B/C = blocks[...]
 
-    re_pair_sort = re.compile(r'%s(\.\d+|)\.%s(\.\d+|)' %
-                              (db_prefix, db_prefix))
-
-    def LAsort_pair(line):
-        """Return [('.1', '.1'), ('.1', '.2'), ('.2', '.1'), ...]
-        Can return [('', '')] if only 1 block.
-        """
-        mo = re_pair_sort.search(line)
-        if not mo:  # pragma: no cover
-            raise Exception('Pattern {!r} does not match line {!r}'.format(
-                re_pair_sort.pattern, line))
-        return mo.group(1, 2)
-
     lines = [line.strip() for line in run_jobs_stream]
     # in case caller passed filename, not stream
     assert any(len(l) > 1 for l in lines), repr('\n'.join(lines))
+
     lines_dali = [l for l in lines if l.startswith(
         'daligner')]  # could be daligner_p
-    lines_sort = [l for l in lines if l.startswith('LAsort')]
-    pair2dali = {}
-    for line in lines_dali:
-        blocks = blocks_dali(line)
-        block0 = blocks[0]
-        for block in blocks[1:]:
-            pair = (block0, block)
-            pair2dali[pair] = line
-            if block != block0:
-                # Then we have a reverse comparison too.
-                # https://dazzlerblog.wordpress.com/2014/07/10/dalign-fast-and-sensitive-detection-of-all-pairwise-local-alignments/
-                rpair = (block, block0)
-                pair2dali[rpair] = line
-    pair2sort = {}
-    for line in lines_sort:
-        pair = LAsort_pair(line)
-        pair2sort[pair] = line
-    _verify_pairs(sorted(pair2dali.keys()), sorted(pair2sort.keys()))
-    dali2pairs = collections.defaultdict(set)
-    total_pairs = 0
-    for (pair, dali) in viewitems(pair2dali):
-        dali2pairs[dali].add(pair)
-        total_pairs += 1
-    if single:
-        assert total_pairs == 1, 'In single-mode, but total_pair={}'.format(
-            total_pairs)
-        assert list(pair2dali.keys())[0] == ('.1', '.1'), repr(pair2dali)
     result = {}
-    for (dali, pairs) in viewitems(dali2pairs):
-        pairs = list(pairs)
-        pairs.sort(key=lambda k: ((int(k[0][1:]) if k[0].startswith(
-            '.') else 0), (int(k[1][1:]) if k[1].startswith('.') else 0)))
-        sorts = [pair2sort[pair] for pair in pairs]
+    for dali in lines_dali:
         id = tuple(blocks_dali(dali))
         early_checks = [
             "LAcheck -v {db_prefix} *.las".format(db_prefix=db_prefix)]
-        if single:
-            checks = [
-                "LAcheck -vS {db_prefix} {db_prefix}.1".format(db_prefix=db_prefix)]
-        else:
-            checks = ["LAcheck -vS {db_prefix} L1{p1}{p2}".format(
-                db_prefix=db_prefix, p1=pair[0], p2=pair[1]) for pair in pairs]
-
-        script = '\n'.join([dali] + early_checks + sorts + checks) + '\n'
+        script = '\n'.join([dali] + early_checks) + '\n'
         result[id] = script
     return result
 
@@ -221,7 +163,7 @@ def get_mjob_data(run_jobs_stream):
     for l in f:
         l = l.strip()
         first_word = l.split()[0]
-        if first_word not in ("LAsort", "LAmerge"):
+        if first_word not in ("LAsort", "LAmerge", "rm"):
             continue
         if first_word in ["LAsort"]:
             # We now run this part w/ daligner, but we still need
@@ -229,11 +171,20 @@ def get_mjob_data(run_jobs_stream):
             p_id = first_block_las(l)
             mjob_data.setdefault(p_id, [])
             # mjob_data[p_id].append(  " ".join(l) ) # Already done w/ daligner!
+            raise Exception('We do not expect to see LAsort at all anymore.')
         elif first_word in ["LAmerge"]:
             p_id = first_block_las(l)
             mjob_data.setdefault(p_id, [])
-            # l = re_strip_rm.sub(r'\1', l) # rm is very safe if we run in /tmp
+            # l = re_strip_rm.sub(r'\1', l) # (LAmerge && rm) rm is very safe if we run in /tmp
             mjob_data[p_id].append(l)
+            #LOG.info('{}: {}'.format(p_id, l))
+        elif first_word in ["rm"]:
+            p_id = first_block_las(l)
+            mjob_data.setdefault(p_id, [])
+            mjob_data[p_id].append(l)
+            #LOG.info('rm{}: {}'.format(p_id, l))
+    #for key, data in mjob_data.items():
+    #    mjob_data[key] = '\n'.join(data)
     return mjob_data
 
 
