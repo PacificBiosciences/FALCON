@@ -61,7 +61,7 @@ if [ -L "${VENV_BASE}" ]; then
 fi
 
 ###Make python virtualenv
-virtualenv --no-site-packages ${VENV}
+virtualenv --python=$(which python) --no-site-packages ${VENV}
 echo "export LD_LIBRARY_PATH=${VENV}/lib:\${LD_LIBRARY_PATH}" >>${VENV}/bin/activate
 source ${VENV}/bin/activate
 
