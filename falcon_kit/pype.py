@@ -104,7 +104,7 @@ def gen_parallel_tasks(
         else:
             raise Exception('No wildcard inputs among {!r}'.format(inputs))
 
-    LOG.warning('PARALLEL OUTPUTS:{}'.format(run_dict['outputs']))
+    LOG.debug('PARALLEL OUTPUTS:{}'.format(run_dict['outputs']))
     task_results = dict()
     for split_idx, job in enumerate(split):
         #inputs = job['input']
@@ -119,9 +119,9 @@ def gen_parallel_tasks(
             return v.format(**wildcards)
         def resolved_dict(d):
             result = dict(d)
-            LOG.warning(' wildcards={!r}'.format(wildcards))
+            LOG.debug(' wildcards={!r}'.format(wildcards))
             for k,v in d.items():
-                LOG.warning('  k={}, v={!r}'.format(k, v))
+                LOG.debug('  k={}, v={!r}'.format(k, v))
                 result[k] = v.format(**wildcards)
             return result
         #task_inputs = resolved_dict(run_dict['inputs'])
@@ -165,7 +165,7 @@ def gen_parallel_tasks(
     io.serialize(result_fn_list_fn, list(task_results.values())) # dump into next task-dir before next task starts
     #assert 'result_fn_list' not in gather_inputs
     #gather_inputs['result_fn_list'] = result_fn_list_fn # No! pseudo output, since it must exist in a known directory
-    LOG.warning('gather_inputs:{!r}'.format(gather_inputs))
+    LOG.debug('gather_inputs:{!r}'.format(gather_inputs))
     wf.addTask(pype_gen_task(
         script=TASK_GENERIC_UNSPLIT_SCRIPT,
         inputs=gather_inputs,
