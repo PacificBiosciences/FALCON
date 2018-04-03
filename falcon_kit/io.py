@@ -19,7 +19,7 @@ LOG = logging.getLogger()
 
 
 def log(*msgs):
-    LOG.info(' '.join(repr(m) for m in msgs))
+    LOG.debug(' '.join(repr(m) for m in msgs))
 
 
 def validate_config(config):

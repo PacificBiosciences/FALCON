@@ -561,7 +561,7 @@ formatter=form01
 args=('all.log', 'w')
 
 [formatter_form01]
-format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+format=%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s
 
 [formatter_form02]
 format=[%(levelname)s]%(message)s
