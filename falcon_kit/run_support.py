@@ -204,6 +204,9 @@ def update_job_defaults_section(config):
         config['job.defaults']['JOB_OPTS'] = sge_option
     if 'njobs' not in config['job.defaults']:
         config['job.defaults']['njobs'] = int(General.get('default_concurrent_jobs', 8)) # GLOBAL DEFAULT CONCURRENCY
+        msg = 'Please supply a default for "njobs" (aka concurrency) in section [job.defaults]. For now, we will use {}'.format(
+                config['job.defaults']['njobs'])
+        logger.warning(msg)
     legacy_names = [
             'pwatcher_type', 'pwatcher_directory',
             'job_type', 'job_queue', 'job_name_style',
