@@ -299,7 +299,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'input_type'):
         input_type = config.get(section, 'input_type')
 
-    overlap_filtering_setting = """--max_diff 1000 --max_cov 1000 --min_cov 2"""
+    overlap_filtering_setting = """--max-diff 1000 --max-cov 1000 --min-cov 2"""
     if config.has_option(section, 'overlap_filtering_setting'):
         overlap_filtering_setting = config.get(
             section, 'overlap_filtering_setting')
@@ -387,7 +387,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'ovlp_DBsplit_option'):
         ovlp_DBsplit_option = config.get(section, 'ovlp_DBsplit_option')
 
-    falcon_sense_option = """ --output_multi --min_idt 0.70 --min_cov 2 --max_n_read 1800 --n_core 6"""
+    falcon_sense_option = """ --output-multi --min-idt 0.70 --min-cov 2 --max-n-read 1800"""
     if config.has_option(section, 'falcon_sense_option'):
         falcon_sense_option = config.get(section, 'falcon_sense_option')
     if 'local_match_count' in falcon_sense_option or 'output_dformat' in falcon_sense_option:
