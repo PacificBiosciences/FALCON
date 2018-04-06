@@ -72,6 +72,7 @@ def gen_parallel_tasks(
 
     For now, we require a single such output, since we do not yet test for wildcards.
     """
+    assert 'dist' not in run_dict, 'dist should be a parameter of gen_parallel_tasks(), not of its run_dict'
     if dist is None:
         dist = Dist()
     from future.utils import itervalues
