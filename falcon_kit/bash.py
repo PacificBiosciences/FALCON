@@ -130,24 +130,6 @@ rm -rf {rdir}
     return write_script_and_wrapper_top(tmp_wrapper_script, wrapper_fn, job_done)
 
 
-def get_write_script_and_wrapper(config):
-    """NOT USED. This will be done in pypeFLOW.
-    Return a function.
-    For now, we actually use only config['use_tmpdir'], a boolean.
-    """
-    use_tmpdir = config.get('use_tmpdir', None)
-    if use_tmpdir:
-        if use_tmpdir is not True and '/' in use_tmpdir:
-            tmpdir = use_tmpdir
-        else:
-            tmpdir = tempfile.gettempdir()
-        # Really, we also want to copy the symlinked db to tmpdir.
-        # Tricky. TODO.
-        return functools.partial(write_script_and_wrapper_for_tmp, tmpdir)
-    else:
-        return write_script_and_wrapper_top
-
-
 def filter_DBsplit_option(opt):
     """We want -a by default, but if we see --no-a[ll], we will not add -a.
     """
