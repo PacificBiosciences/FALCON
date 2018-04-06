@@ -1,16 +1,7 @@
 from __future__ import absolute_import
-
-
-from future.utils import viewitems
-
-from builtins import range
-from builtins import object
 import os
 import sys
-
-import networkx as nx
-from .fc_asm_graph import AsmGraph
-from . import FastaReader
+import json
 
 GFA_H_TAG = 'H'
 GFA_S_TAG = 'S'
@@ -20,253 +11,228 @@ GFA_ORIENT_FWD = '+'
 GFA_ORIENT_REV = '-'
 GFA_SEQ_UNKNOWN = '*'
 GFA_LINK_CIGAR_UNKNOWN = '*'
+GFA2_E_TAG = 'E'
 
+KW_NAME = 'name'
+KW_TAGS = 'tags'
+KW_LABELS = 'labels'
 
-class GFAGraph(object):
+KW_NODE_SEQ = 'seq'
+KW_NODE_LEN = 'len'
+
+KW_EDGE_SOURCE = 'v'
+KW_EDGE_SOURCE_ORIENT = 'v_orient'
+KW_EDGE_SINK = 'w'
+KW_EDGE_SINK_ORIENT = 'w_orient'
+KW_EDGE_CIGAR = 'cigar'
+KW_EDGE_SOURCE_START = 'v_start'
+KW_EDGE_SOURCE_END = 'v_end'
+KW_EDGE_SINK_START = 'w_start'
+KW_EDGE_SINK_END = 'w_end'
+
+KW_PATH_NODES = 'nodes'
+KW_PATH_CIGARS = 'cigars'
+
+"""
+GFA-1:
+- H line: line = '\t'.join([GFA_H_TAG, '\tVN:Z:1.0'])
+- S line: line = '\t'.join([GFA_S_TAG, rname, GFA_SEQ_UNKNOWN if (not write_reads) else r.sequence, 'LN:i:%s' % len(r.sequence)])
+- L line: line = '\t'.join([GFA_L_TAG, edge.sg_edge.v_name, edge.sg_edge.v_orient, edge.sg_edge.w_name, edge.sg_edge.w_orient, cig_str])
+- P line: line = '\t'.join([GFA_P_TAG, ctg_name, ','.join(segs), ','.join(segs_cigar)]
+
+GFA-2:
+- H line: line = '\t'.join([GFA_H_TAG, '\tVN:Z:2.0'])
+- S line: line = '\t'.join([GFA_S_TAG, rname, str(len(r.sequence)), GFA_SEQ_UNKNOWN if (not write_reads) else r.sequence])
+- E line: line = '\t'.join([GFA2_E_TAG, edge_name, source_node, sink_node, source_start, source_end, sink_start, sink_end, cig_str])
+
+"""
+
+class GFAGraph:
     def __init__(self):
-        self.paths = {}
-        self.read_pairs = set()
-        self.read_in_graph = set()
+        self.nodes = {}
         self.edges = {}
+        self.paths = {}
 
-    def add_tiling_path(self, ctg_path, ctg_name):
         """
-        For a given tiling path, this method adds nodes
-        and edges between every connected node.
-        If an edge already exists, it will not be overwritten.
-        Instead, it will be pdated with tiling path info
-        (e.g. sequence tiling begin and end coordinate, overlap
-        identity, etc.)
-        ctg_path is a list containing a tiling path.
-        ctg_name is the name of the contig that this tiling
-        path describes.
-        """
-        self.paths[ctg_name] = ctg_path
-        for v, w, b, e, l, idt, etype in ctg_path:
-            self.add_read_from_node(v)
-            self.add_read_from_node(w)
-            self.add_or_update_edge(
-                v, w, '*', l, idt, b, e, None, None, ctg_name, etype)
-
-    def add_asm_graph(self, asm_graph):
-        """
-        Takes a Falcon AsmGraph object and adds all
-        edges in the final assembly graph to `self`.
-        It also adds nodes incident with those edges.
-        """
-        for v, w in asm_graph.sg_edges:
-            edge_data = asm_graph.sg_edges[(v, w)]
-            if edge_data[-1] == 'G':
-                overlap_begin = int(edge_data[0][1])
-                overlap_end = int(edge_data[0][2])
-                overlap_length = int(edge_data[1])
-                overlap_idt = float(edge_data[2])
-                self.add_or_update_edge(
-                    v, w, '*', overlap_length, overlap_idt, overlap_begin, overlap_end, None, None, None, None)
-
-    def add_nx_string_graph(self, nx_sg):
-        """
-        Takes an Networkx object specifying an
-        assembly string graph and adds all edges and
-        nodes to `self`.
-        """
-        for node in nx_sg.nodes():
-            self.add_read_from_node(node)
-        for v, w in nx_sg.edges():
-            edata = nx_sg.get_edge_data(v, w)
-            src_graph = edata.get('src', None)
-            cross_phase = edata.get('cross_phase', None)
-            self.add_or_update_edge(
-                v, w, '*', None, None, None, None, cross_phase, src_graph, None, None)
-
-    def write_gfa_v1(self, fp_out, preads_file, contig_files, write_reads, write_contigs):
-        """
-        Writes the nodes, edges and paths in a GFA-v1 format.
-        preads_file is a string with a path to the preads4falcon.fasta file.
-        contig_files is a list of strings with primary/associate contigs or haplotigs.
-        If write_reads is True, read sequences will be output to GFA as well.
-        If write_contigs is True, all contigs which have a corresponding tiling
-        path in the GFAGraph object will have their sequences output.
+        Node: {KW_NAME: '01234', KW_NODE_SEQ: 'ACTG', 'len': 4}
+        Node: {'name': '56789', KW_NODE_SEQ: 'CAGT', 'len': 4}
+        Edge: {KW_NAME: 'edge1', 'source': '01234', 'sink': '56789', 'cigar': '*', 'source_start': 3, 'source_end': 4, 'sink_start': 0, 'sink_end': 1}
+        Path: {KW_NAME: '000000F', 'nodes': ['01234', '56789'], '
         """
 
-        # Output version.
-        fp_out.write(GFA_H_TAG + '\tVN:Z:1.0\n')
+    def add_node(self, node_name, node_len, node_seq='*', tags={}, labels={}):
+        if len(node_name) == 0:
+            raise 'Node name should be a non-empty string.\n'
+        if node_len < 0:
+            raise 'Node length should be >= 0.\n'
+        if len(node_seq) == 0:
+            raise 'Node sequence should be a non-empty string. Use "*" instead.\n'
+        if isinstance(tags, dict) == False:
+            raise 'The tags object must be a dict.\n'
+        if isinstance(labels, dict) == False:
+            raise 'The labels object must be a dict.\n'
 
-        seq_len_map = {}
+        self.nodes[node_name] = {
+                                    KW_NAME: node_name,
+                                    KW_NODE_LEN: node_len,
+                                    KW_NODE_SEQ: node_seq,
+                                    KW_TAGS: tags,
+                                    KW_LABELS: labels
+                                }
 
-        # Output reads on the fly.
-        # Perhaps solve this via yield, but we also want the sequence length map generated simultaneously as well.
-        if self.read_in_graph:
-            found_reads = set()
-            with FastaReader.open_fasta_reader(preads_file) as f:
-                for r in f:
-                    rname = r.name.split()[0]
-                    seq_len_map[rname] = len(r.sequence)
-                    if rname in self.read_in_graph:
-                        fp_out.write('\t'.join([GFA_S_TAG, rname, GFA_SEQ_UNKNOWN if (
-                            not write_reads) else r.sequence, 'LN:i:%s' % len(r.sequence)]) + '\n')
-                        found_reads.add(rname)
-            if len(found_reads) != len(self.read_in_graph):
-                raise Exception(
-                    'Not all reads were found in the specified preads file.')
-
-        if write_contigs:
-            for contig_fasta in contig_files:
-                with FastaReader.open_fasta_reader(contig_fasta) as f:
-                    for r in f:
-                        rname = r.name.split()[0]
-                        # Only output contigs which were added as paths.
-                        if rname in self.paths:
-                            fp_out.write('\t'.join(
-                                [GFA_S_TAG, rname, r.sequence, 'LN:i:%d' % (len(r.sequence))]) + '\n')
-
-        # Output links.
-        for (key, edge) in viewitems(self.edges):
-            link_line = self.format_gfa_v1_link_line(edge)
-            fp_out.write(link_line + '\n')
-
-        # Output contig paths.
-        for ctg_name in sorted(self.paths.keys()):
-            path_line = self.format_gfa_v1_path_line(
-                ctg_name, self.paths[ctg_name], seq_len_map)
-            fp_out.write(path_line + '\n')
-
-    def add_read_from_node(self, node):
+    def add_edge(self, edge_name, source, source_orient, sink, sink_orient, source_start, source_end, sink_start, sink_end, cigar, tags={}, labels={}):
         """
-        Takes a node formatted as "[0-9]+:[BE],
-        extracts the read ID part and adds it to the GFAGraph.
+        source_orient   + if fwd, - otherwise.
+        sink_orient   + if fwd, - otherwise.
         """
-        r, rend = node.split(':')
-        self.read_in_graph.add(r)
+        if len(edge_name) == 0:
+            raise 'Edge name should be a non-empty string.\n'
+        if len(source) == 0:
+            raise 'Source node not specified.\n'
+        if len(sink) == 0:
+            raise 'Sink node not specified.\n'
+        if source_orient not in '+-':
+            raise 'Source orientation should be either "+" or "-".\n'
+        if sink_orient not in '+-':
+            raise 'Sink orientation should be either "+" or "-".\n'
+        if source_start < 0 or source_end < 0:
+            raise 'Source coordinates should be >= 0.\n'
+        if sink_start < 0 or sink_end < 0:
+            raise 'Sink coordinates should be >= 0.\n'
+        if len(cigar) == 0:
+            raise 'Cigar string should not be empty. Use "*" instead.\n'
+        if source_end < source_start:
+            sys.stderr.write('ERROR with: source = %s, source_start = %s, source_end = %s, sink = %s, sink_start = %s, sink_end = %s\n' % (source, source_start, source_end, sink, sink_start, sink_end))
+            raise 'Source end coordinate should be >= source start coordinate.\n'
+        if sink_end < sink_start:
+            raise 'Sink end coordinate should be >= sink start coordinate.\n'
+        if isinstance(tags, dict) == False:
+            raise 'The tags object must be a dict.\n'
+        if isinstance(labels, dict) == False:
+            raise 'The labels object must be a dict.\n'
 
-    def add_edge(self, v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_):
+        self.edges[str((source, sink))] = {
+                                        KW_NAME: edge_name,
+                                        KW_EDGE_SOURCE: source,
+                                        KW_EDGE_SOURCE_ORIENT: source_orient,
+                                        KW_EDGE_SINK: sink,
+                                        KW_EDGE_SINK_ORIENT: sink_orient,
+                                        KW_EDGE_SOURCE_START: source_start,
+                                        KW_EDGE_SOURCE_END: source_end,
+                                        KW_EDGE_SINK_START: sink_start,
+                                        KW_EDGE_SINK_END: sink_end,
+                                        KW_EDGE_CIGAR: cigar,
+                                        KW_TAGS: tags,
+                                        KW_LABELS: labels
+                                    }
+
+    def add_path(self, path_name, path_nodes, path_cigars, tags={}, labels={}):
         """
-        Adds an edge to the GFAGraph, but only if the edge
-        between reads in v and w does not yet exist.
-        GFA-1 format might not allow multiedges.
+        path_nodes is a list of nodes which should be joined
+        consecutively in a path.
+        path_cigars is a list of CIGAR strings describing how the
+        two neighboring nodes are joined.
+        len(path_nodes) == len(path_cigars)
         """
-        new_edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin,
-                    overlap_end, cross_phase, src_graph, ctg_name, type_]
+        if len(path_name) == 0:
+            raise 'Path name should be a non-empty string.\n'
+        if len(path_nodes) == 0:
+            raise 'Path nodes should be a non-empty list.\n'
+        if len(path_cigars) == 0:
+            raise 'Path cigars should be a non-empty list.\n'
+        if isinstance(tags, dict) == False:
+            raise 'The tags object must be a dict.\n'
+        if isinstance(labels, dict) == False:
+            raise 'The labels object must be a dict.\n'
+        if len(path_nodes) != len(path_cigars):
+            raise 'The path_nodes and path_cigars should have the same length.\n'
 
-        # GFA supposedly does not allow multiedges
-        r1, r1end = v.split(':')
-        r2, r2end = w.split(':')
-        rp = [r1, r2]
-        rp.sort()
-        rp = tuple(rp)
-        if rp in self.read_pairs:
-            return
-        self.read_pairs.add(rp)
-        self.read_in_graph.add(r1)
-        self.read_in_graph.add(r2)
+        self.paths[path_name] = {
+                                    KW_NAME: path_name,
+                                    KW_PATH_NODES: path_nodes,
+                                    KW_PATH_CIGARS: path_cigars,
+                                    KW_TAGS: tags,
+                                    KW_LABELS: labels
+                                }
 
-        self.edges[(v, w)] = new_edge
+    def write_gfa_v1(self, fp_out):
+        # Header
+        line = '\t'.join([GFA_H_TAG, 'VN:Z:1.0'])
+        fp_out.write(line + '\n')
 
-    def update_edge(self, v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_):
-        """
-        If an edge between v and w already exists,
-        this method will update only the values in the
-        existing edge which are equal to None.
-        This is useful if multiple sources of string graph
-        edges are being loaded, and if they contain
-        complementary info (e.g. tiling path and the sg.gexf
-        graph).
-        """
-        if (v, w) not in self.edges:
-            raise Exception('Edge "vwedge" does not exist and cannot be updated.'.format(
-                vvedge=str((v, w))))
+        # Sequences.
+        for node_name, node_data in self.nodes.iteritems():
+            line = '\t'.join([  GFA_S_TAG,
+                                node_data[KW_NAME],
+                                node_data[KW_NODE_SEQ],
+                                'LN:i:%d' % node_data[KW_NODE_LEN]])
+            fp_out.write(line + '\n')
 
-        # Update only non-None data.
-        # Useful in case e.g. edges were loaded from the Networkx object which lacks some info,
-        # while the tiling path might contain that info.
-        # E.g. the tiling path specifies the contig where an edge came from, whereas
-        # this info is not present in the string graph directly.
-        # On the other hand, Unzip nx graph has info about phasing which is missing
-        # from the tiling paths.
-        curr_edge = self.edges[(v, w)]
-        new_edge = [v, w, cigar, overlap_len, overlap_idt, overlap_begin,
-                    overlap_end, cross_phase, src_graph, ctg_name, type_]
-        for i in range(len(curr_edge)):
-            if curr_edge[i] is None:
-                curr_edge[i] = new_edge[i]
+        for edge, edge_data in self.edges.iteritems():
+            cigar = edge_data[KW_EDGE_CIGAR] if edge_data[KW_EDGE_CIGAR] != '*' else '%dM' % (abs(edge_data[KW_EDGE_SINK_END] - edge_data[KW_EDGE_SINK_START]))
 
-    def add_or_update_edge(self, v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_):
-        """
-        A wrapper to add an edge if it does not exist
-        or to update the edge if it already exists in
-        the GFAGraph.
-        """
-        if (v, w) not in self.edges:
-            self.add_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin,
-                          overlap_end, cross_phase, src_graph, ctg_name, type_)
-        else:
-            self.update_edge(v, w, cigar, overlap_len, overlap_idt, overlap_begin,
-                             overlap_end, cross_phase, src_graph, ctg_name, type_)
+            line = '\t'.join([str(val) for val in
+                                [  GFA_L_TAG,
+                                    edge_data[KW_EDGE_SOURCE],
+                                    edge_data[KW_EDGE_SOURCE_ORIENT],
+                                    edge_data[KW_EDGE_SINK],
+                                    edge_data[KW_EDGE_SINK_ORIENT],
+                                    cigar
+                                ]
+                            ])
+            fp_out.write(line + '\n')
 
-    def format_gfa_v1_link_line(self, edge):
-        """
-        Given an edge creates a GFA-1 formatted
-        link ('L') string line.
-        """
-        v, w, cigar, overlap_len, overlap_idt, overlap_begin, overlap_end, cross_phase, src_graph, ctg_name, type_ = edge
+        for path_name, path_data in self.paths.iteritems():
+            line = '\t'.join([GFA_P_TAG, path_data[KW_NAME], ','.join(path_data[KW_PATH_NODES]), ','.join(path_data[KW_PATH_CIGARS])])
+            fp_out.write(line + '\n')
 
-        r1, r1end = v.split(':')
-        r2, r2end = w.split(':')
-        if r1end == 'E':
-            o1 = GFA_ORIENT_FWD
-        else:
-            o1 = GFA_ORIENT_REV
-        if r2end == 'E':
-            o2 = GFA_ORIENT_FWD
-        else:
-            o2 = GFA_ORIENT_REV
+    def write_gfa_v2(self, fp_out):
+        # Header
+        line = '\t'.join([GFA_H_TAG, 'VN:Z:2.0'])
+        fp_out.write(line + '\n')
 
-        cig_str = '*' if not cigar else cigar
+        # Sequences.
+        for node_name, node_data in self.nodes.iteritems():
+            line = '\t'.join([  GFA_S_TAG,
+                                node_data[KW_NAME],
+                                str(node_data[KW_NODE_LEN]),
+                                node_data[KW_NODE_SEQ]])
+            fp_out.write(line + '\n')
 
-        vals = [GFA_L_TAG, r1, o1, r2, o2, cig_str]
+        for edge, edge_data in self.edges.iteritems():
+            v = edge_data[KW_EDGE_SOURCE]
+            w = edge_data[KW_EDGE_SINK]
+            v_len = self.nodes[v][KW_NODE_LEN]
+            w_len = self.nodes[w][KW_NODE_LEN]
 
-        if overlap_len is not None:
-            vals.append('ol:i:%d' % (int(overlap_len)))
-        if overlap_idt is not None:
-            vals.append('oi:f:%.1f' % (float(overlap_idt)))
-        if overlap_begin is not None:
-            vals.append('ob:i:%d' % (int(overlap_begin)))
-        if overlap_end is not None:
-            vals.append('oe:i:%d' % (int(overlap_end)))
+            # GFA-2 specifies a special char '$' when a coordinate is the same as the sequence length.
+            v_start = str(edge_data[KW_EDGE_SOURCE_START]) + ('$' if edge_data[KW_EDGE_SOURCE_START] == v_len else '')
+            v_end = str(edge_data[KW_EDGE_SOURCE_END]) + ('$' if edge_data[KW_EDGE_SOURCE_END] == v_len else '')
+            w_start = str(edge_data[KW_EDGE_SINK_START]) + ('$' if edge_data[KW_EDGE_SINK_START] == w_len else '')
+            w_end = str(edge_data[KW_EDGE_SINK_END]) + ('$' if edge_data[KW_EDGE_SINK_END] == w_len else '')
 
-        if src_graph is not None:
-            vals.append('sg:Z:%s' % (str(src_graph)))
-        if cross_phase is not None:
-            vals.append('cp:Z:%s' % (str(cross_phase)))
+            line = '\t'.join([str(val) for val in
+                                [  GFA2_E_TAG, edge_data[KW_NAME],
+                                    edge_data[KW_EDGE_SOURCE] + edge_data[KW_EDGE_SOURCE_ORIENT],
+                                    edge_data[KW_EDGE_SINK] + edge_data[KW_EDGE_SINK_ORIENT],
+                                    v_start, v_end,
+                                    w_start, w_end,
+                                    edge_data[KW_EDGE_CIGAR],
+                                ]
+                            ])
+            fp_out.write(line + '\n')
 
-        ctg_name_str = str(ctg_name) if ctg_name else 'NA'
-        type_str = str(type_) if type_ else 'NA'
-        vals.append('ci:Z:%s-%s' % (ctg_name_str, type_str))
+def serialize_gfa(gfa_graph):
+    gfa_dict = {}
+    gfa_dict['nodes'] = gfa_graph.nodes
+    gfa_dict['edges'] = gfa_graph.edges
+    gfa_dict['paths'] = gfa_graph.paths
+    return json.dumps(gfa_dict)
 
-        return '\t'.join(vals)
-
-    def format_gfa_v1_path_line(self, ctg_name, tiling_path, seq_len_map):
-        """
-        Takes a tiling path and formulates a P line string for GFA-v1.
-        seq_len_map is a dict with key equal to read header, and value
-        the length of the read. If None, no CIGAR strings will be output
-        in the path line.
-        """
-        if not tiling_path:
-            return ''
-        v, w, b, e, l, idt, etype = tiling_path[0]
-        rname, rend = v.split(':')
-        o = GFA_ORIENT_FWD if rend == 'E' else GFA_ORIENT_REV
-        segs = [rname + o]
-        segs_cigar = ['%dM' % (seq_len_map[rname])] if seq_len_map else ['*']
-        for v, w, b, e, l, idt, etype in tiling_path:
-            rname, rend = w.split(':')
-            o = GFA_ORIENT_FWD if rend == 'E' else GFA_ORIENT_REV
-            segs.append(rname + o)
-            l = abs(b - e)
-            if seq_len_map:
-                segs_cigar.append('%dM' % (l))
-            else:
-                segs_cigar.append('*')
-        out = [GFA_P_TAG, ctg_name, ','.join(segs), ','.join(segs_cigar)]
-        return '\t'.join(out)
+def deserialize_gfa(fp_in):
+    gfa_dict = json.load(fp_in)
+    gfa = GFAGraph()
+    gfa.nodes = gfa_dict['nodes']
+    gfa.edges = gfa_dict['edges']
+    gfa.paths = gfa_dict['paths']
+    return gfa
