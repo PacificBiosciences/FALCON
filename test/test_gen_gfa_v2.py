@@ -1,4 +1,4 @@
-import falcon_kit.mains.gen_gfa_v1 as mod
+import falcon_kit.mains.gen_gfa_v2 as mod
 import helpers
 import pytest
 import os
@@ -27,11 +27,10 @@ def test_main_1(tmpdir, capsys):
     mod.main(argv)
     out, err = capsys.readouterr()
 
-    expected = """H	VN:Z:1.0
-S	node1	ACTGAAA	LN:i:7
-S	node2	AAACCCGGGT	LN:i:10
-L	node1	+	node2	+	3M
-P	000000F	node1,node2	4M,7M
+    expected = """H	VN:Z:2.0
+S	node1	7	ACTGAAA
+S	node2	10	AAACCCGGGT
+E	edge1	node1+	node2+	4	7$	0	3	*
 """
 
     # Custom tags can be in an arbitrary order and hard to compare.
@@ -47,12 +46,9 @@ P	000000F	node1,node2	4M,7M
             result.append('\t'.join(sl[0:2]))
         elif line[0] == 'S':
             result.append('\t'.join(sl[0:4]))
-        elif line[0] == 'L':
-            result.append('\t'.join(sl[0:6]))
-        elif line[0] == 'P':
-            result.append('\t'.join(sl[0:4]))
+        elif line[0] == 'E':
+            result.append('\t'.join(sl[0:9]))
 
     result_str = '\n'.join(result) + '\n'
 
     assert(result_str == expected)
-
