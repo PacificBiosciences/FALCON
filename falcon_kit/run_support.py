@@ -176,6 +176,18 @@ def parse_cfg_file(config_fn):
     clean_falcon_options(config.get('General', {}))
     return config
 
+def process_job_defaults(job_defaults):
+    key = 'use_tmpdir'
+    use_tmpdir = job_defaults.get(key, '')
+    if '/' in use_tmpdir:
+        tempfile.tempdir = use_tmpdir
+    else:
+        if use_tmpdir.lower().startswith('t'):
+            use_tmpdir = tempfile.gettempdir()
+        else:
+            use_tmpdir = False
+        job_defaults[key] = use_tmpdir
+
 def update_job_defaults_section(config):
     """For backwards compatibility with stuff from 'General' section.
     """
@@ -235,8 +247,11 @@ def update_job_defaults_section(config):
         if key not in job_defaults:
             if key in General:
                 job_defaults[key] = General[key]
+                logger.warning('Found "{}" from [General] section; should be in [job.defaults] instead.'.format(key))
     update_if_if('job_name_style')
     update_if_if('stop_all_jobs_on_failure')
+    update_if_if('use_tmpdir')
+
     legacy_names = [
             'pwatcher_type', 'pwatcher_directory',
             'job_type', 'job_queue', 'job_name_style',
@@ -247,6 +262,7 @@ def update_job_defaults_section(config):
             sub_dict[name] = General[name]
     for name in legacy_names:
         update_if_missing(name, config['job.defaults'])
+    process_job_defaults(job_defaults)
 
 def update_job_sections(config):
     """More for backwards compatibility with stuff from 'General' section.
@@ -480,23 +496,6 @@ def get_dict_from_old_falcon_cfg(config):
         logger.info(""" No target specified, assuming "assembly" as target """)
         target = "assembly"
 
-    if config.has_option(section, 'stop_all_jobs_on_failure'):
-        stop_all_jobs_on_failure = config.getboolean(
-            section, 'stop_all_jobs_on_failure')
-    else:
-        # Good default. Rarely needed, since we already stop early if *all* tasks fail
-        # in a given refresh.
-        stop_all_jobs_on_failure = False
-    if config.has_option(section, 'use_tmpdir'):
-        tmpdir = config.get(section, 'use_tmpdir')
-        if '/' in tmpdir:
-            tempfile.tempdir = tmpdir
-            use_tmpdir = tmpdir
-        else:
-            use_tmpdir = config.getboolean(section, 'use_tmpdir')
-    else:
-        use_tmpdir = False
-
     TEXT_FILE_BUSY = 'avoid_text_file_busy'
     if config.has_option(section, TEXT_FILE_BUSY):
         bash.BUG_avoid_Text_file_busy = config.getboolean(
@@ -531,8 +530,6 @@ def get_dict_from_old_falcon_cfg(config):
         "falcon_sense_skip_contained": falcon_sense_skip_contained,
         "falcon_sense_greedy": falcon_sense_greedy,
         "LA4Falcon_preload": LA4Falcon_preload,
-        "stop_all_jobs_on_failure": stop_all_jobs_on_failure,
-        "use_tmpdir": use_tmpdir,
         TEXT_FILE_BUSY: bash.BUG_avoid_Text_file_busy,
     }
     possible_extra_keys = [

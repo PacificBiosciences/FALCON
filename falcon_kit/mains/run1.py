@@ -177,8 +177,8 @@ def run(wf, config, rule_writer,
 
     # only matter for parallel jobs
     job_defaults = config['job.defaults']
-    exitOnFailure = job_defaults['stop_all_jobs_on_failure']
-    default_njobs = job_defaults['njobs']
+    exitOnFailure = bool(job_defaults.get('stop_all_jobs_on_failure', False))
+    default_njobs = int(job_defaults.get('njobs', 7))
     wf.max_jobs = default_njobs
 
     assert config['input_type'] in (
