@@ -48,6 +48,7 @@ def run(bash_template_fn, units_of_work_fn, nproc,
         LOG.warning('PARAMS:{}'.format(params))
         uow_dir = 'uow-{:02d}'.format(i)
         uow_dirs.append(uow_dir)
+        io.rmdir(uow_dir)
         io.mkdirs(uow_dir)
         script = open(bash_template_fn).read()
         with io.cd(uow_dir):
