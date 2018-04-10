@@ -169,10 +169,8 @@ def parse_cfg_file(config_fn):
         # Parse sections (and case-sensitively), into sub-dicts.
         config = parse_cfg_with_sections(stream)
     update_defaults(config['General'])
-    check_config_sections(config)
+    check_config_sections(config) # Ensure that the right sections exist.
     update_job_sections(config)
-    clean_falcon_options(config)
-    clean_falcon_options(config.get('General', {}))
     return config
 
 def process_job_defaults(job_defaults):
@@ -400,6 +398,8 @@ def update_defaults(cfg):
     if target not in ["overlapping", "pre-assembly", "assembly"]:
         msg = """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target {!r} in the configuration file.  """.format(target)
         raise Exception(msg)
+
+    clean_falcon_options(cfg)
 
     possible_extra_keys = [
             'sge_option', 'default_concurrent_jobs',
