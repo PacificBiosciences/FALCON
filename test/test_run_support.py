@@ -7,16 +7,18 @@ def parse_config(content):
     """Used by tests.
     (Clean this code up later.)
     """
-    config = dict()
     stream = StringIO.StringIO
-    cfg2 = mod.parse_cfg_with_sections(stream(content))
-    mod.update_config_from_sections(config, cfg2)
+    config = mod.parse_cfg_with_sections(stream(content))
+    mod.update_defaults(config['General'])
+    mod.check_config_sections(config)
     mod.update_job_sections(config)
     return config
 
-
 FC_RUN_CFG = """\
 [General]
+input_fofn = input.fofn
+genome_size = 100
+
 job_name_style = 1
 #use_tmpdir = true
 #job_type = local
@@ -90,7 +92,8 @@ NPROC = 256
 njobs = 42
 """
 
-def test_update_config_from_sections():
+def test_check_config_sections():
+    # called implicitly
     config = parse_config(FC_RUN_CFG)
 
     assert int(config['General']['default_concurrent_jobs']) == 64
@@ -100,19 +103,20 @@ def test_update_config_from_sections():
     assert int(config['job.step.da']['NPROC']) == 256
     assert int(config['job.step.pda']['njobs']) == 42
 
-def test_update_config_from_sections_foo():
-    config = dict()
-    cfg2 = mod.parse_cfg_with_sections(StringIO.StringIO(FC_RUN_CFG))
+def test_check_config_sections_foo():
+    config = mod.parse_cfg_with_sections(StringIO.StringIO(FC_RUN_CFG))
 
     import collections
-    cfg2['foo'] = collections.defaultdict(list)
+    config['foo'] = collections.defaultdict(list)
     with pytest.raises(Exception) as excinfo:
-        mod.update_config_from_sections(config, cfg2)
+        mod.check_config_sections(config)
     assert 'You have 1 unexpected cfg sections' in str(excinfo.value)
 
 
 CFG_SANS_SUBMIT_LOCAL = """\
 [General]
+input_fofn = input.fofn
+genome_size = 100
 pwatcher_type = fs_based
 job_type = local
 [job.defaults]
@@ -125,6 +129,8 @@ def test_update_job_sections0():
 
 CFG_SANS_SUBMIT_SANS_JOB_TYPE = """\
 [General]
+input_fofn = input.fofn
+genome_size = 100
 pwatcher_type = fs_based
 #job_type = sge
 [job.defaults]
@@ -137,9 +143,12 @@ def test_update_job_sections1():
 
 CFG_SANS_SUBMIT_UNKNOWN_JOB_TYPE = """\
 [General]
-pwatcher_type = fs_based
-job_type = foo
+input_fofn = input.fofn
+genome_size = 100
 [job.defaults]
+pwatcher_type = fs_based
+#submit = 'bar'
+job_type = foo
 # empty
 """
 def test_update_job_sections2():
@@ -149,9 +158,11 @@ def test_update_job_sections2():
 
 CFG_SANS_SUBMIT_UNKNOWN_PWATCHER_TYPE = """\
 [General]
+input_fofn = input.fofn
+genome_size = 100
+[job.defaults]
 pwatcher_type = foo
 job_type = sge
-[job.defaults]
 # empty
 """
 def test_update_job_sections3():
