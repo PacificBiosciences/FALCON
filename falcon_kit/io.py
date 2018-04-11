@@ -19,7 +19,7 @@ LOG = logging.getLogger()
 
 
 def log(*msgs):
-    LOG.info(' '.join(repr(m) for m in msgs))
+    LOG.debug(' '.join(repr(m) for m in msgs))
 
 
 def validate_config(config):
@@ -143,3 +143,8 @@ def yield_abspath_from_fofn(fofn_fn):
     except Exception:
         LOG.error('Problem resolving paths in FOFN {!r}'.format(fofn_fn))
         raise
+
+
+def rmdir(d):
+    assert os.path.normpath(d.strip()) not in ['.', '', '/']
+    syscall('rm -rf {}'.format(' '.join(d)))

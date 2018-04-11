@@ -133,7 +133,7 @@ pwatcher_type = fs_based
 def test_update_job_sections1():
     with pytest.raises(Exception) as excinfo:
         parse_config(CFG_SANS_SUBMIT_SANS_JOB_TYPE)
-    assert 'but General.job_type is not set' in str(excinfo.value)
+    assert 'but job_type is not set' in str(excinfo.value)
 
 CFG_SANS_SUBMIT_UNKNOWN_JOB_TYPE = """\
 [General]

@@ -133,7 +133,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
         config = support.parse_cfg_file(input_config_fn)
         import json
         dumped = json.dumps(config, indent=2, separators=(',', ': '), sort_keys=True)
-        LOG.warning('cfg=\n{}'.format(dumped))
+        LOG.info('cfg=\n{}'.format(dumped))
     except Exception:
         LOG.exception('Failed to parse config "{}".'.format(input_config_fn))
         raise
@@ -176,8 +176,9 @@ def run(wf, config, rule_writer,
         support.make_dirs(d)
 
     # only matter for parallel jobs
-    exitOnFailure = config['stop_all_jobs_on_failure']
-    default_njobs = config['job.defaults']['njobs']
+    job_defaults = config['job.defaults']
+    exitOnFailure = bool(job_defaults.get('stop_all_jobs_on_failure', False))
+    default_njobs = int(job_defaults.get('njobs', 7))
     wf.max_jobs = default_njobs
 
     assert config['input_type'] in (

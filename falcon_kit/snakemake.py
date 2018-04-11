@@ -164,6 +164,7 @@ date
         self.rule_names = set() # to ensure uniqueness
         self.re_bad_char = re.compile(r'\W')
         self.write("""
+# THIS IS CURRENTLY BROKEN.
 import json
 import os
 #import snakemake.utils

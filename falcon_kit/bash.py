@@ -130,24 +130,6 @@ rm -rf {rdir}
     return write_script_and_wrapper_top(tmp_wrapper_script, wrapper_fn, job_done)
 
 
-def get_write_script_and_wrapper(config):
-    """NOT USED. This will be done in pypeFLOW.
-    Return a function.
-    For now, we actually use only config['use_tmpdir'], a boolean.
-    """
-    use_tmpdir = config.get('use_tmpdir', None)
-    if use_tmpdir:
-        if use_tmpdir is not True and '/' in use_tmpdir:
-            tmpdir = use_tmpdir
-        else:
-            tmpdir = tempfile.gettempdir()
-        # Really, we also want to copy the symlinked db to tmpdir.
-        # Tricky. TODO.
-        return functools.partial(write_script_and_wrapper_for_tmp, tmpdir)
-    else:
-        return write_script_and_wrapper_top
-
-
 def filter_DBsplit_option(opt):
     """We want -a by default, but if we see --no-a[ll], we will not add -a.
     """
@@ -218,7 +200,10 @@ LB={count}
 rm -f {run_jobs_bfn}
 CUTOFF={bash_cutoff}
 echo -n $CUTOFF >| {length_cutoff_fn}
-HPC.daligner {pa_HPCdaligner_option} -mdust -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_bfn}
+echo "SMRT_PYTHON_PATH_PREPEND=$SMRT_PYTHON_PATH_PREPEND"
+echo "PATH=$PATH"
+which HPC.daligner
+HPC.daligner -P. {pa_HPCdaligner_option} -mdust -H$CUTOFF raw_reads {last_block}-$LB >| {run_jobs_bfn}
 """.format(**params)
     return script
     # Note: We dump the 'length_cutoff' file for later reference within the preassembly report
@@ -246,7 +231,8 @@ while read fn; do fasta2DB -v preads $fn; done < preads.fofn
 DBsplit {ovlp_DBsplit_option} preads
 {DBdust}
 LB={count}
-HPC.daligner {ovlp_HPCdaligner_option} -mdust -H{length_cutoff_pr} preads {last_block}-$LB >| {run_jobs_bfn}
+which HPC.daligner
+HPC.daligner -P. {ovlp_HPCdaligner_option} -mdust -H{length_cutoff_pr} preads {last_block}-$LB >| {run_jobs_bfn}
 """.format(**params)
     return script
 
@@ -411,13 +397,22 @@ time python -m falcon_kit.mains.graph_to_contig
 # Given a_ctg_all.fa, write a_ctg.fa:
 time python -m falcon_kit.mains.dedup_a_tigs
 
-# Generate a GFA of all assembly graph edges. This GFA can contain
-# edges and nodes which are not part of primary and associate contigs.
-time python -m falcon_kit.mains.gen_gfa_v1 >| asm.gfa
+# Collect all info needed to format the GFA-1 and GFA-2 representations of
+# the assembly graphs.
+time python -m falcon_kit.mains.collect_pread_gfa >| asm.gfa.json
+time python -m falcon_kit.mains.collect_pread_gfa --add-string-graph >| sg.gfa.json
+time python -m falcon_kit.mains.collect_contig_gfa >| contig.gfa.json
 
-# Generate a GFA of all assembly graph edges. This GFA can contain
-# edges and nodes which are not part of primary and associate contigs.
-time python -m falcon_kit.mains.gen_gfa_v1 --add-string-graph >| sg.gfa
+# Output the assembly pread graph.
+time python -m falcon_kit.mains.gen_gfa_v1 asm.gfa.json >| asm.gfa
+time python -m falcon_kit.mains.gen_gfa_v2 asm.gfa.json >| asm.gfa2
+
+# Output the string graph.
+time python -m falcon_kit.mains.gen_gfa_v1 sg.gfa.json >| sg.gfa
+time python -m falcon_kit.mains.gen_gfa_v2 sg.gfa.json >| sg.gfa2
+
+# Output the contig graph with associate contigs attached to each primary contig.
+time python -m falcon_kit.mains.gen_gfa_v2 contig.gfa.json >| contig.gfa2
 
 #rm -f ./preads4falcon.fasta
 """

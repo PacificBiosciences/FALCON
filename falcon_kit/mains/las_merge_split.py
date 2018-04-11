@@ -13,23 +13,31 @@ from .. import pype_tasks
 LOG = logging.getLogger()
 
 
+# Could be L1.* or preads.* or raw_reads.*
+re_las = re.compile(r'\.(\d*)(?:\.[^\.]+\.\d*)?\.las$') # see daligner_gather_las() in run_support.py
+
+def get_block(las_fn):
+    """
+    >>> get_block('foo.42.las')
+    42
+    >>> get_block('foo.12.foo.34.las')
+    12
+    """
+    mo = re_las.search(las_fn)
+    if not mo:
+        msg = 'No match of las file {!r} with {}'.format(las_fn, re_las.pattern)
+        raise Exception(msg)
+    block = int(mo.group(1))
+    return block
+
 def read_gathered_las(las_fns):
     """Return dict of block->[las_paths].
     The input is one .las file per line.
     """
-    # Could be L1.* or preads.*
-    re_las = re.compile(r'\.(\d*)(\.\d*)?\.las$') # see daligner_gather_las() in run_support.py
-
     result = collections.defaultdict(list)
     for las_fn in las_fns:
-        mo = re_las.search(las_fn)
-        if not mo:
-            msg = 'No match of las file {!r} with {}'.format(las_fn, re_las.pattern)
-            raise Exception(msg)
-        block = int(mo.group(1))
+        block = get_block(las_fn)
         result[block].append(las_fn)
-    # LOG.warning('path={!r}, result={}'.format(
-    #    path, pprint.pformat(result)))
     return result
 
 
@@ -45,6 +53,16 @@ def run(run_jobs_fn, gathered_las_fn, db_prefix, wildcards,
     gathered_dict = read_gathered_las(gathered_las)
     LOG.info('Gathered {} las files.'.format(len(gathered_dict)))
     gathered_dict_dir = os.path.normpath(os.path.dirname(gathered_las_fn))
+
+    if 0 == len(gathered_dict):
+        raise Exception('No .las files. There must have been some kind of error.\n gathered_las_fn={!r},\n run_jobs_fn={!r}'.format(
+            gathered_las_fn, run_jobs_fn))
+    if 1 == len(gathered_dict) and 1 == len(gathered_dict.values()[0]):
+        LOG.warning('There is only 1 .las file in {!r}.\n The las-merge step will be a no-op.'.format(gathered_las_fn))
+        assert len(merge_scripts) == 0, 'Expected more than 1 .las file. merge_scripts={}. See {!r} and {!r}'.format(
+                merge_scripts, run_jobs_fn, gathered_las_fn)
+        solo_block, solo_las_fns = gathered_dict.items()[0]
+        merge_scripts = [(solo_block, '# no-op', os.path.basename(solo_las_fns[0]))]
 
     cwd = os.getcwd()
     jobs = list()

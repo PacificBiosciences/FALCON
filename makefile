@@ -11,7 +11,7 @@ PIP=pip wheel --wheel-dir ${WHEELHOUSE}
 
 MY_TEST_FLAGS?=-v -s --durations=0
 
-DOCTEST_MODULES=falcon_kit/mains/consensus_task.py falcon_kit/functional.py
+DOCTEST_MODULES= falcon_kit/functional.py falcon_kit/mains/consensus_task.py falcon_kit/mains/las_merge_split.py
 
 install-edit:
 	pip -v install --user --edit .

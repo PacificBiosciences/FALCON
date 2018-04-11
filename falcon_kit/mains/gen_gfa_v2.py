@@ -10,7 +10,7 @@ def run(fp_out, collected_gfa):
     with open(collected_gfa, 'r') as fp_in:
         gfa_graph = deserialize_gfa(fp_in)
 
-    gfa_graph.write_gfa_v1(fp_out)
+    gfa_graph.write_gfa_v2(fp_out)
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description="Generates GFA output (on stdout) from FALCON's assembly.",

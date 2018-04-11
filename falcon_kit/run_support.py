@@ -16,7 +16,6 @@ import sys
 import tempfile
 import time
 import uuid
-import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -177,21 +176,58 @@ def parse_cfg_file(config_fn):
     clean_falcon_options(config.get('General', {}))
     return config
 
+def process_job_defaults(job_defaults):
+    key = 'use_tmpdir'
+    use_tmpdir = job_defaults.get(key, '')
+    if '/' in use_tmpdir:
+        tempfile.tempdir = use_tmpdir
+    else:
+        if use_tmpdir.lower().startswith('t'):
+            use_tmpdir = tempfile.gettempdir()
+        else:
+            use_tmpdir = False
+        job_defaults[key] = use_tmpdir
+
 def update_job_defaults_section(config):
     """For backwards compatibility with stuff from 'General' section.
     """
     General = config['General']
+    job_defaults = config['job.defaults']
 
-    pwatcher_type = General.get('pwatcher_type', config.get('pwatcher_type'))
+    if 'njobs' in General:
+        logger.warning('"njobs" belongs in the [job.defaults] section.')
+    if 'pwatcher_type' in General:
+        logger.warning('Please specify "pwatcher_type" only in the [job.defaults] section, not in [General].')
+    if 'job_type' in General:
+        logger.warning('Please specify "job_type" only in the [job.defaults] section, not in [General].')
+    if 'stop_all_jobs_on_failure' in General:
+        logger.warning('Please specify "stop_all_jobs_on_failure" only in the [job.defaults] section, not in [General].')
+    if 'use_tmpdir' in General:
+        logger.warning('Please specify "use_tmpdir" only in the [job.defaults] section, not in [General].')
+    if 'job_name_style' in General:
+        logger.warning('Please specify "job_name_style" only in the [job.defaults] section, not in [General].')
+    if 'job_queue' in General:
+        logger.warning('Please specify "JOB_QUEUE" only in the [job.defaults] section, not as "job_queue" in [General].')
+    if 'sge_option' in General:
+        logger.warning('Please specify "JOB_OPTS" in the [job.defaults] section, not as "sge_option" in [General].')
+
+    pwatcher_type = General.get('pwatcher_type', 'fs_based') #, config.get('pwatcher_type')))
     job_type = General.get('job_type', '').lower()
     job_queue = General.get('job_queue', '')
     sge_option = General.get('sge_option', '')
+
+    if 'pwatcher_type' not in job_defaults:
+        job_defaults['pwatcher_type'] = pwatcher_type
+    else:
+        pwatcher_type = job_defaults['pwatcher_type']
     if 'submit' not in config['job.defaults']:
         if 'blocking' == pwatcher_type:
-            config['job.defaults']['submit'] = General['job_queue']
+            if job_queue and ' ' not in job_queue:
+                raise Exception('pwatcher_type=blocking, but "submit" is not in [job.defaults] section.')
+            config['job.defaults']['submit'] = job_queue
         elif 'fs_based' == pwatcher_type or 'network_based' == pwatcher_type:
             if not job_type:
-                raise Exception('job.defaults.submit is not set; General.pwatcher_type={}; but General.job_type is not set. Maybe try "job_type=local" first.'.format(pwatcher_type))
+                raise Exception('job.defaults.submit is not set; pwatcher_type={}; but job_type is not set. Maybe try "job_type=local" first.'.format(pwatcher_type))
             allowed_job_types = ['sge', 'pbs', 'torque', 'slurm', 'lsf', 'local']
             assert job_type in allowed_job_types, 'job_type={} not in {}'.format(
                     job_type, allowed_job_types)
@@ -201,9 +237,21 @@ def update_job_defaults_section(config):
             raise Exception('Unknown pwatcher_type={}'.format(pwatcher_type))
     #assert 'submit' in config['job.defaults'], repr(config)
     if sge_option and 'JOB_OPTS' not in config['job.defaults']:
-        config['job.defaults']['JOB_OPTS'] = sge_option
-    if 'njobs' not in config['job.defaults']:
+        job_defaults['JOB_OPTS'] = sge_option
+    if 'njobs' not in job_defaults:
         config['job.defaults']['njobs'] = int(General.get('default_concurrent_jobs', 8)) # GLOBAL DEFAULT CONCURRENCY
+        msg = 'Please supply a default for "njobs" (aka concurrency) in section [job.defaults]. For now, we will use {}'.format(
+                config['job.defaults']['njobs'])
+        logger.warning(msg)
+    def update_if_if(key):
+        if key not in job_defaults:
+            if key in General:
+                job_defaults[key] = General[key]
+                logger.warning('Found "{}" from [General] section; should be in [job.defaults] instead.'.format(key))
+    update_if_if('job_name_style')
+    update_if_if('stop_all_jobs_on_failure')
+    update_if_if('use_tmpdir')
+
     legacy_names = [
             'pwatcher_type', 'pwatcher_directory',
             'job_type', 'job_queue', 'job_name_style',
@@ -214,6 +262,7 @@ def update_job_defaults_section(config):
             sub_dict[name] = General[name]
     for name in legacy_names:
         update_if_missing(name, config['job.defaults'])
+    process_job_defaults(job_defaults)
 
 def update_job_sections(config):
     """More for backwards compatibility with stuff from 'General' section.
@@ -299,7 +348,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'input_type'):
         input_type = config.get(section, 'input_type')
 
-    overlap_filtering_setting = """--max_diff 1000 --max_cov 1000 --min_cov 2"""
+    overlap_filtering_setting = """--max-diff 1000 --max-cov 1000 --min-cov 2"""
     if config.has_option(section, 'overlap_filtering_setting'):
         overlap_filtering_setting = config.get(
             section, 'overlap_filtering_setting')
@@ -326,7 +375,7 @@ def get_dict_from_old_falcon_cfg(config):
         skip_checks = config.getboolean(section, 'skip_checks')
 
     if config.has_option(section, 'dust'):
-        warnings.warn(
+        logger.warning(
             "The 'dust' option is deprecated and ignored. We always run DBdust now. Use pa_DBdust_option to override its default arguments.")
 
     #pa_DBdust_option = "-w128 -t2.5 -m20"
@@ -387,7 +436,7 @@ def get_dict_from_old_falcon_cfg(config):
     if config.has_option(section, 'ovlp_DBsplit_option'):
         ovlp_DBsplit_option = config.get(section, 'ovlp_DBsplit_option')
 
-    falcon_sense_option = """ --output_multi --min_idt 0.70 --min_cov 2 --max_n_read 1800 --n_core 6"""
+    falcon_sense_option = """ --output-multi --min-idt 0.70 --min-cov 2 --max-n-read 1800"""
     if config.has_option(section, 'falcon_sense_option'):
         falcon_sense_option = config.get(section, 'falcon_sense_option')
     if 'local_match_count' in falcon_sense_option or 'output_dformat' in falcon_sense_option:
@@ -447,23 +496,6 @@ def get_dict_from_old_falcon_cfg(config):
         logger.info(""" No target specified, assuming "assembly" as target """)
         target = "assembly"
 
-    if config.has_option(section, 'stop_all_jobs_on_failure'):
-        stop_all_jobs_on_failure = config.getboolean(
-            section, 'stop_all_jobs_on_failure')
-    else:
-        # Good default. Rarely needed, since we already stop early if *all* tasks fail
-        # in a given refresh.
-        stop_all_jobs_on_failure = False
-    if config.has_option(section, 'use_tmpdir'):
-        tmpdir = config.get(section, 'use_tmpdir')
-        if '/' in tmpdir:
-            tempfile.tempdir = tmpdir
-            use_tmpdir = tmpdir
-        else:
-            use_tmpdir = config.getboolean(section, 'use_tmpdir')
-    else:
-        use_tmpdir = False
-
     TEXT_FILE_BUSY = 'avoid_text_file_busy'
     if config.has_option(section, TEXT_FILE_BUSY):
         bash.BUG_avoid_Text_file_busy = config.getboolean(
@@ -498,8 +530,6 @@ def get_dict_from_old_falcon_cfg(config):
         "falcon_sense_skip_contained": falcon_sense_skip_contained,
         "falcon_sense_greedy": falcon_sense_greedy,
         "LA4Falcon_preload": LA4Falcon_preload,
-        "stop_all_jobs_on_failure": stop_all_jobs_on_failure,
-        "use_tmpdir": use_tmpdir,
         TEXT_FILE_BUSY: bash.BUG_avoid_Text_file_busy,
     }
     possible_extra_keys = [
@@ -521,13 +551,13 @@ def get_dict_from_old_falcon_cfg(config):
     if added:
         added.sort()
         msg = 'You have several old-style options. These should be provided in the `[job.defaults]` or `[job.step.*]` sections, and possibly renamed. See https://github.com/PacificBiosciences/FALCON/wiki/Configuration\n {}'.format(added)
-        warnings.warn(msg)
+        logger.warning(msg)
 
     # Warn on unused variables.
     provided = dict(config.items(section))
     unused = set(provided) - set(k.lower() for k in hgap_config)
     if unused:
-        warnings.warn("Unexpected keys in input config: %s" % repr(unused))
+        logger.warning("Unexpected keys in input config: %s" % repr(unused))
 
     hgap_config["install_prefix"] = sys.prefix
 
@@ -561,7 +591,7 @@ formatter=form01
 args=('all.log', 'w')
 
 [formatter_form01]
-format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+format=%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s
 
 [formatter_form02]
 format=[%(levelname)s]%(message)s
