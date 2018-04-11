@@ -219,9 +219,10 @@ def update_job_defaults_section(config):
         pwatcher_type = job_defaults['pwatcher_type']
     if 'submit' not in config['job.defaults']:
         if 'blocking' == pwatcher_type:
-            if job_queue and ' ' not in job_queue:
+            if not job_queue or ' ' not in job_queue:
                 raise Exception('pwatcher_type=blocking, but "submit" is not in [job.defaults] section.')
             config['job.defaults']['submit'] = job_queue
+            logger.warning('Please set "submit" in [job.defaults] section. (For now, we will use "job_queue" from [General], which was a hack.)')
         elif 'fs_based' == pwatcher_type or 'network_based' == pwatcher_type:
             if not job_type:
                 raise Exception('job.defaults.submit is not set; pwatcher_type={}; but job_type is not set. Maybe try "job_type=local" first.'.format(pwatcher_type))
