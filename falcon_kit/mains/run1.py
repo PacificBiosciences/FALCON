@@ -138,9 +138,7 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     except Exception:
         LOG.exception('Failed to parse config "{}".'.format(input_config_fn))
         raise
-    # Copy General section to top, for now.
-    for key, val in config['General'].items():
-        config[key] = val
+    assert 'input_fofn' in config, 'Missing "input_fofn" in {}.'.format(input_config_fn)
     input_fofn_plf = makePypeLocalFile(config['input_fofn'])
     genome_size = config.get('genome_size')
     squash = True if 0 < genome_size < 1000000 else False

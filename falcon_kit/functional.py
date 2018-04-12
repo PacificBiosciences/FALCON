@@ -398,3 +398,51 @@ def choose_cat_fasta(fofn):
         return 'undexta -vkU -w60 -i < '
     else:
         return 'cat '
+
+
+re_underscore_flag = re.compile(r'(--[\w-]+)(_)')
+def dash_flags(val):
+    """
+    >>> dash_flags('--foo_bar --one_two_three')
+    '--foo-bar --one-two-three'
+    >>> dash_flags('')
+    ''
+    """
+    while True:
+        # Repeat until settled, as there might be multiple _ in the same flag.
+        new_val = re_underscore_flag.sub(r'\1-', val)
+        if new_val == val:
+            return new_val
+        val = new_val
+
+
+def cfg_tobool(v):
+    """
+    >>> cfg_tobool('yes')
+    True
+    >>> cfg_tobool('true')
+    True
+    >>> cfg_tobool('T')
+    True
+    >>> cfg_tobool('1')
+    True
+    >>> cfg_tobool('no')
+    False
+    >>> cfg_tobool('false')
+    False
+    >>> cfg_tobool('F')
+    False
+    >>> cfg_tobool('0')
+    False
+    >>> cfg_tobool('')
+    False
+    """
+    if v in (True, False, None):
+        return v
+    if not v:
+        return False
+    if v.upper()[0] in ('T', 'Y'):
+        return True
+    if v.upper()[0] in ('F', 'N'):
+        return False
+    return bool(int(v))
