@@ -127,6 +127,7 @@ def create_consensus_gather_task(wd, inputs):
 def main1(prog_name, input_config_fn, logger_config_fn=None):
     global LOG
     LOG = support.setup_logger(logger_config_fn)
+    lfs_setstripe_maybe(path='.', stripe=12)
 
     LOG.info('fc_run started with configuration %s', input_config_fn)
     try:
@@ -618,7 +619,6 @@ def run(wf, config, rule_writer,
 
 
 def main(argv=sys.argv):
-    lfs_setstripe_maybe(path='.', stripe=12)
     parser = argparse.ArgumentParser()
     parser.add_argument('config',
                         help='.cfg/.ini/.json')

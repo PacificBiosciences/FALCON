@@ -2,8 +2,7 @@ from __future__ import absolute_import
 
 
 from future.utils import viewitems
-from pypeflow.io import cd
-from .io import system
+from pypeflow.io import cd, capture
 import logging
 import os
 import pprint
@@ -45,12 +44,14 @@ def only_these_symlinks(dir2paths):
 
 def lfs_setstripe_maybe(path='.', stripe=12):
     path = os.path.abspath(path)
-    rc = system('lfs setstripe -c {:d} {!s}'.format(stripe, path))
-    if rc:
-        log.info('Apparently {!r} is not lustre in filesystem.'.format(path))
-    else:
-        log.info('This lfs stripe ({}) should propagate to subdirs of {!r}.'.format(
+    cmd = 'lfs setstripe -c {:d} {!s}'.format(stripe, path)
+    try:
+        capture(cmd)
+        log.info('Lustre filesystem detected. This lfs stripe ({}) should propagate to subdirs of {!r}.'.format(
             stripe, path))
+    except Exception as exc:
+        log.info('Apparently {!r} is not in lustre filesystem, which is fine.'.format(
+            path))
 
 
 def find_files(root_path, pattern):
