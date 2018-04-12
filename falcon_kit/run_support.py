@@ -425,6 +425,14 @@ def update_defaults(cfg):
     # TODO: Warn on unused variables.
     #logger.warning("Unexpected keys in input config: %s" % repr(unused))
 
+def cfg_tobool(v):
+    if not v:
+        return False
+    if v.upper()[0] in ('T', 'Y'):
+        return True
+    if v.upper()[0] in ('F', 'N'):
+        return False
+    return bool(int(v))
 
 def get_dict_from_old_falcon_cfg(config):
     """DEPRECATED. Use update_defaults().
@@ -465,7 +473,7 @@ def get_dict_from_old_falcon_cfg(config):
 
     input_fofn_fn = config.get(section, 'input_fofn') # no default
     input_type = config.get(section, 'input_type')
-    skip_checks = config.getboolean(section, 'skip_checks')
+    skip_checks = cfg_tobool(config.get(section, 'skip_checks'))
     pa_HPCdaligner_option = config.get(section, 'pa_HPCdaligner_option')
     pa_HPCdaligner_option = update_HPCdaligner_option(pa_HPCdaligner_option)
     pa_DBsplit_option = config.get(section, 'pa_DBsplit_option')
@@ -475,19 +483,19 @@ def get_dict_from_old_falcon_cfg(config):
     overlap_filtering_setting = config.get(section, 'overlap_filtering_setting')
     pa_DBdust_option = config.get(section, 'pa_DBdust_option')
     pa_dazcon_option = config.get(section, 'pa_dazcon_option')
-    dazcon = config.getboolean(section, 'dazcon')
+    dazcon = cfg_tobool(config.get(section, 'dazcon'))
     falcon_sense_option = config.get(section, 'falcon_sense_option')
-    falcon_sense_skip_contained = config.getboolean(section, 'falcon_sense_skip_contained')
-    falcon_sense_greedy = config.getboolean(section, 'falcon_sense_greedy')
+    falcon_sense_skip_contained = cfg_tobool(config.get(section, 'falcon_sense_skip_contained'))
+    falcon_sense_greedy = cfg_tobool(config.get(section, 'falcon_sense_greedy'))
     fc_ovlp_to_graph_option = config.get(section, 'fc_ovlp_to_graph_option')
-    LA4Falcon_preload = config.getboolean(section, 'la4falcon_preload')
+    LA4Falcon_preload = cfg_tobool(config.get(section, 'la4falcon_preload'))
     genome_size = config.getint(section, 'genome_size')
     seed_coverage = config.getfloat(section, 'seed_coverage')
     length_cutoff = config.getint(section, 'length_cutoff')
     length_cutoff_pr = config.getint(section, 'length_cutoff_pr')
     bestn = config.getint(section, 'bestn')
     target = config.get(section, 'target')
-    bash.BUG_avoid_Text_file_busy = config.getboolean(section, TEXT_FILE_BUSY)
+    bash.BUG_avoid_Text_file_busy = cfg_tobool(config.get(section, TEXT_FILE_BUSY))
 
     if 'local_match_count' in falcon_sense_option or 'output_dformat' in falcon_sense_option:
         raise Exception('Please remove obsolete "--local_match_count_*" or "--output_dformat"' +
