@@ -3,7 +3,8 @@ from __future__ import absolute_import
 
 from future.utils import viewitems
 
-from . import bash
+from . import bash, functional
+from .functional import cfg_tobool
 from .io import NativeIO
 from .util.system import (make_fofn_abs, make_dirs, cd)
 import json
@@ -116,7 +117,7 @@ def clean_falcon_options(fc):
                 fc[key] = new_val
 
 
-def get_config(config):
+def old_get_config(config):
     """Temporary version for pbsmrtpipe.
     This will add missing (but curently required) options and use
     get_dict_from_old_falcon_cfg() below.
@@ -140,6 +141,16 @@ def get_config(config):
     add('sge_option_cns', 'NA')
     return get_dict_from_old_falcon_cfg(config)
 
+def get_config(config):
+    """
+    This is only for the call from pbsmrtpipe:
+       upport.get_config(support.parse_config(fn))
+    We have changed parse_config() to return a dict.
+    So this is a no-op.
+    """
+    cfg = dict(config) # already a dict now
+    return cfg
+
 
 def dict2config(jdict, section):
     config = ConfigParser()
@@ -150,7 +161,7 @@ def dict2config(jdict, section):
     return config
 
 
-def parse_config(config_fn):
+def old_parse_config(config_fn):
     """Return ConfigParser object.
     """
     ext = os.path.splitext(config_fn)[1]
@@ -162,13 +173,27 @@ def parse_config(config_fn):
         config.readfp(open(config_fn))
     return config
 
+def parse_config(config_fn):
+    """Deprecated.
+    Called from pbsmrtpipe, for now.
+    """
+    return parse_cfg_file(config_fn)
+
 def parse_cfg_file(config_fn):
     """Return as dict.
     """
     with open(config_fn) as stream:
-        # Parse sections (and case-sensitively), into sub-dicts.
-        config = parse_cfg_with_sections(stream)
+        ext = os.path.splitext(config_fn)[1]
+        if ext in ('.json', '.js'):
+            config = json.loads(stream.read())
+        else:
+            # Parse sections (and case-sensitively), into sub-dicts.
+            config = parse_cfg_with_sections(stream)
     update_defaults(config['General'])
+    # Copy General section to top, for now.
+    for key, val in config['General'].items():
+        config[key] = val
+    #cfg.update(config.get('General', {}))
     check_config_sections(config) # Ensure that the right sections exist.
     update_job_sections(config)
     return config
@@ -225,12 +250,14 @@ def update_job_defaults_section(config):
             logger.warning('Please set "submit" in [job.defaults] section. (For now, we will use "job_queue" from [General], which was a hack.)')
         elif 'fs_based' == pwatcher_type or 'network_based' == pwatcher_type:
             if not job_type:
-                raise Exception('job.defaults.submit is not set; pwatcher_type={}; but job_type is not set. Maybe try "job_type=local" first.'.format(pwatcher_type))
+                logger.error('job.defaults.submit is not set; pwatcher_type={}; but job_type is not set. Maybe try "job_type=local" first.'.format(pwatcher_type))
+                job_type = 'local'
+                job_defaults['job_type'] = job_type
             allowed_job_types = ['sge', 'pbs', 'torque', 'slurm', 'lsf', 'local']
             assert job_type in allowed_job_types, 'job_type={} not in {}'.format(
                     job_type, allowed_job_types)
             if job_queue and 'JOB_QUEUE' not in config['job.defaults']:
-                config['job.defaults']['JOB_QUEUE'] = job_queue
+                job_defaults['JOB_QUEUE'] = job_queue
         else:
             raise Exception('Unknown pwatcher_type={}'.format(pwatcher_type))
     #assert 'submit' in config['job.defaults'], repr(config)
@@ -338,6 +365,15 @@ def check_config_sections(cfg):
         if sec not in cfg:
             cfg[sec] = dict()
 
+def update_dash_flags(cfg, key):
+    if key not in cfg:
+        return
+    val = cfg[key]
+    cfg[key] = functional.dash_flags(cfg[key])
+    if val != cfg[key]:
+        msg = 'Value for key "{}" should be "{}", but was "{}".'.format(
+                key, cfg[key], val)
+        logger.warning(msg)
 
 def update_defaults(cfg):
     """cfg is probably the General sub-dict.
@@ -370,13 +406,16 @@ def update_defaults(cfg):
     set_default('target', 'assembly')
     set_default(TEXT_FILE_BUSY, bash.BUG_avoid_Text_file_busy)
 
+    for bool_key in ('skip_checks', 'dazcon', 'falcon_sense_skip_contained', 'falcon_sense_greedy', 'la4falcon_preload', TEXT_FILE_BUSY):
+        cfg[bool_key] = functional.cfg_tobool(cfg.get(bool_key, False))
+
     if 'dust' in cfg:
         logger.warning(
             "The 'dust' option is deprecated and ignored. We always run DBdust now. Use pa_DBdust_option to override its default arguments.")
 
-    assert 'input_fofn' in cfg # no default
     bash.BUG_avoid_Text_file_busy = cfg[TEXT_FILE_BUSY]
 
+    update_dash_flags(cfg, 'falcon_sense_option')
     falcon_sense_option = cfg['falcon_sense_option']
     if 'local_match_count' in falcon_sense_option or 'output_dformat' in falcon_sense_option:
         raise Exception('Please remove obsolete "--local_match_count_*" or "--output_dformat"' +
@@ -389,6 +428,7 @@ def update_defaults(cfg):
                 'Must specify either length_cutoff>0 or genome_size>0')
 
     # This one depends on length_cutoff_pr for its default.
+    update_dash_flags(cfg, 'fc_ovlp_to_graph_option')
     fc_ovlp_to_graph_option = cfg['fc_ovlp_to_graph_option']
     if '--min_len' not in fc_ovlp_to_graph_option and '--min-len' not in fc_ovlp_to_graph_option:
         length_cutoff_pr = cfg['length_cutoff_pr']
@@ -429,6 +469,7 @@ def update_defaults(cfg):
 def get_dict_from_old_falcon_cfg(config):
     """DEPRECATED. Use update_defaults().
     """
+    raise NotImplementedError('get_dict_from_old_falcon_cfg() should not be called anymore.')
     job_type = "SGE"
     section = 'General'
     TEXT_FILE_BUSY = 'avoid_text_file_busy'
@@ -465,7 +506,7 @@ def get_dict_from_old_falcon_cfg(config):
 
     input_fofn_fn = config.get(section, 'input_fofn') # no default
     input_type = config.get(section, 'input_type')
-    skip_checks = config.getboolean(section, 'skip_checks')
+    skip_checks = cfg_tobool(config.get(section, 'skip_checks'))
     pa_HPCdaligner_option = config.get(section, 'pa_HPCdaligner_option')
     pa_HPCdaligner_option = update_HPCdaligner_option(pa_HPCdaligner_option)
     pa_DBsplit_option = config.get(section, 'pa_DBsplit_option')
@@ -475,19 +516,19 @@ def get_dict_from_old_falcon_cfg(config):
     overlap_filtering_setting = config.get(section, 'overlap_filtering_setting')
     pa_DBdust_option = config.get(section, 'pa_DBdust_option')
     pa_dazcon_option = config.get(section, 'pa_dazcon_option')
-    dazcon = config.getboolean(section, 'dazcon')
+    dazcon = cfg_tobool(config.get(section, 'dazcon'))
     falcon_sense_option = config.get(section, 'falcon_sense_option')
-    falcon_sense_skip_contained = config.getboolean(section, 'falcon_sense_skip_contained')
-    falcon_sense_greedy = config.getboolean(section, 'falcon_sense_greedy')
+    falcon_sense_skip_contained = cfg_tobool(config.get(section, 'falcon_sense_skip_contained'))
+    falcon_sense_greedy = cfg_tobool(config.get(section, 'falcon_sense_greedy'))
     fc_ovlp_to_graph_option = config.get(section, 'fc_ovlp_to_graph_option')
-    LA4Falcon_preload = config.getboolean(section, 'la4falcon_preload')
+    LA4Falcon_preload = cfg_tobool(config.get(section, 'la4falcon_preload'))
     genome_size = config.getint(section, 'genome_size')
     seed_coverage = config.getfloat(section, 'seed_coverage')
     length_cutoff = config.getint(section, 'length_cutoff')
     length_cutoff_pr = config.getint(section, 'length_cutoff_pr')
     bestn = config.getint(section, 'bestn')
     target = config.get(section, 'target')
-    bash.BUG_avoid_Text_file_busy = config.getboolean(section, TEXT_FILE_BUSY)
+    bash.BUG_avoid_Text_file_busy = cfg_tobool(config.get(section, TEXT_FILE_BUSY))
 
     if 'local_match_count' in falcon_sense_option or 'output_dformat' in falcon_sense_option:
         raise Exception('Please remove obsolete "--local_match_count_*" or "--output_dformat"' +

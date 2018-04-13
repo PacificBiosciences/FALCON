@@ -136,7 +136,10 @@ pwatcher_type = fs_based
 [job.defaults]
 # empty
 """
+@pytest.mark.skip
 def test_update_job_sections1():
+    """For now, we do not raise anything, since pbsmrtpipe examples do not set this.
+    """
     with pytest.raises(Exception) as excinfo:
         parse_config(CFG_SANS_SUBMIT_SANS_JOB_TYPE)
     assert 'but job_type is not set' in str(excinfo.value)
