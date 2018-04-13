@@ -8,6 +8,7 @@ import logging
 import os
 from pypeflow.simple_pwatcher_bridge import (PypeTask, Dist)
 from pypeflow.tasks import gen_task as pype_gen_task
+from pypeflow.do_task import wait_for
 from . import io
 
 LOG = logging.getLogger(__name__)
@@ -95,6 +96,7 @@ def gen_parallel_tasks(
     #inputs['SPLIT'] = split_fn # presumably ignored by script; might not be needed at all
     #split_fn = scatter_dict['outputs']['split'] # by convention
     wf.refreshTargets()
+    wait_for(split_fn)
     split = io.deserialize(split_fn)
     bash_template_fn = run_dict['bash_template_fn']
 
