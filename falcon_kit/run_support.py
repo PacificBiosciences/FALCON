@@ -341,11 +341,12 @@ Option contains flags with "_":
  "{key}={new_val}". Auto-replaced.'''.format(**locals())
         logger.warning(msg)
 
+
+TEXT_FILE_BUSY = 'avoid_text_file_busy'
+
 def update_defaults(cfg):
     """cfg is probably the General sub-dict.
     """
-    TEXT_FILE_BUSY = 'avoid_text_file_busy'
-
     def set_default(key, val):
         if key not in cfg:
             cfg[key] = val
@@ -426,8 +427,37 @@ def update_defaults(cfg):
         msg = 'You have several old-style options. These should be provided in the `[job.defaults]` or `[job.step.*]` sections, and possibly renamed. See https://github.com/PacificBiosciences/FALCON/wiki/Configuration\n {}'.format(extra)
         logger.warning(msg)
 
-    # TODO: Warn on unused variables.
-    #logger.warning("Unexpected keys in input config: %s" % repr(unused))
+    check_unexpected_keys(cfg)
+
+def check_unexpected_keys(cfg):
+    # Warn on unused variables.
+    expected = (TEXT_FILE_BUSY,
+        'input_fofn',
+        'input_type',
+        'overlap_filtering_setting',
+        'pa_HPCdaligner_option',
+        'ovlp_HPCdaligner_option',
+        'pa_DBsplit_option',
+        'skip_checks',
+        'pa_DBdust_option',
+        'dazcon',
+        'pa_dazcon_option',
+        'ovlp_DBsplit_option',
+        'falcon_sense_option',
+        'falcon_sense_skip_contained',
+        'falcon_sense_greedy',
+        'LA4Falcon_preload',
+        'fc_ovlp_to_graph_option',
+        'genome_size',
+        'seed_coverage',
+        'length_cutoff',
+        'length_cutoff_pr',
+        'bestn',
+        'target',
+    )
+    unused = set(cfg.keys()) - set(expected)
+    if unused:
+        logger.warning("Unexpected keys in input config: {}".format(unused))
 
 
 default_logging_config = """
