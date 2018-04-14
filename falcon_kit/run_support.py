@@ -112,6 +112,9 @@ def clean_falcon_options(fc):
     )
     for key in keys:
         update_dash_flags(fc, key)
+    for dk in ('pa_HPCdaligner_option', 'ovlp_HPCdaligner_option'):
+        if dk in fc:
+            fc[dk] = update_HPCdaligner_option(fc[dk])
 
 
 def get_config(config):
