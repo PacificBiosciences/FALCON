@@ -215,7 +215,7 @@ def run(wf, config, rule_writer,
             },
             parameters={},
             rule_writer=rule_writer,
-            dist=Dist(NPROC=1, job_dict=config['job.step.da']),
+            dist=Dist(NPROC=1),
         ))
 
         # run daligner
@@ -459,7 +459,7 @@ def run(wf, config, rule_writer,
         },
         parameters=parameters, #{},
         rule_writer=rule_writer,
-        dist=Dist(NPROC=1, job_dict=config['job.step.pda']),
+        dist=Dist(NPROC=1),
     ))
 
     # run daligner
