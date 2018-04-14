@@ -108,38 +108,14 @@ def clean_falcon_options(fc):
     """Update some values in fc.
     Replace _ with - in a couple places.
     """
-    for key in ['falcon_sense_option', 'overlap_filtering_setting']:
-        if key in fc:
-            val = fc[key]
-            if '_' in val:
-                new_val = val.replace('_', '-')
-                logger.warning('Option {key} contains flags with "_":\n "{key}={val}".\nThose should be "-", as in\n "{key}={new_val}".'.format(**locals()))
-                fc[key] = new_val
+    keys = ('falcon_sense_option', 'overlap_filtering_setting', 'fc_ovlp_to_graph_option',
+    )
+    for key in keys:
+        update_dash_flags(fc, key)
+    for dk in ('pa_HPCdaligner_option', 'ovlp_HPCdaligner_option'):
+        if dk in fc:
+            fc[dk] = update_HPCdaligner_option(fc[dk])
 
-
-def old_get_config(config):
-    """Temporary version for pbsmrtpipe.
-    This will add missing (but curently required) options and use
-    get_dict_from_old_falcon_cfg() below.
-    The plan is to pass a simpler config from pbsmrtpipe,
-    but that will be in a different commit.
-    Side-effect: Update 'config'.
-    """
-    section = 'General'
-
-    def add(name, val):
-        if not config.has_option(section, name):
-            config.set(section, name, val)
-    add('input_fofn', 'NA')
-    add('target', 'assembly')
-    # add('sge_option', 'NA') # Needed for PBS, but not for everything
-    add('sge_option_da', 'NA')
-    add('sge_option_la', 'NA')
-    add('sge_option_pda', 'NA')
-    add('sge_option_pla', 'NA')
-    add('sge_option_fc', 'NA')
-    add('sge_option_cns', 'NA')
-    return get_dict_from_old_falcon_cfg(config)
 
 def get_config(config):
     """
@@ -161,18 +137,6 @@ def dict2config(jdict, section):
     return config
 
 
-def old_parse_config(config_fn):
-    """Return ConfigParser object.
-    """
-    ext = os.path.splitext(config_fn)[1]
-    if ext in ('.json', '.js'):
-        jdict = json.loads(open(config_fn).read())
-        config = dict2config(jdict, "General")
-    else:
-        config = ConfigParser() #strict=False?
-        config.readfp(open(config_fn))
-    return config
-
 def parse_config(config_fn):
     """Deprecated.
     Called from pbsmrtpipe, for now.
@@ -191,9 +155,9 @@ def parse_cfg_file(config_fn):
             config = parse_cfg_with_sections(stream)
     update_defaults(config['General'])
     # Copy General section to top, for now.
-    for key, val in config['General'].items():
-        config[key] = val
-    #cfg.update(config.get('General', {}))
+    #for key, val in config['General'].items():
+    #    config[key] = val
+    ##cfg.update(config.get('General', {}))
     check_config_sections(config) # Ensure that the right sections exist.
     update_job_sections(config)
     return config
@@ -369,17 +333,20 @@ def update_dash_flags(cfg, key):
     if key not in cfg:
         return
     val = cfg[key]
-    cfg[key] = functional.dash_flags(cfg[key])
-    if val != cfg[key]:
-        msg = 'Value for key "{}" should be "{}", but was "{}".'.format(
-                key, cfg[key], val)
+    cfg[key] = new_val = functional.dash_flags(cfg[key])
+    if val != new_val:
+        msg = '''\
+Option contains flags with "_":
+ "{key}={val}". Those should be "-", as in
+ "{key}={new_val}". Auto-replaced.'''.format(**locals())
         logger.warning(msg)
+
+
+TEXT_FILE_BUSY = 'avoid_text_file_busy'
 
 def update_defaults(cfg):
     """cfg is probably the General sub-dict.
     """
-    TEXT_FILE_BUSY = 'avoid_text_file_busy'
-
     def set_default(key, val):
         if key not in cfg:
             cfg[key] = val
@@ -396,7 +363,7 @@ def update_defaults(cfg):
     set_default('falcon_sense_option', '--output-multi --min-idt 0.70 --min-cov 2 --max-n-read 1800')
     set_default('falcon_sense_skip_contained', False)
     set_default('falcon_sense_greedy', False)
-    set_default('la4falcon_preload', '')
+    set_default('LA4Falcon_preload', '')
     set_default('fc_ovlp_to_graph_option', '')
     set_default('genome_size', 0)
     set_default('seed_coverage', 20)
@@ -406,7 +373,7 @@ def update_defaults(cfg):
     set_default('target', 'assembly')
     set_default(TEXT_FILE_BUSY, bash.BUG_avoid_Text_file_busy)
 
-    for bool_key in ('skip_checks', 'dazcon', 'falcon_sense_skip_contained', 'falcon_sense_greedy', 'la4falcon_preload', TEXT_FILE_BUSY):
+    for bool_key in ('skip_checks', 'dazcon', 'falcon_sense_skip_contained', 'falcon_sense_greedy', 'LA4Falcon_preload', TEXT_FILE_BUSY):
         cfg[bool_key] = functional.cfg_tobool(cfg.get(bool_key, False))
 
     if 'dust' in cfg:
@@ -415,7 +382,8 @@ def update_defaults(cfg):
 
     bash.BUG_avoid_Text_file_busy = cfg[TEXT_FILE_BUSY]
 
-    update_dash_flags(cfg, 'falcon_sense_option')
+    clean_falcon_options(cfg)
+
     falcon_sense_option = cfg['falcon_sense_option']
     if 'local_match_count' in falcon_sense_option or 'output_dformat' in falcon_sense_option:
         raise Exception('Please remove obsolete "--local_match_count_*" or "--output_dformat"' +
@@ -428,7 +396,6 @@ def update_defaults(cfg):
                 'Must specify either length_cutoff>0 or genome_size>0')
 
     # This one depends on length_cutoff_pr for its default.
-    update_dash_flags(cfg, 'fc_ovlp_to_graph_option')
     fc_ovlp_to_graph_option = cfg['fc_ovlp_to_graph_option']
     if '--min_len' not in fc_ovlp_to_graph_option and '--min-len' not in fc_ovlp_to_graph_option:
         length_cutoff_pr = cfg['length_cutoff_pr']
@@ -439,8 +406,6 @@ def update_defaults(cfg):
     if target not in ["overlapping", "pre-assembly", "assembly"]:
         msg = """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target {!r} in the configuration file.  """.format(target)
         raise Exception(msg)
-
-    clean_falcon_options(cfg)
 
     possible_extra_keys = [
             'sge_option', 'default_concurrent_jobs',
@@ -462,145 +427,37 @@ def update_defaults(cfg):
         msg = 'You have several old-style options. These should be provided in the `[job.defaults]` or `[job.step.*]` sections, and possibly renamed. See https://github.com/PacificBiosciences/FALCON/wiki/Configuration\n {}'.format(extra)
         logger.warning(msg)
 
-    # TODO: Warn on unused variables.
-    #logger.warning("Unexpected keys in input config: %s" % repr(unused))
+    check_unexpected_keys(cfg)
 
-
-def get_dict_from_old_falcon_cfg(config):
-    """DEPRECATED. Use update_defaults().
-    """
-    raise NotImplementedError('get_dict_from_old_falcon_cfg() should not be called anymore.')
-    job_type = "SGE"
-    section = 'General'
-    TEXT_FILE_BUSY = 'avoid_text_file_busy'
-
-    def set_default(key, val):
-        if not config.has_option(section, key):
-            config.set(section, key, str(val))
-    set_default('input_type', 'raw')
-    set_default('overlap_filtering_setting', '--max-diff 1000 --max-cov 1000 --min-cov 2')
-    set_default('pa_HPCdaligner_option', '-v -D24 -t16 -e.70 -l1000 -s100')
-    set_default('ovlp_HPCdaligner_option', '-v -D24 -t32 -h60 -e.96 -l500 -s1000')
-    set_default('pa_DBsplit_option', '-x500 -s200')
-    set_default('skip_checks', False)
-    set_default('pa_DBdust_option', '') # Gene recommends the defaults. I have tried -w128 -t2.5 -m20
-    set_default('dazcon', False)
-    set_default('pa_dazcon_option', '-j 4 -x -l 500')
-    set_default('ovlp_DBsplit_option', '-x500 -s200')
-    set_default('falcon_sense_option', '--output-multi --min-idt 0.70 --min-cov 2 --max-n-read 1800')
-    set_default('falcon_sense_skip_contained', False)
-    set_default('falcon_sense_greedy', False)
-    set_default('la4falcon_preload', '')
-    set_default('fc_ovlp_to_graph_option', '')
-    set_default('genome_size', 0)
-    set_default('seed_coverage', 20)
-    set_default('length_cutoff', -1)
-    set_default('length_cutoff_pr', 0)
-    set_default('bestn', 12)
-    set_default('target', 'assembly')
-    set_default(TEXT_FILE_BUSY, bash.BUG_avoid_Text_file_busy)
-
-    if config.has_option(section, 'dust'):
-        logger.warning(
-            "The 'dust' option is deprecated and ignored. We always run DBdust now. Use pa_DBdust_option to override its default arguments.")
-
-    input_fofn_fn = config.get(section, 'input_fofn') # no default
-    input_type = config.get(section, 'input_type')
-    skip_checks = cfg_tobool(config.get(section, 'skip_checks'))
-    pa_HPCdaligner_option = config.get(section, 'pa_HPCdaligner_option')
-    pa_HPCdaligner_option = update_HPCdaligner_option(pa_HPCdaligner_option)
-    pa_DBsplit_option = config.get(section, 'pa_DBsplit_option')
-    ovlp_HPCdaligner_option = config.get(section, 'ovlp_HPCdaligner_option')
-    ovlp_HPCdaligner_option = update_HPCdaligner_option(ovlp_HPCdaligner_option)
-    ovlp_DBsplit_option = config.get(section, 'ovlp_DBsplit_option')
-    overlap_filtering_setting = config.get(section, 'overlap_filtering_setting')
-    pa_DBdust_option = config.get(section, 'pa_DBdust_option')
-    pa_dazcon_option = config.get(section, 'pa_dazcon_option')
-    dazcon = cfg_tobool(config.get(section, 'dazcon'))
-    falcon_sense_option = config.get(section, 'falcon_sense_option')
-    falcon_sense_skip_contained = cfg_tobool(config.get(section, 'falcon_sense_skip_contained'))
-    falcon_sense_greedy = cfg_tobool(config.get(section, 'falcon_sense_greedy'))
-    fc_ovlp_to_graph_option = config.get(section, 'fc_ovlp_to_graph_option')
-    LA4Falcon_preload = cfg_tobool(config.get(section, 'la4falcon_preload'))
-    genome_size = config.getint(section, 'genome_size')
-    seed_coverage = config.getfloat(section, 'seed_coverage')
-    length_cutoff = config.getint(section, 'length_cutoff')
-    length_cutoff_pr = config.getint(section, 'length_cutoff_pr')
-    bestn = config.getint(section, 'bestn')
-    target = config.get(section, 'target')
-    bash.BUG_avoid_Text_file_busy = cfg_tobool(config.get(section, TEXT_FILE_BUSY))
-
-    if 'local_match_count' in falcon_sense_option or 'output_dformat' in falcon_sense_option:
-        raise Exception('Please remove obsolete "--local_match_count_*" or "--output_dformat"' +
-                        ' from "falcon_sense_option" in your cfg: %s' % repr(falcon_sense_option))
-    if length_cutoff < 0:
-        if genome_size < 1:
-            raise Exception(
-                'Must specify either length_cutoff>0 or genome_size>0')
-
-    # This one depends on length_cutoff_pr for its default.
-    if '--min_len' not in fc_ovlp_to_graph_option and '--min-len' not in fc_ovlp_to_graph_option:
-        fc_ovlp_to_graph_option += ' --min_len %d' % length_cutoff_pr
-        config.set(section, 'fc_ovlp_to_graph_option', fc_ovlp_to_graph_option)
-
-    if target not in ["overlapping", "pre-assembly", "assembly"]:
-        msg = """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target {!r} in the configuration file.  """.format(target)
-        raise Exception(msg)
-
-    hgap_config = {
-        "input_fofn": input_fofn_fn,
-        "target": target,
-        "input_type": input_type,
-        "overlap_filtering_setting": overlap_filtering_setting,
-        "genome_size": genome_size,
-        "seed_coverage": seed_coverage,
-        "length_cutoff": length_cutoff,
-        "length_cutoff_pr": length_cutoff_pr,
-        "pa_HPCdaligner_option": pa_HPCdaligner_option,
-        "ovlp_HPCdaligner_option": ovlp_HPCdaligner_option,
-        "pa_DBsplit_option": pa_DBsplit_option,
-        "skip_checks": skip_checks,
-        "pa_DBdust_option": pa_DBdust_option,
-        "dazcon": dazcon,
-        "pa_dazcon_option": pa_dazcon_option,
-        "ovlp_DBsplit_option": ovlp_DBsplit_option,
-        "fc_ovlp_to_graph_option": fc_ovlp_to_graph_option,
-        "falcon_sense_option": falcon_sense_option,
-        "falcon_sense_skip_contained": falcon_sense_skip_contained,
-        "falcon_sense_greedy": falcon_sense_greedy,
-        "LA4Falcon_preload": LA4Falcon_preload,
-        TEXT_FILE_BUSY: bash.BUG_avoid_Text_file_busy,
-    }
-    possible_extra_keys = [
-            'sge_option', 'default_concurrent_jobs',
-            'pwatcher_type', 'pwatcher_directory',
-            'job_type', 'job_queue', 'job_name_style',
-            'use_tmpdir',
-    ]
-    for step in ['da', 'la', 'pda', 'pla', 'fc', 'cns', 'asm']:
-        sge_option_key = 'sge_option_' + step
-        possible_extra_keys.append(sge_option_key)
-        concurrent_jobs_key = step + '_concurrent_jobs'
-        possible_extra_keys.append(concurrent_jobs_key)
-    added = list()
-    for key in possible_extra_keys:
-        if config.has_option(section, key):
-            added.append(key)
-            hgap_config[key] = config.get(section, key)
-    if added:
-        added.sort()
-        msg = 'You have several old-style options. These should be provided in the `[job.defaults]` or `[job.step.*]` sections, and possibly renamed. See https://github.com/PacificBiosciences/FALCON/wiki/Configuration\n {}'.format(added)
-        logger.warning(msg)
-
+def check_unexpected_keys(cfg):
     # Warn on unused variables.
-    provided = dict(config.items(section))
-    unused = set(provided) - set(k.lower() for k in hgap_config)
+    expected = (TEXT_FILE_BUSY,
+        'input_fofn',
+        'input_type',
+        'overlap_filtering_setting',
+        'pa_HPCdaligner_option',
+        'ovlp_HPCdaligner_option',
+        'pa_DBsplit_option',
+        'skip_checks',
+        'pa_DBdust_option',
+        'dazcon',
+        'pa_dazcon_option',
+        'ovlp_DBsplit_option',
+        'falcon_sense_option',
+        'falcon_sense_skip_contained',
+        'falcon_sense_greedy',
+        'LA4Falcon_preload',
+        'fc_ovlp_to_graph_option',
+        'genome_size',
+        'seed_coverage',
+        'length_cutoff',
+        'length_cutoff_pr',
+        'bestn',
+        'target',
+    )
+    unused = set(cfg.keys()) - set(expected)
     if unused:
-        logger.warning("Unexpected keys in input config: %s" % repr(unused))
-
-    hgap_config["install_prefix"] = sys.prefix
-
-    return hgap_config
+        logger.warning("Unexpected keys in input config: {}".format(unused))
 
 
 default_logging_config = """

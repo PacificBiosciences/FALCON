@@ -138,26 +138,27 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     except Exception:
         LOG.exception('Failed to parse config "{}".'.format(input_config_fn))
         raise
-    assert 'input_fofn' in config, 'Missing "input_fofn" in {}.'.format(input_config_fn)
-    input_fofn_plf = makePypeLocalFile(config['input_fofn'])
-    genome_size = config.get('genome_size')
+    general_config = config['General']
+    assert 'input_fofn' in general_config, 'Missing "input_fofn" in {}.'.format(input_config_fn)
+    input_fofn_plf = makePypeLocalFile(general_config['input_fofn'])
+    genome_size = general_config.get('genome_size')
     squash = True if 0 < genome_size < 1000000 else False
     wf = PypeProcWatcherWorkflow(job_defaults=config['job.defaults'],
                                  squash=squash,
     )
-    general_config_fn = './config.json' # must not be in a task-dir
-    config['ver'] = '100'
-    io.serialize(general_config_fn, config)
+    general_config['ver'] = '100'
+    config_fn = './config.json' # must not be in a task-dir
+    io.serialize(config_fn, config)
     with open('foo.snake', 'w') as snakemake_writer:
         rule_writer = snakemake.SnakemakeRuleWriter(snakemake_writer)
         run(wf, config, rule_writer,
-            os.path.abspath(general_config_fn),
+            os.path.abspath(config_fn),
             input_fofn_plf=input_fofn_plf,
             )
 
 
 def run(wf, config, rule_writer,
-        general_config_fn,
+        config_fn,
         input_fofn_plf,
         ):
     """
@@ -165,11 +166,13 @@ def run(wf, config, rule_writer,
     * LOG
     * run_support.logger
     """
-    general_config = io.deserialize(general_config_fn)
-    if general_config != config:
-        msg = 'Config from {!r} != passed config'.format(general_config_fn)
-        LOG.error(msg)
+    parsed_config = io.deserialize(config_fn)
+    if parsed_config != config:
+        msg = 'Config from {!r} != passed config'.format(config_fn)
         raise Exception(msg)
+    general_config = config['General']
+    general_config_fn = os.path.join(os.path.dirname(config_fn), 'General_config.json')
+    io.serialize(general_config_fn, general_config) # Some tasks use this.
     rawread_dir = '0-rawreads'
     pread_dir = '1-preads_ovl'
     falcon_asm_dir = '2-asm-falcon'
@@ -183,12 +186,12 @@ def run(wf, config, rule_writer,
     default_njobs = int(job_defaults.get('njobs', 7))
     wf.max_jobs = default_njobs
 
-    assert config['input_type'] in (
-        'raw', 'preads'), 'Invalid input_type=={!r}'.format(config['input_type'])
+    assert general_config['input_type'] in (
+        'raw', 'preads'), 'Invalid input_type=={!r}'.format(general_config['input_type'])
 
     # Store config as JSON, available to many tasks.
 
-    if config['input_type'] == 'raw':
+    if general_config['input_type'] == 'raw':
         parameters = {}
         rdb_build_done = os.path.join(rawread_dir, 'rdb_build_done')
         run_jobs_fn = os.path.join(rawread_dir, 'run_jobs.sh')
@@ -334,7 +337,7 @@ def run(wf, config, rule_writer,
             dist=Dist(local=True),
         ))
 
-        if config['target'] == 'overlapping':
+        if general_config['target'] == 'overlapping':
             sys.exit(0)
 
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
@@ -402,8 +405,8 @@ def run(wf, config, rule_writer,
         rdir = os.path.join(rawread_dir, 'report')
         pre_assembly_report_fn = os.path.join(rdir, 'pre_assembly_stats.json')
         params = dict(parameters)
-        params['length_cutoff_user'] = config['length_cutoff']
-        params['genome_length'] = config['genome_size'] # note different name; historical
+        params['length_cutoff_user'] = general_config['length_cutoff']
+        params['genome_length'] = general_config['genome_size'] # note different name; historical
         wf.addTask(gen_task(
             script=pype_tasks.TASK_REPORT_PRE_ASSEMBLY_SCRIPT,
             inputs={'length_cutoff': length_cutoff_fn,
@@ -418,15 +421,15 @@ def run(wf, config, rule_writer,
             dist=Dist(local=True),
         ))
 
-    if config['target'] == 'pre-assembly':
+    if general_config['target'] == 'pre-assembly':
         LOG.info('Quitting after stage-0 for "pre-assembly" target.')
         sys.exit(0)
 
     # build pread database
-    if config['input_type'] == 'preads':
+    if general_config['input_type'] == 'preads':
         """
         preads_fofn_plf = makePypeLocalFile(os.path.join(
-            pread_dir, 'preads-fofn-abs', os.path.basename(config['input_fofn'])))
+            pread_dir, 'preads-fofn-abs', os.path.basename(general_config['input_fofn'])))
         make_fofn_abs_task = PypeTask(inputs={'i_fofn': input_fofn_plf},
                                       outputs={'o_fofn': preads_fofn_plf},
                                       parameters={},
@@ -598,7 +601,7 @@ def run(wf, config, rule_writer,
 
     falcon_asm_done_fn = os.path.join(falcon_asm_dir, 'falcon_asm_done')
     for key in ('overlap_filtering_setting', 'length_cutoff_pr', 'fc_ovlp_to_graph_option'):
-        parameters[key] = config[key]
+        parameters[key] = general_config[key]
     wf.addTask(gen_task(
         script=pype_tasks.TASK_RUN_FALCON_ASM_SCRIPT,
         inputs={'db2falcon_done': db2falcon_done_fn, 'db_file': preads_db_fn,
