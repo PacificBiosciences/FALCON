@@ -359,7 +359,7 @@ def update_defaults(cfg):
     set_default('falcon_sense_option', '--output-multi --min-idt 0.70 --min-cov 2 --max-n-read 1800')
     set_default('falcon_sense_skip_contained', False)
     set_default('falcon_sense_greedy', False)
-    set_default('la4falcon_preload', '')
+    set_default('LA4Falcon_preload', '')
     set_default('fc_ovlp_to_graph_option', '')
     set_default('genome_size', 0)
     set_default('seed_coverage', 20)
@@ -369,7 +369,7 @@ def update_defaults(cfg):
     set_default('target', 'assembly')
     set_default(TEXT_FILE_BUSY, bash.BUG_avoid_Text_file_busy)
 
-    for bool_key in ('skip_checks', 'dazcon', 'falcon_sense_skip_contained', 'falcon_sense_greedy', 'la4falcon_preload', TEXT_FILE_BUSY):
+    for bool_key in ('skip_checks', 'dazcon', 'falcon_sense_skip_contained', 'falcon_sense_greedy', 'LA4Falcon_preload', TEXT_FILE_BUSY):
         cfg[bool_key] = functional.cfg_tobool(cfg.get(bool_key, False))
 
     if 'dust' in cfg:
