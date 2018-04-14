@@ -152,9 +152,9 @@ def parse_cfg_file(config_fn):
             config = parse_cfg_with_sections(stream)
     update_defaults(config['General'])
     # Copy General section to top, for now.
-    for key, val in config['General'].items():
-        config[key] = val
-    #cfg.update(config.get('General', {}))
+    #for key, val in config['General'].items():
+    #    config[key] = val
+    ##cfg.update(config.get('General', {}))
     check_config_sections(config) # Ensure that the right sections exist.
     update_job_sections(config)
     return config
