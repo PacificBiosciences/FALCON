@@ -108,13 +108,10 @@ def clean_falcon_options(fc):
     """Update some values in fc.
     Replace _ with - in a couple places.
     """
-    for key in ['falcon_sense_option', 'overlap_filtering_setting']:
-        if key in fc:
-            val = fc[key]
-            if '_' in val:
-                new_val = val.replace('_', '-')
-                logger.warning('Option {key} contains flags with "_":\n "{key}={val}".\nThose should be "-", as in\n "{key}={new_val}".'.format(**locals()))
-                fc[key] = new_val
+    keys = ('falcon_sense_option', 'overlap_filtering_setting', 'fc_ovlp_to_graph_option',
+    )
+    for key in keys:
+        update_dash_flags(fc, key)
 
 
 def old_get_config(config):
@@ -369,10 +366,12 @@ def update_dash_flags(cfg, key):
     if key not in cfg:
         return
     val = cfg[key]
-    cfg[key] = functional.dash_flags(cfg[key])
-    if val != cfg[key]:
-        msg = 'Value for key "{}" should be "{}", but was "{}".'.format(
-                key, cfg[key], val)
+    cfg[key] = new_val = functional.dash_flags(cfg[key])
+    if val != new_val:
+        msg = '''\
+Option contains flags with "_":
+ "{key}={val}". Those should be "-", as in
+ "{key}={new_val}". Auto-replaced.'''.format(**locals())
         logger.warning(msg)
 
 def update_defaults(cfg):
@@ -415,7 +414,8 @@ def update_defaults(cfg):
 
     bash.BUG_avoid_Text_file_busy = cfg[TEXT_FILE_BUSY]
 
-    update_dash_flags(cfg, 'falcon_sense_option')
+    clean_falcon_options(cfg)
+
     falcon_sense_option = cfg['falcon_sense_option']
     if 'local_match_count' in falcon_sense_option or 'output_dformat' in falcon_sense_option:
         raise Exception('Please remove obsolete "--local_match_count_*" or "--output_dformat"' +
@@ -428,7 +428,6 @@ def update_defaults(cfg):
                 'Must specify either length_cutoff>0 or genome_size>0')
 
     # This one depends on length_cutoff_pr for its default.
-    update_dash_flags(cfg, 'fc_ovlp_to_graph_option')
     fc_ovlp_to_graph_option = cfg['fc_ovlp_to_graph_option']
     if '--min_len' not in fc_ovlp_to_graph_option and '--min-len' not in fc_ovlp_to_graph_option:
         length_cutoff_pr = cfg['length_cutoff_pr']
@@ -439,8 +438,6 @@ def update_defaults(cfg):
     if target not in ["overlapping", "pre-assembly", "assembly"]:
         msg = """ Target has to be "overlapping", "pre-assembly" or "assembly" in this verison. You have an unknown target {!r} in the configuration file.  """.format(target)
         raise Exception(msg)
-
-    clean_falcon_options(cfg)
 
     possible_extra_keys = [
             'sge_option', 'default_concurrent_jobs',
