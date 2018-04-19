@@ -43,14 +43,50 @@ python -m falcon_kit.mains.consensus_gather_fasta_fofn --gathered-fn={input.gath
 TASK_REPORT_PRE_ASSEMBLY_SCRIPT = """\
 python -m falcon_kit.mains.task_report_pre_assembly --config-fn={input.config} --length-cutoff-fn={input.length_cutoff} --raw-reads-db-fn={input.raw_reads_db} --preads-fofn-fn={input.preads_fofn} --pre-assembly-report-fn={output.pre_assembly_report}
 """
+
+# Old
 TASK_BUILD_RDB_SCRIPT = """\
-python -m falcon_kit.mains.build_rdb --input-fofn-fn={input.raw_reads_fofn} --config-fn={input.config} --run-jobs-fn={output.run_jobs} --length-cutoff-fn={output.length_cutoff} --job-done-fn={output.db_build_done}
+python -m falcon_kit.mains.build_rdb --input-fofn-fn={input.raw_reads_fofn} --config-fn={input.config} --run-jobs-fn={output.run_jobs} --job-done-fn={output.db_build_done}
 touch {output.db_build_done}
 """
+# Old
 TASK_BUILD_PDB_SCRIPT = """\
 python -m falcon_kit.mains.build_pdb --input-fofn-fn={input.preads_fofn} --config-fn={input.config} --run-jobs-fn={output.run_jobs} --job-done-fn={output.db_build_done}
 # TODO: Verify that input.preads_db exists.
 touch {output.db_build_done}
+"""
+
+TASK_DB_BUILD_SCRIPT = """\
+python -m falcon_kit.mains.dazzler --config-fn={input.config} --db-fn={output.db}  build --input-fofn-fn={input.input_fofn} --length-cutoff-fn={output.length_cutoff}
+# TODO: Verify that db exists.
+#ln -sf {output.length_cutoff} length_cutoff
+"""
+TASK_DB_TAN_SPLIT_SCRIPT = """\
+python -m falcon_kit.mains.dazzler --config={input.config} --db={input.db}  tan-split --split={output.split} --bash-template={output.bash_template}
+"""
+TASK_DB_TAN_APPLY_SCRIPT = """\
+python -m falcon_kit.mains.dazzler --config={input.config} --db={input.db}  tan-apply --script={input.script} --job-done={output.job_done}
+"""
+TASK_DB_TAN_COMBINE_SCRIPT = """\
+python -m falcon_kit.mains.dazzler --config={input.config} --db={input.db}  tan-combine --gathered={input.gathered} --new-db={output.new_db}
+"""
+TASK_DB_DALIGNER_SPLIT_SCRIPT = """\
+python -m falcon_kit.mains.dazzler --config={input.config} --db={input.db} --nproc={params.pypeflow_nproc}  daligner-split --wildcards={params.wildcards} --length-cutoff-fn={input.length_cutoff} --split-fn={output.split} --bash-template-fn={output.bash_template}
+"""
+TASK_DB_DALIGNER_APPLY_SCRIPT = """\
+python -m falcon_kit.mains.dazzler --config={input.config} --db={input.db}  daligner-apply --script={input.script} --job-done={output.job_done}
+"""
+TASK_DB_DALIGNER_COMBINE_SCRIPT = """\
+python -m falcon_kit.mains.dazzler --config={input.config} --db={input.db}  daligner-combine --gathered={input.gathered} --las-paths-fn={output.las_paths}
+"""
+TASK_DB_LAMERGE_SPLIT_SCRIPT = """\
+python -m falcon_kit.mains.dazzler --config={input.config}                  merge-split --db-prefix={params.db_prefix} --las-paths={input.las_paths} --split-fn={output.split} --bash-template-fn={output.bash_template}
+"""
+TASK_DB_LAMERGE_APPLY_SCRIPT = """\
+python -m falcon_kit.mains.dazzler --config={input.config}                  merge-apply --las-paths={input.las_paths} --las-fn={output.las_fn}
+"""
+TASK_DB_LAMERGE_COMBINE_SCRIPT = """\
+python -m falcon_kit.mains.dazzler --config={input.config}                  merge-combine --gathered={input.gathered} --las-paths-fn={output.las_paths} --block2las-fn={output.block2las}
 """
 #TASK_DALIGNER_SCATTER_SCRIPT = """\
 #python -m falcon_kit.mains.daligner_scatter --run-jobs-fn={input.run_jobs} --db-prefix={params.db_prefix} --db-fn={input.db} --skip-checks={params.skip_checks} --pread-aln={params.pread_aln} --stage={params.stage} --wildcards={params.wildcards} --scattered-fn={output.scattered}
