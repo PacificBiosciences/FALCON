@@ -124,7 +124,7 @@ def yield_first_seq(one_path_edges, seqs):
                 yield first_seq
 
 
-def run(improper):
+def run(improper_p_ctg, proper_a_ctg):
     """improper==True => Neglect the initial read.
     We used to need that for unzip.
     """
@@ -285,7 +285,7 @@ def run(improper):
 
             one_path_edges = list(zip(one_path[:-1], one_path[1:]))
 
-            if improper:
+            if improper_p_ctg:
                 sub_seqs = []
             else:
                 sub_seqs = list(yield_first_seq(one_path_edges, seqs))
@@ -305,7 +305,7 @@ def run(improper):
 
                 score, atig_path = a_ctg_group[(v, w)][0]
                 atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
-                if improper:
+                if not proper_a_ctg:
                     sub_seqs = []
                 else:
                     sub_seqs = list(yield_first_seq(atig_path_edges, seqs))
@@ -323,7 +323,7 @@ def run(improper):
 
                 for score, atig_path in a_ctg_group[(v, w)][1:]:
                     atig_path_edges = list(zip(atig_path[:-1], atig_path[1:]))
-                    if improper:
+                    if not proper_a_ctg:
                         sub_seqs = []
                     else:
                         sub_seqs = list(yield_first_seq(atig_path_edges, seqs))
@@ -417,8 +417,10 @@ We write these:
             description=description,
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog=epilog)
-    parser.add_argument('--improper', action='store_true',
-            help='Skip the initial read in each path. This used to be needed for falcon-unzip.')
+    parser.add_argument('--improper-p-ctg', action='store_true',
+            help='Skip the initial read in each p_ctg path.')
+    parser.add_argument('--proper-a-ctg', action='store_true',
+            help='Skip the initial read in each a_ctg path.')
     args = parser.parse_args(argv[1:])
     run(**vars(args))
 
