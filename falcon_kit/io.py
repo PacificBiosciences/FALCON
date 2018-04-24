@@ -145,6 +145,15 @@ def yield_abspath_from_fofn(fofn_fn):
         raise
 
 
+def rmdirs(*dirnames):
+    for d in dirnames:
+        assert os.path.normpath(d.strip()) not in ['.', '', '/']
+    syscall('rm -rf {}'.format(' '.join(dirnames)))
+
 def rmdir(d):
-    assert os.path.normpath(d.strip()) not in ['.', '', '/']
-    syscall('rm -rf {}'.format(' '.join(d)))
+    rmdirs(d)
+
+def rm_force(*fns):
+    for fn in fns:
+        if os.path.exists(fn):
+            os.unlink(fn)

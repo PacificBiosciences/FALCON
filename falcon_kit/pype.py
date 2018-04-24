@@ -113,7 +113,7 @@ def gen_parallel_tasks(
         #inputs = job['input']
         #outputs = job['output']
         #params = job['params']
-        wildcards = job['wildcards']
+        #wildcards = job['wildcards']
         #params.update({k: v for (k, v) in viewitems(job['wildcards'])}) # include expanded wildcards
         #LOG.warning('OUT:{}'.format(outputs))
 
