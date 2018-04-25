@@ -127,6 +127,7 @@ def create_consensus_gather_task(wd, inputs):
 def main1(prog_name, input_config_fn, logger_config_fn=None):
     global LOG
     LOG = support.setup_logger(logger_config_fn)
+    lfs_setstripe_maybe(path='.', stripe=12)
 
     LOG.info('fc_run started with configuration %s', input_config_fn)
     try:
@@ -137,25 +138,27 @@ def main1(prog_name, input_config_fn, logger_config_fn=None):
     except Exception:
         LOG.exception('Failed to parse config "{}".'.format(input_config_fn))
         raise
-    input_fofn_plf = makePypeLocalFile(config['input_fofn'])
-    genome_size = config.get('genome_size')
+    general_config = config['General']
+    assert 'input_fofn' in general_config, 'Missing "input_fofn" in {}.'.format(input_config_fn)
+    input_fofn_plf = makePypeLocalFile(general_config['input_fofn'])
+    genome_size = int(general_config.get('genome_size', '0'))
     squash = True if 0 < genome_size < 1000000 else False
     wf = PypeProcWatcherWorkflow(job_defaults=config['job.defaults'],
                                  squash=squash,
     )
-    general_config_fn = './config.json' # must not be in a task-dir
-    config['ver'] = '100'
-    io.serialize(general_config_fn, config)
+    general_config['ver'] = '100'
+    config_fn = './config.json' # must not be in a task-dir
+    io.serialize(config_fn, config)
     with open('foo.snake', 'w') as snakemake_writer:
         rule_writer = snakemake.SnakemakeRuleWriter(snakemake_writer)
         run(wf, config, rule_writer,
-            os.path.abspath(general_config_fn),
+            os.path.abspath(config_fn),
             input_fofn_plf=input_fofn_plf,
             )
 
 
 def run(wf, config, rule_writer,
-        general_config_fn,
+        config_fn,
         input_fofn_plf,
         ):
     """
@@ -163,11 +166,13 @@ def run(wf, config, rule_writer,
     * LOG
     * run_support.logger
     """
-    general_config = io.deserialize(general_config_fn)
-    if general_config != config:
-        msg = 'Config from {!r} != passed config'.format(general_config_fn)
-        LOG.error(msg)
+    parsed_config = io.deserialize(config_fn)
+    if parsed_config != config:
+        msg = 'Config from {!r} != passed config'.format(config_fn)
         raise Exception(msg)
+    general_config = config['General']
+    general_config_fn = os.path.join(os.path.dirname(config_fn), 'General_config.json')
+    io.serialize(general_config_fn, general_config) # Some tasks use this.
     rawread_dir = '0-rawreads'
     pread_dir = '1-preads_ovl'
     falcon_asm_dir = '2-asm-falcon'
@@ -181,55 +186,111 @@ def run(wf, config, rule_writer,
     default_njobs = int(job_defaults.get('njobs', 7))
     wf.max_jobs = default_njobs
 
-    assert config['input_type'] in (
-        'raw', 'preads'), 'Invalid input_type=={!r}'.format(config['input_type'])
+    assert general_config['input_type'] in (
+        'raw', 'preads'), 'Invalid input_type=={!r}'.format(general_config['input_type'])
 
     # Store config as JSON, available to many tasks.
 
-    if config['input_type'] == 'raw':
+    if general_config['input_type'] == 'raw':
         parameters = {}
-        rdb_build_done = os.path.join(rawread_dir, 'rdb_build_done')
-        run_jobs_fn = os.path.join(rawread_dir, 'run_jobs.sh')
-        length_cutoff_fn = os.path.join(rawread_dir, 'length_cutoff')
-        raw_reads_db_fn = os.path.join(rawread_dir, 'raw_reads.db')
-        # Also .raw_reads.*, of course.
 
         # import sequences into daligner DB
-        # and calculate length_cutoff (if specified as -1)
+        # calculate length_cutoff (if specified as -1)
+        # split DB
+        # run DBdust
+        r_db_dust_fn = os.path.join(rawread_dir, 'build', 'raw_reads.db')
+        length_cutoff_fn = os.path.join(rawread_dir, 'build', 'length_cutoff')
         wf.addTask(gen_task(
-            script=pype_tasks.TASK_BUILD_RDB_SCRIPT,
+            script=pype_tasks.TASK_DB_BUILD_SCRIPT,
             inputs={
                 'config': general_config_fn,
-                'raw_reads_fofn': fn(input_fofn_plf),
+                'input_fofn': fn(input_fofn_plf),
             },
             outputs={
-                'run_jobs': run_jobs_fn,
-                'raw_reads_db': raw_reads_db_fn,
                 'length_cutoff': length_cutoff_fn,
-                'db_build_done': rdb_build_done, # only for ordering
+                'db': r_db_dust_fn,
+                # Also .raw_reads.*, of course. And dust track.
+            },
+            parameters=dict(
+            ),
+            rule_writer=rule_writer,
+            dist=Dist(NPROC=1),
+        ))
+
+        # run TANmask
+        tan_uows_fn = os.path.join(
+            rawread_dir, 'tan-split', 'tan-uows.json')
+        tan_bash_template_fn = os.path.join(
+            rawread_dir, 'tan-split', 'bash_template.sh')
+        wf.addTask(gen_task(
+            script=pype_tasks.TASK_DB_TAN_SPLIT_SCRIPT,
+            inputs={
+                'config': general_config_fn,
+                'db': r_db_dust_fn,
+            },
+            outputs={
+                'split': tan_uows_fn,
+                'bash_template': tan_bash_template_fn,
             },
             parameters={},
             rule_writer=rule_writer,
-            dist=Dist(NPROC=1, job_dict=config['job.step.da']),
+            dist=Dist(NPROC=1),
+        ))
+
+        gathered_fn = os.path.join(rawread_dir, 'tan-gathered', 'gathered-done-files.json')
+        gen_parallel_tasks(
+            wf, rule_writer,
+            tan_uows_fn, gathered_fn,
+            run_dict=dict(
+                bash_template_fn=tan_bash_template_fn,
+                script='fubar-TODO', #pype_tasks.TASK_DB_TAN_APPLY_SCRIPT, # for snakemake stuff
+                inputs={
+                    'units_of_work': '0-rawreads/tan-chunks/{tan0_id}/some-units-of-work.json',
+                },
+                outputs={
+                    #'job_done': '0-rawreads/{dal0_id}/daligner.done',
+                    'results': '0-rawreads/tan-runs/{tan0_id}/some-done-files.json',
+                },
+                parameters={},
+
+            ),
+            dist=Dist(NPROC=4, MB=4000, job_dict=config['job.step.da']),
+        )
+
+        r_db_tan_fn = os.path.join(rawread_dir, 'tan-combine', 'raw_reads.db')
+        wf.addTask(gen_task(
+            script=pype_tasks.TASK_DB_TAN_COMBINE_SCRIPT,
+            inputs={
+                'config': general_config_fn,
+                'db': r_db_dust_fn,
+                'gathered': gathered_fn,
+            },
+            outputs={
+                'new_db': r_db_tan_fn,
+            },
+            parameters={},
+            rule_writer=rule_writer,
+            dist=Dist(local=True),
         ))
 
         # run daligner
         wf.max_jobs = config['job.step.da'].get('njobs', default_njobs)
-        rawreads_db_fn = os.path.join(rawread_dir, 'raw_reads.db')
+        #rawreads_db_fn = os.path.join(rawread_dir, 'raw_reads.db')
         daligner_all_units_fn = os.path.join(
             rawread_dir, 'daligner-split', 'all-units-of-work.json')
         daligner_bash_template_fn = os.path.join(
             rawread_dir, 'daligner-split', 'daligner_bash_template.sh')
         params = dict(parameters)
-        params['db_prefix'] = 'raw_reads'
-        params['pread_aln'] = 0
-        params['skip_checks'] = int(config.get('skip_checks', 0))
+        #params['db_prefix'] = 'raw_reads'
+        #params['pread_aln'] = 0
+        params['skip_checks'] = int(general_config.get('skip_checks', 0))
         params['wildcards'] = 'dal0_id'
         wf.addTask(gen_task(
-            script=pype_tasks.TASK_DALIGNER_SPLIT_SCRIPT,
+            script=pype_tasks.TASK_DB_DALIGNER_SPLIT_SCRIPT,
             inputs={
-                'run_jobs': run_jobs_fn,
-                'db': rawreads_db_fn,
+                'config': general_config_fn,
+                'db': r_db_tan_fn,
+                'length_cutoff': length_cutoff_fn,
             },
             outputs={
                 'split': daligner_all_units_fn,
@@ -246,30 +307,32 @@ def run(wf, config, rule_writer,
             daligner_all_units_fn, gathered_fn,
             run_dict=dict(
                 bash_template_fn=daligner_bash_template_fn,
-                script=pype_tasks.TASK_DALIGNER_SCRIPT, # for snakemake stuff
+                script=pype_tasks.TASK_DB_DALIGNER_APPLY_SCRIPT, # for snakemake stuff
                 inputs={
-                    #'daligner_script': '0-rawreads/daligner-scripts/{dal0_id}/daligner-script.sh',
-                    #'daligner_settings': '0-rawreads/daligner-scripts/{dal0_id}/settings.json',
-                    'units_of_work': '0-rawreads/daligner-chunks/{dal0_id}/some-units-of-work.json',
+                    'units_of_work': os.path.join(rawread_dir, 'daligner-chunks/{dal0_id}/some-units-of-work.json'),
                 },
                 outputs={
-                    #'job_done': '0-rawreads/{dal0_id}/daligner.done',
-                    'results': '0-rawreads/daligner-runs/{dal0_id}/some-done-files.json',
+                    'results': os.path.join(rawread_dir, 'daligner-runs/{dal0_id}/some-done-files.json'),
                 },
                 parameters={},
             ),
             dist=Dist(NPROC=4, MB=4000, job_dict=config['job.step.da']),
         )
 
-        r_gathered_las_fn = os.path.join(rawread_dir, 'daligner-intermediate-gathered-las', 'gathered-las.json')
+        r_gathered_las_fn = os.path.join(rawread_dir, 'daligner-combine', 'gathered-las.json')
         wf.addTask(gen_task(
-            script=pype_tasks.TASK_DALIGNER_FIND_LAS_SCRIPT,
-            inputs={'gathered': gathered_fn,
+            script=pype_tasks.TASK_DB_DALIGNER_COMBINE_SCRIPT,
+            inputs={
+                'config': general_config_fn,
+                'db': r_db_tan_fn,
+                'gathered': gathered_fn,
             },
-            outputs={'las_paths': r_gathered_las_fn,
+            outputs={
+                'las_paths': r_gathered_las_fn,
             },
             parameters={},
             rule_writer=rule_writer,
+            #dist=Dist(NPROC=1, MB=4000, job_dict=config['job.step.da'])
             dist=Dist(local=True),
         ))
 
@@ -281,10 +344,10 @@ def run(wf, config, rule_writer,
         params['db_prefix'] = 'raw_reads'
         params['wildcards'] = 'mer0_id'
         wf.addTask(gen_task(
-            script=pype_tasks.TASK_LAS_MERGE_SPLIT_SCRIPT,
+            script=pype_tasks.TASK_DB_LAMERGE_SPLIT_SCRIPT,
             inputs={
-                'run_jobs': run_jobs_fn,
-                'gathered_las': r_gathered_las_fn,
+                'config': general_config_fn,
+                'las_paths': r_gathered_las_fn,
             },
             outputs={
                 'split': las_merge_all_units_fn,
@@ -301,7 +364,7 @@ def run(wf, config, rule_writer,
             las_merge_all_units_fn, gathered_fn,
             run_dict=dict(
                 bash_template_fn=bash_template_fn,
-                script=pype_tasks.TASK_LAS_MERGE_SCRIPT, # for snakemake
+                script=pype_tasks.TASK_DB_LAMERGE_APPLY_SCRIPT, # for snakemake
                 inputs={
                     #'las_paths': './0-rawreads/merge-scripts/{mer0_id}/las_paths.json',
                     #'merge_script': './0-rawreads/merge-scripts/{mer0_id}/merge-script.sh',
@@ -318,21 +381,24 @@ def run(wf, config, rule_writer,
             dist=Dist(NPROC=1, job_dict=config['job.step.la']),
         )
 
-        p_id2las_fn = os.path.join(rawread_dir, 'las-gather', 'p_id2las.json')
-        las_fofn_fn = os.path.join(rawread_dir, 'las-gather', 'las_fofn.json')
+        p_id2las_fn = os.path.join(rawread_dir, 'las-merge-combine', 'p_id2las.json')
+        las_fofn_fn = os.path.join(rawread_dir, 'las-merge-combine', 'las_fofn.json')
         wf.addTask(gen_task(
-            script=pype_tasks.TASK_LAS_MERGE_GATHER_SCRIPT,
-            inputs={'gathered': gathered_fn,
+            script=pype_tasks.TASK_DB_LAMERGE_COMBINE_SCRIPT,
+            inputs={
+                'config': general_config_fn,
+                'gathered': gathered_fn,
             },
-            outputs={'p_id2las': p_id2las_fn,
-                     'las': las_fofn_fn,
+            outputs={
+                'block2las': p_id2las_fn,
+                'las_paths': las_fofn_fn,
             },
             parameters={},
             rule_writer=rule_writer,
             dist=Dist(local=True),
         ))
 
-        if config['target'] == 'overlapping':
+        if general_config['target'] == 'overlapping':
             sys.exit(0)
 
         # Produce new FOFN of preads fasta, based on consensus of overlaps.
@@ -348,7 +414,7 @@ def run(wf, config, rule_writer,
             script=pype_tasks.TASK_CONSENSUS_SPLIT_SCRIPT,
             inputs={
                 'p_id2las': p_id2las_fn,
-                'raw_reads_db': raw_reads_db_fn,
+                'raw_reads_db': r_db_tan_fn,
                 'length_cutoff': length_cutoff_fn,
                 'config': general_config_fn,
             },
@@ -370,7 +436,7 @@ def run(wf, config, rule_writer,
                 script=pype_tasks.TASK_CONSENSUS_TASK_SCRIPT, # for snakemake only
                 inputs = {
                     #'las': '0-rawreads/cns-split/{cns0_id}/merged.{cns0_id2}.las',
-                    #'db': raw_reads_db_fn,
+                    #'db': r_db_tan_fn,
                     #'length_cutoff': length_cutoff_fn,
                     #'config': general_config_fn,
                     'units_of_work': '0-rawreads/cns-chunks/{cns0_id}/some-units-of-work.json',
@@ -400,12 +466,12 @@ def run(wf, config, rule_writer,
         rdir = os.path.join(rawread_dir, 'report')
         pre_assembly_report_fn = os.path.join(rdir, 'pre_assembly_stats.json')
         params = dict(parameters)
-        params['length_cutoff_user'] = config['length_cutoff']
-        params['genome_length'] = config['genome_size'] # note different name; historical
+        params['length_cutoff_user'] = general_config['length_cutoff']
+        params['genome_length'] = general_config['genome_size'] # note different name; historical
         wf.addTask(gen_task(
             script=pype_tasks.TASK_REPORT_PRE_ASSEMBLY_SCRIPT,
             inputs={'length_cutoff': length_cutoff_fn,
-                    'raw_reads_db': raw_reads_db_fn,
+                    'raw_reads_db': r_db_tan_fn,
                     'preads_fofn': preads_fofn_fn,
                     'config': general_config_fn,
             },
@@ -416,15 +482,15 @@ def run(wf, config, rule_writer,
             dist=Dist(local=True),
         ))
 
-    if config['target'] == 'pre-assembly':
+    if general_config['target'] == 'pre-assembly':
         LOG.info('Quitting after stage-0 for "pre-assembly" target.')
         sys.exit(0)
 
     # build pread database
-    if config['input_type'] == 'preads':
+    if general_config['input_type'] == 'preads':
         """
         preads_fofn_plf = makePypeLocalFile(os.path.join(
-            pread_dir, 'preads-fofn-abs', os.path.basename(config['input_fofn'])))
+            pread_dir, 'preads-fofn-abs', os.path.basename(general_config['input_fofn'])))
         make_fofn_abs_task = PypeTask(inputs={'i_fofn': input_fofn_plf},
                                       outputs={'o_fofn': preads_fofn_plf},
                                       parameters={},
@@ -438,23 +504,24 @@ def run(wf, config, rule_writer,
 
     pdb_build_done = os.path.join(pread_dir, 'pdb_build_done')
     run_jobs_fn = os.path.join(pread_dir, 'run_jobs.sh')
-    preads_db_fn = os.path.join(pread_dir, 'preads.db')
-    # Also .preads.*, of course.
+    preads_db_fn = os.path.join(pread_dir, 'build', 'preads.db')
+    length_cutoff_pr_fn = os.path.join(pread_dir, 'build', 'length_cutoff')
 
     wf.addTask(gen_task(
-        script=pype_tasks.TASK_BUILD_PDB_SCRIPT,
+        script=pype_tasks.TASK_DB_BUILD_SCRIPT,
         inputs={
             'config': general_config_fn,
-            'preads_fofn': preads_fofn_fn,
+            'input_fofn': preads_fofn_fn,
         },
         outputs={
-            'run_jobs': run_jobs_fn,
-            'preads_db': preads_db_fn,
-            'db_build_done': pdb_build_done, # only for ordering
+            'length_cutoff': length_cutoff_pr_fn,
+            'db': preads_db_fn,
+            # Also .preads.*, of course.
         },
-        parameters=parameters, #{},
+        parameters=dict(
+        ),
         rule_writer=rule_writer,
-        dist=Dist(NPROC=1, job_dict=config['job.step.pda']),
+        dist=Dist(NPROC=1),
     ))
 
     # run daligner
@@ -464,17 +531,14 @@ def run(wf, config, rule_writer,
     daligner_bash_template_fn = os.path.join(
         pread_dir, 'daligner-split', 'daligner_bash_template.sh')
     params = dict(parameters)
-    params['db_prefix'] = 'preads'
-    #params['stage'] = os.path.basename(pread_dir)
-    params['pread_aln'] = 1
-    #params['nblock'] = preads_nblock
-    params['skip_checks'] = int(config.get('skip_checks', 0))
+    params['skip_checks'] = int(general_config.get('skip_checks', 0))
     params['wildcards'] = 'dal1_id'
     wf.addTask(gen_task(
-        script=pype_tasks.TASK_DALIGNER_SPLIT_SCRIPT,
+        script=pype_tasks.TASK_DB_DALIGNER_SPLIT_SCRIPT,
         inputs={
-            'run_jobs': run_jobs_fn,
-            'db': preads_db_fn,
+            'config': general_config_fn,
+            'db': preads_db_fn, #not tan, yet
+            'length_cutoff': length_cutoff_pr_fn,
         },
         outputs={
             'split': daligner_all_units_fn,
@@ -482,7 +546,7 @@ def run(wf, config, rule_writer,
         },
         parameters=params,
         rule_writer=rule_writer,
-        dist=Dist(local=True, NPROC=4),
+        dist=Dist(local=True, NPROC=4), # really, NPROC=1, but we need to know the max
     ))
 
     gathered_fn = os.path.join(pread_dir, 'daligner-gathered', 'gathered-done-files.json')
@@ -491,30 +555,32 @@ def run(wf, config, rule_writer,
         daligner_all_units_fn, gathered_fn,
         run_dict=dict(
             bash_template_fn=daligner_bash_template_fn,
-            script=pype_tasks.TASK_DALIGNER_SCRIPT, # for snakemake stuff
+            script=pype_tasks.TASK_DB_DALIGNER_APPLY_SCRIPT, # for snakemake stuff
             inputs={
-                #'daligner_script': '1-preads_ovl/daligner-scripts/{dal1_id}/daligner-script.sh',
-                #'daligner_settings': '1-preads_ovl/daligner-scripts/{dal1_id}/settings.json',
-                'units_of_work': '1-preads_ovl/daligner-chunks/{dal1_id}/some-units-of-work.json',
+                'units_of_work': os.path.join(pread_dir, 'daligner-chunks/{dal1_id}/some-units-of-work.json'),
             },
             outputs={
-                #'job_done': '1-preads_ovl/{dal1_id}/daligner.done',
-                'results': '1-preads_ovl/daligner-runs/{dal1_id}/some-done-files.json',
+                'results': os.path.join(pread_dir, 'daligner-runs/{dal1_id}/some-done-files.json'),
             },
             parameters={},
         ),
         dist=Dist(NPROC=4, MB=4000, job_dict=config['job.step.pda']),
     )
 
-    p_gathered_las_fn = os.path.join(pread_dir, 'daligner-intermediate-gathered-las', 'gathered-las.json')
+    gathered_las_fn = os.path.join(pread_dir, 'daligner-combine', 'gathered-las.json')
     wf.addTask(gen_task(
-        script=pype_tasks.TASK_DALIGNER_FIND_LAS_SCRIPT,
-        inputs={'gathered': gathered_fn,
+        script=pype_tasks.TASK_DB_DALIGNER_COMBINE_SCRIPT,
+        inputs={
+            'config': general_config_fn,
+            'db': preads_db_fn, #r_db_tan_fn,
+            'gathered': gathered_fn,
         },
-        outputs={'las_paths': p_gathered_las_fn,
+        outputs={
+            'las_paths': gathered_las_fn,
         },
         parameters={},
         rule_writer=rule_writer,
+        #dist=Dist(NPROC=1, MB=4000, job_dict=config['job.step.pda'])
         dist=Dist(local=True),
     ))
 
@@ -526,10 +592,10 @@ def run(wf, config, rule_writer,
     params['db_prefix'] = 'preads'
     params['wildcards'] = 'mer1_id'
     wf.addTask(gen_task(
-        script=pype_tasks.TASK_LAS_MERGE_SPLIT_SCRIPT,
+        script=pype_tasks.TASK_DB_LAMERGE_SPLIT_SCRIPT,
         inputs={
-            'run_jobs': run_jobs_fn,
-            'gathered_las': p_gathered_las_fn,
+            'config': general_config_fn,
+            'las_paths': gathered_las_fn,
         },
         outputs={
             'split': las_merge_all_units_fn,
@@ -546,31 +612,29 @@ def run(wf, config, rule_writer,
         las_merge_all_units_fn, gathered_fn,
         run_dict=dict(
             bash_template_fn=bash_template_fn,
-            script=pype_tasks.TASK_LAS_MERGE_SCRIPT, # for snakemake
+            script=pype_tasks.TASK_DB_LAMERGE_APPLY_SCRIPT, # for snakemake
             inputs={
-                #'las_paths': './1-preads_ovl/merge-scripts/{mer1_id}/las_paths.json',
-                #'merge_script': './1-preads_ovl/merge-scripts/{mer1_id}/merge-script.sh',
-                #'merged_las_json': './1-preads_ovl/merge-scripts/{mer1_id}/merged_las.json',
-                'units_of_work': '1-preads_ovl/las-merge-chunks/{mer1_id}/some-units-of-work.json',
+                'units_of_work': os.path.join(pread_dir, 'las-merge-chunks/{mer0_id}/some-units-of-work.json'),
             },
             outputs={
-                #'merged_las': './1-preads_ovl/{mer1_id}/merged.las',
-                #'job_done': './1-preads_ovl/{mer1_id}/merge.done',
-                'results': '1-preads_ovl/las-merge-runs/{mer1_id}/some-las-paths.json',
+                'results': os.path.join(pread_dir, 'las-merge-runs/{mer0_id}/some-las-paths.json'),
             },
             parameters={},
         ),
-        dist=Dist(NPROC=1, job_dict=config['job.step.pla']),
+        dist=Dist(NPROC=1, job_dict=config['job.step.la']),
     )
 
-    p_id2las_fn = os.path.join(pread_dir, 'las-gather', 'p_id2las.json')
-    las_fofn_fn = os.path.join(pread_dir, 'las-gather', 'las_fofn.json')
+    p_id2las_fn = os.path.join(pread_dir, 'las-merge-combine', 'block2las.json')
+    las_fofn_fn = os.path.join(pread_dir, 'las-merge-combine', 'las_fofn.json')
     wf.addTask(gen_task(
-        script=pype_tasks.TASK_LAS_MERGE_GATHER_SCRIPT,
-        inputs={'gathered': gathered_fn,
+        script=pype_tasks.TASK_DB_LAMERGE_COMBINE_SCRIPT,
+        inputs={
+            'config': general_config_fn,
+            'gathered': gathered_fn,
         },
-        outputs={'p_id2las': p_id2las_fn,
-                 'las': las_fofn_fn,
+        outputs={
+            'block2las': p_id2las_fn,
+            'las_paths': las_fofn_fn,
         },
         parameters={},
         rule_writer=rule_writer,
@@ -596,7 +660,7 @@ def run(wf, config, rule_writer,
 
     falcon_asm_done_fn = os.path.join(falcon_asm_dir, 'falcon_asm_done')
     for key in ('overlap_filtering_setting', 'length_cutoff_pr', 'fc_ovlp_to_graph_option'):
-        parameters[key] = config[key]
+        parameters[key] = general_config[key]
     wf.addTask(gen_task(
         script=pype_tasks.TASK_RUN_FALCON_ASM_SCRIPT,
         inputs={'db2falcon_done': db2falcon_done_fn, 'db_file': preads_db_fn,
@@ -611,11 +675,14 @@ def run(wf, config, rule_writer,
     ))
     wf.refreshTargets()
 
+    with io.cd('0-rawreads'):
+        # for backwards-compatibility
+        io.symlink('las-merge-combine', 'las-gather')
+
     #return falcon_asm_done
 
 
 def main(argv=sys.argv):
-    lfs_setstripe_maybe(path='.', stripe=12)
     parser = argparse.ArgumentParser()
     parser.add_argument('config',
                         help='.cfg/.ini/.json')

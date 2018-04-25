@@ -27,6 +27,14 @@ def validate(bash_template, inputs, outputs, parameterss):
     validate_dict(outputs)
     validate_dict(parameterss)
 
+def update_values_rel_to(things, dn):
+    for key, val in things.items():
+        try:
+            if not os.path.isabs(val):
+                things[key] = os.path.normpath(os.path.join(dn, val))
+        except Exception:
+            # Probably just not a string. But could be str, unicode, ...
+            pass
 
 def run(bash_template_fn, units_of_work_fn, nproc,
         results_fn):
@@ -36,6 +44,7 @@ def run(bash_template_fn, units_of_work_fn, nproc,
     for i, uow in enumerate(uows):
         job = uow
         inputs = job['input']
+        update_values_rel_to(inputs, os.path.normpath(os.path.dirname(units_of_work_fn)))
         outputs = job['output'] # assumed to be relative to run-dir
         params = dict(job['params'])
         params['pypeflow_nproc'] = nproc
@@ -43,9 +52,9 @@ def run(bash_template_fn, units_of_work_fn, nproc,
         # matches pypeflow_nproc.
 
         #params.update({k: v for (k, v) in viewitems(job['wildcards'])}) # include expanded wildcards
-        LOG.warning('INPUT:{}'.format(inputs))
-        LOG.warning('OUTPUT:{}'.format(outputs))
-        LOG.warning('PARAMS:{}'.format(params))
+        LOG.info('INPUT:{}'.format(inputs))
+        LOG.info('OUTPUT:{}'.format(outputs))
+        LOG.info('PARAMS:{}'.format(params))
         uow_dir = 'uow-{:02d}'.format(i)
         uow_dirs.append(uow_dir)
         io.rmdir(uow_dir)

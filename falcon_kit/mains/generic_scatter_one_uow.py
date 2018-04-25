@@ -30,7 +30,21 @@ def validate(bash_template, inputs, outputs, parameterss):
 
 def run(all_uow_list_fn, split_idx, one_uow_list_fn):
     all_uows = io.deserialize(all_uow_list_fn)
+    dn = os.path.abspath(os.path.dirname(all_uow_list_fn))
     one_uow = all_uows[split_idx]
+
+    def fixpath(rel):
+        try:
+            if rel.startswith('./'):
+                return os.path.join(dn, rel)
+        except Exception:
+            pass
+        return rel
+    if isinstance(one_uow, dict):
+        input_dict = one_uow['input']
+        for k, v in input_dict.items():
+            input_dict[k] = fixpath(v)
+
     io.serialize(one_uow_list_fn, [one_uow])
 
 

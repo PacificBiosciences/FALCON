@@ -398,3 +398,115 @@ def choose_cat_fasta(fofn):
         return 'undexta -vkU -w60 -i < '
     else:
         return 'cat '
+
+
+re_underscore_flag = re.compile(r'(--[\w-]+)(_)')
+def dash_flags(val):
+    """
+    >>> dash_flags('--foo_bar --one_two_three')
+    '--foo-bar --one-two-three'
+    >>> dash_flags('')
+    ''
+    """
+    while True:
+        # Repeat until settled, as there might be multiple _ in the same flag.
+        new_val = re_underscore_flag.sub(r'\1-', val)
+        if new_val == val:
+            return new_val
+        val = new_val
+
+
+def cfg_tobool(v):
+    """
+    >>> cfg_tobool('yes')
+    True
+    >>> cfg_tobool('true')
+    True
+    >>> cfg_tobool('T')
+    True
+    >>> cfg_tobool('1')
+    True
+    >>> cfg_tobool('no')
+    False
+    >>> cfg_tobool('false')
+    False
+    >>> cfg_tobool('F')
+    False
+    >>> cfg_tobool('0')
+    False
+    >>> cfg_tobool('')
+    False
+    """
+    if v in (True, False, None):
+        return v
+    if not v:
+        return False
+    if v.upper()[0] in ('T', 'Y'):
+        return True
+    if v.upper()[0] in ('F', 'N'):
+        return False
+    return bool(int(v))
+
+
+# https://stackoverflow.com/questions/3387691/how-to-perfectly-override-a-dict
+# We derived from dict instead of from MutableMapping to json.dumps() works.
+
+_RaiseKeyError = object() # singleton for no-default behavior
+
+class LowerDict(dict):  # dicts take a mapping or iterable as their optional first argument
+    __slots__ = () # no __dict__ - that would be redundant
+    def __init__(self):
+        # No args allowed, to keep it simple.
+        super(LowerDict, self).__init__(self)
+    def __getitem__(self, k):
+        return super(LowerDict, self).__getitem__(k.lower())
+    def __setitem__(self, k, v):
+        return super(LowerDict, self).__setitem__(k.lower(), v)
+    def __delitem__(self, k):
+        return super(LowerDict, self).__delitem__(k.lower())
+    def get(self, k, default=None):
+        return super(LowerDict, self).get(k.lower(), default)
+    def setdefault(self, k, default=None):
+        return super(LowerDict, self).setdefault(k.lower(), default)
+    def pop(self, k, v=_RaiseKeyError):
+        if v is _RaiseKeyError:
+            return super(LowerDict, self).pop(k.lower())
+        return super(LowerDict, self).pop(k.lower(), v)
+    #def update(self, mapping=(), **kwargs):
+    #    super(LowerDict, self).update(self._process_args(mapping, **kwargs))
+    def __contains__(self, k):
+        return super(LowerDict, self).__contains__(k.lower())
+    #def copy(self): # don't delegate w/ super - dict.copy() -> dict :(
+    #    return type(self)(self)
+    @classmethod
+    def fromkeys(cls, keys, v=None):
+        return super(LowerDict, cls).fromkeys((k.lower() for k in keys), v)
+    def __repr__(self):
+        return '{0}({1})'.format(type(self).__name__, super(LowerDict, self).__repr__())
+
+
+__loop_set = set()
+
+def toLowerDict(cfg):
+    """Change key-names to be lower-case, at all levels of dict cfg.
+    Then, return the case-insensitive LowerDict, substituted recursively.
+    """
+    if isinstance(cfg, LowerDict):
+        return cfg
+    if id(cfg) in __loop_set:
+        # Prevent infinite loop.
+        raise Exception('Already ran update_lowercase({}) (len(set)=={}):\n  {}'.format(
+            id(cfg), len(__loop_set), cfg))
+    __loop_set.add(id(cfg))
+
+    low = LowerDict()
+
+    for k,v in list(cfg.items()):
+        if isinstance(v, dict):
+            v = toLowerDict(v) # RECURSION
+        if k in low:
+            msg = 'Collision for "{}" in dict:\n{}'.format(k, cfg)
+            if v != low[k]:
+                raise Exception(msg)
+        low[k] = v
+    return low
