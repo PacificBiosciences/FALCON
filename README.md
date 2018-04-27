@@ -30,7 +30,7 @@ ABOUT THE LICENSE
 
 Standard PacBio ["Open Source License"](LICENSE).
 
-July 9th, 2015
+27 April 2018
 
 DISCLAIMER
 ----------
