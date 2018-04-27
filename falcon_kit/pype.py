@@ -40,9 +40,13 @@ def wrap_gen_task(rule_writer, script, inputs, outputs, parameters=None, dist=No
     def get_rel(maybe_abs):
         rel = dict()
         for (k, v) in viewitems(maybe_abs):
-            if os.path.isabs(v):
-                v = os.path.relpath(v)
-            rel[k] = v
+            try:
+                if os.path.isabs(v):
+                    v = os.path.relpath(v)
+                rel[k] = v
+            except Exception:
+                LOG.exception('Error for {!r}->{!r}'.format(k, v))
+                raise
         return rel
     inputs = get_rel(inputs)
     outputs = get_rel(outputs)
