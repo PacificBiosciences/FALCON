@@ -132,8 +132,8 @@ def build_db(config, input_fofn_fn, db_fn, length_cutoff_fn):
             stream.write('\n')
     script = ''.join([
         script_build_db(config, my_input_fofn_fn, db),
-        script_length_cutoff(config, db, length_cutoff_fn),
         script_DBsplit(config, db),
+        script_length_cutoff(config, db, length_cutoff_fn),
     ])
     script_fn = 'build_db.sh'
     with open(script_fn, 'w') as ofs:
