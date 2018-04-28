@@ -165,7 +165,7 @@ rm -f .{db}.*.tan.data
 echo "SMRT_PYTHON_PATH_PREPEND=$SMRT_PYTHON_PATH_PREPEND"
 echo "PATH=$PATH"
 which HPC.TANmask
-HPC.TANmask -P. -f{prefix} {db}
+HPC.TANmask -P. {HPCTANmask_opt} -v -f{prefix} {db}
     """.format(**params)
 
 def symlink(actual, symbolic=None, force=True):
@@ -684,6 +684,7 @@ For raw_reads.db, we also look for the following config keys:
 
 - pa_DBsplit_option
 - pa_HPCdaligner_option
+- pa_HPCTANmask_option
 - length_cutoff: -1 => calculate based on "genome_size" and "seed_coverage" config.
 - seed_coverage
 - genome_size
@@ -692,6 +693,7 @@ For preads.db, these are named:
 
 - ovlp_DBsplit_option
 - ovlp_HPCdaligner_option
+- ovlp_HPCTANmask_option
 - length_cutoff_pr
 """
 
@@ -703,15 +705,13 @@ def get_ours(config_fn, db_fn):
     if os.path.basename(db_fn).startswith('preads'):
         ours['DBsplit_opt'] = config.get('ovlp_DBsplit_option', '')
         ours['daligner_opt'] = config.get('ovlp_HPCdaligner_option', '')
+        ours['TANmask_opt'] = config.get('ovlp_HPCTANmask_option', '')
         ours['user_length_cutoff'] = int(config.get('length_cutoff_pr', '0'))
     else:
         ours['DBsplit_opt'] = config.get('pa_DBsplit_option', '')
         ours['daligner_opt'] = config.get('pa_HPCdaligner_option', '')
+        ours['TANmask_opt'] = config.get('pa_HPCTANmask_option', '')
         ours['user_length_cutoff'] = int(config.get('length_cutoff', '0'))
-    # TODO: TEMP -- Delete asserts!
-    assert ours['DBsplit_opt']
-    assert ours['daligner_opt']
-    assert ours['user_length_cutoff']
 
     LOG.info('config({!r}):\n{}'.format(config_fn, config))
     LOG.info('our subset of config:\n{}'.format(ours))
