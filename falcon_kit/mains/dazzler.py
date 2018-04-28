@@ -380,13 +380,13 @@ def daligner_split(config, config_fn, db_fn, nproc, wildcards, length_cutoff_fn,
         re_script = re.compile(r'(mv\b.*\S+\s+)(\S+)$') # no trailing newline, for now
         mo = re_script.search(script)
         if not mo:
-            msg = 'Only 1 line in daligner-jobs.01.OVL, but {!r} did not match {!r}.'.format(
-                script, re_script.pattern)
+            msg = 'Only 1 line in daligner-jobs.01.OVL, but\n {!r} did not match\n {!r}.'.format(
+                re_script.pattern, script)
             LOG.warning(msg)
         else:
             new_script = re_script.sub(r'\1{dbname}.1.{dbname}.1.las'.format(dbname=dbname), script, 1)
-            msg = 'Only 1 line in daligner-jobs.01.OVL; {!r} matches\n {!r}. Replacing with\n {!r}.'.format(
-                script, re_script.pattern, new_script)
+            msg = 'Only 1 line in daligner-jobs.01.OVL:\n {!r} matches\n {!r}. Replacing with\n {!r}.'.format(
+                re_script.pattern, script, new_script)
             LOG.warning(msg)
             scripts = [new_script]
 
