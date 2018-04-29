@@ -165,7 +165,7 @@ rm -f .{db}.*.tan.data
 echo "SMRT_PYTHON_PATH_PREPEND=$SMRT_PYTHON_PATH_PREPEND"
 echo "PATH=$PATH"
 which HPC.TANmask
-HPC.TANmask -P. {HPCTANmask_opt} -v -f{prefix} {db}
+HPC.TANmask -P. {TANmask_opt} -v -f{prefix} {db}
     """.format(**params)
 
 def symlink(actual, symbolic=None, force=True):
