@@ -154,9 +154,9 @@ echo "PATH=$PATH"
 which HPC.daligner
 HPC.daligner -P. {daligner_opt} {masks} -H$CUTOFF -f{prefix} {db} >| run_jobs.sh
     """.format(**params)
-def script_HPC_TANmask(db, prefix):
+def script_HPC_TANmask(config, db, prefix):
     assert prefix and '/' not in prefix
-    params = dict() #dict(config)
+    params = dict(config)
     params.update(locals())
     return """
 rm -f {prefix}.*
@@ -217,7 +217,7 @@ def symlink_db(db_fn):
             symlink(fn)
     return dbname
 
-def tan_split(config_fn, db_fn, uows_fn, bash_template_fn):
+def tan_split(config, config_fn, db_fn, uows_fn, bash_template_fn):
     with open(bash_template_fn, 'w') as stream:
         stream.write(pype_tasks.TASK_DB_TAN_APPLY_SCRIPT)
     # TANmask would put track-files in the DB-directory, not '.',
@@ -225,7 +225,7 @@ def tan_split(config_fn, db_fn, uows_fn, bash_template_fn):
     db = symlink_db(db_fn)
 
     script = ''.join([
-        script_HPC_TANmask(db, prefix='tan-jobs'),
+        script_HPC_TANmask(config, db, prefix='tan-jobs'),
     ])
     script_fn = 'split_db.sh'
     with open(script_fn, 'w') as ofs:
@@ -659,7 +659,8 @@ def cmd_build(args):
     ours = get_ours(args.config_fn, args.db_fn)
     build_db(ours, args.input_fofn_fn, args.db_fn, args.length_cutoff_fn)
 def cmd_tan_split(args):
-    tan_split(args.config_fn, args.db_fn, args.split_fn, args.bash_template_fn)
+    ours = get_ours(args.config_fn, args.db_fn)
+    tan_split(ours, args.config_fn, args.db_fn, args.split_fn, args.bash_template_fn)
 def cmd_tan_apply(args):
     tan_apply(args.db_fn, args.script_fn, args.job_done_fn)
 def cmd_tan_combine(args):
