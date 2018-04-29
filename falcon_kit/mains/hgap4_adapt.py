@@ -35,46 +35,6 @@ However, if HGAP4/pbsmrtpipe-tasks change, then this would need to
 be updated.
 """
 
-"""HGAP4 with --force-chunk-mode
-
-pbcoretools.tasks.filterdataset-0
-pbcoretools.tasks.subreadset_zmw_scatter-1
-pbcoretools.tasks.bam2fasta-2
-pbcoretools.tasks.bam2fasta-1
-.pbcoretools.tasks.subreadset_zmw_scatter-f87695df-095d-44f0-958c-380106fc60
-pbcoretools.tasks.gather_fasta-1
-pbcoretools.tasks.fasta2fofn-0
-falcon_ns.tasks.task_falcon_gen_config-0
-falcon_ns.tasks.task_falcon_config-0
-falcon_ns.tasks.task_falcon_make_fofn_abs-0
-falcon_ns.tasks.task_falcon0_build_rdb-0
-pbfalcon.tasks.scatter0_run_daligner_jobs-1
-.pbfalcon.tasks.scatter0_run_daligner_jobs-c71da9cc-ee0e-41ca-93b3-63b5d3f14857-gathered-pipeline.chunks.json
-falcon_ns.tasks.task_falcon0_run_daligner_jobs-1
-pbfalcon.tasks.gather0_run_daligner_jobs-1
-falcon_ns.tasks.task_falcon0_rm_las-0
-falcon_ns.tasks.task_falcon0_run_merge_consensus_jobs-0
-pbfalcon.tasks.scatter_run_scripts_in_json-1
-falcon_ns.tasks.task_falcon0_merge-1
-.pbfalcon.tasks.scatter_run_scripts_in_json-94c652c2-e483-4cc3-81e8-264e5de74da3-gathered-pipeline.chunks.json
-pbcoretools.tasks.gather_txt-1
-pbfalcon.tasks.scatter_run_scripts_in_json_2-1
-.pbfalcon.tasks.scatter_run_scripts_in_json_2-23ee9e9f-415d-4312-90ba-5744320f4f7b-gathered-pipeline.chunks.json
-falcon_ns.tasks.task_falcon0_cons-1
-pbcoretools.tasks.gather_txt-2
-falcon_ns.tasks.task_report_preassembly_yield-0
-falcon_ns.tasks.task_falcon1_rm_las-0
-falcon_ns.tasks.task_falcon1_build_pdb-0
-pbfalcon.tasks.scatter1_run_daligner_jobs-1
-.pbfalcon.tasks.scatter1_run_daligner_jobs-53468780-ee9d-44e9-a9cb-60676f3ae7b4-gathered-pipeline.chunks.json
-pbfalcon.tasks.gather1_run_daligner_jobs-1
-falcon_ns.tasks.task_falcon1_merge-0
-falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0
-falcon_ns.tasks.task_falcon1_db2falcon-0
-falcon_ns.tasks.task_falcon2_rm_las-0
-falcon_ns.tasks.task_falcon2_run_asm-0
-"""
-
 """Post-FALCON steps:
 
 pbcoretools.tasks.fasta2referenceset-0
@@ -111,57 +71,6 @@ genomic_consensus.tasks.gff2bed-0
 pbreports.tasks.polished_assembly-0
 pbcoretools.tasks.contigset2fasta-0
 """
-
-
-"""In job_output/tasks/ dir, without chunking:
-
-pbcoretools.tasks.filterdataset-0
-pbcoretools.tasks.bam2fasta-0                    *******
-pbcoretools.tasks.fasta2fofn-0
-falcon_ns.tasks.task_falcon_gen_config-0
-falcon_ns.tasks.task_falcon_config-0
-falcon_ns.tasks.task_falcon_make_fofn_abs-0
-falcon_ns.tasks.task_falcon0_build_rdb-0
-falcon_ns.tasks.task_falcon0_run_daligner_jobs-0 *******
-falcon_ns.tasks.task_falcon0_run_merge_consensus_jobs-0
-falcon_ns.tasks.task_falcon0_rm_las-0
-falcon_ns.tasks.task_falcon0_merge-0
-falcon_ns.tasks.task_falcon0_cons-0
-falcon_ns.tasks.task_falcon1_rm_las-0
-falcon_ns.tasks.task_falcon1_build_pdb-0
-falcon_ns.tasks.task_falcon1_run_daligner_jobs-0 *******
-falcon_ns.tasks.task_falcon1_merge-0
-falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0
-falcon_ns.tasks.task_falcon1_db2falcon-0
-falcon_ns.tasks.task_falcon2_rm_las-0
-falcon_ns.tasks.task_falcon2_run_asm-0
-
-
-0-rawreads/
-0-rawreads/raw-fofn-abs
-0-rawreads/daligner-scatter
-0-rawreads/job_0000
-0-rawreads/raw-gather
-0-rawreads/merge-scatter
-0-rawreads/m_00001
-0-rawreads/merge-gather
-0-rawreads/cns-scatter
-0-rawreads/preads
-0-rawreads/preads/cns_00001
-0-rawreads/report
-
-1-preads_ovl/
-1-preads_ovl/daligner-scatter
-1-preads_ovl/job_0000
-1-preads_ovl/gathered-las
-1-preads_ovl/merge-scatter
-1-preads_ovl/m_00001
-1-preads_ovl/merge-gather
-1-preads_ovl/db2falcon
-
-2-asm-falcon/
-"""
-
 
 @contextlib.contextmanager
 def mkcd(newdir):
@@ -206,16 +115,18 @@ def symlink(jo):
     # Define task symlinkers
 
     def task_make_fofn_abs_raw():
-        """
+        """deprecated
         "input_fofn" from cfg
         """
+        rdir = abstdir('falcon_ns2.tasks.task_falcon_make_fofn_abs-0')
         with mkcd('0-rawreads/raw-fofn-abs/'):
+            link(rdir, 'file.fofn', 'input.fofn')
             # touch('input.fofn')
             touch_done()
 
     def task_build_rdb():
-        rdir = abstdir('falcon_ns.tasks.task_falcon0_build_rdb-0')
-        with mkcd('0-rawreads/'):
+        rdir = abstdir('falcon_ns2.tasks.task_falcon0_dazzler_build_raw-0')
+        with mkcd('0-rawreads/build/'):
             #touch('length_cutoff', 'rdb_build_done', 'run_jobs.sh', 'raw_reads.db')
             link(rdir, 'raw_reads.db')
             link(rdir, '.raw_reads.bps')
@@ -224,77 +135,101 @@ def symlink(jo):
             link(rdir, '.raw_reads.dust.anno')
             touch_done()
 
-    def task_daligner_scatter():
-        """
-        """
-        with mkcd('0-rawreads/daligner-scatter/'):
-            data = dict()
-            with open('scattered.json', 'w') as stream:
+    def task_tan_split():
+        rdir = abstdir('falcon_ns2.tasks.task_falcon0_dazzler_tan_split-0')
+        with mkcd('0-rawreads/tan-split/'):
+            #link(rdir, 'split.json', 'tan-uows.json')
+            with open('tan-uows.json', 'w') as stream:
+                data = dict()
                 stream.write(json.dumps(data))
+            link(rdir, 'bash_template.txt', 'bash_template.sh')
             touch_done()
 
-    def create_daligner_tasks():
-        """
-        0-rawreads/job_0000 ***
-        """
-        #create_daligner_tasks('0-rawreads', '0-rawreads/daligner-scatter/scattered.json')
-    def task_daligner_gather():
-        """
-        """
-        with mkcd('0-rawreads/raw-gather/'):
-            # touch('gathered_las.txt')
+    def task_tan_gathered():
+        with mkcd('0-rawreads/tan-gathered/'):
             touch_done()
 
-    def task_merge_scatter():
-        """
-        """
-        with mkcd('0-rawreads/merge-scatter/'):
-            data = dict()
-            with open('scattered.json', 'w') as stream:
+    def task_tan_combine():
+        rdir = abstdir('falcon_ns2.tasks.task_falcon0_dazzler_tan_combine-0')
+        with mkcd('0-rawreads/tan-combine/'):
+            link(rdir, 'raw_reads.db')
+            link(rdir, '.raw_reads.bps')
+            link(rdir, '.raw_reads.idx')
+            link(rdir, '.raw_reads.dust.data')
+            link(rdir, '.raw_reads.dust.anno')
+            link(rdir, '.raw_reads.tan.data')
+            link(rdir, '.raw_reads.tan.anno')
+            touch_done()
+
+    def task_daligner_split():
+        rdir = abstdir('falcon_ns2.tasks.task_falcon0_dazzler_daligner_split-0')
+        with mkcd('0-rawreads/daligner-split/'):
+            #link(rdir, 'split.json', 'all-units-of-work.json')
+            with open('all-units-of-work.json', 'w') as stream:
+                data = dict()
                 stream.write(json.dumps(data))
+            link(rdir, 'bash_template.txt', 'bash_template.sh')
             touch_done()
 
-    def create_merge_tasks():
-        """
-        0-rawreads/m_00001 ***
-        """
-        #create_merge_tasks('0-rawreads', '0-rawreads/merge-scatter/scattered.json')
-    def task_merge_gather():
-        # falcon_unzip/rr_hctg_track.py expects files under 0-rawreads/m*/raw_reads.*.las
-        dn2fn = dict()
+    def task_daligner_gathered():
+        with mkcd('0-rawreads/daligner-gathered/'):
+            touch_done()
+
+    def task_daligner_combine():
+        rdir = abstdir('falcon_ns2.tasks.task_falcon0_dazzler_daligner_combine-0')
+        with mkcd('0-rawreads/daligner-combine/'):
+            link(rdir, 'las_paths.json', 'gathered-las.json')
+            touch_done()
+
+    def task_lamerge_split():
+        rdir = abstdir('falcon_ns2.tasks.task_falcon0_dazzler_lamerge_split-0')
+        with mkcd('0-rawreads/las-merge-split/'):
+            #link(rdir, 'split.json', 'all-units-of-work.json')
+            with open('all-units-of-work.json', 'w') as stream:
+                data = dict()
+                stream.write(json.dumps(data))
+            link(rdir, 'bash_template.txt', 'las-merge-bash-template.sh')
+            touch_done()
+
+    def task_lamerge_gathered():
+        with mkcd('0-rawreads/las-merge-gathered/'):
+            touch_done()
+
+    def task_lamerge_combine():
+        # falcon_unzip/rr_hctg_track.py looks at las-merge-combine/las_paths.json, with abspaths
         rdir = abstdir(
-            'falcon_ns.tasks.task_falcon0_run_merge_consensus_jobs-0/')
-        with cd(rdir):
-            for path in glob.glob(os.path.join('m*/raw_reads.*.las')):
-                dn, fn = os.path.split(path)
-                dn2fn[dn] = fn
-        with mkcd('0-rawreads/'):
-            for (dn, fn) in viewitems(dn2fn):
-                with mkcd(dn):
-                    link(os.path.join(rdir, dn), fn)
-        with mkcd('0-rawreads/merge-gather/'):
-            #touch('las.fofn', 'las.fopfn')
+            'falcon_ns2.tasks.task_falcon0_dazzler_lamerge_combine-0')
+        with mkcd('0-rawreads/las-merge-combine/'):
+            link(rdir, 'las_paths.json', 'las_fofn.json') # unzip/quiver, for now
+            link(rdir, 'las_paths.json')
+            link(rdir, 'block2las.json')
             touch_done()
 
-    def task_consensus_scatter():
-        """
-        """
-        with mkcd('0-rawreads/cns-scatter/'):
-            data = dict()
-            with open('scattered.json', 'w') as stream:
+    def task_cns_split():
+        rdir = abstdir('falcon_ns2.tasks.task_falcon0_dazzler_cns_split-0')
+        with mkcd('0-rawreads/cns-split/'):
+            #link(rdir, 'split.json', 'all-units-of-work.json')
+            with open('split.json', 'w') as stream:
+                data = dict()
                 stream.write(json.dumps(data))
+            #link(rdir, 'bash_template.txt', 'bash_template.sh')
             touch_done()
 
-    def create_consensus_tasks():
-        """
-        0-rawreads/preads/cns_00001 ***
-        """
-        #create_consensus_tasks('0-rawreads', '0-rawreads/cns-scatter/scattered.json')
-    def task_consensus_gather():
-        """
-        """
-        with mkcd('0-rawreads/preads'):
-            # touch('input_preads.fofn')
+    def task_cns_gather():
+        #rdir = abstdir('falcon_ns2.tasks.task_falcon0_dazzler_cns_split-0')
+        #rdir = abstdir('falcon_ns2.tasks.task_falcon0_run_cns_post_gather-0')
+        with mkcd('0-rawreads/cns-gather/'):
+            touch_done()
+
+    #def task_cns_combine():
+    #    rdir = abstdir('falcon_ns2.tasks.task_falcon0_dazzler_cns_combine-0')
+    #    with mkcd('0-rawreads/cns-combine/'):
+    #        touch_done()
+
+    def task_preads():
+        rdir = abstdir('falcon_ns2.tasks.task_falcon0_run_cns_post_gather-0')
+        with mkcd('0-rawreads/preads/'):
+            link(rdir, 'input-preads.fofn', 'input_preads.fofn')
             touch_done()
 
     def task_report_pre_assembly():
@@ -307,8 +242,8 @@ def symlink(jo):
     def task_build_pdb():
         """
         """
-        rdir = abstdir('falcon_ns.tasks.task_falcon1_build_pdb-0')
-        with mkcd('1-preads_ovl/'):
+        rdir = abstdir('falcon_ns2.tasks.task_falcon1_build_pdb-0')
+        with mkcd('1-preads_ovl/build/'):
             #touch('pdb_build_done', 'run_jobs.sh', 'preads.db')
             link(rdir, 'preads.db')
             link(rdir, '.preads.bps')
@@ -317,76 +252,59 @@ def symlink(jo):
             link(rdir, '.preads.dust.anno')
             touch_done()
 
-    def task_daligner_scatter1():
-        """
-        """
-        with mkcd('1-preads_ovl/daligner-scatter/'):
-            data = dict()
-            with open('scattered.json', 'w') as stream:
+    def task_daligner_split1():
+        #rdir = abstdir('falcon_ns2.tasks.task_falcon1_dazzler_daligner_split-0')
+        with mkcd('1-preads_ovl/daligner-split/'):
+            #link(rdir, 'split.json', 'all-units-of-work.json')
+            with open('all-units-of-work.json', 'w') as stream:
+                data = dict()
                 stream.write(json.dumps(data))
+            #link(rdir, 'bash_template.txt', 'bash_template.sh')
             touch_done()
 
-    def create_daligner_tasks1():
-        """
-        1-preads_ovl/job_0000 ***
-        """
-        #create_daligner_tasks('1-preads', '1-preads/daligner-scatter/scattered.json')
-    def task_daligner_gather1():
-        """
-        """
-        with mkcd('1-preads_ovl/gathered-las/'):
-            # touch('gathered_las.txt')
+    def task_daligner_gathered1():
+        with mkcd('1-preads_ovl/daligner-gathered/'):
             touch_done()
 
-    def task_merge_scatter1():
-        """
-        """
-        with mkcd('1-preads_ovl/merge-scatter/'):
-            data = dict()
-            with open('scattered.json', 'w') as stream:
+    def task_daligner_combine1():
+        rdir = abstdir('falcon_ns2.tasks.task_falcon1_run_daligner_find_las-0')
+        with mkcd('1-preads_ovl/daligner-combine/'):
+            #link(rdir, 'las_paths.json', 'gathered-las.json')
+            link(rdir, 'gathered-las.json', 'gathered-las.json')
+            touch_done()
+
+    def task_lamerge_split1():
+        #rdir = abstdir('falcon_ns2.tasks.task_falcon1_dazzler_lamerge_split-0')
+        with mkcd('1-preads_ovl/las-merge-split/'):
+            #link(rdir, 'split.json', 'all-units-of-work.json')
+            with open('all-units-of-work.json', 'w') as stream:
+                data = dict()
                 stream.write(json.dumps(data))
+            #link(rdir, 'bash_template.txt', 'las-merge-bash-template.sh')
             touch_done()
 
-    def create_merge_tasks1():
-        """
-        1-preads_ovl/m_00001 ***
-        """
-        #create_merge_tasks('1-preads_ovl', '1-preads_ovl/merge-scatter/scattered.json')
-    def task_merge_gather1():
-        # falcon/pr_ctg_track.py expects files under 1-preads_ovl/m*/preads.*.las
-        dn2fn = dict()
+    def task_lamerge_gathered1():
+        with mkcd('1-preads_ovl/las-merge-gathered/'):
+            touch_done()
+
+    def task_lamerge_combine1():
         rdir = abstdir(
-            'falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0/')
-        with cd(rdir):
-            for path in glob.glob(os.path.join('m*/preads.*.las')):
-                dn, fn = os.path.split(path)
-                dn2fn[dn] = fn
-        with mkcd('1-preads_ovl/'):
-            for (dn, fn) in viewitems(dn2fn):
-                with mkcd(dn):
-                    link(os.path.join(rdir, dn), fn)
-        #rdir = abstdir('falcon_ns.tasks.task_falcon1_merge-0')
-        rdir = abstdir(
-            'falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0')
-        with mkcd('1-preads_ovl/merge-gather/'):
-            #touch('las.fofn', 'las.fopfn')
-            link(rdir, 'file.fofn', 'las.fofn')
+            'falcon_ns2.tasks.task_falcon1_run_las_merge_post_gather-0')
+        #    'falcon_ns2.tasks.task_falcon1_dazzler_lamerge_combine-0')
+        with mkcd('1-preads_ovl/las-merge-combine/'):
+            link(rdir, 'las-fofn.json', 'las_fofn.json') # unzip/quiver, for now
+            link(rdir, 'las-fofn.json', 'las_paths.json')
+            link(rdir, 'p_id2las.json', 'block2las.json')
             touch_done()
 
     def task_run_db2falcon():
-        rdir = abstdir('falcon_ns.tasks.task_falcon1_db2falcon-0')
-        rdirx = abstdir(
-            'falcon_ns.tasks.task_falcon1_run_merge_consensus_jobs-0')
+        rdir = abstdir('falcon_ns2.tasks.task_falcon1_run_db2falcon-0')
         with mkcd('1-preads_ovl/db2falcon/'):
-            #touch('db2falcon', 'preads4falcon.fasta')
-            link(rdirx, 'preads4falcon.fasta')
+            link(rdir, 'preads4falcon.fasta')
             touch_done()
 
     def task_run_falcon_asm():
-        """falcon_ns.tasks.task_falcon2_run_asm-0
-          (falcon_ns.tasks.task_falcon2_rm_las-0)
-        """
-        rdir = abstdir('falcon_ns.tasks.task_falcon2_run_asm-0')
+        rdir = abstdir('falcon_ns2.tasks.task_falcon2_run_falcon_asm-0')
         with mkcd('2-asm-falcon/'):
             # workflow depends on:
             touch('falcon_asm_done')
@@ -396,30 +314,55 @@ def symlink(jo):
             link(rdir, 'ctg_paths')
             # fetch_reads needs:
             link(rdir, 'p_ctg.fa')
+            link(rdir, 'a_ctg.fa')
+            link(rdir, 'p_ctg_tiling_path')
+            link(rdir, 'a_ctg_tiling_path')
 
             touch_done()
 
-    task_make_fofn_abs_raw()
+    #task_make_fofn_abs_raw()
     task_build_rdb()
-    task_daligner_scatter()
-    create_daligner_tasks()
-    task_daligner_gather()
-    task_merge_scatter()
-    create_merge_tasks()
-    task_merge_gather()
-    task_consensus_scatter()
-    create_consensus_tasks()
-    task_consensus_gather()
+    task_tan_split()
+    task_tan_gathered()
+    task_tan_combine()
+    task_daligner_split()
+    task_daligner_gathered()
+    task_daligner_combine()
+    task_lamerge_split()
+    task_lamerge_gathered()
+    task_lamerge_combine()
+    task_cns_split()
+    task_cns_gather()
+    #task_cns_combine()
+    task_preads()
     task_report_pre_assembly()
     task_build_pdb()
-    task_daligner_scatter1()
-    create_daligner_tasks1()
-    task_daligner_gather1()
-    task_merge_scatter1()
-    create_merge_tasks1()
-    task_merge_gather1()
+    task_daligner_split1()
+    task_daligner_gathered1()
+    task_daligner_combine1()
+    task_lamerge_split1()
+    task_lamerge_gathered1()
+    task_lamerge_combine1()
     task_run_db2falcon()
     task_run_falcon_asm()
+
+    def dump_fc_run(fn):
+        input_fofn = os.path.join(abstdir('falcon_ns2.tasks.task_falcon_make_fofn_abs-0'), 'file.fofn')
+        length_cutoff = int(open(os.path.join(abstdir('falcon_ns2.tasks.task_falcon0_dazzler_build_raw-0'), 'length_cutoff.txt')).read())
+        with open(fn, 'w') as stream:
+            p = lambda x: stream.write(x + '\n')
+            p('[General]')
+            p('input_fofn = {}'.format(input_fofn))
+            p('length_cutoff = {}'.format(length_cutoff))
+            p('[Unzip]')
+            p('input_fofn = {}'.format(input_fofn))
+            p('input_bam_fofn = {} # You need to find this!'.format('input_bam.fofn'))
+            p('[job.defaults]')
+            p('pwatcher_type = blocking')
+            #p('submit = /bin/bash -c "${JOB_SCRIPT}"')
+            p('submit = /bin/bash -c "${JOB_SCRIPT}" > "${JOB_STDOUT}" 2> "${JOB_STDERR}"')
+
+    dump_fc_run('fc_run.generated.cfg')
 
 
 def get_parser():
