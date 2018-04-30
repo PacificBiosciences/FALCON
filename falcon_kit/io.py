@@ -22,38 +22,6 @@ def log(*msgs):
     LOG.debug(' '.join(repr(m) for m in msgs))
 
 
-def validate_config(config):
-    # This simple and quick check catches common problems early.
-    # This code might go somewhere else someday.
-    smrt_bin_cmds = [
-        'blasr', 'samtools', 'pbalign', 'variantCaller',
-    ]
-    path_cmds = [
-        'nucmer',
-        'show-coords',
-        'fc_rr_hctg_track2.exe',
-    ]
-    LOG.info('PATH={}'.format(os.environ['PATH']))
-    try:
-        capture('which which')
-    except Exception:
-        LOG.warning('Could not find "which" command. Skipping checks for "blasr", etc.')
-        return
-    for cmd in smrt_bin_cmds + path_cmds:
-        syscall('which ' + cmd)
-    syscall('show-coords -h')
-    syscall('nucmer --version')
-
-
-def update_env_from_config(config, fn):
-    LOG.info('From {!r}, config={}'.format(fn, pprint.pformat(config)))
-    smrt_bin = config.get('smrt_bin')
-    if smrt_bin:
-        PATH = '{}:{}'.format(os.environ['PATH'], smrt_bin)
-        os.environ['PATH'] = PATH
-    validate_config(config)
-
-
 def eng(number):
     return '{:.1f}MB'.format(number / 2**20)
 
@@ -116,27 +84,19 @@ def serialize(fn, val):
             raise Exception('Unknown extension for {!r}'.format(fn))
 
 
-def yield_bam_fn(input_bam_fofn_fn):
-    LOG.info('Reading BAM names from FOFN {!r}'.format(input_bam_fofn_fn))
-    fofn_basedir = os.path.normpath(os.path.dirname(input_bam_fofn_fn))
-
-    def abs_fn(maybe_rel_fn):
-        if os.path.isabs(maybe_rel_fn):
-            return maybe_rel_fn
-        else:
-            return os.path.join(fofn_basedir, maybe_rel_fn)
-    for row in open(input_bam_fofn_fn):
-        yield abs_fn(row.strip())
-
-
 def yield_abspath_from_fofn(fofn_fn):
     """Yield each filename.
     Relative paths are resolved from the FOFN directory.
+    'fofn_fn' can be .fofn, .json, .msgpack
     """
     try:
+        fns = deserialize(fofn_fn)
+    except:
+        #LOG('las fofn {!r} does not seem to be JSON; try to switch, so we can detect truncated files.'.format(fofn_fn))
+        fns = open(fofn_fn).read().strip().split()
+    try:
         basedir = os.path.dirname(fofn_fn)
-        for line in open(fofn_fn):
-            fn = line.strip()
+        for fn in fns:
             if not os.path.isabs(fn):
                 fn = os.path.abspath(os.path.join(basedir, fn))
             yield fn
