@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from builtins import zip
 from builtins import object
 from .FastaReader import open_fasta_reader
+from .io import FilePercenter
 import networkx as nx
 
 RCMAP = dict(zip("ACGTacgtNn-", "TGCAtgcaNn-"))
@@ -32,9 +33,10 @@ class AsmGraph(object):
         self.build_node_map()
 
     def load_sg_data(self, sg_file):
-
+        counter = FilePercenter(sg_file)
         with open(sg_file) as f:
             for l in f:
+                counter(len(l))
                 l = l.strip().split()
                 v, w = l[0:2]
                 seq_id, b, e = l[2:5]
@@ -45,7 +47,6 @@ class AsmGraph(object):
                 self.sg_edges[(v, w)] = ((seq_id, b, e), score, idt, type_)
 
     def load_sg_seq(self, fasta_fn):
-
         all_read_ids = set()  # read ids in the graph
 
         for v, w in self.sg_edges:
@@ -89,9 +90,10 @@ class AsmGraph(object):
         return "".join(seqs)
 
     def load_utg_data(self, utg_file):
-
+        counter = FilePercenter(utg_file)
         with open(utg_file) as f:
             for l in f:
+                counter(len(l))
                 l = l.strip().split()
                 s, v, t = l[0:3]
                 type_, length, score = l[3:6]
@@ -101,9 +103,10 @@ class AsmGraph(object):
                     type_, length, score, path_or_edges)
 
     def load_ctg_data(self, ctg_file):
-
+        counter = FilePercenter(ctg_file)
         with open(ctg_file) as f:
             for l in f:
+                counter(len(l))
                 l = l.strip().split()
                 ctg_id, ctg_type = l[0:2]
                 start_edge = l[2]

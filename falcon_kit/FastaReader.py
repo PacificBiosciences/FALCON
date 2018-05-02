@@ -6,11 +6,15 @@ from builtins import range
 from builtins import object
 from os.path import abspath, expanduser
 from .io import NativeIO as StringIO
+from .io import FilePercenter
 import contextlib
 import gzip
+import logging
 import md5
 import re
 import subprocess
+
+LOG = logging.getLogger(__name__)
 
 ##
 # Utility functions for FastaReader
@@ -157,15 +161,17 @@ class FastaRecord(object):
 
 # These are refactored from ReaderBase/FastaReader.
 
-def yield_fasta_records(f, fn):
+def yield_fasta_records(f, fn, log=LOG.info):
     """
     f: fileobj
     fn: str - filename (for exceptions)
     """
+    counter = FilePercenter(fn, log=log)
     try:
         parts = splitFileContents(f, ">")
         assert "" == next(parts)
         for part in parts:
+            counter(len(part))
             yield FastaRecord.fromString(">" + part)
     except AssertionError:
         raise Exception("Invalid FASTA file {!r}".format(fn))
@@ -178,7 +184,7 @@ def stream_stdout(call, fn):
 
 
 @contextlib.contextmanager
-def open_fasta_reader(fn):
+def open_fasta_reader(fn, log=LOG.info):
     """
     fn: str - filename
 
@@ -208,18 +214,18 @@ def open_fasta_reader(fn):
         ofs = stream_stdout("undexta -vkU -w60 -i", filename)
     else:
         ofs = open(filename, mode)
-    yield yield_fasta_records(ofs, filename)
+    yield yield_fasta_records(ofs, filename, log=log)
     ofs.close()
 
 
 class FastaReader(object):
     """Deprecated, but should still work (with filenames).
     """
-
     def __iter__(self):
-        with open_fasta_reader(self.filename) as reader:
+        with open_fasta_reader(self.filename, log=self.log) as reader:
             for rec in reader:
                 yield rec
 
-    def __init__(self, f):
+    def __init__(self, f, log=LOG.info):
         self.filename = f
+        self.log = log

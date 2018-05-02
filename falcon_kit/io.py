@@ -26,6 +26,45 @@ def eng(number):
     return '{:.1f}MB'.format(number / 2**20)
 
 
+class Percenter(object):
+    """Report progress by golden exponential.
+
+    Usage:
+        counter = Percenter('mystruct', total_len(mystruct))
+
+        for rec in mystruct:
+            counter(len(rec))
+    """
+    def __init__(self, name, total, log=LOG.info, units='units'):
+        log('Counting {:,d} {} from\n  "{}"'.format(total, units, name))
+        self.total = total
+        self.log = log
+        self.name = name
+        self.units = units
+        self.call = 0
+        self.count = 0
+        self.next_count = 0
+        self.a = 1 # double each time
+    def __call__(self, more, label=''):
+        self.call += 1
+        self.count += more
+        if self.next_count <= self.count:
+            self.a = 2 * self.a
+            self.a = max(self.a, more)
+            self.a = min(self.a, (self.total-self.count), round(self.total/10.0))
+            self.next_count = self.count + self.a
+            self.log('{:>10} count={:15,d} {:6.02f}% {}'.format(
+                '#{:,d}'.format(self.call), self.count, 100.0*self.count/self.total, label))
+    def __del__(self):
+        self.log('Counted {:,d} {} in {} calls from:\n  "{}"'.format(
+            self.count, self.units, self.call, self.name))
+
+
+class FilePercenter(Percenter):
+    def __init__(self, fn, log=LOG.info):
+        Percenter.__init__(self, fn, filesize(fn), log, units='bytes')
+
+
 def read_as_msgpack(stream):
     import msgpack
     content = stream.read()
