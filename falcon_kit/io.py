@@ -44,14 +44,12 @@ class Percenter(object):
         self.call = 0
         self.count = 0
         self.next_count = 0
-        self.next_count_inc = 0
-        self.b = 0
-        self.a = 1 # Fibonacci-style increase in a,b
+        self.a = 1 # double each time
     def __call__(self, more, label=''):
         self.call += 1
         self.count += more
         if self.next_count <= self.count:
-            self.a, self.b = (self.a + self.b), self.a
+            self.a = 2 * self.a
             self.a = max(self.a, more)
             self.a = min(self.a, (self.total-self.count), round(self.total/10.0))
             self.next_count = self.count + self.a
