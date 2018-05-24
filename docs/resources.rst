@@ -3,6 +3,15 @@
 Relevant Talks and Poster Presentations
 =======================================
 
+Sequencing, Finishing and Analysis in the Future
+------------------------------------------------
+May 23rd 2018, Sante Fe, NM
+
+
+*FALCON-Phase talk by Sarah Kingan*
+-----------------------------------
+
+:download:`FALCON-Phase <media/FALCON-Phase_SBKingan_23May2018SFAF.pdf>`
 
 
 SMRT Informatics Developers Conference
