@@ -105,7 +105,7 @@ void* my_calloc(int nitems, size_t size, char const* msg, int lineno) {
     }
     void* result = calloc((size_t)nitems, size);
     if (NULL == result) {
-        fprintf(stderr, "CRITICAL ERROR: %s=calloc(%d, %zu) returned 0.\n",
+        fprintf(stderr, "CRITICAL ERROR: %s=calloc(%d, %zu, ..., %d) returned 0.\n",
                 msg, nitems, size, lineno);
         abort();
     }
