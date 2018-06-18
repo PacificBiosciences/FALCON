@@ -9,10 +9,10 @@
 #source /mnt/software/Modules/current/init/bash
 #module load python/2.7.9
 #module load virtualenv/13.0.1
-###These three are necessary for Unzip
+
+###Preinstall samtools or make sure it's in your $PATH later!
 #module load samtools
 #module load gcc/6.4.0
-#module load git
 
 ###Variables
 INPUT=$1
@@ -28,11 +28,11 @@ SLUG=$(date +%y%m%d)
 VENV=${VENV_BASE}_${SLUG}
 FALCON_PATH=${SRC}/FALCON-integrate
 FALCON_REPO="https://github.com/PacificBiosciences/FALCON-integrate.git"
-DL_CLOUD="https://downloads.pacbcloud.com/public/falcon/"
+DL_CLOUD="https://downloads.pacbcloud.com/public/falcon"
 
 ###Test whether you need ucs4 or ucs2 tarball with this command:
 UCS_VER=$(python2.7 -c 'import sysconfig,pprint; pprint.pprint(sysconfig.get_config_vars()["Py_UNICODE_SIZE"])')
-UNZIP_TARBALL="falcon-2018.03.12-04.00-py2.7-ucs${UCS_VER}.tar.gz"
+UNZIP_TARBALL="falcon-2018.05.04-19.00-py2.7-ucs${UCS_VER}-beta.tar.gz"
 
 ###Cleanup
 if [ ! -d ${ROOT} ]; then
@@ -68,20 +68,29 @@ source ${VENV}/bin/activate
 ###Install FALCON and FALCON_unzip
 
 cd ${SRC}
-curl -O ${DL_CLOUD}/${UNZIP_TARBALL}
+curl -v -k -O ${DL_CLOUD}/${UNZIP_TARBALL}
 tar zxvf ${UNZIP_TARBALL} -C ${VENV}
 
 ln -s ${VENV} ${VENV_BASE}
 
-###Install MUMmer 3.23 - for FALCON_unzip
+###Install MUMmer 4.0.0 - for FALCON_unzip
 
-MUMMER_323='https://downloads.sourceforge.net/project/mummer/mummer/3.23/MUMmer3.23.tar.gz'
+MUMMER_400='https://github.com/mummer4/mummer/releases/download/v4.0.0beta2/mummer-4.0.0beta2.tar.gz'
 cd ${SRC}
-wget ${MUMMER_323} -P ${SRC} --no-check-certificate
-tar zxvf MUMmer3.23.tar.gz
-cd MUMmer3.23
-make install
-find . -maxdepth 1 -perm -111 -type f -exec cp {} ${VENV}/bin \;
+wget ${MUMMER_400} -P ${SRC} --no-check-certificate
+tar zxvf mummer-4.0.0beta2.tar.gz
+cd mummer-4.0.0beta2
+./configure --prefix=${VENV}
+make && make install
+
+###Install minimap2
+MINIMAP2="https://github.com/lh3/minimap2/releases/download/v2.10/minimap2-2.10_x64-linux.tar.bz2"
+cd ${SRC}
+curl -L ${MINIMAP2} | tar -jxvf -
+ln ${SRC}/minimap2-2.10_x64-linux/minimap2 ${VENV}/bin/minimap2
+
+###Link samtools
+ln -s $(which samtools) ${VENV}/bin/samtools
 
 ###Test falcon_unzip pipeline
 cd ${SRC} && git clone ${FALCON_REPO}

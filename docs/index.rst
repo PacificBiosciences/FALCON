@@ -26,9 +26,9 @@ FALCON Assembler
    parameters
    glossary
    faq
+   changelog
    resources
    hgap4_adapt
-
 
 `FALCON <http://github.com/PacificBiosciences/FALCON>`_ is a diploid aware genome assembler designed for Pacific Biosciences long read data.
 
@@ -40,5 +40,6 @@ FALCON Assembler
 *  :ref:`Parameters                 <parameters>` - Descriptions of parameters found in fc_run.cfg
 *  :ref:`Glossary                     <glossary>` - Glossary of FALCON jargon
 *  :ref:`Frequently Asked Questions        <faq>` - Frequently asked questions
-*  :ref:`Resources             <resources>` - Talks and slides about PacBio
-*  :ref:`Running Unzip on HGAP4 output             <hgap4_adapt>` - How to run apply Unzip on finished HGAP4 jobs?
+*  :ref:`Changelog                   <changelog>` - Changelog
+*  :ref:`Resources                   <resources>` - Talks and slides about PacBio
+*  :ref:`Running Unzip on HGAP4 output <hgap4_adapt>` - How to run apply Unzip on finished HGAP4 jobs?
