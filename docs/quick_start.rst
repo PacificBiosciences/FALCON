@@ -13,7 +13,7 @@ The quickest way to install FALCON + FALCON_unzip is to download and run this in
 Install script                                                      Tarball date      Status
 ============================================================== ====================== =======
 :download:`install_unzip.sh <scripts/install_unzip_180312.sh>` :ref:`3122018tarball`
-:download:`install_unzip.sh <scripts/install_unzip_180504.sh>` :ref:`542018tarball`   Beta
+:download:`install_unzip.sh <scripts/install_unzip_180725.sh>` :ref:`7252018tarball`   Beta
 ============================================================== ====================== =======
 
 
