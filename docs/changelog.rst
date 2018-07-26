@@ -12,7 +12,7 @@ Changelog
 
 .. _7252018tarball:
 
-5/4/2018
+7/25/2018
 --------
 
 FALCON Updates:
