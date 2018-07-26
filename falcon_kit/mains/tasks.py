@@ -4,6 +4,9 @@ To be called by pbsmrtpipe.
 
 pypeFLOW uses its own adaptors instead.
 """
+from __future__ import absolute_import
+from __future__ import print_function
+
 from .. import run_support as support
 import sys
 
@@ -18,8 +21,10 @@ tasks:
 """)
     sys.exit(2)
 
+
 def main_make_fofn_abs(i_fofn_fn, o_fofn_fn):
     support.make_fofn_abs(i_fofn_fn, o_fofn_fn)
+
 
 def main(argv=sys.argv):
     if len(argv) < 2 or argv[1].startswith('-'):
@@ -29,3 +34,7 @@ def main(argv=sys.argv):
         'make-fofn-abs': main_make_fofn_abs,
     }
     return tasks[task](*argv[2:])
+
+
+if __name__ == "__main__":
+    main(sys.argv)

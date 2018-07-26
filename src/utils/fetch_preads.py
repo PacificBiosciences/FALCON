@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 from pbcore.io import FastaReader
 import networkx as nx
 import sys
@@ -7,8 +10,8 @@ u_edges = {}
 with open("./unit_edges.dat") as f:
     for l in f:
         v, w, path, seq = l.strip().split()
-        u_edges.setdefault( (v, w), [] )
-        u_edges[ (v, w) ].append( (path, seq) )
+        u_edges.setdefault((v, w), [])
+        u_edges[(v, w)].append((path, seq))
         u_graph.add_edge(v, w)
 
 len(u_edges)
@@ -49,10 +52,10 @@ for id_ in a_tig_path:
 
 for v, w in u_edges:
     if v in all_nodes and w in all_nodes:
-        for p, s in u_edges[(v,w)]:
+        for p, s in u_edges[(v, w)]:
             p = p.split("-")
             p_sgraph.add_path(p)
-            #print p
+            # print p
             for pp in p:
                 all_nodes.add(pp)
 
@@ -62,9 +65,9 @@ nx.write_gexf(p_sgraph, "p_sgraph.gexf")
 
 preads = FastaReader(sys.argv[2])
 
-all_nodes_ids = set( [s.split(":")[0] for s in list(all_nodes)] )
-with open("p_sgraph_nodes.fa","w") as f:
+all_nodes_ids = set([s.split(":")[0] for s in list(all_nodes)])
+with open("p_sgraph_nodes.fa", "w") as f:
     for r in preads:
         if r.name in all_nodes_ids:
-            print >>f, ">"+r.name
-            print >>f, r.sequence
+            print(">" + r.name, file=f)
+            print(r.sequence, file=f)

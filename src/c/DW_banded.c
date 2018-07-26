@@ -97,6 +97,20 @@ void print_d_path(  d_path_data2 * base, unsigned long max_idx) {
     }
 }
 
+void* my_calloc(int nitems, size_t size, char const* msg, int lineno) {
+    if (nitems < 0) {
+        fprintf(stderr, "CRITICAL ERROR: %s=calloc(%d, %zu) cannot take a negative value at line %d.\n",
+                msg, nitems, size, lineno);
+        abort();
+    }
+    void* result = calloc((size_t)nitems, size);
+    if (NULL == result) {
+        fprintf(stderr, "CRITICAL ERROR: %s=calloc(%d, %zu) returned 0.\n",
+                msg, nitems, size, lineno);
+        abort();
+    }
+    return result;
+}
 
 alignment * align(char * query_seq, seq_coor_t q_len,
                   char * target_seq, seq_coor_t t_len,
@@ -136,20 +150,24 @@ alignment * align(char * query_seq, seq_coor_t q_len,
 
     band_size = band_tolerance * 2;
 
-    V = calloc( max_d * 2 + 1, sizeof(seq_coor_t) );
-    U = calloc( max_d * 2 + 1, sizeof(seq_coor_t) );
+    V = my_calloc(max_d * 2 + 1, sizeof(seq_coor_t), "V", __LINE__);
+    U = my_calloc(max_d * 2 + 1, sizeof(seq_coor_t), "U", __LINE__);
 
     k_offset = max_d;
 
+    if ((size_t)INT_MAX < ((size_t)max_d * (size_t)(band_size + 1) * 2ULL)) {
+        fprintf(stderr, "CRITICAL ERROR: q_len=%d and t_len=%d => max_d=%d, and band_size=%d. Those lens are too big.\n", q_len, t_len, max_d, band_size);
+        abort();
+    }
     // We should probably use hashmap to store the backtracing information to save memory allocation time
     // This O(MN) block allocation scheme is convient for now but it is slower for very long sequences
-    d_path = calloc( max_d * (band_size + 1 ) * 2 + 1, sizeof(d_path_data2) );
+    d_path = my_calloc(max_d * (band_size + 1 ) * 2 + 1, sizeof(d_path_data2), "d_path", __LINE__);
 
-    aln_path = calloc( q_len + t_len + 1, sizeof(path_point) );
+    aln_path = my_calloc(q_len + t_len + 1, sizeof(path_point), "aln_path", __LINE__);
 
-    align_rtn = calloc( 1, sizeof(alignment));
-    align_rtn->t_aln_str = calloc( q_len + t_len + 1, sizeof(char));
-    align_rtn->q_aln_str = calloc( q_len + t_len + 1, sizeof(char));
+    align_rtn = my_calloc(1, sizeof(alignment), "align_rtn", __LINE__);
+    align_rtn->t_aln_str = my_calloc(q_len + t_len + 1, sizeof(char), "align_rtn->t_aln_str", __LINE__);
+    align_rtn->q_aln_str = my_calloc(q_len + t_len + 1, sizeof(char), "align_rtn->q_aln_str", __LINE__);
     align_rtn->aln_str_size = 0;
     align_rtn->aln_q_s = 0;
     align_rtn->aln_q_e = 0;

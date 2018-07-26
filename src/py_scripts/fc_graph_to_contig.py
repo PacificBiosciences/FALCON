@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from falcon_kit.mains.graph_to_contig import main
 import sys
 

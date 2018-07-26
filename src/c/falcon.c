@@ -147,6 +147,8 @@ align_tags_t * get_align_tags( char * aln_q_seq,
             p_j = j;
             p_jj = jj;
             p_q_base = aln_q_seq[k];
+        } else {
+            break; // when there is a big alignment gap > UINT8_MAX, stop to extned the tagging string
         }
     }
     // sentinal at the end
@@ -242,7 +244,7 @@ void update_col( align_tag_col_t * col, seq_coor_t p_t_pos, uint8_t p_delta, cha
     }
     if (updated == 0) {
         if (col->n_link + 1 > col->size) {
-            if (col->size < (UINT16_MAX > 1)-1) {
+            if (col->size < (UINT16_MAX >> 1)-1) {
                 col->size *= 2;
             } else {
                 col->size += 256;
@@ -316,13 +318,13 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
     consensus_data * consensus;
     //char * consensus;
     align_tag_t * c_tag;
-    static msa_pos_t * msa_array = NULL;
 
     coverage = calloc( t_len, sizeof(unsigned int) );
     local_nbase = calloc( t_len, sizeof(unsigned int) );
 
 #ifndef STATIC_ALLOCATE
 
+    msa_pos_t * msa_array = NULL; // For more efficiency, this should be injected.
     msa_array = calloc(t_len, sizeof(msa_pos_t *));
 
     for (i = 0; i < t_len; i++) {
@@ -331,10 +333,9 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
         allocate_delta_group(msa_array[i]);
     }
 
-#endif
+#else
 
-#ifdef STATIC_ALLOCATE
-
+    static msa_pos_t * msa_array = NULL;
     if ( msa_array == NULL) {
         msa_array = get_msa_working_sapce( 100000 );
     }
@@ -547,9 +548,7 @@ consensus_data * get_cns_from_align_tags( align_tags_t ** tag_seqs,
     }
 
     free(msa_array);
-#endif
-
-#ifdef STATIC_ALLOCATE
+#else
     clean_msa_working_space(msa_array, t_len+1);
 #endif
 

@@ -11,6 +11,12 @@ Currently, we ignore zmw numbers and instead use a global counter.
 Inputs may be compressed, and may be either fasta or fastq.
 (For now, we ignore QVs.)
 """
+from __future__ import absolute_import
+
+
+from future.utils import itervalues
+from builtins import object
+from ..util.system import abs_fns
 import argparse
 import glob
 import gzip
@@ -28,31 +34,36 @@ COMPLEMENT = {
     'G': 'C',
     'T': 'A',
 }
-complement = lambda x: (COMPLEMENT[base] for base in x)
+
+
+def complement(x): return (COMPLEMENT[base] for base in x)
+
 
 zmw_counter = None
 
-def WriteSplit(write, seq, split=80):
+
+def WriteSplit(write, seq, split=8000):
     i = 0
     while i < len(seq):
-        slice = seq[i:i+split]
+        slice = seq[i:i + split]
         write(slice)
         write('\n')
         i += split
 
-def parse_header(header):
+
+def parse_header(header, zmw_counter=None):
     """
-    >>> zmw_counter=1
-    >>> parse_header('>mine foo bar')
-    ('mine', 1, 'foo bar')
-    >>> zmw_counter=None
+    >>> parse_header('>mine foo bar', 1)
+    ('mine', 1, 'foo bar', 2)
     >>> parse_header('>mine/123/5_75 foo bar')
-    ('mine', 123, '5_75 foo bar')
+    ('mine', 123, '5_75 foo bar', None)
 
     For now, ignore the zmw and instead use a global counter.
     """
-    global zmw_counter
-    parts = header[1:].split('/')
+    if '/' in header:
+        parts = header[1:].split('/')
+    else:
+        parts = header[1:].split(None, 1)
     movie = parts[0]
     if zmw_counter is None:
         zmw = int(parts[1])
@@ -63,18 +74,21 @@ def parse_header(header):
         extra = parts[-1]
     else:
         extra = ''
-    return movie, zmw, extra
+    return movie, zmw, extra, zmw_counter
+
 
 re_range = re.compile('^(\d+)_(\d+)\s*(.*)$')
+
 
 def process_fasta(ifs, movie2write):
     header = ifs.readline().strip()
     if header[0] != '>':
         raise Exception('{!r} is not a fasta file.'.format(ifs.name))
     while header:
-        movie, zmw, extra = parse_header(header)
+        global zmw_counter
+        movie, zmw, extra, zmw_counter = parse_header(header, zmw_counter)
         write = movie2write[movie]
-        #log.info('header={!r}'.format(header))
+        # log.info('header={!r}'.format(header))
         seq = ''
         line = ifs.readline().strip()
         while line and not line.startswith('>'):
@@ -88,7 +102,7 @@ def process_fasta(ifs, movie2write):
             beg, end, extra = mo.groups()
             beg = int(beg)
             end = int(end)
-            if (end-beg) != length:
+            if (end - beg) != length:
                 end = beg + length
                 # Probably never happens tho.
         if extra:
@@ -98,14 +112,16 @@ def process_fasta(ifs, movie2write):
         WriteSplit(write, seq)
         header = line
 
+
 def process_fastq(ifs, movie2write):
     header = ifs.readline().strip()
     if header[0] != '@':
         raise Exception('{!r} is not a fastq file.'.format(ifs.name))
     while header:
-        movie, zmw, extra = parse_header(header)
+        global zmw_counter
+        movie, zmw, extra, zmw_counter = parse_header(header, zmw_counter)
         write = movie2write[movie]
-        #log.info('header={!r}'.format(header))
+        # log.info('header={!r}'.format(header))
         seq = ifs.readline().strip()
         header2 = ifs.readline().strip()
         quals = ifs.readline().strip()
@@ -116,12 +132,14 @@ def process_fastq(ifs, movie2write):
         WriteSplit(write, seq)
         header = ifs.readline().strip()
 
+
 def process_try_both(ifs, movie2write):
     try:
         process_fasta(ifs, movie2write)
     except Exception:
         log.exception('bad fasta: {!r}; trying as fastq...'.format(ifs.name))
         process_fastq(ifs, movie2write)
+
 
 def process(ifn, movie2write):
     root, ext = os.path.splitext(ifn)
@@ -146,12 +164,15 @@ def process(ifn, movie2write):
     with Open(ifn) as ifs:
         func(ifs, movie2write)
 
+
 class WriterMap(object):
     def basenames(self):
-        return self.__obn2movie.keys()
+        return list(self.__obn2movie.keys())
+
     def close(self):
-        for ofs in self.__movie2ofs.values():
+        for ofs in itervalues(self.__movie2ofs):
             ofs.close()
+
     def __getitem__(self, movie):
         """Get or create a 'write' function.
         """
@@ -166,15 +187,17 @@ class WriterMap(object):
             ofs = self.__open(obn, mode='w')
             self.__movie2ofs[movie] = ofs
         return ofs.write
+
     def __init__(self, Basename, Open):
         self.__obn2movie = dict()
         self.__movie2ofs = dict()
         self.__basename = Basename
         self.__open = Open
 
+
 def get_writer(Gzip=False):
     if Gzip:
-        Basename = lambda movie: movie + '.fasta.gz'
+        def Basename(movie): return movie + '.fasta.gz'
         import functools
         Open = functools.partial(gzip.GzipFile, compresslevel=1)
         # A little better, a little slower:
@@ -182,10 +205,11 @@ def get_writer(Gzip=False):
         #Open = bz2.BZ2File
         #Basename = lambda movie: movie + '.fasta.bz2'
     else:
-        Basename = lambda movie: movie + '.fasta'
+        def Basename(movie): return movie + '.fasta'
         Open = open
     movie2write = WriterMap(Basename, Open)
     return movie2write
+
 
 def fixall(ifns, Gzip=False):
     """Given an iterator of input absolute filenames (fasta or fastq),
@@ -199,32 +223,21 @@ def fixall(ifns, Gzip=False):
     movie2write.close()
     return movie2write.basenames()
 
-def abs_fns(ifofns, idir=None):
-    """Yield absolute filenames from a streamed file-of-filenames.
-    """
-    log.info('idir={!r}'.format(idir))
-    for line in ifofns.read().split():
-        ifn = line.strip()
-        if not ifn:
-            continue
-        if not os.path.isabs(ifn):
-            ifn = os.path.abspath(os.path.join(idir, ifn))
-        yield ifn
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gzip',
-        action='store_true',
-        help='Compress intermediate fasta with gzip. (Not currently implemented.)')
+                        action='store_true',
+                        help='Compress intermediate fasta with gzip. (Not currently implemented.)')
     parser.add_argument('--zmw-start',
-        type=int,
-        help='Ignore the zmw number in the fasta header. Instead, use a global counter, starting at this numer.')
-    #parser.add_argument('--clean',
+                        type=int,
+                        help='Ignore the zmw number in the fasta header. Instead, use a global counter, starting at this numer.')
+    # parser.add_argument('--clean',
     #    action='store_true',
     #    help='Remove intermediate fasta when done.')
-    #parser.add_argument('--fofn',
+    # parser.add_argument('--fofn',
     #    help='Dump intermediate FOFN. This can be used directly by "fasta2DB foo -ffofn" if fasta are uncompressed.')
-    #parser.add_argument('--fasta2DB',
+    # parser.add_argument('--fasta2DB',
     #    help='Pass these arguments along to fasta2DB. These should exclude fasta inputs.')
     #global ARGS
     ARGS = parser.parse_args()
@@ -232,6 +245,7 @@ def main():
     zmw_counter = ARGS.zmw_start
     for obn in fixall(abs_fns(sys.stdin, os.getcwd()), Gzip=ARGS.gzip):
         sys.stdout.write('{}\n'.format(os.path.abspath(obn)))
+
 
 if __name__ == "__main__":
     logging.basicConfig()

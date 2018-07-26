@@ -7,7 +7,11 @@ See FALCON-pbsmrtpipe/pbfalcon/report_preassembly.py for XML version.
 #   http://swarm/files/depot/branches/springfield/S2.3/software/smrtanalysis/bioinformatics/tools/pbreports/pbreports/report/preassembly.py
 from __future__ import absolute_import
 from __future__ import division
-from .FastaReader import FastaReader
+
+
+from future.utils import viewitems
+from builtins import object
+from .FastaReader import open_fasta_reader
 from .util.io import syscall
 from . import functional
 import collections
@@ -21,21 +25,25 @@ import re
 log = logging.getLogger(__name__)
 __version__ = '0.1'
 
-Stats = collections.namedtuple('FastaStats', ['nreads', 'total', 'n50', 'p95'])
+Stats = collections.namedtuple(
+    'FastaStats', ['nreads', 'total', 'n50', 'p95', 'esize'])
 
 # Copied from pbreports/util.py
 # We want to avoid a dependency on pbreports b/c it needs matplotlib.
+
+
 def get_fasta_readlengths(fasta_file):
     """
     Get a sorted list of contig lengths
     :return: (tuple)
     """
     lens = []
-    with FastaReader(fasta_file) as f:
+    with open_fasta_reader(fasta_file) as f:
         for record in f:
             lens.append(len(record.sequence))
     lens.sort()
     return lens
+
 
 def get_db_readlengths(fn):
     """Use DBdump on a DAZZ_DB.
@@ -43,6 +51,7 @@ def get_db_readlengths(fn):
     """
     call = 'DBdump -h {}'.format(fn)
     return list(functional.parsed_readlengths_from_dbdump_output(syscall(call)))
+
 
 class FastaContainer(object):
 
@@ -53,7 +62,7 @@ class FastaContainer(object):
 
     @staticmethod
     def from_file(file_name):
-#        nreads, total = _compute_values(file_name)
+        #        nreads, total = _compute_values(file_name)
         read_lens = get_fasta_readlengths(file_name)
         nreads = len(read_lens)
         total = sum(read_lens)
@@ -61,6 +70,7 @@ class FastaContainer(object):
 
     def __str__(self):
         return "N {n} Total {t} File: {f}".format(n=self.nreads, t=self.total, f=self.file_name)
+
 
 def _validate_file(file_name):
     if os.path.isfile(file_name):
@@ -70,8 +80,10 @@ def _validate_file(file_name):
         log.error(msg)
         raise IOError(msg)
 
+
 def cutoff_reads(read_lens, min_read_len):
     return [rl for rl in read_lens if rl >= min_read_len]
+
 
 def read_len_above(read_lens, threshold):
     subtotal = 0
@@ -81,18 +93,23 @@ def read_len_above(read_lens, threshold):
         if subtotal >= threshold:
             return rl
 
+
 def percentile(read_lens, p):
     # TODO: Fix this when p=1.0
-    return read_lens[int(len(read_lens)*p)]
+    return read_lens[int(len(read_lens) * p)]
+
 
 def stats_from_sorted_readlengths(read_lens):
     nreads = len(read_lens)
     total = sum(read_lens)
+    sum_squares = sum(r * r for r in read_lens)
     n50 = read_len_above(read_lens, int(total * 0.50))
     p95 = percentile(read_lens, 0.95)
+    esize = sum_squares / total
     #alt_n50 = pbreports.util.compute_n50(read_lens)
-    #log.info('our n50=%s, pbreports=%s' %(n50, alt_n50)) # Ours is more correct when median is between 2 reads.
-    return Stats(nreads=nreads, total=total, n50=n50, p95=p95)
+    # log.info('our n50=%s, pbreports=%s' %(n50, alt_n50)) # Ours is more correct when median is between 2 reads.
+    return Stats(nreads=nreads, total=total, n50=n50, p95=p95, esize=esize)
+
 
 def read_lens_from_fofn(fofn_fn):
     """Return sorted list.
@@ -101,13 +118,16 @@ def read_lens_from_fofn(fofn_fn):
     # get_fasta_readlengths() returns sorted, so sorting the chain is roughly linear.
     return list(sorted(itertools.chain.from_iterable(get_fasta_readlengths(fn) for fn in fns)))
 
+
 def read_lens_from_db(db_fn):
     """Return sorted read-lengths from a DAZZ_DB.
     """
     return list(sorted(get_db_readlengths(db_fn)))
 
+
 def abs_filenames(fofn_fn):
     fofn_dir = os.path.dirname(fofn_fn)
+
     def abs_fn(fn):
         if os.path.isabs(fn):
             return fn
@@ -115,32 +135,37 @@ def abs_filenames(fofn_fn):
     fns = [abs_fn(fn.strip()) for fn in open(fofn_fn) if fn.strip()]
     return fns
 
+
 def metric_fragmentation(preads_fofn):
     # https://jira.pacificbiosciences.com/browse/SAT-105
-    #sed -nr 's;>prolog/([0-9]*)[0-9]/.*;\1;p' %s/*.fasta | sort | uniq -c | awk '{print $1}' | sort | uniq -c
+    # sed -nr 's;>prolog/([0-9]*)[0-9]/.*;\1;p' %s/*.fasta | sort | uniq -c | awk '{print $1}' | sort | uniq -c
     fastas = abs_filenames(preads_fofn)
-    call = """perl -e 'while (<>) { if ( m{>[^/]+/(\d+)\d/} ) { $id{$1}++; } }; while (my ($k, $v) = each %%id) { $counts{$v}++; }; while (my ($k, $v) = each %%counts) { print "$v $k\n"; };' %s""" %(' '.join(fastas))
+    assert fastas, 'No fasta found in {!r}'.format(preads_fofn)
+    call = """perl -e 'while (<>) { if ( m{>[^/]+/(\d+)\d/} ) { $id{$1}++; } }; while (my ($k, $v) = each %%id) { $counts{$v}++; }; while (my ($k, $v) = each %%counts) { print "$v $k\n"; };' %s""" % (' '.join(fastas))
     counts = syscall(call)
     return functional.calc_metric_fragmentation(counts)
+
 
 def metric_truncation(db, preads_fofn):
     # https://jira.pacificbiosciences.com/browse/SAT-105
     fastas = abs_filenames(preads_fofn)
-    call = """perl -e 'while (<>) { if ( m{>[^/]+/0*(\d+)\d/(\d+)_(\d+)} ) { $lengths{(1 + $1)} += ($3 - $2); } }; while (my ($k, $v) = each %%lengths) { print "$k $v\n"; };' %s""" %(' '.join(fastas))
+    assert fastas, 'No fasta found in {!r}'.format(preads_fofn)
+    call = """perl -e 'while (<>) { if ( m{>[^/]+/0*(\d+)\d/(\d+)_(\d+)} ) { $lengths{(1 + $1)} += ($3 - $2); } }; while (my ($k, $v) = each %%lengths) { print "$k $v\n"; };' %s""" % (' '.join(fastas))
     # The +1 is because of the DBdump readids start at 1, but these start at 0.
     length_pairs_output = syscall(call)
     call = 'DBdump -rh {}'.format(db)
     dbdump_output = syscall(call)
     return functional.calc_metric_truncation(dbdump_output, length_pairs_output)
 
+
 def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_length, length_cutoff,
-        fragmentation, truncation):
+               fragmentation, truncation):
     """All inputs are paths to fasta files.
     genome_length and length_cutoff can be None.
     """
-    log.info('stats for raw reads:       %s' %repr(stats_raw_reads))
-    log.info('stats for seed reads:      %s' %repr(stats_seed_reads))
-    log.info('stats for corrected reads: %s' %repr(stats_corrected_reads))
+    log.info('stats for raw reads:       %s' % repr(stats_raw_reads))
+    log.info('stats for seed reads:      %s' % repr(stats_seed_reads))
+    log.info('stats for corrected reads: %s' % repr(stats_corrected_reads))
 
     kwds = {}
     genome_length = -1 if not genome_length else genome_length
@@ -152,33 +177,43 @@ def stats_dict(stats_raw_reads, stats_seed_reads, stats_corrected_reads, genome_
     kwds['raw_n50'] = stats_raw_reads.n50
     kwds['raw_p95'] = stats_raw_reads.p95
     kwds['raw_coverage'] = stats_raw_reads.total / genome_length
+    kwds['raw_esize'] = stats_raw_reads.esize
     kwds['seed_reads'] = stats_seed_reads.nreads
     kwds['seed_bases'] = stats_seed_reads.total
     kwds['seed_mean'] = stats_seed_reads.total / stats_seed_reads.nreads
     kwds['seed_n50'] = stats_seed_reads.n50
     kwds['seed_p95'] = stats_seed_reads.p95
     kwds['seed_coverage'] = stats_seed_reads.total / genome_length
+    kwds['seed_esize'] = stats_seed_reads.esize
     kwds['preassembled_reads'] = stats_corrected_reads.nreads
     kwds['preassembled_bases'] = stats_corrected_reads.total
-    kwds['preassembled_mean'] = stats_corrected_reads.total / stats_corrected_reads.nreads
+    kwds['preassembled_mean'] = stats_corrected_reads.total / \
+        stats_corrected_reads.nreads
     kwds['preassembled_n50'] = stats_corrected_reads.n50
     kwds['preassembled_p95'] = stats_corrected_reads.p95
     kwds['preassembled_coverage'] = stats_corrected_reads.total / genome_length
-    kwds['preassembled_yield'] = stats_corrected_reads.total / stats_seed_reads.total
+    kwds['preassembled_esize'] = stats_corrected_reads.esize
+    kwds['preassembled_yield'] = stats_corrected_reads.total / \
+        stats_seed_reads.total
     kwds['preassembled_seed_fragmentation'] = fragmentation
     kwds['preassembled_seed_truncation'] = truncation
+
     def round_if_float(v):
         return v if type(v) is not float else round(v, 3)
-    result = {k:round_if_float(v) for k,v in kwds.iteritems()}
+    result = {k: round_if_float(v) for (k, v) in viewitems(kwds)}
     return result
 
 # DEPRECATED
+
+
 def make_dict(
-        i_preads_fofn_fn,
-        i_raw_reads_fofn_fn,
-        genome_length,
-        length_cutoff,
-    ):
+    i_preads_fofn_fn,
+    i_raw_reads_fofn_fn,
+    genome_length,
+    length_cutoff,
+    fragmentation=-1,
+    truncation=-1,
+):
     raw_reads = read_lens_from_fofn(i_raw_reads_fofn_fn)
     stats_raw_reads = stats_from_sorted_readlengths(raw_reads)
 
@@ -188,20 +223,23 @@ def make_dict(
     preads = read_lens_from_fofn(i_preads_fofn_fn)
     stats_preads = stats_from_sorted_readlengths(preads)
     report_dict = stats_dict(
-            stats_raw_reads=stats_raw_reads,
-            stats_seed_reads=stats_seed_reads,
-            stats_corrected_reads=stats_preads,
-            genome_length=genome_length,
-            length_cutoff=length_cutoff,
+        stats_raw_reads=stats_raw_reads,
+        stats_seed_reads=stats_seed_reads,
+        stats_corrected_reads=stats_preads,
+        genome_length=genome_length,
+        length_cutoff=length_cutoff,
+        fragmentation=fragmentation,
+        truncation=truncation,
     )
     return report_dict
 
+
 def calc_dict(
-        i_preads_fofn_fn,
-        i_raw_reads_db_fn,
-        genome_length,
-        length_cutoff,
-    ):
+    i_preads_fofn_fn,
+    i_raw_reads_db_fn,
+    genome_length,
+    length_cutoff,
+):
     try:
         frag = metric_fragmentation(i_preads_fofn_fn)
     except:
@@ -222,13 +260,13 @@ def calc_dict(
     preads = read_lens_from_fofn(i_preads_fofn_fn)
     stats_preads = stats_from_sorted_readlengths(preads)
     report_dict = stats_dict(
-            stats_raw_reads=stats_raw_reads,
-            stats_seed_reads=stats_seed_reads,
-            stats_corrected_reads=stats_preads,
-            genome_length=genome_length,
-            length_cutoff=length_cutoff,
-            fragmentation=frag,
-            truncation=trunc,
+        stats_raw_reads=stats_raw_reads,
+        stats_seed_reads=stats_seed_reads,
+        stats_corrected_reads=stats_preads,
+        genome_length=genome_length,
+        length_cutoff=length_cutoff,
+        fragmentation=frag,
+        truncation=trunc,
     )
     log.info('Calculated pre-assembly stats:\n{}'.format(
         pprint.pformat(report_dict)))
