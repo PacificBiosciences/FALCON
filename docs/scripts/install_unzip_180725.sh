@@ -6,7 +6,7 @@
 ##This script should work on both Ubuntu/CentOS as long as the following dependencies are installed and
 ##available in your $PATH
 
-source /mnt/software/Modules/current/init/bash
+#source /mnt/software/Modules/current/init/bash
 
 #module load python/2.7.14-UCS4
 #module load virtualenv/13.0.1
