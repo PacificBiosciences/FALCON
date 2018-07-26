@@ -26,7 +26,7 @@ Install script                                                      Tarball date
 
     This will clone the FALCON-integrate repository, FALCON_unzip binaries, build a virtualenv and launch a small test case assembly to ensure successful installation.
 
-    samtools_ must be installed separately and in your $PATH.
+    samtools_ and minimap2_ must be installed separately and in your $PATH.
 
     If you don't see any errors, you will have installed FALCON/FALCON_unzip and successfully assembled and unzipped a small test dataset. At this point you should be ready to confidently launch a larger genome assembly.
 
