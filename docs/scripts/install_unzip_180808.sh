@@ -13,8 +13,6 @@
 ###These three are necessary for Unzip
 #module load samtools
 #module load minimap2
-#module load gcc/6.4.0
-#module load git/2.8.3
 
 ###Variables
 INPUT=$1
@@ -35,7 +33,8 @@ DL_CLOUD="https://downloads.pacbcloud.com/public/falcon"
 python --version
 ###Test whether you need ucs4 or ucs2 tarball with this command:
 UCS_VER=$(python2.7 -c 'import sysconfig,pprint; pprint.pprint(sysconfig.get_config_vars()["Py_UNICODE_SIZE"])')
-UNZIP_TARBALL="falcon-2018.07.25-07.01-py2.7-ucs${UCS_VER}-beta.tar.gz"
+UNZIP_TARBALL="falcon-2018.08.08-21.41-py2.7-ucs${UCS_VER}-beta.tar.gz"
+
 ###Cleanup
 if [ ! -d ${ROOT} ]; then
     mkdir ${ROOT}
