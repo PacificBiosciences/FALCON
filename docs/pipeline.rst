@@ -1,5 +1,9 @@
 .. _pipeline:
 
+.. caution:: These documents refer to an obsolete way of installing and running FALCON. They will remain up for historical context and for individuals still using the older version of FALCON/FALCON_unzip.
+
+.. attention:: The current PacBio Assembly suite documentation which includes new bioconda instructions for installing FALCON, FALCON_unzip and their associated dependencies can be found here `pb_assembly <http://github.com/gconcepcion/pb-assembly>`_
+
 .. image:: media/falcon_icon2.png
    :height: 200px
    :width: 200 px
