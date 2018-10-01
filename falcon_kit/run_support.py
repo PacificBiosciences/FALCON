@@ -266,7 +266,7 @@ def update_job_sections(config):
     def update_step_njobs(name):
         if General.get(name+'_concurrent_jobs') and 'njobs' not in config['job.step.'+name]:
             config['job.step.'+name]['njobs'] = int(General[name+'_concurrent_jobs'])
-    for name in ['da', 'la', 'pda', 'pla', 'cns', 'fc', 'asm']:
+    for name in ['bd', 'da', 'la', 'pda', 'pla', 'cns', 'fc', 'asm']:
         update_step_job_opts(name)
         update_step_njobs(name)
     # Prefer 'asm' to 'fc'.
@@ -312,6 +312,7 @@ def check_config_sections(cfg):
     """And ensure these all exist.
     """
     allowed_sections = set(['General',
+            'job.step.bd',
             'job.step.da', 'job.step.pda',
             'job.step.la', 'job.step.pla',
             'job.step.cns', 'job.step.fc',
@@ -413,7 +414,7 @@ def update_defaults(cfg):
             'job_type', 'job_queue', 'job_name_style',
             'use_tmpdir',
     ]
-    for step in ['da', 'la', 'pda', 'pla', 'fc', 'cns', 'asm']:
+    for step in ['bd', 'da', 'la', 'pda', 'pla', 'fc', 'cns', 'asm']:
         sge_option_key = 'sge_option_' + step
         possible_extra_keys.append(sge_option_key)
         concurrent_jobs_key = step + '_concurrent_jobs'

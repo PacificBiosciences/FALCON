@@ -214,7 +214,7 @@ def run(wf, config, rule_writer,
             parameters=dict(
             ),
             rule_writer=rule_writer,
-            dist=Dist(NPROC=1),
+            dist=Dist(NPROC=1, job_dict=config['job.step.bd']),
         ))
 
         # run TANmask
